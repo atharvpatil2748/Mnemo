@@ -1,5 +1,7 @@
 """Mnemo core package."""
 
+__version__ = "0.0.0"
+
 from .config import (
     EmbeddingConfig,
     FilesystemStorageConfig,
@@ -12,6 +14,13 @@ from .config import (
     SQLiteStorageConfig,
     StorageConfig,
     SurrealDBStorageConfig,
+)
+from .engine import (
+    EngineInitializationError,
+    EngineLifecycleError,
+    EngineState,
+    KnowledgeEngine,
+    KnowledgeEngineError,
 )
 from .registry import (
     PLUGIN_ENTRY_POINT_GROUP,
@@ -33,14 +42,17 @@ from .registry import (
     RegistryState,
 )
 
-__version__ = "0.0.0"
-
 __all__ = [
     "PLUGIN_ENTRY_POINT_GROUP",
     "PLUGIN_INTERFACE_VERSION",
     "CapabilityKind",
     "EmbeddingConfig",
+    "EngineInitializationError",
+    "EngineLifecycleError",
+    "EngineState",
     "FilesystemStorageConfig",
+    "KnowledgeEngine",
+    "KnowledgeEngineError",
     "LLMConfig",
     "LLMRoleConfig",
     "MnemoConfig",
