@@ -241,11 +241,12 @@ On initialization failure, the engine:
 4. enters `FAILED`; and
 5. raises `EngineInitializationError` chained from the internal cause.
 
-Plugin discovery results are isolated by Module 1.3. A failed candidate is
-fatal only when the final composition cannot resolve or validate a required
-provider. Failures that affect only optional providers remain represented in
-discovery results and do not prevent readiness. This makes necessity depend on
-the resolved runtime rather than on plugin-advertised labels or filenames.
+Plugin discovery results are isolated by Module 1.3. A failed candidate that
+advertises `storage`, `embedding_provider`, `reranker`, or `llm` is fatal. A
+failed candidate with only optional advertised capabilities remains represented
+in discovery results and does not prevent readiness. Independently, missing or
+invalid required slots always fail final composition. This classification uses
+the immutable plugin descriptor rather than filenames.
 
 ## 9. Immutability and thread safety
 
