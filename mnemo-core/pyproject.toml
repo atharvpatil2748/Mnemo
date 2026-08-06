@@ -3,7 +3,7 @@ name = "mnemo-core"
 version = "0.0.0"
 description = "Core library for the Mnemo local knowledge engine."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["pydantic>=2.11,<3"]
 
 [build-system]
 requires = ["hatchling>=1.27,<2"]
