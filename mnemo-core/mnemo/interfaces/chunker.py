@@ -9,7 +9,7 @@ from .types import ChunkerCapabilities, ChunkingOptions
 
 
 @runtime_checkable
-class ChunkerInterface(Protocol):  # pragma: no cover
+class ChunkerInterfaceV1(Protocol):  # pragma: no cover
     """Create ordered semantic chunks without embedding or persistence."""
 
     @property
@@ -29,3 +29,6 @@ class ChunkerInterface(Protocol):  # pragma: no cover
     ) -> tuple[Chunk, ...]:
         """Chunk a parsed document synchronously and deterministically."""
         ...
+
+
+ChunkerInterface = ChunkerInterfaceV1

@@ -8,7 +8,7 @@ from .types import FileMetadata, ParserCapabilities
 
 
 @runtime_checkable
-class ParserInterface(Protocol):  # pragma: no cover
+class ParserInterfaceV1(Protocol):  # pragma: no cover
     """Convert raw bytes into a parsed document without I/O side effects."""
 
     @property
@@ -28,3 +28,6 @@ class ParserInterface(Protocol):  # pragma: no cover
     ) -> ParsedDocument:
         """Parse bytes synchronously without network or persistent writes."""
         ...
+
+
+ParserInterface = ParserInterfaceV1

@@ -18,23 +18,30 @@ from mnemo.interfaces import (
     STORAGE_INTERFACE_VERSION,
     ChunkerCapabilities,
     ChunkerInterface,
+    ChunkerInterfaceV1,
     ChunkingOptions,
     CompletionResult,
     EmbeddingBatch,
     EmbeddingCapabilities,
     EmbeddingProvider,
+    EmbeddingProviderV1,
     FileMetadata,
     HealthStatus,
     LLMCapabilities,
     LLMInterface,
+    LLMInterfaceV1,
     Message,
     ParserCapabilities,
     ParserInterface,
+    ParserInterfaceV1,
     RerankerCapabilities,
     RerankerInterface,
+    RerankerInterfaceV1,
     RetrieverCapabilities,
     RetrieverInterface,
+    RetrieverInterfaceV1,
     StorageInterface,
+    StorageInterfaceV1,
 )
 from mnemo.models import (
     Chunk,
@@ -322,6 +329,13 @@ def test_interface_versions_are_explicit_and_consistent() -> None:
         LLM_INTERFACE_VERSION,
         STORAGE_INTERFACE_VERSION,
     } == {"v1"}
+    assert ParserInterface is ParserInterfaceV1
+    assert ChunkerInterface is ChunkerInterfaceV1
+    assert EmbeddingProvider is EmbeddingProviderV1
+    assert RetrieverInterface is RetrieverInterfaceV1
+    assert RerankerInterface is RerankerInterfaceV1
+    assert LLMInterface is LLMInterfaceV1
+    assert StorageInterface is StorageInterfaceV1
 
 
 def test_later_roadmap_contracts_are_not_implemented() -> None:

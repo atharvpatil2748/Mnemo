@@ -120,11 +120,13 @@ def test_health_message_and_completion_records() -> None:
         model="local",
         structured=FrozenMetadata({"answer": "A knowledge engine."}),
     )
+    structured_null = CompletionResult(model="local", structured=None)
 
     assert health.healthy
     assert message.role.value == "user"
     assert text.text == "A knowledge engine."
     assert structured.structured == FrozenMetadata({"answer": "A knowledge engine."})
+    assert structured_null.structured is None
     assert hash(health) and hash(message) and hash(text) and hash(structured)
 
 
@@ -303,6 +305,14 @@ def test_capability_records_are_typed_immutable_metadata() -> None:
             supports_reasoning=True,
             metadata={},  # type: ignore[arg-type]
         ),
+        lambda: ParserCapabilities(
+            supported_formats=(".pdf",),
+            supports_tables=True,
+            supports_images=True,
+            supports_math=True,
+            supports_ocr=False,
+            metadata=FrozenMetadata({"extension": True}),
+        ),
     ],
 )
 def test_capability_validation(factory: object) -> None:
@@ -320,3 +330,17 @@ def test_page_is_immutable_generic_and_validates_cursor() -> None:
         Page(items=["a"])  # type: ignore[arg-type]
     with pytest.raises(ValueError):
         Page(items=(), next_cursor=" ")
+
+
+def test_capability_extension_metadata_requires_namespace() -> None:
+    """Namespaced extension keys remain immutable and collision-resistant."""
+    capabilities = ParserCapabilities(
+        supported_formats=(".pdf",),
+        supports_tables=True,
+        supports_images=True,
+        supports_math=True,
+        supports_ocr=False,
+        metadata=FrozenMetadata({"plugin.example.accelerated": True}),
+    )
+
+    assert capabilities.metadata["plugin.example.accelerated"] is True

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
@@ -20,6 +21,16 @@ from mnemo.models._shared import (
 )
 
 type EmbeddingVector = tuple[float, ...]
+
+_CAPABILITY_KEY_PATTERN = re.compile(r"^[a-z][a-z0-9_-]*(?:\.[a-z0-9_-]+)+$")
+
+
+class _Unset:
+    __slots__ = ()
+
+
+_UNSET = _Unset()
+_EMPTY_METADATA = FrozenMetadata()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -134,7 +145,7 @@ class Message:
             raise TypeError("metadata must be FrozenMetadata")
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+@dataclass(frozen=True, slots=True, kw_only=True, init=False)
 class CompletionResult:
     """A completed text or structured language-model response."""
 
@@ -143,15 +154,31 @@ class CompletionResult:
     structured: JSONValue = None
     metadata: FrozenMetadata = field(default_factory=FrozenMetadata)
 
-    def __post_init__(self) -> None:
-        """Require exactly one non-null response representation."""
-        require_non_empty(self.model, "model")
-        if (self.text is None) == (self.structured is None):
+    def __init__(
+        self,
+        *,
+        model: str,
+        text: str | None = None,
+        structured: JSONValue | _Unset = _UNSET,
+        metadata: FrozenMetadata = _EMPTY_METADATA,
+    ) -> None:
+        """Create exactly one text or explicitly supplied structured result."""
+        require_non_empty(model, "model")
+        structured_supplied = not isinstance(structured, _Unset)
+        if (text is None) == (not structured_supplied):
             raise ValueError("exactly one of text or structured must be present")
-        if self.text is not None:
-            require_non_empty(self.text, "text")
-        if not isinstance(self.metadata, FrozenMetadata):
+        if text is not None:
+            require_non_empty(text, "text")
+        if not isinstance(metadata, FrozenMetadata):
             raise TypeError("metadata must be FrozenMetadata")
+        object.__setattr__(self, "model", model)
+        object.__setattr__(self, "text", text)
+        object.__setattr__(
+            self,
+            "structured",
+            None if not structured_supplied else structured,
+        )
+        object.__setattr__(self, "metadata", metadata)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -346,3 +373,6 @@ def _validate_booleans(*values: bool) -> None:
 def _validate_metadata(metadata: FrozenMetadata) -> None:
     if not isinstance(metadata, FrozenMetadata):
         raise TypeError("metadata must be FrozenMetadata")
+    for key in metadata:
+        if _CAPABILITY_KEY_PATTERN.fullmatch(key) is None:
+            raise ValueError("capability extension metadata keys must be namespaced")

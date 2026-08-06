@@ -11,7 +11,7 @@ from .types import (
 
 
 @runtime_checkable
-class EmbeddingProvider(Protocol):  # pragma: no cover
+class EmbeddingProviderV1(Protocol):  # pragma: no cover
     """Generate vectors through one configured embedding model provider."""
 
     @property
@@ -44,3 +44,6 @@ class EmbeddingProvider(Protocol):  # pragma: no cover
     async def health_check(self) -> HealthStatus:
         """Return a transport-independent provider health observation."""
         ...
+
+
+EmbeddingProvider = EmbeddingProviderV1

@@ -32,7 +32,7 @@ from .types import (
 
 
 @runtime_checkable
-class StorageInterface(Protocol):  # pragma: no cover
+class StorageInterfaceV1(Protocol):  # pragma: no cover
     """Provide one atomic facade over every configured local storage backend."""
 
     async def open(self) -> None:
@@ -303,3 +303,6 @@ class StorageInterface(Protocol):  # pragma: no cover
     async def delete_document_cascade(self, document_id: UUID) -> None:
         """Atomically delete a document and all facade-owned derived records."""
         ...
+
+
+StorageInterface = StorageInterfaceV1

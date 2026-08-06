@@ -1,12 +1,26 @@
 """Public Phase 1 Module 1.2 interface contracts."""
 
-from .chunker import ChunkerInterface
-from .embedding import EmbeddingProvider
-from .llm import LLMInterface
-from .parser import ParserInterface
-from .reranker import RerankerInterface
-from .retriever import RetrieverInterface
-from .storage import StorageInterface
+from .chunker import ChunkerInterface, ChunkerInterfaceV1
+from .embedding import EmbeddingProvider, EmbeddingProviderV1
+from .errors import (
+    ConflictError,
+    ContractValidationError,
+    DependencyUnavailableError,
+    IntegrityError,
+    LifecycleError,
+    MnemoInterfaceError,
+    NotFoundError,
+    OperationCancelledError,
+    OperationTimeoutError,
+    PluginError,
+    StorageError,
+    UnsupportedError,
+)
+from .llm import LLMInterface, LLMInterfaceV1
+from .parser import ParserInterface, ParserInterfaceV1
+from .reranker import RerankerInterface, RerankerInterfaceV1
+from .retriever import RetrieverInterface, RetrieverInterfaceV1
+from .storage import StorageInterface, StorageInterfaceV1
 from .types import (
     ChunkerCapabilities,
     ChunkingOptions,
@@ -45,25 +59,44 @@ __all__ = [
     "STORAGE_INTERFACE_VERSION",
     "ChunkerCapabilities",
     "ChunkerInterface",
+    "ChunkerInterfaceV1",
     "ChunkingOptions",
     "CompletionResult",
+    "ConflictError",
+    "ContractValidationError",
+    "DependencyUnavailableError",
     "EmbeddingBatch",
     "EmbeddingCapabilities",
     "EmbeddingProvider",
+    "EmbeddingProviderV1",
     "EmbeddingVector",
     "FileMetadata",
     "HealthStatus",
+    "IntegrityError",
     "LLMCapabilities",
     "LLMInterface",
+    "LLMInterfaceV1",
+    "LifecycleError",
     "Message",
     "MessageRole",
+    "MnemoInterfaceError",
+    "NotFoundError",
+    "OperationCancelledError",
+    "OperationTimeoutError",
     "Page",
     "ParserCapabilities",
     "ParserInterface",
+    "ParserInterfaceV1",
+    "PluginError",
     "RerankerCapabilities",
     "RerankerInterface",
+    "RerankerInterfaceV1",
     "RetrieverCapabilities",
     "RetrieverInterface",
+    "RetrieverInterfaceV1",
     "StorageCapabilities",
+    "StorageError",
     "StorageInterface",
+    "StorageInterfaceV1",
+    "UnsupportedError",
 ]

@@ -9,7 +9,7 @@ from .types import CompletionResult, HealthStatus, LLMCapabilities, Message
 
 
 @runtime_checkable
-class LLMInterface(Protocol):  # pragma: no cover
+class LLMInterfaceV1(Protocol):  # pragma: no cover
     """Provide knowledge-engine language-model operations without tool use."""
 
     @property
@@ -53,3 +53,6 @@ class LLMInterface(Protocol):  # pragma: no cover
     async def health_check(self) -> HealthStatus:
         """Return a transport-independent provider health observation."""
         ...
+
+
+LLMInterface = LLMInterfaceV1

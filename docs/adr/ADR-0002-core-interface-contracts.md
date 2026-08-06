@@ -134,6 +134,10 @@ must be namespaced; unknown namespaced keys are ignored by consumers.
 - Cancellation is cooperative through `CancellationToken`; cancellation of the
   caller's task must also be honored.
 
+Cancellation is part of the public contract but its concrete type and
+implementation are intentionally deferred until the roadmap reaches the
+operational execution modules. Module 1.2 exposes no cancellation primitives.
+
 ### 4.4 Ownership and lifecycle
 
 The composition root creates long-lived infrastructure implementations and

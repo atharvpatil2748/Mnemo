@@ -8,7 +8,7 @@ from .types import RerankerCapabilities
 
 
 @runtime_checkable
-class RerankerInterface(Protocol):  # pragma: no cover
+class RerankerInterfaceV1(Protocol):  # pragma: no cover
     """Reorder retrieval candidates without losing chunk provenance."""
 
     def capabilities(self) -> RerankerCapabilities:
@@ -23,3 +23,6 @@ class RerankerInterface(Protocol):  # pragma: no cover
     ) -> tuple[ScoredChunk, ...]:
         """Return at most top_k candidates in descending reranker order."""
         ...
+
+
+RerankerInterface = RerankerInterfaceV1

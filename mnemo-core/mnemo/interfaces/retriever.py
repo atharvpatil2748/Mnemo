@@ -8,7 +8,7 @@ from .types import EmbeddingVector, RetrieverCapabilities
 
 
 @runtime_checkable
-class RetrieverInterface(Protocol):  # pragma: no cover
+class RetrieverInterfaceV1(Protocol):  # pragma: no cover
     """Retrieve bounded raw-scored chunks through one search strategy."""
 
     @property
@@ -29,3 +29,6 @@ class RetrieverInterface(Protocol):  # pragma: no cover
     ) -> tuple[ScoredChunk, ...]:
         """Return at most top_k unique chunks in descending score order."""
         ...
+
+
+RetrieverInterface = RetrieverInterfaceV1
