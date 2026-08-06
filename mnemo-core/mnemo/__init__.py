@@ -1,5 +1,18 @@
 """Mnemo core package."""
 
+from .config import (
+    EmbeddingConfig,
+    FilesystemStorageConfig,
+    LLMConfig,
+    LLMRoleConfig,
+    MnemoConfig,
+    PluginConfig,
+    QdrantStorageConfig,
+    RerankerConfig,
+    SQLiteStorageConfig,
+    StorageConfig,
+    SurrealDBStorageConfig,
+)
 from .registry import (
     PLUGIN_ENTRY_POINT_GROUP,
     PLUGIN_INTERFACE_VERSION,
@@ -26,7 +39,13 @@ __all__ = [
     "PLUGIN_ENTRY_POINT_GROUP",
     "PLUGIN_INTERFACE_VERSION",
     "CapabilityKind",
+    "EmbeddingConfig",
+    "FilesystemStorageConfig",
+    "LLMConfig",
+    "LLMRoleConfig",
+    "MnemoConfig",
     "PluginCompatibilityError",
+    "PluginConfig",
     "PluginDescriptor",
     "PluginDiscoveryError",
     "PluginInterface",
@@ -35,10 +54,15 @@ __all__ = [
     "PluginRegistry",
     "PluginSource",
     "PluginValidationError",
+    "QdrantStorageConfig",
     "RegistrationConflictError",
     "RegistrationDescriptor",
     "RegistryError",
     "RegistryFrozenError",
     "RegistryState",
+    "RerankerConfig",
+    "SQLiteStorageConfig",
+    "StorageConfig",
+    "SurrealDBStorageConfig",
     "__version__",
 ]
