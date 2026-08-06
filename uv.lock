@@ -269,11 +269,15 @@ name = "mnemo-core"
 version = "0.0.0"
 source = { editable = "mnemo-core" }
 dependencies = [
+    { name = "packaging" },
     { name = "pydantic" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pydantic", specifier = ">=2.11,<3" }]
+requires-dist = [
+    { name = "packaging", specifier = ">=24,<27" },
+    { name = "pydantic", specifier = ">=2.11,<3" },
+]
 
 [[package]]
 name = "mnemo-server"
