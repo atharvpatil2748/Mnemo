@@ -1,0 +1,11 @@
+"""Public version markers for Module 1.2 contracts."""
+
+from typing import Final
+
+PARSER_INTERFACE_VERSION: Final = "v1"
+CHUNKER_INTERFACE_VERSION: Final = "v1"
+EMBEDDING_PROVIDER_INTERFACE_VERSION: Final = "v1"
+RETRIEVER_INTERFACE_VERSION: Final = "v1"
+RERANKER_INTERFACE_VERSION: Final = "v1"
+LLM_INTERFACE_VERSION: Final = "v1"
+STORAGE_INTERFACE_VERSION: Final = "v1"
