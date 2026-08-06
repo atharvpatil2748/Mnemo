@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.2"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-packages
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run mypy mnemo-core/mnemo mnemo-server/mnemo_server
+      - run: uv run pytest
+
+  frontend:
+    name: Frontend quality
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mnemo-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: mnemo-ui/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  docker:
+    name: Docker builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --file docker/core.Dockerfile --tag mnemo-core:ci .
+      - run: docker build --file docker/server.Dockerfile --tag mnemo-server:ci .
+      - run: docker build --file docker/ui.Dockerfile --tag mnemo-ui:ci .
+      - run: docker compose --file docker/docker-compose.dev.yml config --quiet
+      - run: docker compose --file docker/docker-compose.yml config --quiet
+      - run: docker compose --file docker/docker-compose.minimal.yml config --quiet

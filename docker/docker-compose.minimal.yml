@@ -1,0 +1,27 @@
+name: mnemo-minimal
+
+services:
+  mnemo-server:
+    build:
+      context: ..
+      dockerfile: docker/server.Dockerfile
+    environment:
+      MNEMO_STORAGE_BACKEND: sqlite+filesystem
+      MNEMO_DATA_DIR: /data
+    ports:
+      - "8000:8000"
+    volumes:
+      - mnemo_data:/data
+
+  mnemo-ui:
+    build:
+      context: ..
+      dockerfile: docker/ui.Dockerfile
+    depends_on:
+      mnemo-server:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+
+volumes:
+  mnemo_data:

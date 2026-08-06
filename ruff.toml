@@ -1,0 +1,11 @@
+target-version = "py312"
+line-length = 100
+extend-exclude = ["docs", "references"]
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

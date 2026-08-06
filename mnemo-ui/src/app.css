@@ -1,0 +1,22 @@
+.shell {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.shell h1 {
+  margin: 0;
+  color: #d8f26b;
+  font-size: clamp(4rem, 12vw, 8rem);
+  letter-spacing: -0.08em;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #9eb0a5;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}

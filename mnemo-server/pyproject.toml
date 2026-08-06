@@ -1,0 +1,16 @@
+[project]
+name = "mnemo-server"
+version = "0.0.0"
+description = "Transport adapters for the Mnemo local knowledge engine."
+requires-python = ">=3.12"
+dependencies = ["mnemo-core"]
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mnemo_server"]
+
+[tool.uv.sources]
+mnemo-core = { workspace = true }

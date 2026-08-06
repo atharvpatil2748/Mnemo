@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+.Python
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node / Vite
+node_modules/
+.pnpm-store/
+mnemo-ui/dist/
+mnemo-ui/coverage/
+*.tsbuildinfo
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local configuration and data
+.env
+.env.*
+!.env.example
+data/
+qdrant_storage/
+surrealdb_data/
+
+# Local read-only study repositories; never vendor third-party sources.
+/references/
