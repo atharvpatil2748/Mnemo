@@ -1,48 +1,58 @@
-# Engineering Changelog 0002: Core Interface Contracts
+# Engineering Changelog 0002: Module 1.2 Core Interface Contracts
 
-- **Scope:** Phase 1, Module 1.2 architecture specification
-- **Status:** Accepted
-- **Accepted:** 2026-08-07
+- **Completed module:** Phase 1, Module 1.2
+- **Status:** Complete
+- **Recorded:** 2026-08-07
 - **Specification:** [ADR-0002: Core Interface Contracts](../adr/ADR-0002-core-interface-contracts.md)
+- **Previous module:** Phase 1, Module 1.1 — Domain Models
+- **Next module:** Phase 1, Module 1.3 — Plugin Registry System
 
 ## Summary
 
-ADR-0002 freezes Mnemo's version-one contract architecture before Module 1.2
-implementation. It defines transport-independent ownership, lifecycle,
-concurrency, failure, serialization, capability-discovery, and compatibility
-rules for core interfaces.
+Module 1.2 establishes the typed, transport-independent contracts that later
+Mnemo implementations and plugin registrations must satisfy. It contains no
+parser, chunker, embedding, retrieval, language-model, or storage behavior.
 
-The specification distinguishes contracts from their implementations. Module
-1.2 is authorized to define only the roadmap's parser, chunker, embedding
-provider, retriever, reranker, language-model, and atomic storage contracts plus
-version markers and directly required contract records. Contracts assigned to
-later roadmap phases remain specification-only.
+## Public API delivered
 
-## Contract architecture recorded
+- Explicit V1 protocols and current-version aliases for `ParserInterface`,
+  `ChunkerInterface`, `EmbeddingProvider`, `RetrieverInterface`,
+  `RerankerInterface`, `LLMInterface`, and `StorageInterface`.
+- Per-contract V1 constants for runtime compatibility checks.
+- Immutable capability descriptions for every implemented provider contract.
+- Immutable records for file metadata, chunking options, embedding batches,
+  provider health, language-model messages and completions, and repository
+  pages.
+- A shared interface exception taxonomy with stable error codes, retryability,
+  and immutable details.
+- PEP 561 package metadata declaring inline typing.
 
-- `StorageInterface` remains the single atomic facade over blob, vector,
-  keyword, metadata, and graph backends. No repository is exposed as a public
-  property.
-- `EmbeddingProvider` represents model-provider vector generation;
-  `EmbedderInterface` represents later batching, caching, and provider-selection
-  orchestration.
-- Provider contracts expose immutable descriptive capability metadata without
-  probing infrastructure or changing behavior.
-- Protocol conformance is structural and contracts are explicitly versioned.
-- I/O-facing operations are asynchronous; bounded pure transformations may be
-  synchronous.
-- Core signatures remain independent of HTTP, FastAPI, MCP, UI frameworks, and
-  concrete database or model-provider clients.
-- Operational telemetry is restricted to local no-op or in-process metrics;
-  analytics and network export remain forbidden.
+## Architectural decisions carried forward
 
-## Dependencies and downstream impact
+- `StorageInterface` is one atomic façade over all storage capabilities;
+  infrastructure repositories are not public properties.
+- `EmbeddingProvider` owns model vector generation. The later
+  `EmbedderInterface` orchestration layer owns batching, caching, and provider
+  selection.
+- Provider capability discovery is descriptive, immutable, and side-effect
+  free; extension metadata requires approved namespaces.
+- Structural protocol conformance permits plugins without mandatory
+  inheritance.
+- Cancellation belongs to later execution modules; Module 1.2 exposes no
+  cancellation primitive.
+- Contract signatures contain no HTTP, framework, database, or concrete
+  provider types.
 
-The specification adds no runtime dependency. Module 1.2 contracts depend only
-on Python 3.12, Module 1.1 domain models, and directly required immutable
-contract records.
+## Compatibility guarantees
 
-The accepted contracts govern later storage, parser, chunker, embedding,
-retrieval, notebook, plugin, operational, and pipeline implementations. Each
-later module remains responsible for implementing its assigned contracts and
-must not leak infrastructure-specific types into `mnemo-core`.
+- Version 1 contracts use explicit `*V1` names; unversioned names resolve to
+  the current V1 contract.
+- Breaking contract changes require a new version and a compatibility window.
+- Exceptions cross core boundaries through Mnemo contract types rather than
+  vendor failures.
+
+## Downstream impact
+
+Module 1.3 validates plugin registrations against this surface. Later storage,
+parser, chunker, embedding, retrieval, server, MCP, and plugin modules depend on
+the same contracts without importing their implementations into core.

@@ -6,6 +6,10 @@
 **Project Type:** Standalone Open-Source Software  
 **License Target:** Apache 2.0  
 
+**Implementation baseline:** Phase 0 and Phase 1 are complete at version 0.5.1.
+Phase 2 has not started. Accepted ADRs refine the public schemas and contracts
+where this living document previously used illustrative shorthand.
+
 > *"A knowledge engine. Not an agent. The difference is everything."*
 
 ---
@@ -243,7 +247,10 @@ The entire project is organized into four layers. The rule is absolute: **each l
 
 Layer 4 (plugins) is not "above" or "below" — it is injected *into* Layer 1 at startup time via the plugin registry. A plugin implements a Layer 1 interface and is registered as the provider for a given capability.
 
-### Repository Structure
+### Target Repository Structure
+
+The tree below is the end-state layout. Directories assigned to later roadmap
+phases are intentionally absent from the Phase 1 baseline.
 
 ```
 mnemo/
@@ -274,7 +281,7 @@ mnemo/
 │   │   ├── interfaces/          # All typed contracts
 │   │   │   ├── parser_interface.py
 │   │   │   ├── chunker_interface.py
-│   │   │   ├── embedder_interface.py
+│   │   │   ├── embedding.py
 │   │   │   ├── retriever_interface.py
 │   │   │   ├── reranker_interface.py
 │   │   │   ├── llm_interface.py
@@ -359,7 +366,7 @@ Normalizes the `ParsedDocument`. Removes duplicate whitespace, page number artif
 Converts a `ParsedDocument` into `Chunk[]`. Selects the appropriate strategy based on `doc_type`. All strategies are behind `ChunkerInterface`. Built-in strategies: generic recursive, Markdown header-aware, HTML header-aware, email thread-aware. Advanced strategies (book hierarchical, paper section-aware, code AST-based, resume semantic) are bundled as lightweight extensions within core.
 
 **Embedder**  
-Transforms text into float vectors. Manages a content-addressable embedding cache. Sends batches to the configured `EmbeddingInterface`. Handles dimension mismatch detection when the model is changed.
+Transforms text into float vectors. Manages a content-addressable embedding cache. Sends batches to the configured `EmbeddingProvider`. `EmbedderInterface` is the later orchestration boundary for batching, caching, and provider selection. It handles dimension mismatch detection when the model is changed.
 
 **Indexer**  
 Writes chunks to all configured storage backends atomically. On failure, rolls back all writes for the failed document. Maintains a document registry with ingestion status and version history.
@@ -394,15 +401,18 @@ Manages the organizational layer: notebooks, sources, notes, sessions, insights.
 
 A notebook is a named collection of sources. A source is an ingested document. Notes are first-class objects (user-created or AI-generated). Sessions are conversation threads attached to a notebook. Insights are extracted claims (entities, summaries, key facts) derived from sources.
 
-The Notebook Manager does not make LLM calls. It is a data management module. Features that require LLM calls (summary generation, insight extraction) are coordinated by the server layer, which calls core functions.
+The Notebook Manager does not make LLM calls. It is a data management module. Features that require LLM calls (summary generation, insight extraction) are coordinated by later core services. The server remains a transport adapter that calls those core functions.
 
 #### 4.4 Plugin Registry
 
-The registry is the dependency injection container for mnemo-core. At startup, it:
+The registry is the dependency injection container for mnemo-core. During
+`KnowledgeEngine.initialize()`, the engine:
 
-1. Scans the `MNEMO_PLUGINS` directory (configurable).
-2. For each plugin, calls its `register(registry)` entry point.
-3. The plugin registers itself against one or more interface slots.
+1. loads built-in plugin candidates;
+2. discovers the `mnemo.plugins` Python entry-point group;
+3. scans the immediate Python children of `config.plugins.directory`; and
+4. calls each candidate's `register(registry)` entry point before freezing the
+   registry.
 
 The registry enforces that each slot has at most one active implementation. If two plugins try to register for the same slot with conflicting priorities, the one with higher priority wins and a warning is logged.
 
@@ -410,11 +420,11 @@ The registry enforces that each slot has at most one active implementation. If t
 Registry slots:
   parsers:      { "pdf": PDFParser, "docx": DocxParser, ... }
   chunkers:     { "book": BookChunker, "paper": PaperChunker, ... }
-  embedders:    { "primary": OllamaEmbedder }
+  embedding_providers: { "primary": OllamaEmbeddingProvider }
   retrievers:   { "dense": QdrantRetriever, "sparse": SQLiteRetriever, ... }
   reranker:     { "primary": CrossEncoderReranker }
-  llm_roles:    { "planner": OllamaLLM, "synthesizer": OllamaLLM, ... }
-  storage:      { "vector": QdrantStore, "keyword": SQLiteStore, ... }
+  llm:          { "planner": OllamaLLM, "synthesizer": OllamaLLM, ... }
+  storage:      { "primary": CompositeStorage }
 ```
 
 ---
@@ -751,238 +761,58 @@ A minimal deployment (no plugins, `pip install mnemo-core`) still handles digita
 
 ## 8. Plugin Registry and Interface Contracts
 
+Phase 1 freezes seven structural, versioned provider contracts. Their exact V1
+signatures, records, lifecycle rules, and exceptions are defined by
+[ADR-0002](adr/ADR-0002-core-interface-contracts.md) and exported by
+`mnemo.interfaces`. Unversioned names are current-version aliases for the V1
+contracts.
+
 ### 8.1 ParserInterface
 
-```python
-class ParserInterface(Protocol):
-    """
-    Converts a raw file into a ParsedDocument.
-    The implementation must be stateless.
-    """
-    
-    @property
-    def supported_formats(self) -> list[str]:
-        """File extensions this parser handles, e.g. ['.pdf', '.PDF']"""
-        ...
-    
-    def parse(
-        self,
-        data: bytes,
-        filename: str,
-        metadata: FileMetadata,
-    ) -> ParsedDocument:
-        """
-        Parse file bytes into a structured ParsedDocument.
-        Must not make network calls.
-        Must not write to the filesystem except for temp files
-        that are cleaned up before return.
-        """
-        ...
-
-@dataclass
-class ParsedDocument:
-    blocks:   list[Block]
-    metadata: DocumentMetadata
-    language: str
-    doc_type: DocType   # Enum: BOOK | PAPER | CODE | EMAIL | RESUME | GENERIC | ...
-```
-
----
+`ParserInterfaceV1` synchronously converts immutable bytes and `FileMetadata`
+into a `ParsedDocument`. It exposes immutable `ParserCapabilities` and performs
+no network or persistent-storage I/O.
 
 ### 8.2 ChunkerInterface
 
-```python
-class ChunkerInterface(Protocol):
-    
-    @property
-    def supported_doc_types(self) -> list[DocType]:
-        ...
-    
-    def chunk(
-        self,
-        document: ParsedDocument,
-        config: ChunkConfig,
-    ) -> list[Chunk]:
-        """
-        Convert a ParsedDocument into a flat list of Chunks.
-        Each Chunk must be self-contained and carry its heading_path.
-        No chunk may cross a semantic boundary (chapter, section, etc.)
-        """
-        ...
+`ChunkerInterfaceV1` synchronously and deterministically converts a
+`ParsedDocument`, document `version_id`, and `ChunkingOptions` into an ordered
+tuple of `Chunk` values. The canonical `Chunk` schema is defined by ADR-0001.
+Chunk identity uses `version_id`, the canonical block-ordinal span, and text;
+`heading_path` and text offsets remain navigation metadata only.
 
-@dataclass
-class Chunk:
-    id:               str           # sha256(text + doc_id + position)
-    text:             str
-    doc_id:           str
-    chunk_type:       ChunkType     # PASSAGE | SUMMARY | VERBATIM | QUESTION | CODE
-    position:         ChunkPosition # page, section, order
-    heading_path:     list[str]     # ["Chapter 3", "Section 3.2"]
-    parent_chunk_id:  str | None
-    sibling_ids:      list[str]
-    metadata:         dict
-    embedding:        list[float] | None  # populated by Embedder
-```
+### 8.3 EmbeddingProvider
 
----
-
-### 8.3 EmbeddingInterface
-
-```python
-class EmbeddingInterface(Protocol):
-    
-    @property
-    def model_name(self) -> str: ...
-    
-    @property
-    def dimensions(self) -> int: ...
-    
-    @property
-    def max_tokens(self) -> int: ...
-    
-    async def embed(self, text: str) -> list[float]: ...
-    
-    async def embed_batch(self, texts: list[str]) -> list[list[float]]: ...
-```
-
----
+`EmbeddingProviderV1` is the model-provider abstraction for single and batch
+vector generation. It exposes model name, dimensions, token limit,
+`EmbeddingCapabilities`, and a transport-independent health observation.
+`EmbedderInterface` is a separate orchestration contract assigned to a later
+roadmap module.
 
 ### 8.4 RetrieverInterface
 
-```python
-class RetrieverInterface(Protocol):
-    
-    @property
-    def retrieval_mode(self) -> str:
-        """Identifier: 'dense' | 'sparse' | 'graph' | 'parent' | 'summary'"""
-        ...
-    
-    async def retrieve(
-        self,
-        query: str,
-        query_embedding: list[float] | None,
-        filters: MetadataFilter,
-        top_k: int,
-    ) -> list[ScoredChunk]:
-        ...
-```
-
----
+`RetrieverInterfaceV1` performs one bounded retrieval strategy and returns an
+ordered tuple of raw-scored `ScoredChunk` values. It exposes a stable retrieval
+mode and immutable `RetrieverCapabilities`.
 
 ### 8.5 RerankerInterface
 
-```python
-class RerankerInterface(Protocol):
-    
-    async def rerank(
-        self,
-        query: str,
-        candidates: list[ScoredChunk],
-        top_k: int,
-    ) -> list[ScoredChunk]:
-        """
-        Re-score candidates using a cross-encoder or fusion strategy.
-        Returns top_k candidates sorted by descending relevance score.
-        """
-        ...
-```
-
----
+`RerankerInterfaceV1` reorders a bounded tuple of candidates while preserving
+chunk provenance and exposes immutable `RerankerCapabilities`.
 
 ### 8.6 LLMInterface
 
-```python
-class LLMInterface(Protocol):
-    """
-    Abstraction over any local or remote LLM.
-    Mnemo uses this for: planning retrieval, synthesizing answers,
-    extracting entities, describing images.
-    It does NOT use LLMs for autonomous action.
-    """
-    
-    @property
-    def provider(self) -> str: ...
-    
-    @property
-    def model(self) -> str: ...
-    
-    @property
-    def max_context_tokens(self) -> int: ...
-    
-    async def complete(
-        self,
-        system: str,
-        messages: list[Message],
-        structured_output: dict | None = None,  # JSON Schema
-        max_tokens: int = 1000,
-    ) -> str | dict: ...
-    
-    async def stream(
-        self,
-        system: str,
-        messages: list[Message],
-    ) -> AsyncIterator[str]: ...
-```
-
----
+`LLMInterfaceV1` exposes provider, model, context limit, immutable
+`LLMCapabilities`, typed completion and streaming operations, and a local
+health observation. Its purpose is knowledge retrieval and synthesis only; it
+does not expose tools or autonomous actions.
 
 ### 8.7 StorageInterface
 
-```python
-class StorageInterface(Protocol):
-    """
-    Unified interface over all storage backends.
-    Core never calls Qdrant, SQLite, or SurrealDB directly.
-    All storage access goes through this interface.
-    """
-    
-    # --- Chunks ---
-    async def upsert_chunks(self, chunks: list[Chunk]) -> None: ...
-    async def get_chunk(self, chunk_id: str) -> Chunk | None: ...
-    async def delete_chunks_for_doc(self, doc_id: str) -> None: ...
-    
-    # --- Vector Search ---
-    async def search_dense(
-        self,
-        embedding: list[float],
-        filter: MetadataFilter,
-        top_k: int,
-    ) -> list[ScoredChunk]: ...
-    
-    # --- Keyword Search ---
-    async def search_sparse(
-        self,
-        query: str,
-        filter: MetadataFilter,
-        top_k: int,
-    ) -> list[ScoredChunk]: ...
-    
-    # --- Graph ---
-    async def upsert_entity(self, entity: Entity) -> None: ...
-    async def upsert_edge(self, edge: GraphEdge) -> None: ...
-    async def get_related_entities(
-        self,
-        entity_name: str,
-        hops: int,
-    ) -> list[Entity]: ...
-    
-    # --- Documents ---
-    async def upsert_document(self, doc: Document) -> None: ...
-    async def get_document(self, doc_id: str) -> Document | None: ...
-    async def list_documents(
-        self,
-        notebook_id: str | None = None,
-    ) -> list[Document]: ...
-    
-    # --- Sessions & Citations ---
-    async def upsert_session(self, session: Session) -> None: ...
-    async def append_turn(self, session_id: str, turn: Turn) -> None: ...
-    async def upsert_citation(self, citation: Citation) -> None: ...
-    async def get_citations_for_turn(
-        self,
-        turn_id: str,
-    ) -> list[Citation]: ...
-```
+`StorageInterfaceV1` is the single atomic façade over blob, vector, keyword,
+metadata, notebook, conversation, and graph persistence. It exposes no backend
+repositories or vendor types. Phase 2 supplies its concrete `primary`
+implementation; Phase 1 defines the contract only.
 
 ---
 
@@ -1186,7 +1016,7 @@ Regardless of strategy, all chunkers must satisfy:
 2. **Maximum size:** No chunk over 2× the target token count. Apply secondary splitting if exceeded.
 3. **Heading path:** Every chunk carries enough path context to be interpreted without surrounding text.
 4. **Semantic atomicity:** A chunk never crosses a major semantic boundary.
-5. **Identity stability:** The chunk ID is `sha256(text + doc_id + heading_path)`. If neither the text nor its position changes, the ID is stable across re-ingestions.
+5. **Identity stability:** The chunk ID is the SHA-256 of `version_id`, the canonical source block-ordinal span, and chunk text. `heading_path` and text offsets do not participate in identity.
 
 ---
 
@@ -1451,7 +1281,7 @@ All paths are content-addressed (`sha256(bytes)[:2]/sha256(bytes)`). Duplicate f
 
 ### Specialist Role-Based Architecture
 
-Mnemo uses multiple LLM roles. Each role has different model requirements. The configuration maps roles to models — and every role's model is independently configurable.
+Mnemo uses four LLM roles. Each role has different model requirements. The configuration maps roles to models, and every role's model is independently configurable. Embedding and reranking are separate provider families rather than LLM roles.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -1468,30 +1298,49 @@ Mnemo uses multiple LLM roles. Each role has different model requirements. The c
 │ extractor      │ NER, entity relationship         │ Small, batch.   │
 │                │ extraction. Question generation.  │ 3B–7B param.   │
 ├────────────────┼──────────────────────────────────┼──────────────────┤
-│ vision         │ Describe images, figures,        │ Vision-language. │
-│                │ handwritten content.             │ LLaVA, Qwen-VL  │
+│ classifier     │ Document-type classification.    │ Fast, small.     │
+│                │                                  │ Structured.      │
 ├────────────────┼──────────────────────────────────┼──────────────────┤
-│ embedder       │ Text → vector. Not generative.   │ nomic-embed or  │
+│ embedding      │ Separate provider family:        │ nomic-embed or  │
 │                │ Called at ingest and query time. │ mxbai-embed     │
 ├────────────────┼──────────────────────────────────┼──────────────────┤
-│ reranker       │ Cross-encoder scoring.           │ ms-marco family │
+│ reranker       │ Separate provider family:        │ ms-marco family │
 │                │ Not generative.                  │ deterministic   │
 └────────────────┴──────────────────────────────────┴──────────────────┘
 ```
 
-**Default configuration (Ollama, local):**
+**Configuration shape (TOML; provider and model values are required):**
 
-```yaml
-llm_roles:
-  planner:     { provider: ollama, model: "qwen2.5:7b" }
-  synthesizer: { provider: ollama, model: "llama3.1:70b" }
-  extractor:   { provider: ollama, model: "qwen2.5:3b" }
-  vision:      { provider: ollama, model: "llava:13b" }
-  embedder:    { provider: ollama, model: "nomic-embed-text" }
-  reranker:    { provider: local, model: "ms-marco-MiniLM-L-12-v2" }
+```toml
+[llm.planner]
+provider = "ollama"
+model = "planner-model"
+
+[llm.synthesizer]
+provider = "ollama"
+model = "synthesizer-model"
+
+[llm.extractor]
+provider = "ollama"
+model = "extractor-model"
+
+[llm.classifier]
+provider = "ollama"
+model = "classifier-model"
+
+[embedding]
+provider = "ollama"
+model = "embedding-model"
+dimensions = 768
+
+[reranker]
+provider = "local"
+model = "reranker-model"
 ```
 
-Every provider implements `LLMInterface`. Switching from Ollama to LM Studio requires a single config change.
+Every generative role implements `LLMInterface`; embedding implements
+`EmbeddingProvider`, and reranking implements `RerankerInterface`. Provider
+identifiers are registry-resolved free-form strings.
 
 ### What Mnemo's LLMs Are NOT Allowed to Do
 
@@ -1552,7 +1401,7 @@ The `watchfolder` plugin monitors configured directories using `watchdog`. New o
 
 ```
 Document:
-  doc_id:       "content-hash-based-uuid"
+  document_id:  "stable-uuid"
   versions:
     - hash: "abc123", created_at: "2024-01-01", status: SUPERSEDED
     - hash: "def456", created_at: "2025-06-01", status: CURRENT
@@ -1705,23 +1554,15 @@ ARVSAL never calls Mnemo's ingestion endpoints during a conversation. Document m
 For maximum performance and zero HTTP overhead, `mnemo-core` can be used as a Python library:
 
 ```python
-from mnemo import KnowledgeEngine
-from mnemo.config import MnemoConfig
+from mnemo import KnowledgeEngine, MnemoConfig
 
-engine = KnowledgeEngine(config=MnemoConfig.from_file("mnemo.yaml"))
+engine = KnowledgeEngine(config=MnemoConfig.from_file("mnemo.toml"))
 await engine.initialize()
-
-# Ingest
-job = await engine.ingest("path/to/document.pdf", notebook_id="research")
-await job.wait_for_indexing()
-
-# Retrieve
-result = await engine.retrieve(
-    question="What are the key findings?",
-    notebook_id="research",
-    synthesis_enabled=False,
-)
-# result.context, result.citations
+try:
+    # Ingestion and retrieval APIs are added in their designated later phases.
+    ...
+finally:
+    await engine.shutdown()
 ```
 
 This is the deployment model for ARVSAL running Mnemo as an embedded library rather than an external service.
@@ -1745,9 +1586,12 @@ services:
     volumes:
       - ./data:/data
     environment:
-      MNEMO_STORAGE_BACKEND: sqlite+filesystem  # no Qdrant, brute-force vector
-      MNEMO_LLM_PROVIDER: ollama
-      MNEMO_OLLAMA_HOST: host.docker.internal:11434
+      MNEMO_STORAGE_FILESYSTEM_ROOT: /data/files
+      MNEMO_STORAGE_SQLITE_PATH: /data/mnemo.db
+      MNEMO_STORAGE_QDRANT_ENABLED: "false"
+      MNEMO_STORAGE_SURREALDB_ENABLED: "false"
+      # Required LLM, embedding, and reranker provider/model values are
+      # supplied through mnemo.toml or their canonical MNEMO_ variables.
 ```
 
 Tradeoffs: brute-force vector search instead of HNSW. Acceptable for <100K chunks.
@@ -1771,10 +1615,10 @@ services:
       - qdrant
       - surrealdb
     environment:
-      MNEMO_QDRANT_URL: http://qdrant:6333
-      MNEMO_SURREALDB_URL: http://surrealdb:8000
-      MNEMO_LLM_PROVIDER: ollama
-      MNEMO_OLLAMA_HOST: host.docker.internal:11434
+      MNEMO_STORAGE_QDRANT_URL: http://qdrant:6333
+      MNEMO_STORAGE_SURREALDB_URL: http://surrealdb:8000
+      # Required LLM, embedding, and reranker provider/model values are
+      # supplied through mnemo.toml or their canonical MNEMO_ variables.
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -1992,10 +1836,10 @@ As the plugin ecosystem grows, users will face incompatibility between plugin ve
 │  planner       │ Retrieval planning only. Structured output.             │
 │  synthesizer   │ Grounded answer generation. Citation-aware.             │
 │  extractor     │ NER, relationships, questions. Batch mode.              │
-│  vision        │ Image and figure description.                           │
-│  embedder      │ Text → vector. Deterministic inference.                 │
-│  reranker      │ Cross-encoder scoring. Deterministic inference.         │
-│  All roles:    │ Independently configurable. Any Ollama model.           │
+│  classifier    │ Document-type classification.                           │
+│  All roles:    │ Independently configurable providers and models.        │
+│  embedding     │ Separate text-to-vector provider family.                │
+│  reranker      │ Separate candidate-scoring provider family.             │
 │                                                                            │
 ├──────────────────────────────────────────────────────────────────────────┤
 │                                                                            │

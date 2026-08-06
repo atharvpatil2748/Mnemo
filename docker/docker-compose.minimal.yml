@@ -6,8 +6,10 @@ services:
       context: ..
       dockerfile: docker/server.Dockerfile
     environment:
-      MNEMO_STORAGE_BACKEND: sqlite+filesystem
-      MNEMO_DATA_DIR: /data
+      MNEMO_STORAGE_FILESYSTEM_ROOT: /data/files
+      MNEMO_STORAGE_SQLITE_PATH: /data/mnemo.db
+      MNEMO_STORAGE_QDRANT_ENABLED: "false"
+      MNEMO_STORAGE_SURREALDB_ENABLED: "false"
     ports:
       - "8000:8000"
     volumes:

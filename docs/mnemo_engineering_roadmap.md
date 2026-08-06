@@ -5,6 +5,10 @@
 **Status:** Living Implementation Tracker  
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
+**Current baseline:** Phase 0 and Phase 1 are complete at version 0.5.1.
+Phase 2 is the next phase and has not started. Completed checklist items are
+marked below; later-phase trees and tasks describe planned work.
+
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
 
 ---
@@ -52,6 +56,7 @@ Phase 10 →  Phase 11 →  Phase 12 →  Phase 13
 
 ### Phase 0 — Development Environment
 **Duration:** Week 1  
+**Status:** Complete
 **Goal:** Every developer can clone, install, and run the test suite in under 10 minutes.
 
 Sets up the repository, tooling, linting, formatting, pre-commit hooks, CI pipeline, and Docker stack. Nothing works yet — but the development rails are laid.
@@ -60,7 +65,8 @@ Sets up the repository, tooling, linting, formatting, pre-commit hooks, CI pipel
 
 ### Phase 1 — mnemo-core Scaffolding: Types, Interfaces, Registry
 **Duration:** Weeks 2–3  
-**Goal:** All seven typed `Protocol` interfaces are defined. The plugin registry is operational. Zero implementations, but everything compiles and is importable.
+**Status:** Complete
+**Goal:** All seven typed provider `Protocol` interfaces are defined. The plugin registry, configuration authority, and composition root are operational. No concrete storage, parser, retrieval, embedding, reranking, or LLM providers are included.
 
 This phase is the most critical architectural phase. Every subsequent phase implements something that conforms to an interface defined here. Getting the interface contracts wrong here costs exponentially more to fix later.
 
@@ -92,7 +98,7 @@ Chunking quality is the single biggest lever on retrieval quality. More implemen
 
 ### Phase 5 — Embedding Pipeline
 **Duration:** Weeks 16–17  
-**Goal:** Ollama embedding provider is implemented behind `EmbeddingInterface`. Content-addressable embedding cache is operational. Batch embedding works. Dimension mismatch detection works.
+**Goal:** Ollama embedding provider is implemented behind `EmbeddingProvider`. Content-addressable embedding cache is operational. Batch embedding works. Dimension mismatch detection works.
 
 ---
 
@@ -152,6 +158,8 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 ### Phase 0 — Development Environment
 
+**Status:** Complete
+
 **Module 0.1 — Repository Setup**
 
 | Task | Subtask | Notes | Difficulty | Dependency |
@@ -197,22 +205,24 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 ### Phase 1 — mnemo-core Scaffolding
 
+**Status:** Complete
+
 **Module 1.1 — Domain Models**
 
 | Task | Subtask | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|---|
 | Define `Block` types | `TextBlock`, `HeadingBlock`, `TableBlock`, `ImageBlock`, `CodeBlock`, `EquationBlock`, `CaptionBlock` | Use dataclasses with frozen=True | — | Low | Phase 0 |
 | Define `ParsedDocument` | `blocks: list[Block]`, `metadata: DocumentMetadata`, `language: str`, `doc_type: DocType` | — | RAGFlow deepdoc | Low | 1.1a |
-| Define `DocumentMetadata` | title, authors, date, url, doi, isbn, page_count, source_file_hash | Use `dataclasses.field` with defaults | — | Low | 1.1a |
+| Define `DocumentMetadata` | Canonical schema from ADR-0001, including `content_hash` | Use `dataclasses.field` with defaults | — | Low | 1.1a |
 | Define `DocType` enum | BOOK, PAPER, CODE, EMAIL, RESUME, SLIDES, MARKDOWN, DOCUMENTATION, GENERIC | — | — | Low | 1.1a |
-| Define `Chunk` dataclass | All fields from architecture §8.2 | `id = sha256(text + doc_id + position)` | RAGFlow | Low | 1.1a |
+| Define `Chunk` dataclass | Canonical immutable schema from ADR-0001 | Identity uses version, block-ordinal span, and text; headings/offsets excluded | RAGFlow | Low | 1.1a |
 | Define `ChunkType` enum | PASSAGE, SUMMARY, VERBATIM, QUESTION, CODE, CAPTION, EQUATION | — | — | Low | 1.1a |
 | Define `ChunkPosition` | page, section_index, chunk_index_in_section | — | — | Low | 1.1a |
 | Define `ScoredChunk` | `chunk: Chunk`, `score: float`, `retrieval_mode: str` | — | — | Low | 1.1e |
 | Define `MetadataFilter` | notebook_id, doc_type[], date_after, date_before, source_id[] | Pydantic model for validation | — | Low | 1.1a |
-| Define `Entity`, `GraphEdge` | name, type, confidence, doc_id; (source, target, relation, weight) | — | RAG-Anything | Low | 1.1a |
+| Define `Entity`, `GraphEdge` | Exact entity and relationship schemas from ADR-0001 | — | RAG-Anything | Low | 1.1a |
 | Define `Session`, `Turn`, `Citation` | Full structures from architecture §12 | — | Open Notebook | Low | 1.1a |
-| Define `Document` registry model | doc_id, versions[], current_hash, status enum, notebook_ids[] | Incremental indexing foundation | — | Low | 1.1a |
+| Define `Document` registry model | `document_id`, versions, current version/hash, status | Notebook membership belongs to `Source` | — | Low | 1.1a |
 | Define `Notebook`, `Source`, `Note`, `Insight` | As described in architecture §4.3 | — | Open Notebook | Low | 1.1a |
 
 **Module 1.2 — Interface Contracts**
@@ -221,7 +231,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 |---|---|---|---|---|
 | Define `ParserInterface` | Protocol with `supported_formats` + `parse()` | From architecture §8.1 | Low | 1.1 |
 | Define `ChunkerInterface` | Protocol with `supported_doc_types` + `chunk()` | From architecture §8.2 | Low | 1.1 |
-| Define `EmbeddingInterface` | Protocol with `model_name`, `dimensions`, `embed()`, `embed_batch()` | From architecture §8.3 | Low | 1.1 |
+| Define `EmbeddingProvider` | Protocol with `model_name`, `dimensions`, `embed()`, `embed_batch()` | Provider abstraction from ADR-0002 | Low | 1.1 |
 | Define `RetrieverInterface` | Protocol with `retrieval_mode` + `retrieve()` | From architecture §8.4 | Low | 1.1 |
 | Define `RerankerInterface` | Protocol with `rerank()` | From architecture §8.5 | Low | 1.1 |
 | Define `LLMInterface` | Protocol with `complete()` + `stream()` + structured output | From architecture §8.6 | Low | 1.1 |
@@ -234,7 +244,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 |---|---|---|---|---|
 | Implement `PluginRegistry` class | Dict of slots → implementations with priorities | Architecture §4.4 | Medium | 1.2 |
 | Implement slot registration | `register_parser()`, `register_chunker()`, etc. — one per interface | Conflict resolution by priority | Medium | 1.3a |
-| Implement plugin discovery | Scan `MNEMO_PLUGINS` env var path + entry points | `importlib.metadata.entry_points` | Medium | 1.3a |
+| Implement plugin discovery | Python entry points plus explicit module/package paths | `MNEMO_PLUGINS` retained only as deprecated Module 1.x compatibility | Medium | 1.3a |
 | Implement `load_plugins()` | Call each plugin's `register()` function | Catch per-plugin failures gracefully | Medium | 1.3b |
 | Write registry unit tests | Verify priority conflict resolution, missing slot fallback | — | Medium | 1.3c |
 
@@ -242,9 +252,9 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 | Task | Subtask | Notes | Difficulty | Dependency |
 |---|---|---|---|---|
-| Define `MnemoConfig` | Pydantic settings model with env var support | Covers storage URLs, LLM roles, plugins dir | Medium | 1.1 |
+| Define `MnemoConfig` | Frozen Pydantic v2 model with explicit TOML/environment loading | Exact five-section schema from ADR-0003 | Medium | 1.1 |
 | Define `LLMRoleConfig` | Per-role: provider, model, max_context_tokens | Validates on startup | Low | 1.4a |
-| Define `StorageConfig` | backend type, URLs, paths | Validated at startup | Low | 1.4a |
+| Define `StorageConfig` | Explicit filesystem, SQLite, Qdrant, and SurrealDB sections | No backend selector | Low | 1.4a |
 | Implement config loading | `MnemoConfig.from_file(path)` + `from_env()` | Prefer env over file | Low | 1.4a |
 
 **Module 1.5 — KnowledgeEngine Entrypoint**
@@ -252,8 +262,8 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Task | Subtask | Notes | Difficulty | Dependency |
 |---|---|---|---|---|
 | Implement `KnowledgeEngine` class | Top-level class from architecture §17.5 | Wraps all core modules | Medium | 1.2, 1.3, 1.4 |
-| Implement `initialize()` | Load config → load plugins → connect storage → verify LLM | Async, validates all deps | Medium | 1.5a |
-| Implement `health_check()` | Returns status of all storage backends and LLM connections | — | Low | 1.5a |
+| Implement `initialize()` | Discover plugins → freeze registry → structurally validate required providers | Async, atomic, no external I/O in Phase 1 | Medium | 1.5a |
+| Implement lifecycle and inspection | `shutdown()`, state, provider access, immutable capabilities | Health is lifecycle state only in Phase 1 | Low | 1.5a |
 
 ---
 
@@ -264,10 +274,10 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Task | Subtask | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|---|
 | Implement content-addressed blob store | SHA-256 based path: `ab/cdef.../raw.pdf` | Architecture §13 | — | Low | Phase 1 |
-| Implement `store_blob()` | Write bytes → return content hash | Atomic write via temp file | — | Low | 2.1a |
-| Implement `get_blob()` | Read bytes by hash | — | — | Low | 2.1a |
-| Implement `store_parsed_ir()` | Write `ParsedDocument` as JSON | Enables re-chunking without re-parsing | — | Low | 2.1a |
-| Implement `get_parsed_ir()` | Deserialize `ParsedDocument` from JSON | — | — | Low | 2.1d |
+| Implement `put_asset()` | Write bytes → return immutable `Asset` | Atomic write via temp file | — | Low | 2.1a |
+| Implement `get_asset()` | Read bytes by asset UUID | Content hash remains the integrity key | — | Low | 2.1a |
+| Implement `put_parsed_document()` | Write `ParsedDocument` as JSON by `version_id` | Enables re-chunking without re-parsing | — | Low | 2.1a |
+| Implement `get_parsed_document()` | Deserialize `ParsedDocument` by `version_id` | — | — | Low | 2.1d |
 
 **Module 2.2 — SQLite FTS5 Store**
 
@@ -277,7 +287,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Implement `SQLiteStore` | Implements `StorageInterface` (keyword-relevant methods) | `aiosqlite` for async | — | Medium | 2.2a |
 | Implement `upsert_chunks()` | Write to both chunks table and FTS5 index | Atomic transaction | — | Medium | 2.2b |
 | Implement `search_sparse()` | `SELECT ... MATCH ? ORDER BY rank` BM25 | FTS5 native ranking | — | Medium | 2.2b |
-| Implement `delete_chunks_for_doc()` | Delete from chunks + FTS5 + sessions | Cascade delete | — | Medium | 2.2b |
+| Implement `delete_chunks_for_document()` | Delete from chunks + FTS5 indexes | Document cascade is owned by the composite façade | — | Medium | 2.2b |
 | Implement session/citation tables | `sessions`, `turns`, `citations` schema | — | Open Notebook | Medium | 2.2b |
 | Implement embedding cache table | `sha256_text_model → vector BLOB` | Content-addressable | — | Low | 2.2b |
 | Write migration system | Simple versioned migration runner | No Alembic dependency for simplicity | — | Medium | 2.2a |
@@ -288,10 +298,10 @@ This is the most complex phase. It has six interdependent modules and integratio
 |---|---|---|---|---|---|
 | Implement `QdrantStore` | `qdrant-client` async, implements vector search methods | Architecture §13 | RAGFlow | Medium | Phase 1 |
 | Implement collection initialization | Create collection on first run, detect existing | Named vectors: body, title, question | — | Medium | 2.3a |
-| Implement `upsert_chunks()` | Write points with payload filters | Payload: notebook_id, doc_id, doc_type, chunk_type | — | Medium | 2.3a |
+| Implement `upsert_chunks()` | Write points with payload filters | Payload: notebook_id, document_id, version_id, doc_type, chunk_type | — | Medium | 2.3a |
 | Implement `search_dense()` | `qdrant_client.search()` with filter | Architecture §13 | — | Medium | 2.3b |
 | Implement memmap mode config | `on_disk: true` in collection params | For low-RAM deployments | — | Low | 2.3a |
-| Implement `delete_chunks_for_doc()` | Delete points by doc_id filter | — | — | Low | 2.3a |
+| Implement `delete_chunks_for_document()` | Delete points by `document_id` and optional `version_id` filter | — | — | Low | 2.3a |
 
 **Module 2.4 — SurrealDB Store**
 
@@ -324,7 +334,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 |---|---|---|---|---|---|
 | Implement `ParserRouter` | Maps file extension + MIME to `ParserInterface` impl | Checks registry first, built-ins second | — | Medium | Phase 2 |
 | Implement MIME detection | `python-magic` for reliable MIME | Extension fallback if magic fails | — | Low | 3.1a |
-| Implement deduplication gate | SHA-256 check before parsing | Return existing doc_id if already known | — | Low | 3.1a |
+| Implement deduplication gate | SHA-256 check before parsing | Return existing `document_id` if already known | — | Low | 3.1a |
 
 **Module 3.2 — PDF Parser**
 
@@ -399,7 +409,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Implement parent-child ID linking | After chunking, link chunk IDs to parent IDs | Must happen post-chunk, pre-index | High | 4.1a |
 | Implement sibling ID linking | Group chunks by section, set `sibling_ids` | Required for parent retrieval | High | 4.1a |
 | Enforce chunking invariants | Min 15 tokens, max 2× target. Drop short. Split long. | Architecture §10.9 | Medium | 4.1a |
-| Implement chunk ID computation | `sha256(text + doc_id + heading_path_str)` | Stable across re-ingestion | Low | 4.1a |
+| Implement chunk ID computation | SHA-256 of version, canonical block-ordinal span, and text | Heading path and offsets excluded | Low | 4.1a |
 
 **Module 4.2 — Generic Recursive Chunker**
 
@@ -1070,7 +1080,7 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 
 | Milestone | Description | Exit Criteria | Phase End |
 |---|---|---|---|
-| **M0 — Dev Rails** | All tooling, CI, Docker stack operational | `git clone && docker compose -f docker/docker-compose.dev.yml up` succeeds. CI passes. | Phase 0 |
+| **M0 — Dev Rails** | All tooling, CI, and Docker scaffolds operational | Python/frontend quality gates pass; distributions and Dockerfiles build; Compose files validate. | Phase 0 |
 | **M1 — Core Skeleton** | Interfaces and domain models compile | `from mnemo import KnowledgeEngine; engine = KnowledgeEngine(config)` works | Phase 1 |
 | **M2 — Storage Live** | All four backends operational | Write a chunk to all backends. Read it back. Delete it. All pass. | Phase 2 |
 | **M3 — First Parse** | PDF parser returns typed blocks | Parse a 100-page PDF → `ParsedDocument` with correct block count, headings preserved | Phase 3 |
@@ -1102,8 +1112,8 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 
 | Type | Tests |
 |---|---|
-| **Unit** | Linting passes on empty project |
-| **Integration** | `docker compose -f docker-compose.dev.yml up` → all containers healthy |
+| **Unit** | Python and frontend formatting, linting, typing, and tests pass |
+| **Integration** | All Compose configurations validate and all scaffold Dockerfiles build |
 | **Manual** | Developer can clone, `uv sync`, `pytest` in < 5 min |
 
 ---
@@ -1115,7 +1125,8 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 | **Unit** | Every dataclass instantiates with all required fields |
 | **Unit** | Every Protocol interface is implementable (create a trivial mock, verify type checker accepts it) |
 | **Unit** | Plugin registry: priority conflict resolution, missing implementation returns None |
-| **Unit** | `MnemoConfig.from_env()` reads all env vars with correct types |
+| **Unit** | Configuration defaults, TOML loading, environment precedence, validation, paths, immutability, and serialization |
+| **Unit** | KnowledgeEngine lifecycle, plugin discovery, provider resolution, rollback, and no-I/O boundary |
 
 ---
 
@@ -1286,6 +1297,10 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 
 ## 8. Project Structure
 
+This is the planned end-state tree. Phase 1 currently contains the domain,
+interface, registry, configuration, and engine files documented by changelogs
+0001–0005; later directories appear only in their designated phases.
+
 ```
 mnemo/
 │
@@ -1300,7 +1315,7 @@ mnemo/
 │   │   │   ├── __init__.py
 │   │   │   ├── parser.py
 │   │   │   ├── chunker.py
-│   │   │   ├── embedder.py
+│   │   │   ├── embedding.py
 │   │   │   ├── retriever.py
 │   │   │   ├── reranker.py
 │   │   │   ├── llm.py
@@ -1528,7 +1543,7 @@ EPIC 1: mnemo-core — Foundation
   FEATURE 1.2: Interface Contracts
     ISSUE: ParserInterface Protocol + acceptance test
     ISSUE: ChunkerInterface Protocol + acceptance test
-    ISSUE: EmbeddingInterface Protocol + acceptance test
+    ISSUE: EmbeddingProvider Protocol + acceptance test
     ISSUE: RetrieverInterface Protocol + acceptance test
     ISSUE: RerankerInterface Protocol + acceptance test
     ISSUE: LLMInterface Protocol + acceptance test
@@ -1546,7 +1561,7 @@ EPIC 1: mnemo-core — Foundation
     ISSUE: Config loading from file and env
 
   FEATURE 1.5: KnowledgeEngine
-    ISSUE: KnowledgeEngine class + initialize() + health_check()
+    ISSUE: KnowledgeEngine class + initialize() + shutdown() + lifecycle inspection
 
 EPIC 2: mnemo-core — Storage Layer
   FEATURE 2.1: Filesystem Blob Store
@@ -1831,63 +1846,65 @@ These rules are non-negotiable. Any violation is a bug, not a style preference.
 
 ### Phase 0 — Development Environment
 
-- □ `git init`, `.gitignore`, `LICENSE`
-- □ Monorepo directory structure created
-- □ Root `pyproject.toml` with `uv` workspace
-- □ `ruff.toml` configured
-- □ `mypy` strict mode configured
-- □ `pytest` + coverage configured
-- □ `pre-commit` hooks: ruff, mypy, trailing whitespace
-- □ React project initialized with Vite + TypeScript
-- □ `biome` configured
-- □ `vitest` configured
-- □ GitHub Actions CI workflow
-- □ `docker-compose.dev.yml` operational
-- □ `docker-compose.yml` operational
-- □ `docker-compose.minimal.yml` operational
-- □ **[MILESTONE M0] `git clone && docker compose up` → all containers healthy**
+- ☑ `git init`, `.gitignore`, `LICENSE`
+- ☑ Monorepo directory structure created
+- ☑ Root `pyproject.toml` with `uv` workspace
+- ☑ `ruff.toml` configured
+- ☑ `mypy` strict mode configured
+- ☑ `pytest` + coverage configured
+- ☑ `pre-commit` hooks: ruff, mypy, trailing whitespace
+- ☑ React project initialized with Vite + TypeScript
+- ☑ `biome` configured
+- ☑ `vitest` configured
+- ☑ GitHub Actions CI workflow
+- ☑ `docker-compose.dev.yml` validated
+- ☑ `docker-compose.yml` validated
+- ☑ `docker-compose.minimal.yml` validated
+- ☑ **[MILESTONE M0] Development rails validated; service implementations remain assigned to later phases**
 
 ### Phase 1 — mnemo-core Scaffolding
 
-- □ `Block` types (all 7 subtypes)
-- □ `ParsedDocument`, `DocumentMetadata`, `DocType`
-- □ `Chunk`, `ChunkType`, `ChunkPosition`
-- □ `ScoredChunk`, `MetadataFilter`
-- □ `Entity`, `GraphEdge`
-- □ `Session`, `Turn`, `Citation`
-- □ `Document` (registry model)
-- □ `Notebook`, `Source`, `Note`, `Insight`
-- □ `RetrievalPlan`, `SubQuery`
-- □ `ParserInterface` Protocol
-- □ `ChunkerInterface` Protocol
-- □ `EmbeddingInterface` Protocol
-- □ `RetrieverInterface` Protocol
-- □ `RerankerInterface` Protocol
-- □ `LLMInterface` Protocol
-- □ `StorageInterface` Protocol
-- □ Interface version markers
-- □ `PluginRegistry` class
-- □ Slot registration methods
-- □ Entry-point plugin discovery
-- □ Plugin conflict resolution
-- □ `MnemoConfig` Pydantic model
-- □ `LLMRoleConfig`
-- □ `StorageConfig`
-- □ Config loading (file + env)
-- □ `KnowledgeEngine` class
-- □ `initialize()` method
-- □ `health_check()` method
-- □ **[MILESTONE M1] `from mnemo import KnowledgeEngine` works**
+- ☑ `Block` types (all 7 subtypes)
+- ☑ `ParsedDocument`, `DocumentMetadata`, `DocType`
+- ☑ `Chunk`, `ChunkType`, `ChunkPosition`
+- ☑ `ScoredChunk`, `MetadataFilter`
+- ☑ `Entity`, `GraphEdge`
+- ☑ `Session`, `Turn`, `Citation`
+- ☑ `Document` (registry model)
+- ☑ `Notebook`, `Source`, `Note`, `Insight`
+- ☑ `ParserInterface` Protocol
+- ☑ `ChunkerInterface` Protocol
+- ☑ `EmbeddingProvider` Protocol
+- ☑ `RetrieverInterface` Protocol
+- ☑ `RerankerInterface` Protocol
+- ☑ `LLMInterface` Protocol
+- ☑ `StorageInterface` Protocol
+- ☑ Interface version markers
+- ☑ `PluginRegistry` class
+- ☑ Slot registration methods
+- ☑ Entry-point and configured-path plugin discovery
+- ☑ Plugin conflict resolution
+- ☑ `MnemoConfig` Pydantic model
+- ☑ `LLMRoleConfig`
+- ☑ `StorageConfig`
+- ☑ Config loading (TOML + environment)
+- ☑ `KnowledgeEngine` class
+- ☑ `initialize()` and `shutdown()` methods
+- ☑ Lifecycle-state capability inspection
+- ☑ **[MILESTONE M1] `from mnemo import KnowledgeEngine` works**
+
+`RetrievalPlan` and `SubQuery` remain assigned to Phase 6 query planning; they
+were intentionally excluded from Module 1.1 by ADR-0001.
 
 ### Phase 2 — Storage Layer
 
 - □ Content-addressed filesystem blob store
-- □ `store_blob()` + `get_blob()`
-- □ `store_parsed_ir()` + `get_parsed_ir()`
+- □ `put_asset()` + `get_asset()`
+- □ `put_parsed_document()` + `get_parsed_document()`
 - □ SQLite schema + migration runner
 - □ `SQLiteStore.upsert_chunks()` + FTS5 indexing
 - □ `SQLiteStore.search_sparse()` BM25
-- □ `SQLiteStore.delete_chunks_for_doc()`
+- □ `SQLiteStore.delete_chunks_for_document()`
 - □ Session/turn/citation tables
 - □ Embedding cache table
 - □ `QdrantStore` + collection initialization

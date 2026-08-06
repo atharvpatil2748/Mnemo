@@ -110,6 +110,11 @@ remain hashable even when their snapshots contain metadata.
 
 All models have a lossless JSON representation governed by these rules:
 
+These are persistence and transport serialization rules for later serializer
+and storage modules. Module 1.1 implements the immutable in-memory schemas and
+Pydantic serialization for `MetadataFilter`; it does not expose a generic
+dataclass serialization service or per-model serialization methods.
+
 - Field names in this ADR are the canonical serialized keys.
 - UUIDs, hashes, dates, timestamps, enums, tuples, and mappings serialize using
   the representations in this section.

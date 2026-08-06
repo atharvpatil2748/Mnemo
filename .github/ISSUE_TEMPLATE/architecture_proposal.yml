@@ -1,0 +1,29 @@
+name: Architecture proposal
+description: Propose a reviewed change to a frozen contract or architectural boundary.
+title: "architecture: "
+labels: [architecture]
+body:
+  - type: input
+    id: decision
+    attributes:
+      label: Affected architecture section or ADR
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed decision
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility and migration impact
+    validations:
+      required: true

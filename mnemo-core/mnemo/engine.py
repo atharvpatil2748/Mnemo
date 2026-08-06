@@ -12,6 +12,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Literal
 
+from mnemo._version import __version__
 from mnemo.config import MnemoConfig
 from mnemo.interfaces import (
     DependencyUnavailableError,
@@ -110,8 +111,6 @@ class KnowledgeEngine:
     @property
     def version(self) -> str:
         """Return the Mnemo package version."""
-        from mnemo import __version__
-
         return __version__
 
     @property

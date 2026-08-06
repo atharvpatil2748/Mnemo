@@ -19,10 +19,10 @@ validation, path resolution, directory preparation, and creation of the frozen
 runtime configuration snapshot. Later modules consume that snapshot and do not
 read configuration sources directly.
 
-Module 1.3 is intentionally unchanged. Its temporary direct support for the
-legacy `MNEMO_PLUGINS` variable remains until Module 1.5 becomes the first
-composition point and injects the resolved plugin configuration into the
-registry.
+Module 1.3 retains direct support for the legacy `MNEMO_PLUGINS` variable only
+for standalone Module 1.x registry compatibility. Module 1.5 is the composition
+point and always passes the resolved `plugins.directory` explicitly, so the
+engine never asks the registry to read environment configuration.
 
 ## 2. Decision goals
 
@@ -330,8 +330,9 @@ flowchart TD
 3. **Plain-text credentials.** V1 models backend credentials as configuration
    strings because secret management is outside this module. Diagnostics must
    account for that in the later server/security phases.
-4. **Temporary registry split.** Module 1.3 continues reading its legacy
-   environment variable until Module 1.5 supplies the integration boundary.
+4. **Legacy registry entrypoint.** Standalone registry callers may still use
+   the deprecated `MNEMO_PLUGINS` path during Module 1.x. KnowledgeEngine uses
+   only the resolved configuration snapshot.
 5. **Strict TOML evolution.** Reserved future sections fail under V1. Operators
    must upgrade Mnemo before using configuration from a later schema.
 

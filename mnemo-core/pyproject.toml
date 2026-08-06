@@ -1,9 +1,17 @@
 [project]
 name = "mnemo-core"
-version = "0.0.0"
+version = "0.5.1"
 description = "Core library for the Mnemo local knowledge engine."
+readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.12"
 dependencies = ["packaging>=24,<27", "pydantic>=2.11,<3"]
+
+[project.urls]
+Homepage = "https://github.com/atharvpatil2748/Mnemo"
+Documentation = "https://github.com/atharvpatil2748/Mnemo/tree/main/docs"
+Repository = "https://github.com/atharvpatil2748/Mnemo"
+Issues = "https://github.com/atharvpatil2748/Mnemo/issues"
 
 [build-system]
 requires = ["hatchling>=1.27,<2"]

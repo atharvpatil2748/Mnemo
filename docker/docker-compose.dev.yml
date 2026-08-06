@@ -11,8 +11,8 @@ services:
       surrealdb:
         condition: service_healthy
     environment:
-      MNEMO_QDRANT_URL: http://qdrant:6333
-      MNEMO_SURREALDB_URL: http://surrealdb:8000
+      MNEMO_STORAGE_QDRANT_URL: http://qdrant:6333
+      MNEMO_STORAGE_SURREALDB_URL: http://surrealdb:8000
     develop:
       watch:
         - action: sync+restart
@@ -51,7 +51,7 @@ services:
 
   surrealdb:
     image: surrealdb/surrealdb:v3.2.4
-    # TODO(Phase 13): initialize the volume with nonroot ownership and remove this override.
+    # Phase 13 hardening: initialize the volume with nonroot ownership and remove this override.
     user: root
     working_dir: /data
     command: start --log info --user root --pass root

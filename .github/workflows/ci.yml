@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -26,6 +27,8 @@ jobs:
       - run: uv run ruff check .
       - run: uv run mypy mnemo-core/mnemo mnemo-server/mnemo_server
       - run: uv run pytest
+      - run: uv build --package mnemo-core
+      - run: uv build --package mnemo-server
 
   frontend:
     name: Frontend quality

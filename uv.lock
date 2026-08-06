@@ -266,7 +266,7 @@ wheels = [
 
 [[package]]
 name = "mnemo-core"
-version = "0.0.0"
+version = "0.5.1"
 source = { editable = "mnemo-core" }
 dependencies = [
     { name = "packaging" },
@@ -281,7 +281,7 @@ requires-dist = [
 
 [[package]]
 name = "mnemo-server"
-version = "0.0.0"
+version = "0.5.1"
 source = { editable = "mnemo-server" }
 dependencies = [
     { name = "mnemo-core" },
@@ -292,7 +292,7 @@ requires-dist = [{ name = "mnemo-core", editable = "mnemo-core" }]
 
 [[package]]
 name = "mnemo-workspace"
-version = "0.0.0"
+version = "0.5.1"
 source = { virtual = "." }
 
 [package.dev-dependencies]

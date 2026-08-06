@@ -1,7 +1,6 @@
 """Mnemo core package."""
 
-__version__ = "0.0.0"
-
+from ._version import __version__
 from .config import (
     EmbeddingConfig,
     FilesystemStorageConfig,

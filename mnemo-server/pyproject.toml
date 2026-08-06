@@ -1,9 +1,17 @@
 [project]
 name = "mnemo-server"
-version = "0.0.0"
+version = "0.5.1"
 description = "Transport adapters for the Mnemo local knowledge engine."
+readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.12"
 dependencies = ["mnemo-core"]
+
+[project.urls]
+Homepage = "https://github.com/atharvpatil2748/Mnemo"
+Documentation = "https://github.com/atharvpatil2748/Mnemo/tree/main/docs"
+Repository = "https://github.com/atharvpatil2748/Mnemo"
+Issues = "https://github.com/atharvpatil2748/Mnemo/issues"
 
 [build-system]
 requires = ["hatchling>=1.27,<2"]
