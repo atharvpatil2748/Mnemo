@@ -33,7 +33,7 @@ def test_release_versions_are_synchronized() -> None:
         mnemo.__version__,
         mnemo_server.__version__,
     }
-    assert versions == {"0.6.0"}
+    assert versions == {"0.7.0"}
 
 
 def test_top_level_core_exports_are_intentional() -> None:
@@ -82,7 +82,6 @@ def test_core_has_no_infrastructure_or_reverse_layer_imports() -> None:
         "fastapi",
         "httpx",
         "mnemo_server",
-        "qdrant_client",
         "requests",
         "starlette",
         "surrealdb",

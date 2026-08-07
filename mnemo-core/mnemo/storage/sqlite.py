@@ -180,37 +180,37 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_notes USING fts5(
 
 -- Triggers for FTS maintenance (chunks)
 CREATE TRIGGER IF NOT EXISTS chunks_ai AFTER INSERT ON chunks BEGIN
-  INSERT INTO fts_chunks(rowid, text, heading_path, chunk_type, document_id) 
+  INSERT INTO fts_chunks(rowid, text, heading_path, chunk_type, document_id)
   VALUES (new.rowid, new.text, new.heading_path, new.chunk_type, new.document_id);
 END;
 
 CREATE TRIGGER IF NOT EXISTS chunks_ad AFTER DELETE ON chunks BEGIN
-  INSERT INTO fts_chunks(fts_chunks, rowid, text, heading_path, chunk_type, document_id) 
+  INSERT INTO fts_chunks(fts_chunks, rowid, text, heading_path, chunk_type, document_id)
   VALUES ('delete', old.rowid, old.text, old.heading_path, old.chunk_type, old.document_id);
 END;
 
 CREATE TRIGGER IF NOT EXISTS chunks_au AFTER UPDATE ON chunks BEGIN
-  INSERT INTO fts_chunks(fts_chunks, rowid, text, heading_path, chunk_type, document_id) 
+  INSERT INTO fts_chunks(fts_chunks, rowid, text, heading_path, chunk_type, document_id)
   VALUES ('delete', old.rowid, old.text, old.heading_path, old.chunk_type, old.document_id);
-  INSERT INTO fts_chunks(rowid, text, heading_path, chunk_type, document_id) 
+  INSERT INTO fts_chunks(rowid, text, heading_path, chunk_type, document_id)
   VALUES (new.rowid, new.text, new.heading_path, new.chunk_type, new.document_id);
 END;
 
 -- Triggers for FTS maintenance (notes)
 CREATE TRIGGER IF NOT EXISTS notes_ai AFTER INSERT ON notes BEGIN
-  INSERT INTO fts_notes(rowid, title, content, notebook_id) 
+  INSERT INTO fts_notes(rowid, title, content, notebook_id)
   VALUES (new.rowid, new.title, new.content, new.notebook_id);
 END;
 
 CREATE TRIGGER IF NOT EXISTS notes_ad AFTER DELETE ON notes BEGIN
-  INSERT INTO fts_notes(fts_notes, rowid, title, content, notebook_id) 
+  INSERT INTO fts_notes(fts_notes, rowid, title, content, notebook_id)
   VALUES ('delete', old.rowid, old.title, old.content, old.notebook_id);
 END;
 
 CREATE TRIGGER IF NOT EXISTS notes_au AFTER UPDATE ON notes BEGIN
-  INSERT INTO fts_notes(fts_notes, rowid, title, content, notebook_id) 
+  INSERT INTO fts_notes(fts_notes, rowid, title, content, notebook_id)
   VALUES ('delete', old.rowid, old.title, old.content, old.notebook_id);
-  INSERT INTO fts_notes(rowid, title, content, notebook_id) 
+  INSERT INTO fts_notes(rowid, title, content, notebook_id)
   VALUES (new.rowid, new.title, new.content, new.notebook_id);
 END;
 
@@ -235,7 +235,7 @@ def _dt_to_iso(dt: datetime) -> str:
 
 
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+
 
 @asynccontextmanager
 async def _transaction(db: aiosqlite.Connection) -> AsyncIterator[None]:

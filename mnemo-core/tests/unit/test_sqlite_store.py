@@ -11,7 +11,7 @@ Coverage targets:
 
 import asyncio
 from collections.abc import Coroutine
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -83,7 +83,7 @@ def dt() -> datetime:
     return datetime(2026, 1, 1, tzinfo=UTC)
 
 
-def _run(coro: Coroutine[Any, Any, T]) -> T:
+def _run[T](coro: Coroutine[Any, Any, T]) -> T:
     return asyncio.run(coro)
 
 

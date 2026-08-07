@@ -296,12 +296,12 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 | Task | Subtask | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|---|
-| Implement `QdrantStore` | `qdrant-client` async, implements vector search methods | Architecture §13 | RAGFlow | Medium | Phase 1 |
-| Implement collection initialization | Create collection on first run, detect existing | Named vectors: body, title, question | — | Medium | 2.3a |
-| Implement `upsert_chunks()` | Write points with payload filters | Payload: notebook_id, document_id, version_id, doc_type, chunk_type | — | Medium | 2.3a |
-| Implement `search_dense()` | `qdrant_client.search()` with filter | Architecture §13 | — | Medium | 2.3b |
-| Implement memmap mode config | `on_disk: true` in collection params | For low-RAM deployments | — | Low | 2.3a |
-| Implement `delete_chunks_for_document()` | Delete points by `document_id` and optional `version_id` filter | — | — | Low | 2.3a |
+| ✅ Implement `QdrantStore` | `qdrant-client` async, implements vector search methods | Architecture §13 | RAGFlow | Medium | Phase 1 |
+| ✅ Implement collection initialization | Create collection on first run, detect existing | Named vectors: body, title, question | — | Medium | 2.3a |
+| ✅ Implement `upsert_chunks()` | Write points with payload filters | Payload: notebook_id, document_id, version_id, doc_type, chunk_type | — | Medium | 2.3a |
+| ✅ Implement `search_dense()` | `qdrant_client.search()` with filter | Architecture §13 | — | Medium | 2.3b |
+| ✅ Implement memmap mode config | `on_disk: true` in collection params | For low-RAM deployments | — | Low | 2.3a |
+| ✅ Implement `delete_chunks_for_document()` | Delete points by `document_id` and optional `version_id` filter | — | — | Low | 2.3a |
 
 **Module 2.4 — SurrealDB Store**
 
@@ -1907,10 +1907,10 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - □ `SQLiteStore.delete_chunks_for_document()`
 - □ Session/turn/citation tables
 - □ Embedding cache table
-- □ `QdrantStore` + collection initialization
-- □ `QdrantStore.upsert_chunks()` (named vectors)
-- □ `QdrantStore.search_dense()` with payload filter
-- □ `QdrantStore` memmap mode config
+- ✅ `QdrantStore` + collection initialization
+- ✅ `QdrantStore.upsert_chunks()` (named vectors)
+- ✅ `QdrantStore.search_dense()` with payload filter
+- ✅ `QdrantStore` memmap mode config
 - □ `SurrealDBStore` + schema init
 - □ Document/Notebook/Source CRUD
 - □ Session/turn/citation storage

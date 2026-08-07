@@ -124,7 +124,7 @@ def minimal_parsed_document(
 # ---------------------------------------------------------------------------
 
 
-def _run(coro: Coroutine[Any, Any, T]) -> T:
+def _run[T](coro: Coroutine[Any, Any, T]) -> T:
     """Run a coroutine synchronously in the current event loop."""
     import asyncio
 

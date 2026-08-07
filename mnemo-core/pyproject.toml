@@ -1,6 +1,6 @@
 [project]
 name = "mnemo-core"
-version = "0.6.0"
+version = "0.7.0"
 description = "Core library for the Mnemo local knowledge engine."
 readme = "README.md"
 license = "Apache-2.0"
@@ -9,6 +9,7 @@ dependencies = [
     "aiosqlite>=0.22.1",
     "packaging>=24,<27",
     "pydantic>=2.11,<3",
+    "qdrant-client>=1.9.1",
 ]
 
 [project.urls]

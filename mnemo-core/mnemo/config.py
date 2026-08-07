@@ -112,6 +112,8 @@ class QdrantStorageConfig(_FrozenConfigModel):
     enabled: StrictBool = True
     url: HttpUrl = HttpUrl("http://localhost:6333")
     api_key: NonEmptyString | None = None
+    collection_name: NonEmptyString = "mnemo_chunks"
+    on_disk: StrictBool = False
 
 
 class SurrealDBStorageConfig(_FrozenConfigModel):
@@ -207,6 +209,8 @@ _ENVIRONMENT_FIELDS: Final[dict[str, tuple[_EnvironmentPath, str]]] = {
     "MNEMO_STORAGE_QDRANT_ENABLED": (("storage", "qdrant", "enabled"), "bool"),
     "MNEMO_STORAGE_QDRANT_URL": (("storage", "qdrant", "url"), "string"),
     "MNEMO_STORAGE_QDRANT_API_KEY": (("storage", "qdrant", "api_key"), "optional"),
+    "MNEMO_STORAGE_QDRANT_COLLECTION": (("storage", "qdrant", "collection_name"), "string"),
+    "MNEMO_STORAGE_QDRANT_ON_DISK": (("storage", "qdrant", "on_disk"), "bool"),
     "MNEMO_STORAGE_SURREALDB_ENABLED": (("storage", "surrealdb", "enabled"), "bool"),
     "MNEMO_STORAGE_SURREALDB_URL": (("storage", "surrealdb", "url"), "string"),
     "MNEMO_STORAGE_SURREALDB_USERNAME": (("storage", "surrealdb", "username"), "string"),
