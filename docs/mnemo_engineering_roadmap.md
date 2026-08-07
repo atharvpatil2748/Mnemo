@@ -1898,9 +1898,9 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 
 ### Phase 2 — Storage Layer
 
-- □ Content-addressed filesystem blob store
-- □ `put_asset()` + `get_asset()`
-- □ `put_parsed_document()` + `get_parsed_document()`
+- ☑ Content-addressed filesystem blob store
+- ☑ `put_asset()` + `get_asset()`
+- ☑ `put_parsed_document()` + `get_parsed_document()`
 - □ SQLite schema + migration runner
 - □ `SQLiteStore.upsert_chunks()` + FTS5 indexing
 - □ `SQLiteStore.search_sparse()` BM25
