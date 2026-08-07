@@ -189,7 +189,7 @@ def test_initialize_resolves_freezes_and_exposes_runtime(
     assert engine.embedding_provider is providers.embedding
     assert engine.reranker is providers.reranker
     for role in ("planner", "synthesizer", "extractor", "classifier"):
-        assert engine.llm(role) is providers.llm  # type: ignore[arg-type]
+        assert engine.llm(role) is providers.llm
     capabilities = engine.capabilities()
     assert isinstance(capabilities, MappingProxyType)
     assert tuple(capabilities) == (

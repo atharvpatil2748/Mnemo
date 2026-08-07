@@ -25,8 +25,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Coroutine
 from datetime import date
 from pathlib import Path
+from typing import Any, TypeVar
+
+T = TypeVar("T")
 from uuid import UUID, uuid4
 
 import pytest
@@ -119,10 +123,6 @@ def minimal_parsed_document(
 # Helper
 # ---------------------------------------------------------------------------
 
-
-from typing import Any, Coroutine, TypeVar
-
-T = TypeVar("T")
 
 def _run(coro: Coroutine[Any, Any, T]) -> T:
     """Run a coroutine synchronously in the current event loop."""
