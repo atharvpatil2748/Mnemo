@@ -4,10 +4,10 @@ Mnemo is a local-first, open-source knowledge engine. It is designed to ingest,
 structure, index, retrieve, and cite knowledge from local documents while
 remaining independent of agents, tool execution, and transport frameworks.
 
-> **Project status:** Phase 0, Phase 1, and parts of Phase 2 are complete. The repository currently
+> **Project status:** Phase 0, Phase 1, and Phase 2 are complete. The repository currently
 > provides the typed domain model, core interface contracts, plugin registry,
 > immutable configuration system, `KnowledgeEngine` composition root, and the
-> Filesystem, SQLite, and Qdrant storage backends.
+> Filesystem, SQLite, Qdrant, and SurrealDB backends behind `CompositeStorage`.
 > Parsing, retrieval, REST, MCP, and UI product functionality belong to
 > later roadmap phases and are not operational yet.
 

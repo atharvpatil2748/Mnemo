@@ -6,8 +6,9 @@
 **Project Type:** Standalone Open-Source Software  
 **License Target:** Apache 2.0  
 
-**Implementation baseline:** Phase 0 and Phase 1 are complete at version 0.5.1.
-Phase 2 has not started. Accepted ADRs refine the public schemas and contracts
+**Implementation baseline:** Phase 0, Phase 1, and Phase 2 are complete at
+version 0.9.0. The four storage backends are composed behind the atomic
+`StorageInterface` facade. Accepted ADRs refine public schemas and contracts
 where this living document previously used illustrative shorthand.
 
 > *"A knowledge engine. Not an agent. The difference is everything."*

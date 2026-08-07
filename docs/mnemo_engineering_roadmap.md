@@ -5,9 +5,9 @@
 **Status:** Living Implementation Tracker  
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
-**Current baseline:** Phase 0 and Phase 1 are complete at version 0.5.1.
-Phase 2 is the next phase and has not started. Completed checklist items are
-marked below; later-phase trees and tasks describe planned work.
+**Current baseline:** Phase 0, Phase 1, and Phase 2 are complete at version
+0.9.0. Phase 3 is the next phase and has not started. Completed checklist
+items are marked below; later-phase trees and tasks describe planned work.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
 
@@ -74,6 +74,7 @@ This phase is the most critical architectural phase. Every subsequent phase impl
 
 ### Phase 2 — Storage Layer
 **Duration:** Weeks 4–6  
+**Status:** Complete
 **Goal:** All four storage backends (Qdrant, SQLite FTS5, SurrealDB, Filesystem) are implemented behind `StorageInterface`. CRUD operations, schema initialization, and health checks pass.
 
 Storage must precede everything else in mnemo-core because every other module writes to or reads from it. Building parsers without a place to store results is a dead-end.
@@ -273,24 +274,24 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 | Task | Subtask | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|---|
-| Implement content-addressed blob store | SHA-256 based path: `ab/cdef.../raw.pdf` | Architecture §13 | — | Low | Phase 1 |
-| Implement `put_asset()` | Write bytes → return immutable `Asset` | Atomic write via temp file | — | Low | 2.1a |
-| Implement `get_asset()` | Read bytes by asset UUID | Content hash remains the integrity key | — | Low | 2.1a |
-| Implement `put_parsed_document()` | Write `ParsedDocument` as JSON by `version_id` | Enables re-chunking without re-parsing | — | Low | 2.1a |
-| Implement `get_parsed_document()` | Deserialize `ParsedDocument` by `version_id` | — | — | Low | 2.1d |
+| ✅ Implement content-addressed blob store | SHA-256 based path: `ab/cdef.../raw.pdf` | Architecture §13 | — | Low | Phase 1 |
+| ✅ Implement `put_asset()` | Write bytes → return immutable `Asset` | Atomic write via temp file | — | Low | 2.1a |
+| ✅ Implement `get_asset()` | Read bytes by asset UUID | Content hash remains the integrity key | — | Low | 2.1a |
+| ✅ Implement `put_parsed_document()` | Write `ParsedDocument` as JSON by `version_id` | Enables re-chunking without re-parsing | — | Low | 2.1a |
+| ✅ Implement `get_parsed_document()` | Deserialize `ParsedDocument` by `version_id` | — | — | Low | 2.1d |
 
 **Module 2.2 — SQLite FTS5 Store**
 
 | Task | Subtask | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|---|
-| Design schema | chunks table, fts5 virtual table, documents table | Single `.db` file | — | Low | Phase 1 |
-| Implement `SQLiteStore` | Implements `StorageInterface` (keyword-relevant methods) | `aiosqlite` for async | — | Medium | 2.2a |
-| Implement `upsert_chunks()` | Write to both chunks table and FTS5 index | Atomic transaction | — | Medium | 2.2b |
-| Implement `search_sparse()` | `SELECT ... MATCH ? ORDER BY rank` BM25 | FTS5 native ranking | — | Medium | 2.2b |
-| Implement `delete_chunks_for_document()` | Delete from chunks + FTS5 indexes | Document cascade is owned by the composite façade | — | Medium | 2.2b |
-| Implement session/citation tables | `sessions`, `turns`, `citations` schema | — | Open Notebook | Medium | 2.2b |
-| Implement embedding cache table | `sha256_text_model → vector BLOB` | Content-addressable | — | Low | 2.2b |
-| Write migration system | Simple versioned migration runner | No Alembic dependency for simplicity | — | Medium | 2.2a |
+| ✅ Design schema | chunks table, fts5 virtual table, documents table | Single `.db` file | — | Low | Phase 1 |
+| ✅ Implement `SQLiteStore` | Implements `StorageInterface` (keyword-relevant methods) | `aiosqlite` for async | — | Medium | 2.2a |
+| ✅ Implement `upsert_chunks()` | Write to both chunks table and FTS5 index | Atomic transaction | — | Medium | 2.2b |
+| ✅ Implement `search_sparse()` | `SELECT ... MATCH ? ORDER BY rank` BM25 | FTS5 native ranking | — | Medium | 2.2b |
+| ✅ Implement `delete_chunks_for_document()` | Delete from chunks + FTS5 indexes | Document cascade is owned by the composite façade | — | Medium | 2.2b |
+| ✅ Implement session/citation tables | `sessions`, `turns`, `citations` schema | — | Open Notebook | Medium | 2.2b |
+| ✅ Implement embedding cache table | `sha256_text_model → vector BLOB` | Content-addressable | — | Low | 2.2b |
+| ✅ Write migration system | Simple versioned migration runner | No Alembic dependency for simplicity | — | Medium | 2.2a |
 
 **Module 2.3 — Qdrant Vector Store**
 
@@ -320,9 +321,9 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 | Task | Subtask | Notes | Difficulty | Dependency |
 |---|---|---|---|---|
-| Implement `CompositeStorage` | Routes method calls to correct backend | Single `StorageInterface` over all 4 backends | High | 2.1–2.4 |
-| Implement atomic upsert | Write to Qdrant + SQLite + SurrealDB + Filesystem as one logical operation | Rollback on partial failure | High | 2.5a |
-| Implement rollback logic | On any write failure, undo all partial writes | — | High | 2.5a |
+| ✅ Implement `CompositeStorage` | Routes method calls to correct backend | Single `StorageInterface` over all 4 backends | High | 2.1–2.4 |
+| ✅ Implement atomic upsert | Write chunks to SQLite + Qdrant as one logical operation; route blob and graph records to their owning backends | Rollback on partial chunk-write failure | High | 2.5a |
+| ✅ Implement rollback logic | On a partial chunk-write failure, undo completed writes and surface compensation failures | — | High | 2.5a |
 
 ---
 
@@ -1901,24 +1902,24 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ Content-addressed filesystem blob store
 - ☑ `put_asset()` + `get_asset()`
 - ☑ `put_parsed_document()` + `get_parsed_document()`
-- □ SQLite schema + migration runner
-- □ `SQLiteStore.upsert_chunks()` + FTS5 indexing
-- □ `SQLiteStore.search_sparse()` BM25
-- □ `SQLiteStore.delete_chunks_for_document()`
-- □ Session/turn/citation tables
-- □ Embedding cache table
+- ✅ SQLite schema + migration runner
+- ✅ `SQLiteStore.upsert_chunks()` + FTS5 indexing
+- ✅ `SQLiteStore.search_sparse()` BM25
+- ✅ `SQLiteStore.delete_chunks_for_document()`
+- ✅ Session/turn/citation tables
+- ✅ Embedding cache table
 - ✅ `QdrantStore` + collection initialization
 - ✅ `QdrantStore.upsert_chunks()` (named vectors)
 - ✅ `QdrantStore.search_dense()` with payload filter
 - ✅ `QdrantStore` memmap mode config
-- □ `SurrealDBStore` + schema init
-- □ Document/Notebook/Source CRUD
-- □ Session/turn/citation storage
-- □ Entity/graph storage + traversal
-- □ Job queue
-- □ `CompositeStorage` routing
-- □ Atomic upsert with rollback
-- □ **[MILESTONE M2] Write/read/delete chunk across all backends**
+- ✅ `SurrealDBStore` + schema init
+- ✅ Document/Notebook/Source CRUD
+- ✅ Session/turn/citation storage
+- ✅ Entity/graph storage + traversal
+- ✅ Job queue
+- ✅ `CompositeStorage` routing
+- ✅ Atomic chunk upsert with rollback
+- ✅ **[MILESTONE M2] Route blob, metadata, graph, keyword, and vector operations through one facade**
 
 ### Phase 3 — Parser System
 
