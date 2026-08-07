@@ -1,0 +1,378 @@
+"""Atomic storage facade composing disparate backends."""
+
+import logging
+from collections.abc import Awaitable, Callable
+from uuid import UUID
+
+from mnemo.interfaces.errors import ContractValidationError, StorageError
+from mnemo.interfaces.types import (
+    EmbeddingVector,
+    HealthStatus,
+    Page,
+    StorageCapabilities,
+)
+from mnemo.models import (
+    Asset,
+    Chunk,
+    Citation,
+    Document,
+    DocumentStatus,
+    Entity,
+    FrozenMetadata,
+    GraphEdge,
+    Insight,
+    MetadataFilter,
+    Note,
+    Notebook,
+    ParsedDocument,
+    ScoredChunk,
+    Session,
+    Source,
+    Turn,
+)
+
+from .filesystem import FilesystemBlobStore
+from .qdrant import QdrantStore
+from .sqlite import SQLiteStore
+from .surrealdb import SurrealDBStore
+
+logger = logging.getLogger(__name__)
+
+
+class _Compensator:
+    """Records and executes compensating actions on failure."""
+
+    def __init__(self) -> None:
+        self._actions: list[Callable[[], Awaitable[None]]] = []
+
+    def add(self, action: Callable[[], Awaitable[None]]) -> None:
+        self._actions.append(action)
+
+    async def rollback(self) -> tuple[Exception, ...]:
+        """Execute compensating actions in reverse order and report failures."""
+        failures: list[Exception] = []
+        for action in reversed(self._actions):
+            try:
+                await action()
+            except Exception as exc:
+                failures.append(exc)
+                logger.critical("Rollback action failed, consistency compromised: %s", exc)
+        return tuple(failures)
+
+
+class CompositeStorage:
+    """The central storage router coordinating all backends."""
+
+    def __init__(
+        self,
+        filesystem: FilesystemBlobStore,
+        sqlite: SQLiteStore,
+        qdrant: QdrantStore,
+        surrealdb: SurrealDBStore,
+    ) -> None:
+        self._fs = filesystem
+        self._sql = sqlite
+        self._qdr = qdrant
+        self._sur = surrealdb
+
+    async def open(self) -> None:
+        try:
+            await self._fs.open()
+            await self._sql.open()
+            await self._qdr.open()
+            await self._sur.open()
+        except Exception as e:
+            logger.error("Failed to open CompositeStorage backends; closing initialized resources")
+            # Ensure partial initialization is closed
+            await self.close()
+            if isinstance(e, StorageError):
+                raise
+            raise StorageError("Failed to open composite storage") from e
+
+    async def close(self) -> None:
+        errors = []
+        for backend in (self._fs, self._sql, self._qdr, self._sur):
+            try:
+                await backend.close()
+            except Exception as e:
+                errors.append(e)
+        if errors:
+            logger.error("Errors occurred during close: %s", errors)
+
+    async def health_check(self) -> tuple[HealthStatus, ...]:
+        results: list[HealthStatus] = []
+        for backend in (self._fs, self._sql, self._qdr, self._sur):
+            results.extend(await backend.health_check())
+        return tuple(results)
+
+    def capabilities(self) -> StorageCapabilities:
+        fs_cap = self._fs.capabilities()
+        sql_cap = self._sql.capabilities()
+        qdr_cap = self._qdr.capabilities()
+        sur_cap = self._sur.capabilities()
+
+        return StorageCapabilities(
+            supports_blobs=fs_cap.supports_blobs or sql_cap.supports_blobs,
+            supports_dense_search=qdr_cap.supports_dense_search,
+            supports_sparse_search=sql_cap.supports_sparse_search,
+            supports_metadata=sql_cap.supports_metadata,
+            supports_graph=sur_cap.supports_graph,
+            supports_transactions=sql_cap.supports_transactions,
+            supports_health_checks=True,
+        )
+
+    # -------------------------------------------------------------------------
+    # Filesystem operations
+    # -------------------------------------------------------------------------
+    async def put_asset(self, data: bytes, mime_type: str, metadata: FrozenMetadata) -> Asset:
+        try:
+            return await self._fs.put_asset(data, mime_type, metadata)
+        except Exception as e:
+            if isinstance(e, StorageError):
+                raise
+            raise StorageError("Failed to put asset") from e
+
+    async def get_asset(self, asset_id: UUID) -> bytes | None:
+        return await self._fs.get_asset(asset_id)
+
+    async def delete_asset(self, asset_id: UUID) -> bool:
+        return await self._fs.delete_asset(asset_id)
+
+    async def put_parsed_document(self, version_id: UUID, document: ParsedDocument) -> None:
+        return await self._fs.put_parsed_document(version_id, document)
+
+    async def get_parsed_document(self, version_id: UUID) -> ParsedDocument | None:
+        return await self._fs.get_parsed_document(version_id)
+
+    async def contains_hash(self, content_hash: str) -> bool:
+        return await self._fs.contains_hash(content_hash)
+
+    # -------------------------------------------------------------------------
+    # SQLite operations
+    # -------------------------------------------------------------------------
+    async def upsert_document(self, document: Document) -> None:
+        return await self._sql.upsert_document(document)
+
+    async def get_document(self, document_id: UUID) -> Document | None:
+        return await self._sql.get_document(document_id)
+
+    async def list_documents(
+        self,
+        status: DocumentStatus | None,
+        limit: int,
+        cursor: str | None,
+    ) -> Page[Document]:
+        return await self._sql.list_documents(status, limit, cursor)
+
+    async def delete_document(
+        self,
+        document_id: UUID,
+        expected_version_id: UUID | None,
+    ) -> bool:
+        return await self._sql.delete_document(document_id, expected_version_id)
+
+    async def upsert_notebook(self, notebook: Notebook) -> None:
+        return await self._sql.upsert_notebook(notebook)
+
+    async def get_notebook(self, notebook_id: UUID) -> Notebook | None:
+        return await self._sql.get_notebook(notebook_id)
+
+    async def delete_notebook(self, notebook_id: UUID) -> bool:
+        return await self._sql.delete_notebook(notebook_id)
+
+    async def list_notebooks(self, limit: int, cursor: str | None) -> Page[Notebook]:
+        return await self._sql.list_notebooks(limit, cursor)
+
+    async def upsert_source(self, source: Source) -> None:
+        return await self._sql.upsert_source(source)
+
+    async def get_source(self, source_id: UUID) -> Source | None:
+        return await self._sql.get_source(source_id)
+
+    async def delete_source(self, source_id: UUID) -> bool:
+        return await self._sql.delete_source(source_id)
+
+    async def list_sources(
+        self,
+        notebook_id: UUID,
+        limit: int,
+        cursor: str | None,
+    ) -> Page[Source]:
+        return await self._sql.list_sources(notebook_id, limit, cursor)
+
+    async def upsert_note(self, note: Note) -> None:
+        return await self._sql.upsert_note(note)
+
+    async def get_note(self, note_id: UUID) -> Note | None:
+        return await self._sql.get_note(note_id)
+
+    async def delete_note(self, note_id: UUID) -> bool:
+        return await self._sql.delete_note(note_id)
+
+    async def list_notes(
+        self,
+        notebook_id: UUID,
+        limit: int,
+        cursor: str | None,
+    ) -> Page[Note]:
+        return await self._sql.list_notes(notebook_id, limit, cursor)
+
+    async def upsert_insight(self, insight: Insight) -> None:
+        return await self._sql.upsert_insight(insight)
+
+    async def get_insight(self, insight_id: UUID) -> Insight | None:
+        return await self._sql.get_insight(insight_id)
+
+    async def delete_insight(self, insight_id: UUID) -> bool:
+        return await self._sql.delete_insight(insight_id)
+
+    async def list_insights(
+        self,
+        notebook_id: UUID,
+        limit: int,
+        cursor: str | None,
+    ) -> Page[Insight]:
+        return await self._sql.list_insights(notebook_id, limit, cursor)
+
+    async def upsert_session(self, session: Session) -> None:
+        return await self._sql.upsert_session(session)
+
+    async def get_session(self, session_id: UUID) -> Session | None:
+        return await self._sql.get_session(session_id)
+
+    async def list_sessions(
+        self,
+        notebook_id: UUID,
+        limit: int,
+        cursor: str | None,
+    ) -> Page[Session]:
+        return await self._sql.list_sessions(notebook_id, limit, cursor)
+
+    async def append_turn(self, session_id: UUID, turn: Turn) -> None:
+        return await self._sql.append_turn(session_id, turn)
+
+    async def list_turns(
+        self,
+        session_id: UUID,
+        after_turn_id: UUID | None,
+        limit: int,
+    ) -> Page[Turn]:
+        return await self._sql.list_turns(session_id, after_turn_id, limit)
+
+    async def upsert_citation(self, citation: Citation) -> None:
+        return await self._sql.upsert_citation(citation)
+
+    async def get_citations_for_turn(self, turn_id: UUID) -> tuple[Citation, ...]:
+        return await self._sql.get_citations_for_turn(turn_id)
+
+    async def delete_session(self, session_id: UUID) -> bool:
+        return await self._sql.delete_session(session_id)
+
+    # -------------------------------------------------------------------------
+    # SurrealDB operations
+    # -------------------------------------------------------------------------
+    async def upsert_entity(self, entity: Entity) -> None:
+        return await self._sur.upsert_entity(entity)
+
+    async def upsert_edge(self, edge: GraphEdge) -> None:
+        return await self._sur.upsert_edge(edge)
+
+    async def get_entity(self, entity_id: UUID) -> Entity | None:
+        return await self._sur.get_entity(entity_id)
+
+    async def find_entities(
+        self,
+        canonical_name: str,
+        entity_type: str | None,
+        document_ids: tuple[UUID, ...],
+        limit: int,
+    ) -> tuple[Entity, ...]:
+        return await self._sur.find_entities(canonical_name, entity_type, document_ids, limit)
+
+    async def get_related_entities(
+        self,
+        entity_id: UUID,
+        hops: int,
+        relations: tuple[str, ...],
+        limit: int,
+    ) -> tuple[Entity, ...]:
+        return await self._sur.get_related_entities(entity_id, hops, relations, limit)
+
+    async def delete_graph_for_document(self, document_id: UUID) -> None:
+        return await self._sur.delete_graph_for_document(document_id)
+
+    # -------------------------------------------------------------------------
+    # Composite Multi-backend operations
+    # -------------------------------------------------------------------------
+    async def upsert_chunks(self, chunks: tuple[Chunk, ...]) -> None:
+        if not chunks:
+            return
+
+        document_id = chunks[0].document_id
+        version_id = chunks[0].version_id
+        if any(
+            chunk.document_id != document_id or chunk.version_id != version_id
+            for chunk in chunks[1:]
+        ):
+            raise ContractValidationError("chunk batches must share one document_id and version_id")
+
+        compensator = _Compensator()
+        try:
+            await self._sql.upsert_chunks(chunks)
+
+            # If Qdrant fails, we rollback the SQLite insertion.
+            # We assume upsert_chunks is grouped by document and version.
+            compensator.add(lambda: self._sql.delete_chunks_for_document(document_id, version_id))
+
+            await self._qdr.upsert_chunks(chunks)
+        except Exception as e:
+            rollback_failures = await compensator.rollback()
+            if rollback_failures:
+                raise StorageError("multi-store write and compensating rollback failed") from e
+            if isinstance(e, StorageError):
+                raise
+            raise StorageError(f"multi-store write failed: {e}") from e
+
+    async def get_chunk(self, chunk_id: str) -> Chunk | None:
+        return await self._sql.get_chunk(chunk_id)
+
+    async def delete_chunks_for_document(
+        self,
+        document_id: UUID,
+        version_id: UUID | None,
+    ) -> None:
+        try:
+            await self._qdr.delete_chunks_for_document(document_id, version_id)
+            await self._sql.delete_chunks_for_document(document_id, version_id)
+        except Exception as e:
+            if isinstance(e, StorageError):
+                raise
+            raise StorageError(f"multi-store delete failed: {e}") from e
+
+    async def search_dense(
+        self,
+        embedding: EmbeddingVector,
+        filters: MetadataFilter,
+        top_k: int,
+    ) -> tuple[ScoredChunk, ...]:
+        return await self._qdr.search_dense(embedding, filters, top_k)
+
+    async def search_sparse(
+        self,
+        query: str,
+        filters: MetadataFilter,
+        top_k: int,
+    ) -> tuple[ScoredChunk, ...]:
+        return await self._sql.search_sparse(query, filters, top_k)
+
+    async def delete_document_cascade(self, document_id: UUID) -> None:
+        try:
+            # Dependent deletes are idempotent, so a failed cascade can be retried safely.
+            await self._qdr.delete_chunks_for_document(document_id, None)
+            await self._sur.delete_graph_for_document(document_id)
+
+            await self._sql.delete_document_cascade(document_id)
+        except Exception as e:
+            if isinstance(e, StorageError):
+                raise
+            raise StorageError(f"cascade delete failed: {e}") from e

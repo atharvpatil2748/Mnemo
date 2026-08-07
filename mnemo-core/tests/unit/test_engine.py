@@ -147,7 +147,7 @@ def install_builtins(
     *plugins: PluginInterfaceV1,
 ) -> None:
     """Supply deterministic built-in candidates to the composition root."""
-    monkeypatch.setattr("mnemo.engine._builtin_plugins", lambda: plugins)
+    monkeypatch.setattr("mnemo.engine._builtin_plugins", lambda config: plugins)
     monkeypatch.setattr(
         PluginRegistry,
         "discover_and_load_entry_points",

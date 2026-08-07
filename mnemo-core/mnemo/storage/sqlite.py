@@ -1,6 +1,7 @@
 """SQLite FTS5 storage backend."""
 
 import json
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -232,9 +233,6 @@ CREATE INDEX IF NOT EXISTS idx_citations_turn_id ON citations(turn_id);
 
 def _dt_to_iso(dt: datetime) -> str:
     return dt.isoformat()
-
-
-from collections.abc import AsyncIterator
 
 
 @asynccontextmanager

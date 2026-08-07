@@ -198,7 +198,7 @@ class KnowledgeEngine:
 
     def _compose_runtime(self) -> _ResolvedProviders:
         results: list[PluginLoadResult] = []
-        builtins = self._registry.load_plugins(_builtin_plugins())
+        builtins = self._registry.load_plugins(_builtin_plugins(self._config))
         self._log_failures("built-in", builtins)
         results.extend(builtins)
         entry_points = self._registry.discover_and_load_entry_points()
@@ -278,9 +278,45 @@ class KnowledgeEngine:
                 )
 
 
-def _builtin_plugins() -> tuple[PluginInterfaceV1, ...]:
+def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
     """Return built-in candidates supplied by their designated roadmap modules."""
-    return ()
+
+    class CoreStoragePlugin:
+        name = "mnemo.core.storage"
+        version = __version__
+        core_version_range = ">=0.0.0"
+
+        def capabilities(self) -> tuple[str, ...]:
+            return ("storage",)
+
+        def register(self, registry: PluginRegistry) -> None:
+            from mnemo.storage import (
+                CompositeStorage,
+                FilesystemBlobStore,
+                QdrantStore,
+                SQLiteStore,
+                SurrealDBStore,
+            )
+
+            filesystem = FilesystemBlobStore(config.storage.filesystem.root)
+            sqlite = SQLiteStore(config.storage.sqlite.path)
+            qdrant = QdrantStore(
+                config.storage.qdrant,
+                vector_dimensions=config.embedding.dimensions,
+            )
+            surrealdb = SurrealDBStore(config.storage.surrealdb)
+
+            composite = CompositeStorage(
+                filesystem=filesystem,
+                sqlite=sqlite,
+                qdrant=qdrant,
+                surrealdb=surrealdb,
+            )
+
+            # Core priority permits an explicitly higher-priority provider override.
+            registry.register_storage("primary", composite, priority=0)
+
+    return (CoreStoragePlugin(),)
 
 
 def _plugin_candidates(directory: Path) -> tuple[Path, ...]:

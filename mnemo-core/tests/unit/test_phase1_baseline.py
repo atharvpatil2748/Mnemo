@@ -101,6 +101,7 @@ def test_core_has_no_infrastructure_or_reverse_layer_imports() -> None:
         "mnemo.config",
         "mnemo.interfaces",
         "mnemo.registry",
+        "mnemo.storage",
     }
 
 

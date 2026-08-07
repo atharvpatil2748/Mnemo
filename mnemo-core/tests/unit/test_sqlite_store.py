@@ -10,12 +10,10 @@ Coverage targets:
 """
 
 import asyncio
-from collections.abc import Coroutine
+from collections.abc import Coroutine, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar
-
-T = TypeVar("T")
 from uuid import UUID, uuid4
 
 import pytest
@@ -45,6 +43,8 @@ from mnemo.models import (
 )
 from mnemo.storage.sqlite import SQLiteStore
 
+T = TypeVar("T")
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -57,10 +57,11 @@ def store(tmp_path: Path) -> SQLiteStore:
 
 
 @pytest.fixture
-def open_store(store: SQLiteStore) -> SQLiteStore:
+def open_store(store: SQLiteStore) -> Iterator[SQLiteStore]:
     """Return an open SQLiteStore ready for queries."""
     asyncio.run(store.open())
-    return store
+    yield store
+    asyncio.run(store.close())
 
 
 @pytest.fixture
@@ -430,7 +431,15 @@ def test_cascade_delete(
 def test_graph_unsupported(open_store: SQLiteStore, doc_id: UUID) -> None:
     with pytest.raises(NotImplementedError):
         _run(
-            open_store.upsert_entity(Entity(entity_id=uuid4(), canonical_name="x", type="y", confidence=1.0, document_id=doc_id))
+            open_store.upsert_entity(
+                Entity(
+                    entity_id=uuid4(),
+                    canonical_name="x",
+                    type="y",
+                    confidence=1.0,
+                    document_id=doc_id,
+                )
+            )
         )
     with pytest.raises(NotImplementedError):
         _run(open_store.search_dense((0.1, 0.2), MetadataFilter(), 5))

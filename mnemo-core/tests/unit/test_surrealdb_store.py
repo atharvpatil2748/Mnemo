@@ -72,9 +72,9 @@ class MockSurreal:
         if stmt.startswith("SELECT * FROM type::thing('entity'"):
             # GET entity
             ent_id = vars.get("id")
-            record = self.entities.get(str(ent_id))
-            if record:
-                return [{"status": "OK", "time": "0ms", "result": [record]}]
+            ent_record: dict[str, Any] | None = self.entities.get(str(ent_id))
+            if ent_record:
+                return [{"status": "OK", "time": "0ms", "result": [ent_record]}]
             return [{"status": "OK", "time": "0ms", "result": []}]
 
         if stmt.startswith("SELECT * FROM entity WHERE"):
@@ -99,10 +99,9 @@ class MockSurreal:
             # Find edges where in == source_id
             related_ids = set()
             for edge in self.edges.values():
-                if edge["in"] == f"entity:{source_id}":
-                    if not rels or edge["relation"] in rels:
-                        target = edge["out"].split(":")[1]
-                        related_ids.add(target)
+                if edge["in"] == f"entity:{source_id}" and (not rels or edge["relation"] in rels):
+                    target = edge["out"].split(":")[1]
+                    related_ids.add(target)
 
             # This handles 1 hop. For 2 hops we'd repeat...
             # For simplicity of test, we just return the 1 hop ones

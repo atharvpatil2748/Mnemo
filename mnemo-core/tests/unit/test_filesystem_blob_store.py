@@ -29,8 +29,6 @@ from collections.abc import Coroutine
 from datetime import date
 from pathlib import Path
 from typing import Any, TypeVar
-
-T = TypeVar("T")
 from uuid import UUID, uuid4
 
 import pytest
@@ -61,6 +59,8 @@ from mnemo.storage.filesystem import (
     _deserialize_parsed_document,
     _serialize_parsed_document,
 )
+
+T = TypeVar("T")
 
 # ---------------------------------------------------------------------------
 # Fixtures

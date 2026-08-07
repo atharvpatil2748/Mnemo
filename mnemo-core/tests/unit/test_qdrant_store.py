@@ -149,7 +149,7 @@ async def test_qdrant_delete_chunks_for_document(qdrant_store: QdrantStore) -> N
     # Delete doc 1
     await qdrant_store.delete_chunks_for_document(doc_id_1, version_id=None)
 
-    # Give it a moment to apply the deletion (Qdrant deletes can be asynchronous but local memory is usually immediate)
+    # Qdrant deletes can be asynchronous; the local memory adapter is normally immediate.
     await asyncio.sleep(0.1)
 
     # Search should only find doc 2

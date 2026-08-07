@@ -2,6 +2,7 @@
 
 from dataclasses import FrozenInstanceError, replace
 from datetime import datetime, timedelta
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -48,27 +49,50 @@ def test_entity_aliases_and_graph_edge(document_id: UUID) -> None:
 @pytest.mark.parametrize(
     "factory",
     [
-        lambda: Entity(name="", type="person", confidence=1.0, document_id=uuid4()),
-        lambda: Entity(name="x", type="", confidence=1.0, document_id=uuid4()),
-        lambda: Entity(name="x", type="person", confidence=-0.1, document_id=uuid4()),
-        lambda: Entity(name="x", type="person", confidence=1.0, document_id="bad"),
         lambda: Entity(
-            name="x", type="person", confidence=1.0, document_id=uuid4(), aliases=("x",)
+            entity_id=uuid4(), canonical_name="", type="person", confidence=1.0, document_id=uuid4()
         ),
         lambda: Entity(
-            name="x",
+            entity_id=uuid4(), canonical_name="x", type="", confidence=1.0, document_id=uuid4()
+        ),
+        lambda: Entity(
+            entity_id=uuid4(),
+            canonical_name="x",
+            type="person",
+            confidence=-0.1,
+            document_id=uuid4(),
+        ),
+        lambda: Entity(
+            entity_id=uuid4(), canonical_name="x", type="person", confidence=1.0, document_id="bad"
+        ),  # type: ignore[arg-type]
+        lambda: Entity(
+            entity_id=uuid4(),
+            canonical_name="x",
+            type="person",
+            confidence=1.0,
+            document_id=uuid4(),
+            aliases=("x",),
+        ),
+        lambda: Entity(
+            entity_id=uuid4(),
+            canonical_name="x",
             type="person",
             confidence=1.0,
             document_id=uuid4(),
             aliases=("alias", "alias"),
         ),
         lambda: Entity(
-            name="x", type="person", confidence=1.0, document_id=uuid4(), aliases=["alias"]
+            entity_id=uuid4(),
+            canonical_name="x",
+            type="person",
+            confidence=1.0,
+            document_id=uuid4(),
+            aliases=["alias"],  # type: ignore[arg-type]
         ),
-        lambda: GraphEdge(source="", target="b", relation="r", weight=1.0),
-        lambda: GraphEdge(source="a", target="", relation="r", weight=1.0),
-        lambda: GraphEdge(source="a", target="b", relation="", weight=1.0),
-        lambda: GraphEdge(source="a", target="a", relation="self", weight=2.0),
+        lambda: GraphEdge(source_id="bad", target_id=uuid4(), relation="r", weight=1.0),  # type: ignore[arg-type]
+        lambda: GraphEdge(source_id=uuid4(), target_id="bad", relation="r", weight=1.0),  # type: ignore[arg-type]
+        lambda: GraphEdge(source_id=uuid4(), target_id=uuid4(), relation="", weight=1.0),
+        lambda: GraphEdge(source_id=uuid4(), target_id=uuid4(), relation="self", weight=2.0),
     ],
 )
 def test_graph_validation(factory: object) -> None:
@@ -118,7 +142,7 @@ def test_turn_and_session_validation(timestamp: datetime) -> None:
     """Conversation records reject malformed identity, order, and timestamps."""
     session_id = uuid4()
     turn = _turn(session_id, timestamp)
-    turn_cases = (
+    turn_cases: tuple[dict[str, Any], ...] = (
         {"turn_id": "bad"},
         {"session_id": "bad"},
         {"sequence": -1},
@@ -129,7 +153,7 @@ def test_turn_and_session_validation(timestamp: datetime) -> None:
     )
     for overrides in turn_cases:
         with pytest.raises((TypeError, ValueError)):
-            replace(turn, **overrides)  # type: ignore[arg-type]
+            replace(turn, **overrides)
 
     base: dict[str, object] = {
         "session_id": session_id,
@@ -137,7 +161,7 @@ def test_turn_and_session_validation(timestamp: datetime) -> None:
         "created_at": timestamp,
         "updated_at": timestamp,
     }
-    session_cases = (
+    session_cases: tuple[dict[str, Any], ...] = (
         {"session_id": "bad"},
         {"notebook_id": "bad"},
         {"title": " "},
@@ -191,7 +215,7 @@ def test_versioned_citation(timestamp: datetime) -> None:
         {"heading_path": ["Heading"]},
     ):
         with pytest.raises((TypeError, ValueError)):
-            replace(citation, **overrides)  # type: ignore[arg-type]
+            replace(citation, **overrides)
 
 
 def test_notebook_source_note_and_insight(timestamp: datetime) -> None:
@@ -267,7 +291,7 @@ def test_notebook_family_validation(timestamp: datetime) -> None:
         content="I",
         created_at=timestamp,
     )
-    invalid_replacements = (
+    invalid_replacements: tuple[tuple[object, dict[str, Any]], ...] = (
         (notebook, {"notebook_id": "bad"}),
         (notebook, {"title": ""}),
         (notebook, {"description": " "}),
@@ -294,4 +318,4 @@ def test_notebook_family_validation(timestamp: datetime) -> None:
     )
     for model, overrides in invalid_replacements:
         with pytest.raises((TypeError, ValueError)):
-            replace(model, **overrides)  # type: ignore[arg-type]
+            replace(model, **overrides)

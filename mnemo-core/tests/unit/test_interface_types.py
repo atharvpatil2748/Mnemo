@@ -81,7 +81,7 @@ def test_chunking_options_validate_limits_and_hash() -> None:
         {"target_tokens": 10, "max_tokens": 10, "metadata": {}},
     ):
         with pytest.raises((TypeError, ValueError)):
-            ChunkingOptions(**values)  # type: ignore[arg-type]
+            ChunkingOptions(**values)
 
 
 def test_embedding_batch_preserves_order_and_validates_vectors() -> None:
@@ -233,7 +233,7 @@ def test_capability_records_are_typed_immutable_metadata() -> None:
 
     assert all(hash(value) for value in values)
     with pytest.raises(FrozenInstanceError):
-        values[0].supports_tables = False  # type: ignore[misc,union-attr]
+        values[0].supports_tables = False
 
 
 @pytest.mark.parametrize(
