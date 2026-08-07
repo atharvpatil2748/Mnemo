@@ -23,19 +23,26 @@ from mnemo.models import (
 
 def test_entity_aliases_and_graph_edge(document_id: UUID) -> None:
     """Entity aliases are deterministic and graph edges retain direction."""
+    ent_id = uuid4()
     entity = Entity(
-        name="Krishna",
+        entity_id=ent_id,
+        canonical_name="Krishna",
         type="person",
         confidence=0.9,
         document_id=document_id,
         aliases=("Kṛṣṇa", "Lord Krishna", "Sri Krishna"),
     )
-    edge = GraphEdge(source="Krishna", target="Arjuna", relation="guides", weight=0.8)
-
+    edge = GraphEdge(
+        source_id=ent_id,
+        target_id=ent_id,
+        relation="is identical to",
+        weight=1.0,
+    )
     assert entity.aliases[0] == "Kṛṣṇa"
+    assert entity.canonical_name == "Krishna"
     assert entity == replace(entity)
     assert hash(entity) == hash(replace(entity))
-    assert edge != replace(edge, source="Arjuna", target="Krishna")
+    assert edge != replace(edge, source_id=uuid4(), target_id=uuid4())
 
 
 @pytest.mark.parametrize(

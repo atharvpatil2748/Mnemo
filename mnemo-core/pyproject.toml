@@ -10,6 +10,7 @@ dependencies = [
     "packaging>=24,<27",
     "pydantic>=2.11,<3",
     "qdrant-client>=1.9.1",
+    "surrealdb>=2.0.0",
 ]
 
 [project.urls]

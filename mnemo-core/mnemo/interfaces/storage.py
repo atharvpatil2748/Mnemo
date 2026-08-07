@@ -244,7 +244,7 @@ class StorageInterfaceV1(Protocol):  # pragma: no cover
 
     async def find_entities(
         self,
-        normalized_name: str,
+        canonical_name: str,
         entity_type: str | None,
         document_ids: tuple[UUID, ...],
         limit: int,

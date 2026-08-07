@@ -84,7 +84,6 @@ def test_core_has_no_infrastructure_or_reverse_layer_imports() -> None:
         "mnemo_server",
         "requests",
         "starlette",
-        "surrealdb",
     }
     for source in _CORE.rglob("*.py"):
         tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))

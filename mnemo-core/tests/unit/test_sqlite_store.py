@@ -430,7 +430,7 @@ def test_cascade_delete(
 def test_graph_unsupported(open_store: SQLiteStore, doc_id: UUID) -> None:
     with pytest.raises(NotImplementedError):
         _run(
-            open_store.upsert_entity(Entity(name="x", type="y", confidence=1.0, document_id=doc_id))
+            open_store.upsert_entity(Entity(entity_id=uuid4(), canonical_name="x", type="y", confidence=1.0, document_id=doc_id))
         )
     with pytest.raises(NotImplementedError):
         _run(open_store.search_dense((0.1, 0.2), MetadataFilter(), 5))

@@ -310,7 +310,7 @@ of this interface.
 | `upsert_entity` | `entity: Entity` | none |
 | `upsert_edge` | `edge: GraphEdge` | none |
 | `get_entity` | entity UUID | entity or null |
-| `find_entities` | normalized name, entity type or null, document UUIDs, limit | immutable sequence of entities |
+| `find_entities` | canonical name, entity type or null, document UUIDs, limit | immutable sequence of entities |
 | `get_related_entities` | entity UUID, positive hop limit, relation filters, result limit | immutable sequence of entities |
 | `delete_graph_for_document` | document UUID | none |
 

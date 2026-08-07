@@ -669,7 +669,8 @@ derived from a document.
 
 | Field | Type | Presence | Default | Rules |
 |---|---|---|---|---|
-| `name` | string | Required | None | Non-empty normalized display name. |
+| `entity_id` | `UUID` | Required | None | Stable identity for this entity. |
+| `canonical_name` | string | Required | None | Non-empty normalized display name. |
 | `type` | string | Required | None | Non-empty provider-independent entity category. |
 | `confidence` | finite number | Required | None | Raw extractor confidence in the inclusive range 0 through 1. |
 | `document_id` | `UUID` | Required | None | Document from which this occurrence was derived. |
@@ -678,8 +679,8 @@ derived from a document.
 **Relationships:** `GraphEdge.source` and `GraphEdge.target` refer to normalized
 entity names. Entity normalization and cross-document merging are later logic.
 
-**Invariants:** `name`, `type`, and alias entries are non-empty after trimming.
-Aliases are unique, preserve deterministic input order, and cannot equal `name`.
+**Invariants:** `canonical_name`, `type`, and alias entries are non-empty after trimming.
+Aliases are unique, preserve deterministic input order, and cannot equal `canonical_name`.
 Confidence is extractor provenance, not retrieval confidence or a calibrated
 user-facing probability.
 
@@ -690,14 +691,14 @@ universal.
 ### 9.2 `GraphEdge`
 
 **Purpose and responsibility:** Represent a weighted directed relationship
-between two normalized entity names.
+between two normalized entities.
 
 **Semantics:** Immutable value object; structural equality and hashing.
 
 | Field | Type | Presence | Default | Rules |
 |---|---|---|---|---|
-| `source` | string | Required | None | Non-empty normalized source entity name. |
-| `target` | string | Required | None | Non-empty normalized target entity name. |
+| `source_id` | `UUID` | Required | None | UUID of the source entity. |
+| `target_id` | `UUID` | Required | None | UUID of the target entity. |
 | `relation` | string | Required | None | Non-empty normalized relationship label. |
 | `weight` | finite number | Required | None | Raw relationship strength in the inclusive range 0 through 1. |
 

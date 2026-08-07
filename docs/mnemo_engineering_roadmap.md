@@ -307,14 +307,14 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 | Task | Subtask | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|---|
-| Implement `SurrealDBStore` | `surrealdb` Python client, async | Architecture §13 | Open Notebook | High | Phase 1 |
-| Design SurrealDB schema | Tables: documents, notebooks, sources, notes, sessions, turns, citations, entities, graph_edges, jobs | — | — | High | 2.4a |
-| Implement document CRUD | `upsert_document()`, `get_document()`, `list_documents()` | — | — | Medium | 2.4b |
-| Implement notebook/source CRUD | Full CRUD matching Notebook Manager models | — | — | Medium | 2.4b |
-| Implement session/turn storage | Append-only turn records | — | — | Medium | 2.4b |
-| Implement citation storage | `upsert_citation()`, `get_citations_for_turn()` | — | — | Medium | 2.4b |
-| Implement entity/graph storage | `upsert_entity()`, `upsert_edge()`, `get_related_entities()` | Graph traversal query | RAG-Anything | High | 2.4b |
-| Implement job queue | Background job records with status enum | Fast-path / slow-path coordination | — | Medium | 2.4b |
+| ✅ Implement `SurrealDBStore` | `surrealdb` Python client, async | Architecture §13 | Open Notebook | High | Phase 1 |
+| ✅ Design SurrealDB schema | Tables: documents, notebooks, sources, notes, sessions, turns, citations, entities, graph_edges, jobs | — | — | High | 2.4a |
+| ✅ Implement document CRUD | `upsert_document()`, `get_document()`, `list_documents()` | — | — | Medium | 2.4b |
+| ✅ Implement notebook/source CRUD | Full CRUD matching Notebook Manager models | — | — | Medium | 2.4b |
+| ✅ Implement session/turn storage | Append-only turn records | — | — | Medium | 2.4b |
+| ✅ Implement citation storage | `upsert_citation()`, `get_citations_for_turn()` | — | — | Medium | 2.4b |
+| ✅ Implement entity/graph storage | `upsert_entity()`, `upsert_edge()`, `get_related_entities()` | Graph traversal query | RAG-Anything | High | 2.4b |
+| ✅ Implement job queue | Background job records with status enum | Fast-path / slow-path coordination | — | Medium | 2.4b |
 
 **Module 2.5 — Composite Storage Router**
 
