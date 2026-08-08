@@ -18,6 +18,7 @@ from mnemo.models._shared import (
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TransientAsset:
     """Temporary in-memory asset extracted during parsing."""
+
     parser_local_id: str
     raw_bytes: bytes
     mime_type: str
@@ -31,9 +32,11 @@ class TransientAsset:
         if self.page_number is not None:
             require_positive(self.page_number, "page_number")
 
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RawBlock:
     """Abstract base for transient parser blocks."""
+
     ordinal: int
     page_number: int | None = None
     bounding_box: BoundingBox | None = None
@@ -61,6 +64,7 @@ class RawBlock:
         if not isinstance(self.metadata, FrozenMetadata):
             raise TypeError("metadata must be FrozenMetadata")
 
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RawTextBlock(RawBlock):
     text: str
@@ -68,6 +72,7 @@ class RawTextBlock(RawBlock):
     def __post_init__(self) -> None:
         RawBlock.__post_init__(self)
         require_non_empty(self.text, "text")
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RawHeadingBlock(RawBlock):
@@ -81,6 +86,7 @@ class RawHeadingBlock(RawBlock):
         if self.level > 6:
             raise ValueError("level must be between 1 and 6")
 
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RawListBlock(RawBlock):
     items: tuple[str, ...]
@@ -90,6 +96,7 @@ class RawListBlock(RawBlock):
         require_tuple(self.items, "items")
         if not self.items:
             raise ValueError("items must not be empty")
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RawTableBlock(RawBlock):
@@ -110,6 +117,7 @@ class RawTableBlock(RawBlock):
         if self.header_row_count > len(self.rows):
             raise ValueError("header_row_count cannot exceed row count")
 
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RawCodeBlock(RawBlock):
     code: str
@@ -119,6 +127,7 @@ class RawCodeBlock(RawBlock):
         RawBlock.__post_init__(self)
         require_non_empty(self.code, "code")
         require_optional_non_empty(self.code_language, "code_language")
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RawMathBlock(RawBlock):
@@ -131,6 +140,7 @@ class RawMathBlock(RawBlock):
         if not isinstance(self.display, bool):
             raise TypeError("display must be a boolean")
 
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RawImageBlock(RawBlock):
     parser_local_id: str
@@ -141,9 +151,11 @@ class RawImageBlock(RawBlock):
         require_non_empty(self.parser_local_id, "parser_local_id")
         require_optional_non_empty(self.alt_text, "alt_text")
 
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParseResult:
     """Pure transformation output from a parser."""
+
     blocks: tuple[RawBlock, ...]
     extracted_assets: tuple[TransientAsset, ...]
     metadata: DocumentMetadata
@@ -155,7 +167,7 @@ class ParseResult:
         for block in self.blocks:
             if not isinstance(block, RawBlock):
                 raise TypeError("blocks must contain RawBlock instances")
-        
+
         expected_ordinals = tuple(range(len(self.blocks)))
         actual_ordinals = tuple(b.ordinal for b in self.blocks)
         if actual_ordinals != expected_ordinals:

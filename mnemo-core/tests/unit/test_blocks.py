@@ -1,9 +1,11 @@
 from typing import cast
+
 """Tests for the complete parsed-document block hierarchy."""
 
+import uuid
 from dataclasses import FrozenInstanceError
 from uuid import uuid4
-import uuid
+
 import pytest
 from mnemo.models import (
     Block,
@@ -73,8 +75,8 @@ def test_common_block_layout_validation() -> None:
         lambda: HeadingBlock(ordinal=0, text="H", level=0),
         lambda: HeadingBlock(ordinal=0, text="H", level=7),
         lambda: TableBlock(ordinal=0, rows=()),
-            lambda: TableBlock(ordinal=0, rows=cast(tuple[tuple[str, ...], ...], [["a"]])),
-            lambda: TableBlock(ordinal=0, rows=cast(tuple[tuple[str, ...], ...], (["a"],))),
+        lambda: TableBlock(ordinal=0, rows=cast(tuple[tuple[str, ...], ...], [["a"]])),
+        lambda: TableBlock(ordinal=0, rows=cast(tuple[tuple[str, ...], ...], (["a"],))),
         lambda: TableBlock(ordinal=0, rows=(("a",), ("b", "c"))),
         lambda: TableBlock(ordinal=0, rows=(("a",),), header_row_count=2),
         lambda: ImageBlock(ordinal=0, asset_id=cast(uuid.UUID, "bad")),

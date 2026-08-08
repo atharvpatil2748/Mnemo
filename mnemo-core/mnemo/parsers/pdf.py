@@ -1,6 +1,5 @@
 """Built-in parser for Portable Document Format (PDF) files."""
 
-import uuid
 from typing import Any
 
 import fitz  # type: ignore[import-untyped]

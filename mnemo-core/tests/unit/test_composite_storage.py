@@ -1,14 +1,10 @@
 """Unit tests for the CompositeStorage atomic router."""
 
 from __future__ import annotations
-from mnemo.storage.surrealdb import SurrealDBStore
-from mnemo.storage.qdrant import QdrantStore
-from mnemo.storage.sqlite import SQLiteStore
-from mnemo.storage.filesystem import FilesystemBlobStore
-from typing import cast
 
 from dataclasses import replace
 from datetime import UTC, datetime
+from typing import cast
 from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
@@ -26,6 +22,10 @@ from mnemo.models import (
     FrozenMetadata,
 )
 from mnemo.storage.composite import CompositeStorage
+from mnemo.storage.filesystem import FilesystemBlobStore
+from mnemo.storage.qdrant import QdrantStore
+from mnemo.storage.sqlite import SQLiteStore
+from mnemo.storage.surrealdb import SurrealDBStore
 
 
 def _chunk() -> Chunk:

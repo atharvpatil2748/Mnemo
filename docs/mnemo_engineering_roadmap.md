@@ -1923,10 +1923,10 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 
 ### Phase 3 — Parser System
 
-- □ `ParserRouter` + MIME detection + dedup gate
-- □ `BasicPDFParser` (layout-aware, tables, images, headings)
+- ✅ `ParserRouter` + MIME detection + dedup gate
+- ✅ `BasicPDFParser` (layout-aware, tables, images, headings)
 - □ Running header/footer detection
-- □ `DOCXParser`
+- ✅ `DOCXParser`
 - □ `MarkdownParser` (AST-based)
 - □ `HTMLParser` + boilerplate removal
 - □ `PlainTextParser`, `JSONParser`, `CSVParser`

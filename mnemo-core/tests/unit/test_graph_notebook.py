@@ -1,5 +1,6 @@
 import uuid
 from typing import cast
+
 """Tests for graph, notebook, conversation, citation, note, and insight models."""
 
 from dataclasses import FrozenInstanceError, replace
@@ -65,7 +66,11 @@ def test_entity_aliases_and_graph_edge(document_id: UUID) -> None:
             document_id=uuid4(),
         ),
         lambda: Entity(
-            entity_id=uuid4(), canonical_name="x", type="person", confidence=1.0, document_id=cast(uuid.UUID, "bad")
+            entity_id=uuid4(),
+            canonical_name="x",
+            type="person",
+            confidence=1.0,
+            document_id=cast(uuid.UUID, "bad"),
         ),
         lambda: Entity(
             entity_id=uuid4(),
@@ -89,10 +94,14 @@ def test_entity_aliases_and_graph_edge(document_id: UUID) -> None:
             type="person",
             confidence=1.0,
             document_id=uuid4(),
-                aliases=cast(tuple[str, ...], ["alias"]),
+            aliases=cast(tuple[str, ...], ["alias"]),
         ),
-        lambda: GraphEdge(source_id=cast(uuid.UUID, "bad"), target_id=uuid4(), relation="r", weight=1.0),
-        lambda: GraphEdge(source_id=uuid4(), target_id=cast(uuid.UUID, "bad"), relation="r", weight=1.0),
+        lambda: GraphEdge(
+            source_id=cast(uuid.UUID, "bad"), target_id=uuid4(), relation="r", weight=1.0
+        ),
+        lambda: GraphEdge(
+            source_id=uuid4(), target_id=cast(uuid.UUID, "bad"), relation="r", weight=1.0
+        ),
         lambda: GraphEdge(source_id=uuid4(), target_id=uuid4(), relation="", weight=1.0),
         lambda: GraphEdge(source_id=uuid4(), target_id=uuid4(), relation="self", weight=2.0),
     ],

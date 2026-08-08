@@ -205,23 +205,27 @@ def test_parse_tables(parser: PDFParser, base_metadata: FileMetadata) -> None:
         # Clean up text comparison due to fitz potential formatting
         assert "Col1" in table.rows[0][0] or "Col2" in table.rows[0][1]
 
+
 def test_pdf_parser_extra_metadata() -> None:
     parser = PDFParser()
     import fitz
+
     doc = fitz.open()
     doc.new_page()
-    doc.set_metadata({
-        "producer": "Test Producer",
-        "creationDate": "D:20230101000000Z",
-        "modDate": "D:20230101000000Z",
-        "creator": "Test Creator"
-    })
+    doc.set_metadata(
+        {
+            "producer": "Test Producer",
+            "creationDate": "D:20230101000000Z",
+            "modDate": "D:20230101000000Z",
+            "creator": "Test Creator",
+        }
+    )
     pdf_bytes = doc.write()
     file_meta = FileMetadata(
         content_hash="a" * 64,
         size_bytes=len(pdf_bytes),
         mime_type="application/pdf",
-        metadata=FrozenMetadata()
+        metadata=FrozenMetadata(),
     )
     result = parser.parse(pdf_bytes, "test.pdf", file_meta)
     assert result.metadata.metadata["producer"] == "Test Producer"
