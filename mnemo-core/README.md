@@ -1,7 +1,7 @@
 # mnemo-core
 
-`mnemo-core` is the pure Python, transport-independent foundation of the Mnemo
-local knowledge engine. Version 0.10.4 contains the audited Phase 1 foundation,
+`mnemo-core` is the core Python library implementation of the Mnemo
+local knowledge engine. Version 0.10.7 contains the audited Phase 1 foundation,
 Phase 2 storage subsystem, and Phase 3 parsing through the Markdown parser.
 Remaining parsing and retrieval implementations belong to later modules.
 

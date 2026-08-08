@@ -6,7 +6,7 @@
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
 **Current baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 through Module 3.8
-are complete at version 0.10.6. Module 4.1 is next and has not started.
+are complete at version 0.10.7. Module 4.1 is next and has not started.
 Completed checklist items are marked below; later tasks describe planned work.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
