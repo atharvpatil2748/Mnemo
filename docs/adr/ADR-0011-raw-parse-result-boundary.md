@@ -44,6 +44,10 @@ Parser
   ↓
 ParseResult
   ↓
+Cleaner
+  ↓
+Cleaned ParseResult
+  ↓
 Blob Persistence
   ↓
 Asset Resolution
@@ -51,8 +55,6 @@ Asset Resolution
 Document Canonicalizer
   ↓
 ParsedDocument
-  ↓
-Cleaner
   ↓
 Chunker
 ```

@@ -5,8 +5,8 @@
 **Status:** Living Implementation Tracker  
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
-**Current baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 through Module 3.4
-are complete at version 0.10.3. Module 3.5 is next and has not started.
+**Current baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 through Module 3.7
+are complete at version 0.10.5. Module 3.8 is next and has not started.
 Completed checklist items are marked below; later tasks describe planned work.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
@@ -376,20 +376,20 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 | Task | Subtask | Notes | Difficulty | Dependency |
 |---|---|---|---|---|
-| Implement `PlainTextParser` | Line-based splitting, paragraph detection | — | Low | 3.1 |
-| Implement `JSONParser` | Flatten JSON to text with key context | — | Low | 3.1 |
-| Implement `CSVParser` | Treat each row as a TextBlock with header context | — | Low | 3.1 |
+| ✅ Implement `PlainTextParser` | Line-based splitting, paragraph detection | — | Low | 3.1 |
+| ✅ Implement `JSONParser` | Flatten JSON to text with key context | — | Low | 3.1 |
+| ✅ Implement `CSVParser` | Treat each row as a TextBlock with header context | — | Low | 3.1 |
 
 **Module 3.7 — Cleaner**
 
 | Task | Subtask | Notes | Difficulty | Dependency |
 |---|---|---|---|---|
-| Implement `DocumentCleaner` | Operates on `ParsedDocument` | All cleaning in one pass | — | Medium | 3.1 |
-| Unicode normalization | NFC normalization for all text | — | Low | 3.7a |
-| Duplicate whitespace removal | Collapse multiple spaces/newlines | — | Low | 3.7a |
-| Hyphenated line break fix | `end-\nof-line` → `end-of-line` | Common in PDF extraction | Medium | 3.7a |
-| Language detection | `langdetect` per block | Tag `Block.language` | Low | 3.7a |
-| Header/footer detection | Frequency analysis: text appearing on >50% of pages | Filter or tag | High | 3.7a |
+| ✅ Implement `DocumentCleaner` | Operates on `ParseResult` | All cleaning in one pass | — | Medium | 3.1 |
+| ✅ Unicode normalization | NFC normalization for all text | — | Low | 3.7a |
+| ✅ Duplicate whitespace removal | Collapse multiple spaces/newlines | — | Low | 3.7a |
+| ✅ Hyphenated line break fix | `end-\nof-line` → `end-of-line` | Common in PDF extraction | Medium | 3.7a |
+| ✅ Language detection | `langdetect` per block | Tag `Block.language` | Low | 3.7a |
+| ✅ Header/footer detection | Frequency analysis: text appearing on >50% of pages | Filter or tag | High | 3.7a |
 
 **Module 3.8 — Document Classifier**
 
