@@ -30,8 +30,9 @@ class ParserRouter:
     def register_builtins(self) -> None:
         """Register built-in parsers with the registry.
 
-        Currently a NO-OP. Built-in parsers like the basic PDF parser
-        will be registered here in future modules.
+        Currently a NO-OP. Built-in parsers like PDF, HTML, Markdown,
+        DOCX, Text, JSON, and CSV will be registered via the builtin plugin
+        in a future module.
         """
         pass
 
