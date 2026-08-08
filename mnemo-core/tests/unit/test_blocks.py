@@ -1,8 +1,9 @@
+from typing import cast
 """Tests for the complete parsed-document block hierarchy."""
 
 from dataclasses import FrozenInstanceError
 from uuid import uuid4
-
+import uuid
 import pytest
 from mnemo.models import (
     Block,
@@ -62,7 +63,7 @@ def test_common_block_layout_validation() -> None:
         {"ordinal": 0, "metadata": {}},
     ):
         with pytest.raises((TypeError, ValueError)):
-            TextBlock(text="x", **kwargs)  # type: ignore[arg-type]
+            TextBlock(text="x", **kwargs)
 
 
 @pytest.mark.parametrize(
@@ -72,16 +73,16 @@ def test_common_block_layout_validation() -> None:
         lambda: HeadingBlock(ordinal=0, text="H", level=0),
         lambda: HeadingBlock(ordinal=0, text="H", level=7),
         lambda: TableBlock(ordinal=0, rows=()),
-        lambda: TableBlock(ordinal=0, rows=[["a"]]),
-        lambda: TableBlock(ordinal=0, rows=(["a"],)),
+            lambda: TableBlock(ordinal=0, rows=cast(tuple[tuple[str, ...], ...], [["a"]])),
+            lambda: TableBlock(ordinal=0, rows=cast(tuple[tuple[str, ...], ...], (["a"],))),
         lambda: TableBlock(ordinal=0, rows=(("a",), ("b", "c"))),
         lambda: TableBlock(ordinal=0, rows=(("a",),), header_row_count=2),
-        lambda: ImageBlock(ordinal=0, asset_id="bad"),
+        lambda: ImageBlock(ordinal=0, asset_id=cast(uuid.UUID, "bad")),
         lambda: ImageBlock(ordinal=0, asset_id=uuid4(), alt_text=" "),
         lambda: CodeBlock(ordinal=0, code=""),
         lambda: CodeBlock(ordinal=0, code="x", code_language=" "),
         lambda: EquationBlock(ordinal=0, latex=""),
-        lambda: EquationBlock(ordinal=0, latex="x", display=1),
+        lambda: EquationBlock(ordinal=0, latex="x", display=cast(bool, 1)),
         lambda: CaptionBlock(ordinal=0, text="caption", target_ordinal=0),
         lambda: CaptionBlock(ordinal=0, text="caption", target_ordinal=-1),
     ],

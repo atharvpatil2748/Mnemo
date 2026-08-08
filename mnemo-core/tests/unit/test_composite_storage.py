@@ -1,6 +1,11 @@
 """Unit tests for the CompositeStorage atomic router."""
 
 from __future__ import annotations
+from mnemo.storage.surrealdb import SurrealDBStore
+from mnemo.storage.qdrant import QdrantStore
+from mnemo.storage.sqlite import SQLiteStore
+from mnemo.storage.filesystem import FilesystemBlobStore
+from typing import cast
 
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -106,10 +111,10 @@ def composite(
     sur_mock: StorageInterfaceV1,
 ) -> CompositeStorage:
     return CompositeStorage(
-        filesystem=fs_mock,
-        sqlite=sql_mock,
-        qdrant=qdr_mock,
-        surrealdb=sur_mock,
+        filesystem=cast(FilesystemBlobStore, fs_mock),
+        sqlite=cast(SQLiteStore, sql_mock),
+        qdrant=cast(QdrantStore, qdr_mock),
+        surrealdb=cast(SurrealDBStore, sur_mock),
     )
 
 

@@ -31,7 +31,7 @@ We introduce the following transient hierarchy:
   - `RawImageBlock`
 - `TransientAsset`
 
-`TransientAsset` contains raw bytes, MIME type, page number, and a parser-local identifier. `RawImageBlock` references this local identifier rather than a UUID.
+`TransientAsset` contains raw bytes, MIME type, page number, and a deterministic parser-local identifier (e.g. `block-1`, `page1-image1`). This identifier is ONLY a temporary correlation key between a `RawImageBlock` and a `TransientAsset` within a single `ParseResult`. It is NEVER persisted, NEVER exposed outside of `ParseResult`, and NEVER treated as a permanent Asset ID. `RawImageBlock` references this deterministic local identifier rather than a UUID.
 
 ### 2. The Ingestion Pipeline
 

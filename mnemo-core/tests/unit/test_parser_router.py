@@ -27,6 +27,8 @@ def mock_storage() -> AsyncMock:
 @pytest.fixture
 def router(mock_registry: Mock, mock_storage: AsyncMock) -> ParserRouter:
     return ParserRouter(mock_registry, mock_storage)
+
+
 @pytest.fixture
 def mock_parser() -> Mock:
     parser = Mock()

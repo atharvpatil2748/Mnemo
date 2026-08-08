@@ -81,7 +81,7 @@ class ParserStub:
     ) -> ParseResult:
         from mnemo.interfaces.parser_models import ParseResult, RawTextBlock
         from mnemo.models import DocType, DocumentMetadata
-        
+
         return ParseResult(
             blocks=(RawTextBlock(ordinal=0, text="stub"),),
             extracted_assets=(),

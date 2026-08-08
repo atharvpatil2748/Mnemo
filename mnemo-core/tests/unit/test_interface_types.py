@@ -233,7 +233,7 @@ def test_capability_records_are_typed_immutable_metadata() -> None:
 
     assert all(hash(value) for value in values)
     with pytest.raises(FrozenInstanceError):
-        values[0].supports_tables = False
+        values[0].supports_tables = False  # type: ignore[misc]  # type: ignore[misc]
 
 
 @pytest.mark.parametrize(

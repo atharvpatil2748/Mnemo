@@ -1,3 +1,5 @@
+from typing import Any
+
 """Tests for parsed documents and document registry models."""
 
 from dataclasses import FrozenInstanceError, replace
@@ -90,7 +92,7 @@ def test_document_metadata_validation(content_hash: str, overrides: dict[str, ob
 def test_parsed_document_validation(content_hash: str) -> None:
     """Parsed documents enforce local ordering, typing, and page bounds."""
     metadata = _metadata(content_hash, page_count=1)
-    invalid_cases = (
+    invalid_cases: tuple[Any, ...] = (
         {"blocks": (TextBlock(ordinal=1, text="x"),)},
         {"blocks": []},
         {"blocks": (object(),)},
@@ -109,7 +111,7 @@ def test_parsed_document_validation(content_hash: str) -> None:
     for overrides in invalid_cases:
         values = base | overrides
         with pytest.raises((TypeError, ValueError)):
-            ParsedDocument(**values)  # type: ignore[arg-type]
+            ParsedDocument(**values)
 
 
 def test_document_version_and_registry_identity(

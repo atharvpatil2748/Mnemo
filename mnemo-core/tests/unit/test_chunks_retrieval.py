@@ -1,3 +1,5 @@
+from typing import Any
+
 """Tests for chunks, scored results, and validated metadata filters."""
 
 from dataclasses import FrozenInstanceError, replace
@@ -60,7 +62,7 @@ def test_chunk_position_offsets_are_optional_navigation_data() -> None:
             ChunkPosition(
                 section_index=0,
                 chunk_index_in_section=0,
-                **overrides,  # type: ignore[arg-type]
+                **overrides,
             )
 
 
@@ -89,7 +91,7 @@ def test_chunk_construction_identity_and_enum(document_id: UUID, version_id: UUI
 def test_chunk_validation(document_id: UUID, version_id: UUID) -> None:
     """Malformed chunk identities, links, vectors, and types are rejected."""
     chunk = _chunk(document_id, version_id)
-    cases = (
+    cases: tuple[Any, ...] = (
         {"id": "bad"},
         {"text": " "},
         {"document_id": "bad"},
@@ -111,7 +113,7 @@ def test_chunk_validation(document_id: UUID, version_id: UUID) -> None:
     )
     for overrides in cases:
         with pytest.raises((TypeError, ValueError)):
-            replace(chunk, **overrides)  # type: ignore[arg-type]
+            replace(chunk, **overrides)
 
 
 def test_scored_chunk_preserves_raw_score(document_id: UUID, version_id: UUID) -> None:
@@ -130,7 +132,7 @@ def test_scored_chunk_preserves_raw_score(document_id: UUID, version_id: UUID) -
         {"rank": True},
     ):
         with pytest.raises((TypeError, ValueError)):
-            replace(result, **overrides)  # type: ignore[arg-type]
+            replace(result, **overrides)
 
 
 def test_metadata_filter_validation_and_json_serialization() -> None:
@@ -149,7 +151,7 @@ def test_metadata_filter_validation_and_json_serialization() -> None:
     assert payload["source_ids"] == [str(source_id)]
     assert hash(metadata_filter) == hash(metadata_filter.model_copy())
     with pytest.raises(ValidationError):
-        metadata_filter.rank = 2  # type: ignore[attr-defined,misc]
+        metadata_filter.rank = 2  # type: ignore[attr-defined]
     with pytest.raises(ValidationError):
         MetadataFilter(doc_types=(DocType.BOOK, DocType.BOOK))
     with pytest.raises(ValidationError):

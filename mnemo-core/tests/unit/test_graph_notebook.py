@@ -1,3 +1,5 @@
+import uuid
+from typing import cast
 """Tests for graph, notebook, conversation, citation, note, and insight models."""
 
 from dataclasses import FrozenInstanceError, replace
@@ -63,8 +65,8 @@ def test_entity_aliases_and_graph_edge(document_id: UUID) -> None:
             document_id=uuid4(),
         ),
         lambda: Entity(
-            entity_id=uuid4(), canonical_name="x", type="person", confidence=1.0, document_id="bad"
-        ),  # type: ignore[arg-type]
+            entity_id=uuid4(), canonical_name="x", type="person", confidence=1.0, document_id=cast(uuid.UUID, "bad")
+        ),
         lambda: Entity(
             entity_id=uuid4(),
             canonical_name="x",
@@ -87,10 +89,10 @@ def test_entity_aliases_and_graph_edge(document_id: UUID) -> None:
             type="person",
             confidence=1.0,
             document_id=uuid4(),
-            aliases=["alias"],  # type: ignore[arg-type]
+                aliases=cast(tuple[str, ...], ["alias"]),
         ),
-        lambda: GraphEdge(source_id="bad", target_id=uuid4(), relation="r", weight=1.0),  # type: ignore[arg-type]
-        lambda: GraphEdge(source_id=uuid4(), target_id="bad", relation="r", weight=1.0),  # type: ignore[arg-type]
+        lambda: GraphEdge(source_id=cast(uuid.UUID, "bad"), target_id=uuid4(), relation="r", weight=1.0),
+        lambda: GraphEdge(source_id=uuid4(), target_id=cast(uuid.UUID, "bad"), relation="r", weight=1.0),
         lambda: GraphEdge(source_id=uuid4(), target_id=uuid4(), relation="", weight=1.0),
         lambda: GraphEdge(source_id=uuid4(), target_id=uuid4(), relation="self", weight=2.0),
     ],
@@ -318,4 +320,4 @@ def test_notebook_family_validation(timestamp: datetime) -> None:
     )
     for model, overrides in invalid_replacements:
         with pytest.raises((TypeError, ValueError)):
-            replace(model, **overrides)
+            replace(model, **overrides)  # type: ignore[type-var]
