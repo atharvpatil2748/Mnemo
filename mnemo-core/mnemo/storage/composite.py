@@ -156,6 +156,9 @@ class CompositeStorage:
     async def get_document(self, document_id: UUID) -> Document | None:
         return await self._sql.get_document(document_id)
 
+    async def get_document_by_content_hash(self, content_hash: str) -> Document | None:
+        return await self._sql.get_document_by_content_hash(content_hash)
+
     async def list_documents(
         self,
         status: DocumentStatus | None,

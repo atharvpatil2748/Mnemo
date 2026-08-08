@@ -476,6 +476,19 @@ class SQLiteStore:
             versions=tuple(versions),
         )
 
+    async def get_document_by_content_hash(self, content_hash: str) -> Document | None:
+        """Return a document registry snapshot by content hash when present."""
+        db = self._require_open()
+
+        async with db.execute(
+            "SELECT document_id FROM document_versions WHERE content_hash = ? LIMIT 1",
+            (content_hash,),
+        ) as cursor:
+            row = await cursor.fetchone()
+            if row is None:
+                return None
+            return await self.get_document(UUID(row[0]))
+
     async def list_documents(
         self,
         status: DocumentStatus | None,

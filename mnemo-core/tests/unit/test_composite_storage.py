@@ -220,7 +220,9 @@ async def test_metadata_and_blob_operations_route_to_owners(
     await composite.contains_hash("a" * 64)
     await composite.upsert_document(record)
     await composite.get_document(identity)
+    await composite.get_document_by_content_hash("hash")
     await composite.list_documents(None, 10, None)
+
     await composite.delete_document(identity, None)
     await composite.upsert_notebook(record)
     await composite.get_notebook(identity)
@@ -253,7 +255,9 @@ async def test_metadata_and_blob_operations_route_to_owners(
     fs_mock.contains_hash.assert_awaited_once_with("a" * 64)
     sql_mock.upsert_document.assert_awaited_once_with(record)
     sql_mock.get_document.assert_awaited_once_with(identity)
+    sql_mock.get_document_by_content_hash.assert_awaited_once_with("hash")
     sql_mock.list_documents.assert_awaited_once_with(None, 10, None)
+
     sql_mock.delete_document.assert_awaited_once_with(identity, None)
     sql_mock.upsert_notebook.assert_awaited_once_with(record)
     sql_mock.get_notebook.assert_awaited_once_with(identity)

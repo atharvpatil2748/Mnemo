@@ -310,6 +310,9 @@ class QdrantStore:
     async def get_document(self, document_id: UUID) -> Document | None:
         raise NotImplementedError("QdrantStore does not implement get_document")
 
+    async def get_document_by_content_hash(self, content_hash: str) -> Document | None:
+        raise NotImplementedError("QdrantStore does not implement get_document_by_content_hash")
+
     async def list_documents(
         self, status: DocumentStatus | None, limit: int, cursor: str | None
     ) -> Page[Document]:

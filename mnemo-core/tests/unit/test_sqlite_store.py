@@ -164,6 +164,22 @@ def test_document_crud(open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: 
     assert _run(open_store.get_document(doc_id)) is None
 
 
+def test_document_by_content_hash(
+    open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: datetime
+) -> None:
+    doc = make_doc(doc_id, ver_id, dt)
+    _run(open_store.upsert_document(doc))
+
+    # Valid hash should return the document
+    retrieved = _run(open_store.get_document_by_content_hash(doc.current_hash))
+    assert retrieved is not None
+    assert retrieved.document_id == doc_id
+    assert retrieved.current_hash == doc.current_hash
+
+    # Invalid hash should return None
+    assert _run(open_store.get_document_by_content_hash("deadbeef" * 8)) is None
+
+
 def test_document_conflict_delete(
     open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: datetime
 ) -> None:

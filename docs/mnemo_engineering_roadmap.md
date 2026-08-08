@@ -5,8 +5,8 @@
 **Status:** Living Implementation Tracker  
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
-**Current baseline:** Phase 0, Phase 1, and Phase 2 are complete at version
-0.9.0. Phase 3 is the next phase and has not started. Completed checklist
+**Current baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 Module 3.1 are complete at version
+0.10.0. Phase 3 Module 3.2 is the next module and has not started. Completed checklist
 items are marked below; later-phase trees and tasks describe planned work.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
@@ -333,9 +333,9 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 | Task | Subtask | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|---|
-| Implement `ParserRouter` | Maps file extension + MIME to `ParserInterface` impl | Checks registry first, built-ins second | — | Medium | Phase 2 |
-| Implement MIME detection | `python-magic` for reliable MIME | Extension fallback if magic fails | — | Low | 3.1a |
-| Implement deduplication gate | SHA-256 check before parsing | Return existing `document_id` if already known | — | Low | 3.1a |
+| ✅ Implement `ParserRouter` | Maps file extension + MIME to `ParserInterface` impl | Checks registry first, built-ins second | — | Medium | Phase 2 |
+| ✅ Implement MIME detection | `python-magic` for reliable MIME | Extension fallback if magic fails | — | Low | 3.1a |
+| ✅ Implement deduplication gate | SHA-256 check before parsing | Return existing `document_id` if already known | — | Low | 3.1a |
 
 **Module 3.2 — PDF Parser**
 

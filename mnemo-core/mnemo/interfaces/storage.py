@@ -92,6 +92,10 @@ class StorageInterfaceV1(Protocol):  # pragma: no cover
         """Return a document registry snapshot when present."""
         ...
 
+    async def get_document_by_content_hash(self, content_hash: str) -> Document | None:
+        """Return a document registry snapshot by content hash when present."""
+        ...
+
     async def list_documents(
         self,
         status: DocumentStatus | None,
