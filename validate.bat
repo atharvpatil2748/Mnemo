@@ -38,7 +38,7 @@ if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 cd ..
 
 echo Running twine check...
-uv run twine check mnemo-core/dist/* mnemo-server/dist/*
+uv run twine check dist/*
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo ALL CHECKS PASSED
