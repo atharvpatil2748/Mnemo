@@ -5,9 +5,10 @@ from pathlib import Path
 import magic
 
 from mnemo.interfaces.errors import UnsupportedError
+from mnemo.interfaces.parser_models import ParseResult
 from mnemo.interfaces.storage import StorageInterfaceV1
 from mnemo.interfaces.types import FileMetadata
-from mnemo.models import Document, FrozenMetadata, ParsedDocument
+from mnemo.models import Document, FrozenMetadata
 from mnemo.registry import PluginRegistry
 
 
@@ -62,7 +63,7 @@ class ParserRouter:
 
         return "application/octet-stream"
 
-    async def route(self, data: bytes, filename: str) -> Document | ParsedDocument:
+    async def route(self, data: bytes, filename: str) -> Document | ParseResult:
         """Route the given bytes to the correct parser, or deduplicate.
 
         Args:
@@ -70,7 +71,7 @@ class ParserRouter:
             filename: The original filename.
 
         Returns:
-            A Document if the file was deduplicated, otherwise a ParsedDocument.
+            A Document if the file was deduplicated, otherwise a ParseResult.
 
         Raises:
             UnsupportedError: If no parser can handle the detected MIME type or extension.

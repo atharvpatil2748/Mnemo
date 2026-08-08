@@ -83,7 +83,7 @@ Storage must precede everything else in mnemo-core because every other module wr
 
 ### Phase 3 — Parser System
 **Duration:** Weeks 7–10  
-**Goal:** Five built-in parsers (PDF, DOCX, Markdown, HTML, plain text) are implemented behind `ParserInterface`. Output is `ParsedDocument` with typed `Block[]`.
+**Goal:** Five built-in parsers (PDF, DOCX, Markdown, HTML, plain text) are implemented behind `ParserInterface`. Output is `ParseResult` with typed `RawBlock[]`.
 
 This is the front door of all data. Quality here directly determines quality everywhere downstream.
 
@@ -344,9 +344,9 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Implement `BasicPDFParser` | `pymupdf` (fitz) for digital PDFs | Text + table + image extraction | RAGFlow deepdoc | High | 3.1 |
 | Extract text with layout awareness | Respect reading order from PDF layout | Handle multi-column layouts | RAGFlow | High | 3.2a |
 | Extract table structures | Convert tables to markdown or structured dict | — | RAGFlow deepdoc | High | 3.2a |
-| Extract images | Save as blob, attach caption if present | — | — | Medium | 3.2a |
+| Extract images | Return TransientAsset for Orchestration Layer to persist | — | — | Medium | 3.2a |
 | Extract headings from formatting | Bold, larger font-size → HeadingBlock | Font size heuristic | RAGFlow | Medium | 3.2a |
-| Detect running headers/footers | Frequency analysis across pages | Architecture §4.1 Cleaner note | RAGFlow | High | 3.2a |
+| Preserve headers/footers | Preserve layout metadata for Cleaner to detect later | Architecture §4.1 Cleaner note | RAGFlow | High | 3.2a |
 
 **Module 3.3 — DOCX Parser**
 
@@ -1084,7 +1084,7 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 | **M0 — Dev Rails** | All tooling, CI, and Docker scaffolds operational | Python/frontend quality gates pass; distributions and Dockerfiles build; Compose files validate. | Phase 0 |
 | **M1 — Core Skeleton** | Interfaces and domain models compile | `from mnemo import KnowledgeEngine; engine = KnowledgeEngine(config)` works | Phase 1 |
 | **M2 — Storage Live** | All four backends operational | Write a chunk to all backends. Read it back. Delete it. All pass. | Phase 2 |
-| **M3 — First Parse** | PDF parser returns typed blocks | Parse a 100-page PDF → `ParsedDocument` with correct block count, headings preserved | Phase 3 |
+| **M3 — First Parse** | PDF parser returns typed raw blocks | Parse a 100-page PDF → `ParseResult` with correct block count, headings preserved | Phase 3 |
 | **M4 — First Chunks** | PDF → structured chunks with hierarchy | Parse + chunk "The Intelligent Investor" → chapters produce distinct chunks with correct `heading_path` | Phase 4 |
 | **M5 — First Embeddings** | Chunks embedded and stored in Qdrant | 1000 chunks embedded via Ollama `nomic-embed-text`. All stored in Qdrant. | Phase 5 |
 | **M6 — First Retrieval** | End-to-end query against one document returns cited answer | Ingest one PDF. Query it. Receive answer with at least one citation pointing to correct page. | Phase 6 |
@@ -1152,8 +1152,8 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 | **Unit** | Cleaner: hyphenated line breaks fixed, headers/footers removed |
 | **Unit** | Classifier: 20 sample documents classified correctly without LLM |
 | **Integration** | Parse → Clean → Classify pipeline on 5 document types |
-| **Regression** | Parse the same PDF twice → identical `ParsedDocument` (deterministic) |
-| **Manual** | Inspect `ParsedDocument` for a 300-page book. Verify chapters are HeadingBlocks. |
+| **Regression** | Parse the same PDF twice → identical `ParseResult` (deterministic) |
+| **Manual** | Inspect `ParseResult` for a 300-page book. Verify chapters are RawHeadingBlocks. |
 
 ---
 

@@ -358,7 +358,10 @@ It can be installed via `pip install mnemo-core` and used programmatically in an
 #### 4.1 Ingestion Pipeline
 
 **Parser**  
-Routes files to format-appropriate parsing implementations. Returns a `ParsedDocument` containing typed `Block` objects (text, heading, table, image, code, equation, caption). All implementations are behind `ParserInterface`. The built-in parsers handle: digital PDF, DOCX, PPTX, XLSX, HTML, Markdown, EPUB, plain text, JSON, CSV. Complex formats (scanned PDFs, code repositories, emails) are handled by plugins.
+Routes files to format-appropriate parsing implementations. Returns a `ParseResult` (a transient transport object) containing extracted transient blocks and unpersisted binary assets. All implementations are behind `ParserInterface`. The built-in parsers handle: digital PDF, DOCX, PPTX, XLSX, HTML, Markdown, EPUB, plain text, JSON, CSV. Complex formats (scanned PDFs, code repositories, emails) are handled by plugins.
+
+**DocumentCanonicalizer (Ingestion Orchestration Layer)**  
+Converts a `ParseResult` into the canonical `ParsedDocument`. It performs blob persistence, assigns permanent asset IDs, replaces transient image blocks with canonical `ImageBlock` records, and constructs the final immutable document representation.
 
 **Cleaner**  
 Normalizes the `ParsedDocument`. Removes duplicate whitespace, page number artifacts, running headers/footers (detected via frequency analysis across pages), fixes hyphenated line breaks, normalizes unicode to NFC, detects and tags the dominant language per block.
@@ -771,7 +774,7 @@ contracts.
 ### 8.1 ParserInterface
 
 `ParserInterfaceV1` synchronously converts immutable bytes and `FileMetadata`
-into a `ParsedDocument`. It exposes immutable `ParserCapabilities` and performs
+into a `ParseResult`. It exposes immutable `ParserCapabilities` and performs
 no network or persistent-storage I/O.
 
 ### 8.2 ChunkerInterface
@@ -840,7 +843,7 @@ INPUT: file bytes (from API upload, watch folder, or programmatic call)
     └──────┬──────┘
            │
     ┌──────▼──────┐
-    │  STAGE 2    │  Parsing: convert bytes → ParsedDocument{blocks[], metadata}.
+    │  STAGE 2    │  Parsing: convert bytes → ParseResult{blocks[], metadata, extracted_assets[]}.
     │  Parsing    │  For digital PDF: text extraction + layout analysis.
     │             │  For scanned: OCR plugin (if installed) → layout.
     │             │  For DOCX: heading hierarchy preserved.

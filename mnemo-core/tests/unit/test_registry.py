@@ -33,7 +33,8 @@ from mnemo.interfaces import (
     RetrieverInterfaceV1,
     StorageInterfaceV1,
 )
-from mnemo.models import DocType, FrozenMetadata, ParsedDocument
+from mnemo.interfaces.parser_models import ParseResult, RawTextBlock
+from mnemo.models import DocType, DocumentMetadata, FrozenMetadata
 
 
 class ParserStub:
@@ -46,8 +47,8 @@ class ParserStub:
     def capabilities(self) -> ParserCapabilities:
         return ParserCapabilities(
             supported_formats=self.supported_formats,
-            supports_tables=False,
-            supports_images=False,
+            supports_tables=True,
+            supports_images=True,
             supports_math=False,
             supports_ocr=False,
         )
@@ -57,8 +58,17 @@ class ParserStub:
         data: bytes,
         filename: str,
         metadata: FileMetadata,
-    ) -> ParsedDocument:
-        raise NotImplementedError
+    ) -> ParseResult:
+        return ParseResult(
+            blocks=(RawTextBlock(ordinal=0, text="stub"),),
+            extracted_assets=(),
+            metadata=DocumentMetadata(
+                content_hash="hash",
+                title="Stub",
+            ),
+            language="en",
+            doc_type=DocType.GENERIC,
+        )
 
 
 @dataclass(slots=True)

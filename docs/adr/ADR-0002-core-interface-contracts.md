@@ -381,14 +381,14 @@ checks. They never expose vendor names, connections, or clients.
 
 ### 6.1 `ParserInterface`
 
-**Purpose.** Converts raw bytes into one `ParsedDocument` without persistence or
+**Purpose.** Converts raw bytes into one `ParseResult` (a transient transport object) without persistence or
 network access.
 
 | Member | Contract |
 |---|---|
 | `supported_formats` | Immutable, non-empty, case-normalized file extensions and/or MIME identifiers. No duplicates. |
 | `capabilities` | Returns immutable metadata containing `supported_formats`, `supports_tables`, `supports_images`, `supports_math`, and `supports_ocr`. |
-| `parse` | Inputs: bytes, non-empty filename, `FileMetadata`. Output: `ParsedDocument`. Synchronous. |
+| `parse` | Inputs: bytes, non-empty filename, `FileMetadata`. Output: `ParseResult`. Synchronous. |
 
 The implementation is stateless, deterministic for identical bytes, metadata,
 configuration, and implementation version, and safe for concurrent calls. It

@@ -3,8 +3,9 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from mnemo.interfaces.errors import UnsupportedError
+from mnemo.interfaces.parser_models import ParseResult
 from mnemo.interfaces.storage import StorageInterfaceV1
-from mnemo.models import Document, ParsedDocument
+from mnemo.models import Document
 from mnemo.parsers.router import ParserRouter
 from mnemo.registry import PluginRegistry
 
@@ -26,13 +27,11 @@ def mock_storage() -> AsyncMock:
 @pytest.fixture
 def router(mock_registry: Mock, mock_storage: AsyncMock) -> ParserRouter:
     return ParserRouter(mock_registry, mock_storage)
-
-
 @pytest.fixture
 def mock_parser() -> Mock:
     parser = Mock()
-    parsed_doc = Mock(spec=ParsedDocument)
-    parser.parse.return_value = parsed_doc
+    parsed_result = Mock(spec=ParseResult)
+    parser.parse.return_value = parsed_result
     return parser
 
 

@@ -43,6 +43,7 @@ from mnemo.interfaces import (
     StorageInterface,
     StorageInterfaceV1,
 )
+from mnemo.interfaces.parser_models import ParseResult
 from mnemo.models import (
     Chunk,
     DocType,
@@ -77,9 +78,20 @@ class ParserStub:
         data: bytes,
         filename: str,
         metadata: FileMetadata,
-    ) -> ParsedDocument:
-        """Satisfy the parser signature without implementing parsing."""
-        raise NotImplementedError
+    ) -> ParseResult:
+        from mnemo.interfaces.parser_models import ParseResult, RawTextBlock
+        from mnemo.models import DocType, DocumentMetadata
+        
+        return ParseResult(
+            blocks=(RawTextBlock(ordinal=0, text="stub"),),
+            extracted_assets=(),
+            metadata=DocumentMetadata(
+                content_hash="hash",
+                title="Stub",
+            ),
+            language="en",
+            doc_type=DocType.GENERIC,
+        )
 
 
 class ChunkerStub:

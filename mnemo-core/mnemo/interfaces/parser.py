@@ -2,14 +2,14 @@
 
 from typing import Protocol, runtime_checkable
 
-from mnemo.models import ParsedDocument
+from mnemo.interfaces.parser_models import ParseResult
 
 from .types import FileMetadata, ParserCapabilities
 
 
 @runtime_checkable
 class ParserInterfaceV1(Protocol):  # pragma: no cover
-    """Convert raw bytes into a parsed document without I/O side effects."""
+    """Convert raw bytes into a ParseResult without I/O side effects."""
 
     @property
     def supported_formats(self) -> tuple[str, ...]:
@@ -25,7 +25,7 @@ class ParserInterfaceV1(Protocol):  # pragma: no cover
         data: bytes,
         filename: str,
         metadata: FileMetadata,
-    ) -> ParsedDocument:
+    ) -> ParseResult:
         """Parse bytes synchronously without network or persistent writes."""
         ...
 
