@@ -5,8 +5,8 @@
 **Status:** Living Implementation Tracker  
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
-**Current baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 through Module 3.7
-are complete at version 0.10.5. Module 3.8 is next and has not started.
+**Current baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 through Module 3.8
+are complete at version 0.10.6. Module 4.1 is next and has not started.
 Completed checklist items are marked below; later tasks describe planned work.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
@@ -395,8 +395,8 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 | Task | Subtask | Notes | Difficulty | Dependency |
 |---|---|---|---|---|
-| Implement rule-based classification | DocType from extension + heading patterns + structure | Fast path, no LLM | Medium | 3.7 |
-| Implement LLM-assisted classification | For ambiguous cases: send first-page text to Extractor LLM | Fallback only | High | 3.8a |
+| ✅ Implement rule-based classification | DocType from extension + heading patterns + structure | Fast path, no LLM (ADR-0013) | Medium | 3.7 |
+| ⏩ *Deferred:* LLM-assisted classification | Deferred to future orchestration | Moved to Phase 5/6 (ADR-0013) | High | 3.8a |
 
 ---
 

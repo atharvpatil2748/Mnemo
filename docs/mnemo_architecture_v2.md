@@ -856,7 +856,12 @@ INPUT: file bytes (from API upload, watch folder, or programmatic call)
            │
     ┌──────▼──────┐
     │  STAGE 4    │  Classification: assign doc_type (book, paper, code, etc.)
-    │  Classify   │  Rule-based first (fast). LLM only if ambiguous.
+    │  Classify   │  Rule-based ONLY (fast). Returns Classified ParseResult.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 4B   │  Future Orchestration: LLM-assisted classification
+    │  (Deferred) │  for ambiguous cases (Fallback).
     └──────┬──────┘
            │
     ┌──────▼──────┐
@@ -866,17 +871,27 @@ INPUT: file bytes (from API upload, watch folder, or programmatic call)
     └──────┬──────┘
            │
     ┌──────▼──────┐
-    │  STAGE 6    │  Adaptive chunking: select ChunkerInterface by doc_type.
+    │  STAGE 6    │  Blob Persistence: write blobs and generate Asset IDs.
+    │  Blob Store │  (Replaces older "Phase 5/6" logic)
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 7    │  Document Canonicalization: convert ParseResult to
+    │  Canonical  │  ParsedDocument, assigning UUIDs and final models.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 8    │  Adaptive chunking: select ChunkerInterface by doc_type.
     │  Chunking   │  Produce Chunk[] with full hierarchy metadata.
     └──────┬──────┘
            │
     ┌──────▼──────┐
-    │  STAGE 7    │  Embedding: check cache per chunk (sha256 → vector).
+    │  STAGE 9    │  Embedding: check cache per chunk (sha256 → vector).
     │  Embedding  │  Batch new chunks. Store embeddings with chunks.
     └──────┬──────┘
            │
     ┌──────▼──────┐
-    │  STAGE 8    │  Indexing: write to Qdrant + SQLite FTS5 + SurrealDB.
+    │  STAGE 10   │  Indexing: write to Qdrant + SQLite FTS5 + SurrealDB.
     │  Indexing   │  Atomic: if any write fails, roll back all writes.
     └──────┬──────┘
            │
