@@ -12,6 +12,7 @@ dependencies = [
     "pydantic>=2.11,<3",
     "pymupdf>=1.28.2",
     "python-docx>=1.1.0",
+    "python-magic>=0.4.27",
     "qdrant-client>=1.9.1",
     "surrealdb>=2.0.0",
 ]

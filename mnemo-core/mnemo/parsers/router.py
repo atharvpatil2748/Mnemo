@@ -49,7 +49,7 @@ class ParserRouter:
             The detected MIME type string.
         """
         try:
-            mime = magic.from_buffer(data, mime=True)
+            mime: str = magic.from_buffer(data, mime=True)
             if mime and mime != "application/octet-stream":
                 return mime
         except Exception:
