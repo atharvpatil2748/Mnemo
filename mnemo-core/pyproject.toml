@@ -1,12 +1,14 @@
 [project]
 name = "mnemo-core"
-version = "0.10.3"
+version = "0.10.4"
 description = "Core library for the Mnemo local knowledge engine."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12"
 dependencies = [
     "aiosqlite>=0.22.1",
+    "beautifulsoup4>=4.15.0",
+    "html5lib>=1.1",
     "markdown-it-py>=4.2.0",
     "packaging>=24,<27",
     "pydantic>=2.11,<3",
@@ -14,6 +16,7 @@ dependencies = [
     "python-docx>=1.1.0",
     "python-magic>=0.4.27",
     "qdrant-client>=1.9.1",
+    "readability-lxml>=0.8.4.1",
     "surrealdb>=2.0.0",
 ]
 

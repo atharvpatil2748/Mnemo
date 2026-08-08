@@ -1,6 +1,6 @@
 # mnemo-server
 
-`mnemo-server` is the future transport-adapter package for Mnemo. Version 0.10.3
+`mnemo-server` is the future transport-adapter package for Mnemo. Version 0.10.4
 remains a Phase 0 scaffold; REST, WebSocket, and MCP implementations are
 assigned to later roadmap phases. It contains no business logic.
 

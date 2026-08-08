@@ -368,9 +368,9 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 | Task | Subtask | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|---|
-| Implement `HTMLParser` | `beautifulsoup4` + `html5lib` | — | — | Low | 3.1 |
-| Respect semantic heading hierarchy | `<h1>`–`<h6>` → HeadingBlock | — | — | Low | 3.5a |
-| Strip boilerplate | Nav, footer, ads heuristic removal | `readability-lxml` for main content extraction | — | Medium | 3.5a |
+| ✅ Implement `HTMLParser` | `beautifulsoup4` + `html5lib` | — | — | Low | 3.1 |
+| ✅ Respect semantic heading hierarchy | `<h1>`–`<h6>` → HeadingBlock | — | — | Low | 3.5a |
+| ✅ Strip boilerplate | Nav, footer, ads heuristic removal | `readability-lxml` for main content extraction | — | Medium | 3.5a |
 
 **Module 3.6 — Text and Other Parsers**
 

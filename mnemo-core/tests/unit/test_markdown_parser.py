@@ -84,8 +84,10 @@ def test_heading_levels(parser: MarkdownParser, metadata: FileMetadata) -> None:
     result = _parse(parser, md, metadata)
     assert len(result.blocks) == 3
     for i, level in enumerate([1, 2, 3]):
-        assert isinstance(result.blocks[i], RawHeadingBlock)
-        assert result.blocks[i].level == level
+        b = result.blocks[i]
+        assert isinstance(b, RawHeadingBlock)
+        assert b.level == level
+        assert b.text == f"H{level}"
 
 
 # ── Paragraphs / text ──────────────────────────────────────────────────────
@@ -104,8 +106,12 @@ def test_multiple_paragraphs(parser: MarkdownParser, metadata: FileMetadata) -> 
     md = b"First paragraph.\n\nSecond paragraph.\n"
     result = _parse(parser, md, metadata)
     assert len(result.blocks) == 2
-    assert result.blocks[0].text == "First paragraph."  # type: ignore[union-attr]
-    assert result.blocks[1].text == "Second paragraph."  # type: ignore[union-attr]
+    b0 = result.blocks[0]
+    b1 = result.blocks[1]
+    assert isinstance(b0, RawTextBlock)
+    assert b0.text == "First paragraph."
+    assert isinstance(b1, RawTextBlock)
+    assert b1.text == "Second paragraph."
 
 
 def test_heading_then_paragraph(parser: MarkdownParser, metadata: FileMetadata) -> None:
