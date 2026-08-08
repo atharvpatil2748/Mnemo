@@ -95,7 +95,11 @@ def test_docx_parser_extracts_images(parser: DOCXParser, file_metadata: FileMeta
     doc.add_paragraph("Paragraph with image")
 
     # Create a valid dummy image (1x1 GIF)
-    image_bytes = b"GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x01D\x00;"
+    image_bytes = (
+        b"GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff"
+        b"!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01"
+        b"\x00\x00\x02\x01D\x00;"
+    )
     image_stream = io.BytesIO(image_bytes)
 
     doc.add_picture(image_stream)

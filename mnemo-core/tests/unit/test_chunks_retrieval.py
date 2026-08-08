@@ -1,9 +1,8 @@
-from typing import Any
-
 """Tests for chunks, scored results, and validated metadata filters."""
 
 from dataclasses import FrozenInstanceError, replace
 from datetime import date
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest

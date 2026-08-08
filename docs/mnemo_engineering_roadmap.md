@@ -5,9 +5,9 @@
 **Status:** Living Implementation Tracker  
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
-**Current baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 Module 3.1 are complete at version
-0.10.0. Phase 3 Module 3.2 is the next module and has not started. Completed checklist
-items are marked below; later-phase trees and tasks describe planned work.
+**Current baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 through Module 3.4
+are complete at version 0.10.3. Module 3.5 is next and has not started.
+Completed checklist items are marked below; later tasks describe planned work.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
 
@@ -341,28 +341,28 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 | Task | Subtask | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|---|
-| Implement `BasicPDFParser` | `pymupdf` (fitz) for digital PDFs | Text + table + image extraction | RAGFlow deepdoc | High | 3.1 |
-| Extract text with layout awareness | Respect reading order from PDF layout | Handle multi-column layouts | RAGFlow | High | 3.2a |
-| Extract table structures | Convert tables to markdown or structured dict | — | RAGFlow deepdoc | High | 3.2a |
-| Extract images | Return TransientAsset for Orchestration Layer to persist | — | — | Medium | 3.2a |
-| Extract headings from formatting | Bold, larger font-size → HeadingBlock | Font size heuristic | RAGFlow | Medium | 3.2a |
-| Preserve headers/footers | Preserve layout metadata for Cleaner to detect later | Architecture §4.1 Cleaner note | RAGFlow | High | 3.2a |
+| ✅ Implement `BasicPDFParser` | `pymupdf` (fitz) for digital PDFs | Text + table + image extraction | RAGFlow deepdoc | High | 3.1 |
+| ✅ Extract text with layout awareness | Respect reading order from PDF layout | Handle multi-column layouts | RAGFlow | High | 3.2a |
+| ✅ Extract table structures | Convert tables to markdown or structured dict | — | RAGFlow deepdoc | High | 3.2a |
+| ✅ Extract images | Return TransientAsset for Orchestration Layer to persist | — | — | Medium | 3.2a |
+| ✅ Extract headings from formatting | Bold, larger font-size → HeadingBlock | Font size heuristic | RAGFlow | Medium | 3.2a |
+| ✅ Preserve headers/footers | Preserve layout metadata for Cleaner to detect later | Architecture §4.1 Cleaner note | RAGFlow | High | 3.2a |
 
 **Module 3.3 — DOCX Parser**
 
 | Task | Subtask | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|---|
-| Implement `DOCXParser` | `python-docx` | Preserve heading levels (H1–H6) | RAGFlow | Medium | 3.1 |
-| Extract paragraph structure | Map Word styles → HeadingBlock / TextBlock | — | — | Medium | 3.3a |
-| Extract tables | Convert to structured TableBlock | — | — | Medium | 3.3a |
+| ✅ Implement `DOCXParser` | `python-docx` | Preserve heading levels (H1–H6) | RAGFlow | Medium | 3.1 |
+| ✅ Extract paragraph structure | Map Word styles → HeadingBlock / TextBlock | — | — | Medium | 3.3a |
+| ✅ Extract tables | Convert to structured TableBlock | — | — | Medium | 3.3a |
 
 **Module 3.4 — Markdown Parser**
 
 | Task | Subtask | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|---|
-| Implement `MarkdownParser` | `mistune` or `markdown-it-py` AST parser | Full AST, not regex-based | — | Low | 3.1 |
-| Map AST nodes to Block types | H1-H6 → HeadingBlock, fenced code → CodeBlock, table → TableBlock | — | — | Low | 3.4a |
-| Extract internal links | Store as graph edge metadata | — | — | Low | 3.4a |
+| ✅ Implement `MarkdownParser` | `markdown-it-py` AST parser | Full AST, not regex-based | — | Low | 3.1 |
+| ✅ Map AST nodes to raw block types | H1-H6 → RawHeadingBlock, fenced code → RawCodeBlock, table → RawTableBlock | ADR-0011 boundary | — | Low | 3.4a |
+| ✅ Preserve link text | Graph-edge generation remains outside the pure parser boundary | ADR-0011 boundary | — | Low | 3.4a |
 
 **Module 3.5 — HTML Parser**
 
@@ -1927,7 +1927,7 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ✅ `BasicPDFParser` (layout-aware, tables, images, headings)
 - □ Running header/footer detection
 - ✅ `DOCXParser`
-- □ `MarkdownParser` (AST-based)
+- ✅ `MarkdownParser` (AST-based)
 - □ `HTMLParser` + boilerplate removal
 - □ `PlainTextParser`, `JSONParser`, `CSVParser`
 - □ `DocumentCleaner` (unicode, whitespace, hyphenation, language detection)

@@ -1,9 +1,8 @@
-from typing import cast
-
 """Tests for the complete parsed-document block hierarchy."""
 
 import uuid
 from dataclasses import FrozenInstanceError
+from typing import cast
 from uuid import uuid4
 
 import pytest

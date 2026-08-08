@@ -1,9 +1,8 @@
-from typing import Any
-
 """Tests for parsed documents and document registry models."""
 
 from dataclasses import FrozenInstanceError, replace
 from datetime import UTC, date, datetime, timedelta
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest

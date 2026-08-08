@@ -1,11 +1,9 @@
-import uuid
-from typing import cast
-
 """Tests for graph, notebook, conversation, citation, note, and insight models."""
 
+import uuid
 from dataclasses import FrozenInstanceError, replace
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from uuid import UUID, uuid4
 
 import pytest
