@@ -17,6 +17,8 @@ from mnemo.interfaces.parser_models import (
     RawTextBlock,
 )
 
+langdetect.DetectorFactory.seed = 0
+
 
 class DocumentCleaner:
     """Cleans and normalizes RawBlocks within a ParseResult."""

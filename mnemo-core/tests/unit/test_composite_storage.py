@@ -43,6 +43,71 @@ def _chunk() -> Chunk:
     )
 
 
+class _StatefulChunkBackend:
+    """Failure-injectable affected-key store used to verify compensation semantics."""
+
+    def __init__(self, chunks: tuple[Chunk, ...] = ()) -> None:
+        self.chunks = {chunk.id: chunk for chunk in chunks}
+        self.fail_before_write = False
+        self.fail_after_first_write = False
+
+    async def _snapshot_chunks(self, chunk_ids: tuple[str, ...]) -> tuple[Chunk, ...]:
+        return tuple(self.chunks[chunk_id] for chunk_id in chunk_ids if chunk_id in self.chunks)
+
+    async def _restore_chunk_snapshot(
+        self,
+        attempted_ids: tuple[str, ...],
+        previous_chunks: tuple[Chunk, ...],
+    ) -> None:
+        previous = {chunk.id: chunk for chunk in previous_chunks}
+        for chunk_id in attempted_ids:
+            if chunk_id in previous:
+                self.chunks[chunk_id] = previous[chunk_id]
+            else:
+                self.chunks.pop(chunk_id, None)
+
+    async def upsert_chunks(self, chunks: tuple[Chunk, ...]) -> None:
+        if self.fail_before_write:
+            self.fail_before_write = False
+            raise RuntimeError("injected failure before write")
+        for index, chunk in enumerate(chunks):
+            self.chunks[chunk.id] = chunk
+            if self.fail_after_first_write and index == 0:
+                self.fail_after_first_write = False
+                raise RuntimeError("injected partial write")
+
+
+def _stateful_composite(
+    fs_mock: StorageInterfaceV1,
+    sur_mock: StorageInterfaceV1,
+    sql: _StatefulChunkBackend,
+    qdrant: _StatefulChunkBackend,
+) -> CompositeStorage:
+    return CompositeStorage(
+        filesystem=cast(FilesystemBlobStore, fs_mock),
+        sqlite=cast(SQLiteStore, sql),
+        qdrant=cast(QdrantStore, qdrant),
+        surrealdb=cast(SurrealDBStore, sur_mock),
+    )
+
+
+def _logical_chunk(chunk: Chunk) -> tuple[object, ...]:
+    """Compare every persisted field; Chunk equality intentionally compares identity only."""
+    return (
+        chunk.id,
+        chunk.document_id,
+        chunk.version_id,
+        chunk.text,
+        chunk.chunk_type,
+        chunk.position,
+        chunk.heading_path,
+        chunk.parent_chunk_id,
+        chunk.sibling_ids,
+        tuple(chunk.metadata.items()),
+        chunk.embedding,
+    )
+
+
 @pytest.fixture
 def fs_mock() -> StorageInterfaceV1:
     mock = AsyncMock(spec=StorageInterfaceV1)
@@ -60,7 +125,8 @@ def fs_mock() -> StorageInterfaceV1:
 
 @pytest.fixture
 def sql_mock() -> StorageInterfaceV1:
-    mock = AsyncMock(spec=StorageInterfaceV1)
+    mock = AsyncMock(spec=SQLiteStore)
+    mock._snapshot_chunks.return_value = ()
     mock.capabilities.return_value = StorageCapabilities(
         supports_blobs=False,
         supports_dense_search=False,
@@ -75,7 +141,8 @@ def sql_mock() -> StorageInterfaceV1:
 
 @pytest.fixture
 def qdr_mock() -> StorageInterfaceV1:
-    mock = AsyncMock(spec=StorageInterfaceV1)
+    mock = AsyncMock(spec=QdrantStore)
+    mock._snapshot_chunks.return_value = ()
     mock.capabilities.return_value = StorageCapabilities(
         supports_blobs=False,
         supports_dense_search=True,
@@ -301,8 +368,8 @@ async def test_upsert_chunks_success(
 
     sql_mock.upsert_chunks.assert_awaited_once_with(chunks)
     qdr_mock.upsert_chunks.assert_awaited_once_with(chunks)
-    # Rollback should not be triggered
-    sql_mock.delete_chunks_for_document.assert_not_called()
+    sql_mock._restore_chunk_snapshot.assert_not_called()
+    qdr_mock._restore_chunk_snapshot.assert_not_called()
 
 
 @pytest.mark.anyio
@@ -311,7 +378,7 @@ async def test_upsert_chunks_rollback(
     sql_mock: Mock,
     qdr_mock: Mock,
 ) -> None:
-    """Test rollback of SQLite chunks if Qdrant insertion fails."""
+    """Restore exact affected-key snapshots if Qdrant insertion fails."""
     chunk = Chunk(
         id="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         document_id=uuid4(),
@@ -333,9 +400,8 @@ async def test_upsert_chunks_rollback(
 
     sql_mock.upsert_chunks.assert_awaited_once_with(chunks)
     qdr_mock.upsert_chunks.assert_awaited_once_with(chunks)
-    sql_mock.delete_chunks_for_document.assert_awaited_once_with(
-        chunk.document_id, chunk.version_id
-    )
+    sql_mock._restore_chunk_snapshot.assert_awaited_once_with((chunk.id,), ())
+    qdr_mock._restore_chunk_snapshot.assert_awaited_once_with((chunk.id,), ())
 
 
 @pytest.mark.anyio
@@ -363,10 +429,145 @@ async def test_upsert_chunks_reports_failed_compensation(
 ) -> None:
     """A failed rollback is surfaced instead of hiding possible inconsistency."""
     qdr_mock.upsert_chunks.side_effect = RuntimeError("vector write failed")
-    sql_mock.delete_chunks_for_document.side_effect = RuntimeError("rollback failed")
+    sql_mock._restore_chunk_snapshot.side_effect = RuntimeError("rollback failed")
 
     with pytest.raises(StorageError, match="compensating rollback failed"):
         await composite.upsert_chunks((_chunk(),))
+
+
+@pytest.mark.anyio
+async def test_upsert_chunks_rejects_duplicate_ids(
+    composite: CompositeStorage,
+    sql_mock: Mock,
+    qdr_mock: Mock,
+) -> None:
+    """An ambiguous duplicate replacement batch is rejected before mutation."""
+    chunk = _chunk()
+
+    with pytest.raises(ContractValidationError, match="duplicate chunk IDs"):
+        await composite.upsert_chunks((chunk, replace(chunk, text="replacement")))
+
+    sql_mock._snapshot_chunks.assert_not_awaited()
+    qdr_mock._snapshot_chunks.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_existing_chunks_are_replaced_successfully(
+    fs_mock: StorageInterfaceV1,
+    sur_mock: StorageInterfaceV1,
+) -> None:
+    original = _chunk()
+    replacement = replace(original, text="replacement", embedding=(0.1, 0.2))
+    sql = _StatefulChunkBackend((original,))
+    qdrant = _StatefulChunkBackend((original,))
+
+    await _stateful_composite(fs_mock, sur_mock, sql, qdrant).upsert_chunks((replacement,))
+
+    assert _logical_chunk(sql.chunks[original.id]) == _logical_chunk(replacement)
+    assert _logical_chunk(qdrant.chunks[original.id]) == _logical_chunk(replacement)
+
+
+@pytest.mark.anyio
+async def test_sqlite_failure_preserves_existing_chunks(
+    fs_mock: StorageInterfaceV1,
+    sur_mock: StorageInterfaceV1,
+) -> None:
+    original = _chunk()
+    replacement = replace(original, text="replacement")
+    sql = _StatefulChunkBackend((original,))
+    qdrant = _StatefulChunkBackend((original,))
+    sql.fail_before_write = True
+
+    with pytest.raises(StorageError):
+        await _stateful_composite(fs_mock, sur_mock, sql, qdrant).upsert_chunks((replacement,))
+
+    assert _logical_chunk(sql.chunks[original.id]) == _logical_chunk(original)
+    assert _logical_chunk(qdrant.chunks[original.id]) == _logical_chunk(original)
+
+
+@pytest.mark.anyio
+async def test_vector_partial_failure_restores_existing_and_removes_new_chunks(
+    fs_mock: StorageInterfaceV1,
+    sur_mock: StorageInterfaceV1,
+) -> None:
+    original = _chunk()
+    replacement = replace(original, text="replacement", embedding=(0.1, 0.2))
+    introduced = replace(
+        original,
+        id="b" * 64,
+        text="introduced",
+        position=replace(original.position, chunk_index_in_section=1),
+    )
+    sql = _StatefulChunkBackend((original,))
+    qdrant = _StatefulChunkBackend((original,))
+    qdrant.fail_after_first_write = True
+
+    with pytest.raises(StorageError):
+        await _stateful_composite(fs_mock, sur_mock, sql, qdrant).upsert_chunks(
+            (replacement, introduced)
+        )
+
+    assert _logical_chunk(sql.chunks[original.id]) == _logical_chunk(original)
+    assert _logical_chunk(qdrant.chunks[original.id]) == _logical_chunk(original)
+    assert introduced.id not in sql.chunks
+    assert introduced.id not in qdrant.chunks
+
+
+@pytest.mark.anyio
+async def test_new_chunk_partial_failure_leaves_no_attempted_state(
+    fs_mock: StorageInterfaceV1,
+    sur_mock: StorageInterfaceV1,
+) -> None:
+    first = _chunk()
+    chunks = (first, replace(first, id="b" * 64))
+    sql = _StatefulChunkBackend()
+    qdrant = _StatefulChunkBackend()
+    qdrant.fail_after_first_write = True
+
+    with pytest.raises(StorageError):
+        await _stateful_composite(fs_mock, sur_mock, sql, qdrant).upsert_chunks(chunks)
+
+    assert sql.chunks == {}
+    assert qdrant.chunks == {}
+
+
+@pytest.mark.anyio
+async def test_empty_and_repeated_identical_upserts_are_idempotent(
+    fs_mock: StorageInterfaceV1,
+    sur_mock: StorageInterfaceV1,
+) -> None:
+    chunk = _chunk()
+    sql = _StatefulChunkBackend()
+    qdrant = _StatefulChunkBackend()
+    composite = _stateful_composite(fs_mock, sur_mock, sql, qdrant)
+
+    await composite.upsert_chunks(())
+    await composite.upsert_chunks((chunk,))
+    await composite.upsert_chunks((chunk,))
+
+    assert tuple(sql.chunks) == (chunk.id,)
+    assert _logical_chunk(sql.chunks[chunk.id]) == _logical_chunk(chunk)
+    assert _logical_chunk(qdrant.chunks[chunk.id]) == _logical_chunk(chunk)
+
+
+@pytest.mark.anyio
+async def test_failed_replacement_can_be_retried(
+    fs_mock: StorageInterfaceV1,
+    sur_mock: StorageInterfaceV1,
+) -> None:
+    original = _chunk()
+    replacement = replace(original, text="replacement", embedding=(0.1, 0.2))
+    sql = _StatefulChunkBackend((original,))
+    qdrant = _StatefulChunkBackend((original,))
+    qdrant.fail_after_first_write = True
+    composite = _stateful_composite(fs_mock, sur_mock, sql, qdrant)
+
+    with pytest.raises(StorageError):
+        await composite.upsert_chunks((replacement,))
+    await composite.upsert_chunks((replacement,))
+
+    assert _logical_chunk(sql.chunks[original.id]) == _logical_chunk(replacement)
+    assert _logical_chunk(qdrant.chunks[original.id]) == _logical_chunk(replacement)
 
 
 @pytest.mark.anyio

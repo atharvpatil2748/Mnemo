@@ -5,7 +5,7 @@ The HTML Parser (Module 3.5) has been successfully implemented, audited, and fro
 
 ## Architectural Notes
 - **Purity Preserved**: The parser is a pure function. It accepts raw bytes and `FileMetadata` and returns a `ParseResult`.
-- **Identity Isolation**: It strictly uses deterministic correlation keys (e.g., `local-img-0`) instead of minting persistent UUIDs, deferring all persistent ID generation to the upcoming DocumentCanonicalizer.
+- **Identity Isolation**: It strictly uses deterministic correlation keys (e.g., `local-img-0`) instead of minting persistent UUIDs, deferring all persistent identity generation to storage through the Module 3.9 ingestion pipeline.
 - **Storage Isolation**: Zero storage writes occur during parsing.
 
 ## Dependencies Added

@@ -23,7 +23,9 @@ Module 3.8 (`DocumentClassifier`) is implemented as a pure, synchronous, determi
 It uses ONLY information already present in the `ParseResult` (and optionally the filename) to perform rule-based classification (checking file extensions, heading text, block structure). It updates `ParseResult.doc_type` and returns a new immutable `ParseResult`, preserving all other data.
 
 ### 2. Deferral of LLM Classification
-The LLM-assisted classification fallback is explicitly removed from Module 3.8 and deferred to the future Phase 5/6 ingestion orchestration layer. Orchestration layers are architecturally permitted to perform network I/O and interact with external LLMs.
+The LLM-assisted classification fallback is explicitly removed from Module 3.8.
+Module 3.9 performs no LLM call. A later ingestion enhancement may add the
+optional fallback at the location reserved by ADR-0014.
 
 ### 3. Pipeline Order Update
 The formal Phase 3 ingestion pipeline is updated to:
@@ -40,7 +42,7 @@ DocumentClassifier
   ↓
 Classified ParseResult
   ↓
-Future Ingestion Orchestration (Optional LLM Fallback)
+Module 3.9 Ingestion Pipeline (No LLM in V1)
   ↓
 Blob Persistence
   ↓
@@ -53,6 +55,8 @@ Chunker
 
 ## Consequences
 
-- **Purity Maintained**: Phase 3 remains free of storage and network I/O.
+- **Purity Maintained**: Parsers, the cleaner, the classifier, and the
+  canonicalizer remain free of storage and network I/O. Module 3.9 isolates the
+  required storage I/O in `IngestionPipeline`.
 - **Testability**: The `DocumentClassifier` can be tested instantly and deterministically using mock `ParseResult` objects.
 - **Graceful Degradation**: Documents that cannot be classified by rules fall back to `DocType.GENERIC`, waiting for future orchestration layers to optionally enhance them via an LLM.

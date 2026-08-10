@@ -26,6 +26,7 @@ from mnemo import (
     StorageConfig,
     __version__,
 )
+from mnemo.engine import _builtin_plugins
 from mnemo.interfaces import (
     EmbeddingCapabilities,
     EmbeddingProviderV1,
@@ -170,6 +171,25 @@ def test_construction_is_inert_and_public_metadata_is_read_only(tmp_path: Path) 
         _ = engine.storage
     with pytest.raises(TypeError):
         KnowledgeEngine(object())  # type: ignore[arg-type]
+
+
+def test_builtin_parser_plugin_registers_all_frozen_phase3_formats(tmp_path: Path) -> None:
+    """Built-in Phase 3 parsers are resolvable through the owned registry."""
+    registry = PluginRegistry(core_version=__version__)
+    results = registry.load_plugins(_builtin_plugins(make_config(tmp_path)))
+
+    assert all(result.loaded for result in results)
+    for slot in (
+        ".pdf",
+        "application/pdf",
+        ".docx",
+        ".md",
+        ".html",
+        ".txt",
+        ".json",
+        ".csv",
+    ):
+        assert registry.resolve_parser(slot) is not None
 
 
 def test_initialize_resolves_freezes_and_exposes_runtime(

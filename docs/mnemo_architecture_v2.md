@@ -7,7 +7,7 @@
 **License Target:** Apache 2.0  
 
 **Implementation baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 through
-Module 3.8 are complete at version 0.10.7. The parser boundary returns transient
+Module 3.9 are complete. The parser boundary returns transient
 `ParseResult` values as specified by ADR-0011. Accepted ADRs refine public
 schemas and contracts where this document previously used shorthand.
 
@@ -358,22 +358,45 @@ It can be installed via `pip install mnemo-core` and used programmatically in an
 #### 4.1 Ingestion Pipeline
 
 **Parser**  
-Routes files to format-appropriate parsing implementations. Returns a `ParseResult` (a transient transport object) containing extracted transient blocks and unpersisted binary assets. All implementations are behind `ParserInterface`. The built-in parsers handle: digital PDF, DOCX, PPTX, XLSX, HTML, Markdown, EPUB, plain text, JSON, CSV. Complex formats (scanned PDFs, code repositories, emails) are handled by plugins.
+Routes files to format-appropriate parsing implementations. Returns a `ParseResult` (a transient transport object) containing extracted transient blocks and unpersisted binary assets. All implementations are behind `ParserInterface`. The implemented built-in parsers handle digital PDF, DOCX, HTML, Markdown, plain text, JSON, and CSV/TSV. Additional formats, including scanned PDFs and EPUB, remain plugin or later-roadmap work.
 
-**DocumentCanonicalizer (Ingestion Orchestration Layer)**  
-Converts a `ParseResult` into the canonical `ParsedDocument`. It performs blob persistence, assigns permanent asset IDs, replaces transient image blocks with canonical `ImageBlock` records, and constructs the final immutable document representation.
+**IngestionPipeline**
+
+Owns the implemented Phase 3.9 sequence: router deduplication, cleaning,
+classification, transient-asset persistence through `StorageInterfaceV1`,
+immutable asset correlation, canonicalization, and publication of the resulting
+`ParsedDocument`. On a deduplication hit it loads the existing current-version
+canonical document instead of reparsing. It never generates permanent asset
+identities and never deletes content-addressed assets as compensation.
+
+**DocumentCanonicalizer**
+
+Purely and synchronously converts a classified `ParseResult` with an
+already-resolved immutable asset map into the canonical `ParsedDocument`. It
+preserves ordering, ordinals, source geometry, language, metadata, and
+classification; resolves raw image references; and performs no storage,
+network, LLM, UUID, routing, cleaning, or classification work. ADR-0014 defines
+the implemented ownership split.
 
 **Cleaner**  
-Normalizes the `ParsedDocument`. Removes duplicate whitespace, page number artifacts, running headers/footers (detected via frequency analysis across pages), fixes hyphenated line breaks, normalizes unicode to NFC, detects and tags the dominant language per block.
+Normalizes a `ParseResult` before classification and canonicalization. Removes duplicate whitespace and running headers/footers (detected via frequency analysis across pages), fixes hyphenated line breaks, normalizes Unicode to NFC, and detects and tags block language.
 
 **Chunker**  
-Converts a `ParsedDocument` into `Chunk[]`. Selects the appropriate strategy based on `doc_type`. All strategies are behind `ChunkerInterface`. Built-in strategies: generic recursive, Markdown header-aware, HTML header-aware, email thread-aware. Advanced strategies (book hierarchical, paper section-aware, code AST-based, resume semantic) are bundled as lightweight extensions within core.
+Converts a `ParsedDocument` into `Chunk[]`. Selects the appropriate strategy
+based on `doc_type`. All strategies are behind `ChunkerInterface`. Planned
+built-in strategies include generic recursive, Markdown header-aware, HTML
+header-aware, and email thread-aware chunking. Phase 4 has not started.
 
 **Embedder**  
 Transforms text into float vectors. Manages a content-addressable embedding cache. Sends batches to the configured `EmbeddingProvider`. `EmbedderInterface` is the later orchestration boundary for batching, caching, and provider selection. It handles dimension mismatch detection when the model is changed.
 
 **Indexer**  
-Writes chunks to all configured storage backends atomically. On failure, rolls back all writes for the failed document. Maintains a document registry with ingestion status and version history.
+Writes chunks to configured storage backends as one logical operation. Returned
+failures restore exact affected-key snapshots, preserving replacements and
+removing only newly introduced identities. Because Qdrant has no distributed
+transaction with SQLite, catastrophic interruption during compensation may
+require reconciliation. The indexer maintains document ingestion status and
+version history.
 
 #### 4.2 Retrieval Pipeline
 
@@ -759,7 +782,9 @@ Installing a plugin is `pip install mnemo-plugin-deepdoc-parser`. Uninstalling r
 | Watch folders | | watchfolder |
 | Browser history ingestion | | browser-history |
 
-A minimal deployment (no plugins, `pip install mnemo-core`) still handles digital PDFs, HTML, Markdown, DOCX, plain text, code, and performs dense + sparse retrieval with cross-encoder reranking.
+The completed minimal core currently handles digital PDFs, HTML, Markdown,
+DOCX, plain text, JSON, and CSV/TSV through canonicalization. Dense/sparse
+retrieval and cross-encoder reranking remain later roadmap phases.
 
 ---
 
@@ -834,7 +859,7 @@ INPUT: file bytes (from API upload, watch folder, or programmatic call)
            │
     ┌──────▼──────┐
     │  STAGE 0    │  Deduplication: SHA-256 → content-addressable store.
-    │  Dedup Gate │  If known, skip to STAGE 6 (notebook linking only).
+    │  Dedup Gate │  If known, load current ParsedDocument and return it.
     └──────┬──────┘
            │
     ┌──────▼──────┐
@@ -865,19 +890,18 @@ INPUT: file bytes (from API upload, watch folder, or programmatic call)
     └──────┬──────┘
            │
     ┌──────▼──────┐
-    │  STAGE 5    │  Metadata extraction: authors, title, date, DOI/ISBN/URL.
-    │  Metadata   │  Fast path: extract from file metadata fields.
-    │             │  Slow path: NLP extraction from first page if no metadata.
+    │  STAGE 5    │  Preserve parser-produced DocumentMetadata.
+    │  Metadata   │  Optional enrichment remains future roadmap work.
     └──────┬──────┘
            │
     ┌──────▼──────┐
-    │  STAGE 6    │  Blob Persistence: write blobs and generate Asset IDs.
-    │  Blob Store │  (Replaces older "Phase 5/6" logic)
+    │  STAGE 6    │  IngestionPipeline persists TransientAssets through storage.
+    │  Blob Store │  StorageInterfaceV1 returns permanent Asset identities.
     └──────┬──────┘
            │
     ┌──────▼──────┐
-    │  STAGE 7    │  Document Canonicalization: convert ParseResult to
-    │  Canonical  │  ParsedDocument, assigning UUIDs and final models.
+    │  STAGE 7    │  Pure DocumentCanonicalizer converts resolved ParseResult
+    │  Canonical  │  to ParsedDocument without generating identity or doing I/O.
     └──────┬──────┘
            │
     ┌──────▼──────┐
@@ -1668,9 +1692,13 @@ services:
 
 ---
 
-## 19. Implementation Roadmap
+## 19. Product Delivery Roadmap
 
-### Phase 1 — Minimum Working Notebook (Weeks 1–8)
+This section preserves the architecture's original product-delivery stages.
+They are not the numbered engineering phases. The authoritative implementation
+sequence and completion state are defined by `mnemo_engineering_roadmap.md`.
+
+### Product Stage 1 — Minimum Working Notebook (Weeks 1–8)
 **Goal:** `docker compose up` → working UI → ingest PDF → chat.
 
 - `mnemo-core`: Parser (digital PDF + Markdown), basic chunker, Ollama embedder, Qdrant + SQLite stores, SurrealDB metadata, dense retriever, basic synthesizer.
@@ -1682,7 +1710,7 @@ services:
 
 ---
 
-### Phase 2 — Adaptive Chunking + Full Parser Suite (Weeks 9–16)
+### Product Stage 2 — Adaptive Chunking + Full Parser Suite (Weeks 9–16)
 **Goal:** All document types handled correctly.
 
 - Implement all built-in `ChunkerInterface` strategies (book, paper, code, resume, email, slides).
@@ -1695,7 +1723,7 @@ services:
 
 ---
 
-### Phase 3 — Hybrid Retrieval + Reranking (Weeks 17–22)
+### Product Stage 3 — Hybrid Retrieval + Reranking (Weeks 17–22)
 **Goal:** Retrieval quality that matches or exceeds NotebookLM.
 
 - Sparse retriever (SQLite FTS5 BM25).
@@ -1709,7 +1737,7 @@ services:
 
 ---
 
-### Phase 4 — NotebookLM Feature Parity (Weeks 23–30)
+### Product Stage 4 — NotebookLM Feature Parity (Weeks 23–30)
 **Goal:** Every NotebookLM feature implemented locally.
 
 - Multi-hop retrieval.
@@ -1725,7 +1753,7 @@ services:
 
 ---
 
-### Phase 5 — Knowledge Graph + Source Insights (Weeks 31–38)
+### Product Stage 5 — Knowledge Graph + Source Insights (Weeks 31–38)
 **Goal:** The system understands relationships, not just content.
 
 - Plugin: `graph-retrieval` (spaCy NER + lazy relationship extraction + SurrealDB graph retrieval).
@@ -1738,7 +1766,7 @@ services:
 
 ---
 
-### Phase 6 — Scale + Production Polish (Weeks 39–46)
+### Product Stage 6 — Scale + Production Polish (Weeks 39–46)
 **Goal:** Production-grade stability at 100K document scale.
 
 - Qdrant `memmap` mode configuration for low-RAM environments.
@@ -1752,7 +1780,7 @@ services:
 
 ---
 
-### Phase 7 — Ecosystem and Extensibility (Month 12+)
+### Product Stage 7 — Ecosystem and Extensibility (Month 12+)
 **Goal:** Become the reference implementation for local knowledge retrieval.
 
 - Plugin SDK documentation.

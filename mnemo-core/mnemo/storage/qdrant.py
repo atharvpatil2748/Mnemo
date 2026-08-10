@@ -1,6 +1,7 @@
 """Qdrant-backed dense vector storage."""
 
 from datetime import UTC
+from typing import cast
 from uuid import UUID
 
 from qdrant_client import AsyncQdrantClient, models
@@ -150,37 +151,16 @@ class QdrantStore:
         if not chunks:
             return
 
-        points = []
-        import uuid
-
+        points: list[models.PointStruct] = []
         for chunk in chunks:
-            # We serialize the entire chunk to payload so we can rebuild ScoredChunk
-            payload = {
-                "id": chunk.id,
-                "text": chunk.text,
-                "document_id": str(chunk.document_id),
-                "version_id": str(chunk.version_id),
-                "chunk_type": chunk.chunk_type.value,
-                "position": {
-                    "section_index": chunk.position.section_index,
-                    "chunk_index_in_section": chunk.position.chunk_index_in_section,
-                    "page_number": chunk.position.page_number,
-                    "start_offset": chunk.position.start_offset,
-                    "end_offset": chunk.position.end_offset,
-                },
-                "heading_path": list(chunk.heading_path),
-                "parent_chunk_id": chunk.parent_chunk_id,
-                "sibling_ids": list(chunk.sibling_ids),
-                "metadata": dict(chunk.metadata),
-            }
             if chunk.embedding is None:
                 raise ValueError(f"Chunk {chunk.id} is missing embedding for vector store")
 
             points.append(
                 models.PointStruct(
-                    id=str(uuid.UUID(chunk.id[:32])),
+                    id=_point_id(chunk.id),
                     vector=list(chunk.embedding),
-                    payload=payload,
+                    payload=_chunk_payload(chunk),
                 )
             )
 
@@ -189,6 +169,45 @@ class QdrantStore:
             collection_name=self._config.collection_name,
             points=points,
         )
+
+    async def _snapshot_chunks(self, chunk_ids: tuple[str, ...]) -> tuple[Chunk, ...]:
+        """Capture affected Qdrant points, including their vectors."""
+        if not chunk_ids:
+            return ()
+        records = await self._require_open().retrieve(
+            collection_name=self._config.collection_name,
+            ids=[_point_id(chunk_id) for chunk_id in chunk_ids],
+            with_payload=True,
+            with_vectors=True,
+        )
+        requested = frozenset(chunk_ids)
+        by_id: dict[str, Chunk] = {}
+        for record in records:
+            chunk = _record_to_chunk(record)
+            if chunk.id in requested:
+                by_id[chunk.id] = chunk
+        return tuple(by_id[chunk_id] for chunk_id in chunk_ids if chunk_id in by_id)
+
+    async def _restore_chunk_snapshot(
+        self,
+        attempted_ids: tuple[str, ...],
+        previous_chunks: tuple[Chunk, ...],
+    ) -> None:
+        """Restore affected points and delete only identities introduced by an attempt."""
+        if not attempted_ids:
+            return
+        if previous_chunks:
+            await self.upsert_chunks(previous_chunks)
+        previous_ids = frozenset(chunk.id for chunk in previous_chunks)
+        new_ids = tuple(chunk_id for chunk_id in attempted_ids if chunk_id not in previous_ids)
+        if new_ids:
+            await self._require_open().delete(
+                collection_name=self._config.collection_name,
+                points_selector=models.PointIdsList(
+                    points=[_point_id(chunk_id) for chunk_id in new_ids]
+                ),
+                wait=True,
+            )
 
     async def search_dense(
         self,
@@ -437,3 +456,60 @@ class QdrantStore:
 
     async def delete_document_cascade(self, document_id: UUID) -> None:
         raise NotImplementedError("QdrantStore does not implement delete_document_cascade directly")
+
+
+def _point_id(chunk_id: str) -> str:
+    return str(UUID(chunk_id[:32]))
+
+
+def _chunk_payload(chunk: Chunk) -> dict[str, object]:
+    return {
+        "id": chunk.id,
+        "text": chunk.text,
+        "document_id": str(chunk.document_id),
+        "version_id": str(chunk.version_id),
+        "chunk_type": chunk.chunk_type.value,
+        "position": {
+            "section_index": chunk.position.section_index,
+            "chunk_index_in_section": chunk.position.chunk_index_in_section,
+            "page_number": chunk.position.page_number,
+            "start_offset": chunk.position.start_offset,
+            "end_offset": chunk.position.end_offset,
+        },
+        "heading_path": list(chunk.heading_path),
+        "parent_chunk_id": chunk.parent_chunk_id,
+        "sibling_ids": list(chunk.sibling_ids),
+        "metadata": dict(chunk.metadata),
+    }
+
+
+def _record_to_chunk(record: models.Record) -> Chunk:
+    payload = record.payload
+    vector = record.vector
+    if (
+        payload is None
+        or not isinstance(vector, list)
+        or not all(isinstance(component, (int, float)) for component in vector)
+    ):
+        raise ValueError("stored Qdrant chunk snapshot is incomplete")
+    values = cast(list[int | float], vector)
+    position = cast(dict[str, object], payload["position"])
+    return Chunk(
+        id=str(payload["id"]),
+        text=str(payload["text"]),
+        document_id=UUID(str(payload["document_id"])),
+        version_id=UUID(str(payload["version_id"])),
+        chunk_type=ChunkType(str(payload["chunk_type"])),
+        position=ChunkPosition(
+            section_index=int(cast(int, position["section_index"])),
+            chunk_index_in_section=int(cast(int, position["chunk_index_in_section"])),
+            page_number=cast(int | None, position.get("page_number")),
+            start_offset=cast(int | None, position.get("start_offset")),
+            end_offset=cast(int | None, position.get("end_offset")),
+        ),
+        heading_path=tuple(cast(list[str], payload["heading_path"])),
+        parent_chunk_id=cast(str | None, payload.get("parent_chunk_id")),
+        sibling_ids=tuple(cast(list[str], payload.get("sibling_ids", []))),
+        metadata=FrozenMetadata(cast(dict[str, object], payload.get("metadata", {}))),
+        embedding=tuple(float(component) for component in values),
+    )

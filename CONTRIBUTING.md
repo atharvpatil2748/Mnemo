@@ -64,7 +64,7 @@ pnpm --dir mnemo-ui install --frozen-lockfile
 
 ## 5. Running Tests and Validation
 
-Before opening a pull request, you must ensure that your changes pass all checks. 
+Before opening a pull request, you must ensure that your changes pass all checks.
 
 Run the validation script on Windows:
 ```shell
@@ -91,7 +91,7 @@ uv build --package mnemo-server
 
 ## 7. Architectural Rules
 
-Mnemo's architecture is deterministic and rigorously enforced. 
+Mnemo's architecture is deterministic and rigorously enforced.
 
 1. **Consult the Docs:** Always read the [Architecture Specification](docs/mnemo_architecture_v2.md) and relevant [ADRs](docs/adr/) before proposing a change.
 2. **Core Isolation:** `mnemo-core` must never make an HTTP request (unless it's an isolated plugin), depend on web frameworks like FastAPI, or execute arbitrary code. It is a pure Python library.

@@ -16,7 +16,9 @@ composition.
 - Routed dense vector indexing and search to `QdrantStore`.
 - Routed entity and graph operations to `SurrealDBStore`.
 - Coordinated chunk writes across SQLite and Qdrant with reverse-order
-  compensation on partial failure.
+  compensation on partial failure. A later correctness correction replaced the
+  original document-wide delete compensation with exact affected-key snapshot
+  restoration so failed replacements preserve pre-existing chunks.
 - Rejected mixed-document or mixed-version chunk batches so rollback scope is
   deterministic.
 - Surfaced compensation failures as typed `StorageError` results.

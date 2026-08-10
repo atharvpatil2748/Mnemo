@@ -291,25 +291,15 @@ class MarkdownParser(ParserInterfaceV1):
                 src_value = child.attrs.get("src", "") if child.attrs else ""
                 src = str(src_value)
                 alt: str = child.content or ""
-                asset_index = len(existing_assets) + len(out_assets)
-                local_id = f"image-{asset_index}"
-
-                out_blocks.append(
-                    RawImageBlock(
-                        ordinal=ordinal,
-                        parser_local_id=local_id,
-                        alt_text=alt or None,
-                    )
-                )
-                ordinal += 1
-
                 # Only embed bytes for data URIs
                 if src.startswith("data:image/"):
                     try:
                         header, b64 = src.split(",", 1)
                         mime_type = header.split(";")[0].split(":")[1]
-                        raw = base64.b64decode(b64)
+                        raw = base64.b64decode(b64, validate=True)
                         if raw:
+                            asset_index = len(existing_assets) + len(out_assets)
+                            local_id = f"image-{asset_index}"
                             out_assets.append(
                                 TransientAsset(
                                     parser_local_id=local_id,
@@ -317,8 +307,16 @@ class MarkdownParser(ParserInterfaceV1):
                                     raw_bytes=raw,
                                 )
                             )
+                            out_blocks.append(
+                                RawImageBlock(
+                                    ordinal=ordinal,
+                                    parser_local_id=local_id,
+                                    alt_text=alt or None,
+                                )
+                            )
+                            ordinal += 1
                     except Exception:
-                        logger.debug("Could not decode data URI for image %s", local_id)
+                        logger.debug("Could not decode inline image data")
             elif child.type == "softbreak":
                 text_buf.append("\n")
             else:

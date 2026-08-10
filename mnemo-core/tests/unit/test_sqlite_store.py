@@ -11,11 +11,13 @@ Coverage targets:
 
 import asyncio
 from collections.abc import Coroutine, Iterator
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 from uuid import UUID, uuid4
 
+import aiosqlite
 import pytest
 from mnemo.interfaces.errors import ConflictError
 from mnemo.models import (
@@ -397,6 +399,61 @@ def test_chunk_crud_and_search(
 
     _run(open_store.delete_chunks_for_document(doc_id, ver_id))
     assert _run(open_store.get_chunk(c_id)) is None
+
+
+def test_chunk_snapshot_restore_preserves_replaced_rows(
+    open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: datetime
+) -> None:
+    """Affected-key restoration replaces old rows and removes only new identities."""
+    _run(open_store.upsert_document(make_doc(doc_id, ver_id, dt)))
+    original = Chunk(
+        id="a" * 64,
+        text="original alpha",
+        document_id=doc_id,
+        version_id=ver_id,
+        chunk_type=ChunkType.PASSAGE,
+        position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        heading_path=("original",),
+        metadata=FrozenMetadata({"parser.source": "old"}),
+    )
+    introduced = replace(original, id="b" * 64, text="introduced")
+    _run(open_store.upsert_chunks((original,)))
+    snapshot = _run(open_store._snapshot_chunks((original.id, introduced.id)))
+
+    _run(open_store.upsert_chunks((replace(original, text="replacement"), introduced)))
+    _run(open_store._restore_chunk_snapshot((original.id, introduced.id), snapshot))
+
+    restored = _run(open_store.get_chunk(original.id))
+    assert restored is not None
+    assert restored.text == original.text
+    assert restored.heading_path == original.heading_path
+    assert dict(restored.metadata) == dict(original.metadata)
+    assert _run(open_store.get_chunk(introduced.id)) is None
+
+
+def test_chunk_batch_failure_rolls_back_replacement(
+    open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: datetime
+) -> None:
+    """SQLite's native batch transaction preserves a replaced row on failure."""
+    _run(open_store.upsert_document(make_doc(doc_id, ver_id, dt)))
+    original = Chunk(
+        id="a" * 64,
+        text="original",
+        document_id=doc_id,
+        version_id=ver_id,
+        chunk_type=ChunkType.PASSAGE,
+        position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        heading_path=(),
+    )
+    invalid = replace(original, id="b" * 64, document_id=uuid4())
+    _run(open_store.upsert_chunks((original,)))
+
+    with pytest.raises(aiosqlite.IntegrityError):
+        _run(open_store.upsert_chunks((replace(original, text="replacement"), invalid)))
+
+    restored = _run(open_store.get_chunk(original.id))
+    assert restored is not None
+    assert restored.text == original.text
 
 
 # ---------------------------------------------------------------------------

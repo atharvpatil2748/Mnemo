@@ -1,5 +1,6 @@
 import pytest
 from mnemo.interfaces.parser_models import (
+    ParseResult,
     RawBlock,
     RawHeadingBlock,
     RawImageBlock,
@@ -8,6 +9,7 @@ from mnemo.interfaces.parser_models import (
     RawTextBlock,
     TransientAsset,
 )
+from mnemo.models import DocType, DocumentMetadata
 
 
 def test_transient_asset_validation() -> None:
@@ -57,3 +59,26 @@ def test_raw_table_validation() -> None:
 def test_raw_image_validation() -> None:
     with pytest.raises(ValueError, match="parser_local_id"):
         RawImageBlock(ordinal=1, parser_local_id="")
+
+
+def test_parse_result_requires_exact_asset_correlation() -> None:
+    metadata = DocumentMetadata(content_hash="a" * 64)
+    image = RawImageBlock(ordinal=0, parser_local_id="image-0")
+    with pytest.raises(ValueError, match="correlate"):
+        ParseResult(
+            blocks=(image,),
+            extracted_assets=(),
+            metadata=metadata,
+            language="en",
+            doc_type=DocType.GENERIC,
+        )
+
+    asset = TransientAsset(parser_local_id="image-0", raw_bytes=b"image", mime_type="image/png")
+    with pytest.raises(ValueError, match="unique"):
+        ParseResult(
+            blocks=(image,),
+            extracted_assets=(asset, asset),
+            metadata=metadata,
+            language="en",
+            doc_type=DocType.GENERIC,
+        )

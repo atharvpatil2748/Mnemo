@@ -25,7 +25,7 @@ def metadata() -> FileMetadata:
 
 def test_supported_formats(parser: PlainTextParser) -> None:
     assert ".txt" in parser.supported_formats
-    assert ".md" in parser.supported_formats
+    assert ".md" not in parser.supported_formats
     assert ".log" in parser.supported_formats
 
 

@@ -293,22 +293,13 @@ class HTMLParser(ParserInterfaceV1):
             if not isinstance(alt, str):
                 alt = alt[0] if isinstance(alt, list) and alt else ""
 
-            local_id = f"image-{len(state['assets'])}"
-            state["blocks"].append(
-                RawImageBlock(
-                    ordinal=state["ordinal"],
-                    parser_local_id=local_id,
-                    alt_text=alt if alt else None,
-                )
-            )
-            state["ordinal"] += 1
-
             if src.startswith("data:image/"):
                 try:
                     header, b64 = src.split(",", 1)
                     mime_type = header.split(";")[0].split(":")[1]
-                    raw = base64.b64decode(b64)
+                    raw = base64.b64decode(b64, validate=True)
                     if raw:
+                        local_id = f"image-{len(state['assets'])}"
                         state["assets"].append(
                             TransientAsset(
                                 parser_local_id=local_id,
@@ -316,8 +307,16 @@ class HTMLParser(ParserInterfaceV1):
                                 raw_bytes=raw,
                             )
                         )
+                        state["blocks"].append(
+                            RawImageBlock(
+                                ordinal=state["ordinal"],
+                                parser_local_id=local_id,
+                                alt_text=alt if alt else None,
+                            )
+                        )
+                        state["ordinal"] += 1
                 except Exception:
-                    logger.debug("Could not decode data URI for image %s", local_id)
+                    logger.debug("Could not decode inline image data")
             return
 
         # Paragraph or inline container without block children

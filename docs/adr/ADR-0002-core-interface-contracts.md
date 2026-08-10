@@ -356,6 +356,26 @@ engine. `CompositeStorage` is the expected full implementation. Individual
 backend adapters are expected to satisfy only the narrow contracts they own and
 are assembled behind the facade.
 
+For `upsert_chunks`, atomic replacement is defined over the submitted chunk
+identities. A successful call inserts identities that were absent and replaces
+the complete stored value of identities that were present; identities omitted
+from the batch are untouched. An empty batch is a no-op, repeated identical
+upserts are idempotent, and duplicate identities in one batch are invalid. If
+the operation fails, every affected identity must have its exact pre-operation
+value in every participating store, while identities introduced by the failed
+attempt must be absent. Implementations may satisfy this with native
+transactions or private affected-key snapshots and compensation. Compensation
+must never use document-wide deletion for a failed replacement because that
+would destroy valid pre-operation data.
+
+This is a logical operation-level guarantee, not a distributed database
+transaction. Qdrant provides no transaction spanning itself and SQLite. A
+catastrophic process interruption between backend mutation and completed
+compensation can therefore require later reconciliation. Ordinary returned
+failures must run exact snapshot restoration; a failed compensation is surfaced
+as `StorageError` and logged as potentially consistency-compromising rather than
+reported as a successful rollback.
+
 The storage dependency shape is fixed:
 
 ```mermaid

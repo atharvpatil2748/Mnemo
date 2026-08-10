@@ -37,37 +37,37 @@ def mock_parser() -> Mock:
     return parser
 
 
-def test_register_builtins(router: ParserRouter) -> None:
-    # Ensure it doesn't crash (currently a NO-OP)
-    router.register_builtins()
+def test_register_builtins_compatibility_shim(router: ParserRouter) -> None:
+    with pytest.warns(DeprecationWarning, match="KnowledgeEngine"):
+        router.register_builtins()
 
 
 def test_detect_mime_magic_success(router: ParserRouter) -> None:
     # A generic text file content
     data = b"Hello, world!"
-    with patch("magic.from_buffer", return_value="text/plain") as mock_magic:
+    with patch("mnemo.parsers.router._magic_from_buffer", return_value="text/plain") as mock_magic:
         mime = router._detect_mime(data, "file.txt")
         assert mime == "text/plain"
-        mock_magic.assert_called_once_with(data, mime=True)
+        mock_magic.assert_called_once_with(data)
 
 
 def test_detect_mime_magic_octet_stream_fallback(router: ParserRouter) -> None:
     data = b"dummy data"
-    with patch("magic.from_buffer", return_value="application/octet-stream"):
+    with patch("mnemo.parsers.router._magic_from_buffer", return_value="application/octet-stream"):
         mime = router._detect_mime(data, "file.json")
         assert mime == "application/json"
 
 
 def test_detect_mime_magic_exception_fallback(router: ParserRouter) -> None:
     data = b"dummy data"
-    with patch("magic.from_buffer", side_effect=Exception("Magic failed")):
+    with patch("mnemo.parsers.router._magic_from_buffer", side_effect=Exception("Magic failed")):
         mime = router._detect_mime(data, "file.pdf")
         assert mime == "application/pdf"
 
 
 def test_detect_mime_total_fallback(router: ParserRouter) -> None:
     data = b"dummy data"
-    with patch("magic.from_buffer", side_effect=Exception("Magic failed")):
+    with patch("mnemo.parsers.router._magic_from_buffer", side_effect=Exception("Magic failed")):
         mime = router._detect_mime(data, "file.unknown")
         assert mime == "application/octet-stream"
 

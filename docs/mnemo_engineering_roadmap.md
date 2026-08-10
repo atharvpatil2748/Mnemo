@@ -5,8 +5,8 @@
 **Status:** Living Implementation Tracker  
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
-**Current baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 through Module 3.8
-are complete at version 0.10.7. Module 4.1 is next and has not started.
+**Current baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 through Module 3.9
+are complete. Phase 4 has not started.
 Completed checklist items are marked below; later tasks describe planned work.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
@@ -83,6 +83,7 @@ Storage must precede everything else in mnemo-core because every other module wr
 
 ### Phase 3 — Parser System
 **Duration:** Weeks 7–10  
+**Status:** Complete through Module 3.9
 **Goal:** Five built-in parsers (PDF, DOCX, Markdown, HTML, plain text) are implemented behind `ParserInterface`. Output is `ParseResult` with typed `RawBlock[]`.
 
 This is the front door of all data. Quality here directly determines quality everywhere downstream.
@@ -322,7 +323,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Task | Subtask | Notes | Difficulty | Dependency |
 |---|---|---|---|---|
 | ✅ Implement `CompositeStorage` | Routes method calls to correct backend | Single `StorageInterface` over all 4 backends | High | 2.1–2.4 |
-| ✅ Implement atomic upsert | Write chunks to SQLite + Qdrant as one logical operation; route blob and graph records to their owning backends | Rollback on partial chunk-write failure | High | 2.5a |
+| ✅ Implement atomic upsert | Write chunks to SQLite + Qdrant as one logical operation; route blob and graph records to their owning backends | Exact affected-key snapshot/restore on partial replacement failure; preserve prior values | High | 2.5a |
 | ✅ Implement rollback logic | On a partial chunk-write failure, undo completed writes and surface compensation failures | — | High | 2.5a |
 
 ---
@@ -396,7 +397,22 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Task | Subtask | Notes | Difficulty | Dependency |
 |---|---|---|---|---|
 | ✅ Implement rule-based classification | DocType from extension + heading patterns + structure | Fast path, no LLM (ADR-0013) | Medium | 3.7 |
-| ⏩ *Deferred:* LLM-assisted classification | Deferred to future orchestration | Moved to Phase 5/6 (ADR-0013) | High | 3.8a |
+| ⏩ *Deferred:* LLM-assisted classification | Optional future ingestion enhancement | Not required by Module 3.9 or Phase 4 | High | 3.8a |
+
+---
+
+**Module 3.9 — Ingestion Canonicalization Bridge**
+
+> **Status:** Complete. ADR-0014 is accepted and implemented. Phase 4 has not
+> started.
+
+| Task | Notes | Difficulty | Dependency |
+|---|---|---|---|
+| ✅ Implement internal ingestion sequencing | Router → Cleaner → Classifier → asset persistence → canonicalizer | High | 3.8, ADR-0014 |
+| ✅ Persist transient assets | Use only `StorageInterfaceV1.put_asset()`; storage owns permanent IDs | Medium | Phase 2 |
+| ✅ Implement pure `DocumentCanonicalizer` | Convert raw blocks with a resolved immutable asset map | Medium | 3.9a |
+| ✅ Persist canonical IR | Store `ParsedDocument` by caller-supplied `version_id` | Medium | 3.9c |
+| ✅ Validate dedup and failure paths | Never publish a partial canonical document | High | 3.9a–d |
 
 ---
 
@@ -1823,7 +1839,11 @@ These rules are non-negotiable. Any violation is a bug, not a style preference.
 
 #### Risk 2: CompositeStorage Atomic Rollback (Phase 2)
 **Risk:** Partial write (e.g., Qdrant succeeds, SurrealDB fails) leaves the system in an inconsistent state.  
-**Mitigation:** Design the rollback protocol as the first thing in Phase 2, before any individual backend. Write chaos tests that intentionally fail individual backends.
+**Mitigation:** Exact affected-key snapshots restore pre-existing SQLite rows
+and Qdrant points and delete only identities introduced by the failed attempt.
+Regression tests cover replacements, mixed identities, retries, and partial
+vector writes. Qdrant has no distributed transaction, so catastrophic process
+interruption during compensation remains a documented reconciliation risk.
 
 #### Risk 3: Chunking Quality (Phase 4)
 **Risk:** Chunking errors are silent — tests pass but retrieval quality is poor. A `BookChunker` that doesn't correctly detect chapter boundaries produces chunks that span chapters, making retrieval nonsensical for specific chapter queries.  
@@ -1928,12 +1948,13 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - □ Running header/footer detection
 - ✅ `DOCXParser`
 - ✅ `MarkdownParser` (AST-based)
-- □ `HTMLParser` + boilerplate removal
-- □ `PlainTextParser`, `JSONParser`, `CSVParser`
-- □ `DocumentCleaner` (unicode, whitespace, hyphenation, language detection)
-- □ Rule-based `DocType` classifier
-- □ LLM-assisted classifier (fallback)
-- □ **[MILESTONE M3] Parse 100-page PDF → correct ParsedDocument**
+- ✅ `HTMLParser` + boilerplate removal
+- ✅ `PlainTextParser`, `JSONParser`, `CSVParser`
+- ✅ `DocumentCleaner` (unicode, whitespace, hyphenation, language detection)
+- ✅ Rule-based `DocType` classifier
+- ⏩ LLM-assisted classifier (optional future orchestration enhancement)
+- ✅ **[MILESTONE M3] Parse 100-page PDF → correct `ParseResult`**
+- ✅ Module 3.9 ingestion canonicalization bridge (ADR-0014)
 
 ### Phase 4 — Chunking Engine
 

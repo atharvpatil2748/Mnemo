@@ -29,7 +29,7 @@ class PlainTextParser(ParserInterfaceV1):
 
     @property
     def supported_formats(self) -> tuple[str, ...]:
-        return (".txt", ".log", ".md")  # .md is a fallback if markdown parser fails/missing
+        return (".txt", ".log")
 
     def capabilities(self) -> ParserCapabilities:
         return ParserCapabilities(

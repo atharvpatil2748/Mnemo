@@ -26,4 +26,4 @@ This changelog documents the completion and freeze of Phase 3 Module 3.3 (DOCX P
 - Some complex nested table structures might be flattened or skipped based on `python-docx` API limits.
 
 ## Future Integration
-The transient `ParseResult` (including binary `TransientAsset`s) output by the `DOCXParser` will be intercepted by the `DocumentCanonicalizer` (planned for Module 5/6 orchestration pipeline). The Canonicalizer will persist the images to the `BlobStore`, assign persistent Asset IDs, and return the final `ParsedDocument`.
+The transient `ParseResult` (including binary `TransientAsset`s) output by the `DOCXParser` requires the ingestion canonicalization bridge proposed in ADR-0014. That bridge is planned before Phase 4; it is not Module 5/6 work.

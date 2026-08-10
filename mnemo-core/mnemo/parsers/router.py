@@ -1,8 +1,9 @@
 import hashlib
+import importlib
 import mimetypes
+import warnings
 from pathlib import Path
-
-import magic
+from typing import Protocol, cast
 
 from mnemo.interfaces.errors import UnsupportedError
 from mnemo.interfaces.parser_models import ParseResult
@@ -10,6 +11,20 @@ from mnemo.interfaces.storage import StorageInterfaceV1
 from mnemo.interfaces.types import FileMetadata
 from mnemo.models import Document, FrozenMetadata
 from mnemo.registry import PluginRegistry
+
+
+class _MagicModule(Protocol):
+    def from_buffer(self, data: bytes, *, mime: bool) -> object: ...
+
+
+def _magic_from_buffer(data: bytes) -> str | None:
+    """Return libmagic's MIME result when the optional native runtime is usable."""
+    try:
+        module = cast(_MagicModule, importlib.import_module("magic"))
+        result = module.from_buffer(data, mime=True)
+    except (ImportError, OSError, AttributeError):
+        return None
+    return result if isinstance(result, str) else None
 
 
 class ParserRouter:
@@ -28,13 +43,12 @@ class ParserRouter:
         self.storage = storage
 
     def register_builtins(self) -> None:
-        """Register built-in parsers with the registry.
-
-        Currently a NO-OP. Built-in parsers like PDF, HTML, Markdown,
-        DOCX, Text, JSON, and CSV will be registered via the builtin plugin
-        in a future module.
-        """
-        pass
+        """Compatibility shim; the engine registers built-ins during initialization."""
+        warnings.warn(
+            "ParserRouter.register_builtins() is deprecated; KnowledgeEngine owns registration",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     def _detect_mime(self, data: bytes, filename: str) -> str:
         """Detect the MIME type of the input bytes.
@@ -50,7 +64,7 @@ class ParserRouter:
             The detected MIME type string.
         """
         try:
-            mime: str = magic.from_buffer(data, mime=True)
+            mime = _magic_from_buffer(data)
             if mime and mime != "application/octet-stream":
                 return mime
         except Exception:

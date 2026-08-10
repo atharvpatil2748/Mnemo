@@ -2,15 +2,15 @@
 
 > One knowledge layer. Thousands of documents. Your hardware, your data.
 
-![Version](https://img.shields.io/badge/version-0.10.7-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-0.10.8-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
 
 ## Why Mnemo Exists
 
-Modern AI systems can reason extremely well, but a user's own documents are often fragmented across PDFs, books, papers, notes, notebooks, source code, emails, and documentation. 
+Modern AI systems can reason extremely well, but a user's own documents are often fragmented across PDFs, books, papers, notes, notebooks, source code, emails, and documentation.
 
-Mnemo exists to create a persistent knowledge layer over those materials. 
+Mnemo exists to create a persistent knowledge layer over those materials.
 
-**Mnemo is not an agent. Mnemo is not an assistant.** 
+**Mnemo is not an agent. Mnemo is not an assistant.**
 It is the epistemic knowledge and evidence layer beneath them. The central question Mnemo answers is:
 
 > *"What do my documents say about X?"*
@@ -30,7 +30,7 @@ Mnemo provides a local-first, self-hosted, open-architecture alternative to clou
 
 ## Cross-Document & Cross-Notebook Retrieval
 
-Mnemo is architected to perform deep synthesis across disparate sources and organizational boundaries. 
+Mnemo is architected to perform deep synthesis across disparate sources and organizational boundaries.
 
 *(Note: These examples represent the query experience Mnemo's architecture is designed to enable. The complete embedding, retrieval, reranking, and cross-document reasoning pipeline is being implemented incrementally according to the roadmap.)*
 
@@ -50,7 +50,7 @@ Knowledge doesn't live in silos. If you maintain multiple notebooks—like *Mach
 
 ## Designed to Scale
 
-Users shouldn't be forced into a "10 documents per notebook" mental model. 
+Users shouldn't be forced into a "10 documents per notebook" mental model.
 
 Mnemo's **architectural target** is to support **100,000 documents and 20 million chunks**. To support a massive corpus of PDFs, notebooks, books, papers, notes, source code, emails, and presentations, the repository leverages:
 * Qdrant (HNSW vector indexing)
@@ -106,9 +106,10 @@ Mnemo's component-based design allows it to eventually serve multiple roles:
 
 ## Current Capabilities
 
-Mnemo is in active engineering development. Every module is rigorously tested before being marked complete. 
+Mnemo is in active engineering development. Every module is rigorously tested before being marked complete.
 
-Here is the current implementation status (v0.10.7):
+Here is the current implementation status (Module 3.9 complete; latest frozen
+release v0.10.8):
 
 | Capability | Status | Notes |
 |---|---|---|
@@ -117,7 +118,8 @@ Here is the current implementation status (v0.10.7):
 | Plugin Registry | ✅ Implemented | Discovers and injects providers |
 | Local Storage Layer | ✅ Implemented | Qdrant, SQLite FTS5, SurrealDB, FS |
 | Document Parsing | ✅ Implemented | PDF, DOCX, Markdown, HTML, TXT, JSON, CSV |
-| Adaptive Chunking | 🚧 In Progress | Phase 4 active development |
+| Ingestion Canonicalization | ✅ Complete | Phase 3.9 bridge produces canonical `ParsedDocument` values |
+| Adaptive Chunking | 📋 Planned | Phase 4 has not started |
 | Embedding Pipeline | 📋 Planned | Phase 5 |
 | Hybrid Retrieval | 📋 Planned | Phase 6 |
 | REST API | 📋 Planned | Phase 7 |
@@ -207,7 +209,7 @@ Mnemo represents a serious systems and AI infrastructure challenge. It is not a 
 Mnemo's roadmap is structured to ensure every phase produces a runnable, testable artifact.
 
 * **CURRENT (Phases 0–3):** Core scaffolding, storage layer, and parser systems are fully implemented.
-* **NEXT (Phase 4):** The Adaptive Chunking Engine is under active development.
+* **NEXT:** Begin Phase 4 only after review of the completed Module 3.9 canonicalization bridge.
 * **FUTURE (Phases 5–13):** Embedding, hybrid retrieval, REST/WebSocket APIs, MCP Server, Web UI, cross-document reasoning, and production hardening.
 
 See the complete execution plan in the [Engineering Roadmap](docs/mnemo_engineering_roadmap.md).
@@ -216,6 +218,6 @@ See the complete execution plan in the [Engineering Roadmap](docs/mnemo_engineer
 
 Interested in working on Mnemo?
 
-Whether you're interested in building a new parser, optimizing vector storage, or shaping the retrieval algorithms, we welcome your help! 
+Whether you're interested in building a new parser, optimizing vector storage, or shaping the retrieval algorithms, we welcome your help!
 
 Please read our [Contributing Guide](CONTRIBUTING.md) to understand our architectural rules, local setup, and PR expectations before opening a pull request.

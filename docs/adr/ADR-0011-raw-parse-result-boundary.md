@@ -48,6 +48,8 @@ Cleaner
   ↓
 Cleaned ParseResult
   ↓
+Document Classifier
+  ↓
 Blob Persistence
   ↓
 Asset Resolution
@@ -61,18 +63,26 @@ Chunker
 
 ### 3. DocumentCanonicalizer
 
-We introduce a new internal component: `DocumentCanonicalizer`. Its ONLY responsibility is converting `ParseResult` into a canonical `ParsedDocument`. 
+We introduce a new internal component: `DocumentCanonicalizer`. Its ONLY
+responsibility is converting a `ParseResult` with an already-resolved immutable
+asset map into a canonical `ParsedDocument`.
 
 It performs:
-- Blob persistence coordination (resolving `TransientAsset` into `Asset`)
-- Asset ID assignment
 - Replacing `RawImageBlock` with `ImageBlock`
 - Replacing all other `RawBlock` instances with their canonical `Block` counterparts
 - Constructing the final `ParsedDocument`
 - Validating canonical invariants
 
+ADR-0014 supersedes the earlier assignment of blob persistence coordination and
+asset ID assignment to this component. The Module 3.9 `IngestionPipeline` owns
+that sequencing and calls `StorageInterfaceV1`; permanent identity remains
+owned by storage. `DocumentCanonicalizer` is pure, synchronous, deterministic,
+and performs no I/O or identity generation.
+
 ## Consequences
 
 - **Domain Model Purity:** `ParsedDocument` and `ImageBlock` remain completely unchanged and canonical. `asset_id` remains a mandatory `UUID`.
 - **Parser Purity:** Parsers remain 100% pure, side-effect free, and synchronous. They generate ZERO permanent identity and perform ZERO storage.
-- **Clear Orchestration Boundaries:** Blob persistence and Asset ID generation belong exclusively to the ingestion orchestration layer.
+- **Clear Orchestration Boundaries:** `IngestionPipeline` coordinates blob
+  persistence exclusively through `StorageInterfaceV1`; storage alone creates
+  permanent Asset identities.

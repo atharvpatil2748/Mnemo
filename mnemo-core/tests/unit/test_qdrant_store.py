@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import AsyncGenerator
+from dataclasses import replace
 from typing import Any
 from uuid import uuid4
 
@@ -111,6 +112,39 @@ async def test_qdrant_upsert_and_search(qdrant_store: QdrantStore) -> None:
     assert scored.source == "qdrant"
     assert scored.rank == 1
     assert scored.chunk.metadata["foo"] == "bar"
+
+
+@pytest.mark.anyio
+async def test_qdrant_snapshot_restore_preserves_replaced_points(
+    qdrant_store: QdrantStore,
+) -> None:
+    """Restoration reinstates prior payload/vector and removes only new points."""
+    original = Chunk(
+        id="a" * 64,
+        text="original",
+        document_id=uuid4(),
+        version_id=uuid4(),
+        chunk_type=ChunkType.PASSAGE,
+        position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        heading_path=("old",),
+        metadata=FrozenMetadata({"parser.source": "old"}),
+        embedding=(0.1, 0.2, 0.3),
+    )
+    introduced = replace(original, id="b" * 64, text="introduced")
+    await qdrant_store.upsert_chunks((original,))
+    snapshot = await qdrant_store._snapshot_chunks((original.id, introduced.id))
+
+    await qdrant_store.upsert_chunks(
+        (replace(original, text="replacement", embedding=(0.3, 0.2, 0.1)), introduced)
+    )
+    await qdrant_store._restore_chunk_snapshot((original.id, introduced.id), snapshot)
+
+    restored = await qdrant_store._snapshot_chunks((original.id, introduced.id))
+    assert len(restored) == 1
+    assert restored[0].text == original.text
+    assert restored[0].heading_path == original.heading_path
+    assert dict(restored[0].metadata) == dict(original.metadata)
+    assert restored[0].embedding == pytest.approx(snapshot[0].embedding)
 
 
 @pytest.mark.anyio

@@ -301,7 +301,10 @@ be proposed as explicit fields. Parser-specific fields remain in `metadata`.
 
 ### 6.2 `ParsedDocument`
 
-**Purpose and responsibility:** Represent the canonical, storage-independent intermediate representation of a document. Produced by the ingestion orchestrator (`DocumentCanonicalizer`), NOT directly by parsers.
+**Purpose and responsibility:** Represent the canonical, storage-independent
+intermediate representation of a document. Produced by the Module 3.9
+`IngestionPipeline` through its pure `DocumentCanonicalizer`, NOT directly by
+parsers.
 
 **Semantics:** Immutable value object; structural equality and hashing.
 

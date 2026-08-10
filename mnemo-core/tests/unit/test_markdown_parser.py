@@ -218,17 +218,13 @@ def test_table_header_and_data_rows(parser: MarkdownParser, metadata: FileMetada
 # ── Images ─────────────────────────────────────────────────────────────────
 
 
-def test_remote_image_produces_raw_image_block_no_asset(
+def test_remote_image_is_not_emitted_without_asset_bytes(
     parser: MarkdownParser, metadata: FileMetadata
 ) -> None:
-    """A remote image URL produces an RawImageBlock with no TransientAsset."""
+    """A pure parser does not emit an unresolvable remote image reference."""
     md = b"![Alt text](https://example.com/img.png)\n"
     result = _parse(parser, md, metadata)
-    assert len(result.blocks) == 1
-    block = result.blocks[0]
-    assert isinstance(block, RawImageBlock)
-    assert block.alt_text == "Alt text"
-    assert block.parser_local_id == "image-0"
+    assert result.blocks == ()
     assert result.extracted_assets == ()
 
 

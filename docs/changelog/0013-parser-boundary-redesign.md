@@ -32,8 +32,9 @@ These transient models are NOT domain models. They are never persisted, never le
 
 ### The responsibility of DocumentCanonicalizer
 
-We have introduced the `DocumentCanonicalizer` component (part of the ingestion orchestration layer). Its sole responsibility is to translate the transient `ParseResult` into a canonical `ParsedDocument`. It achieves this by:
-1. Persisting all `TransientAsset`s to the BlobStore.
-2. Minting permanent `asset_id`s (UUIDs) for the persisted blobs.
-3. Translating `RawImageBlock`s into canonical `ImageBlock`s using the generated `asset_id`s.
-4. Validating and returning the final immutable `ParsedDocument`.
+ADR-0011 specified a future `DocumentCanonicalizer` component as part of the
+ingestion boundary. ADR-0014 later clarified the ownership split implemented by
+Module 3.9: `IngestionPipeline` persists each `TransientAsset` through
+`StorageInterfaceV1`, which owns permanent identity, while the pure
+`DocumentCanonicalizer` translates already-resolved raw blocks and validates
+the final immutable `ParsedDocument`.

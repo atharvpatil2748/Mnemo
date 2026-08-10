@@ -9,6 +9,7 @@ from mnemo.interfaces.parser_models import (
     RawMathBlock,
     RawTableBlock,
     RawTextBlock,
+    TransientAsset,
 )
 from mnemo.models import DocType, DocumentMetadata
 
@@ -222,7 +223,9 @@ def test_cleaner_preserves_other_block_types(
     )
     result = ParseResult(
         blocks=blocks,
-        extracted_assets=(),
+        extracted_assets=(
+            TransientAsset(parser_local_id="img1", raw_bytes=b"image", mime_type="image/png"),
+        ),
         metadata=empty_metadata,
         language="en",
         doc_type=DocType.GENERIC,
@@ -249,7 +252,9 @@ def test_cleaner_coverage_remaining(
     )
     result = ParseResult(
         blocks=blocks,
-        extracted_assets=(),
+        extracted_assets=(
+            TransientAsset(parser_local_id="img", raw_bytes=b"image", mime_type="image/png"),
+        ),
         metadata=empty_metadata,
         language="en",
         doc_type=DocType.GENERIC,

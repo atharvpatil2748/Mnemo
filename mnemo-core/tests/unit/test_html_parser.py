@@ -217,12 +217,10 @@ def test_tables(parser: HTMLParser, metadata: FileMetadata) -> None:
 
 
 def test_remote_image(parser: HTMLParser, metadata: FileMetadata) -> None:
-    """Remote image URL generates RawImageBlock without TransientAsset."""
+    """Remote image URLs are not emitted without resolvable asset bytes."""
     html = b'<body><img src="https://example.com/a.jpg" alt="A photo" /></body>'
     result = parser.parse(html, "", metadata)
-    assert len(result.blocks) == 1
-    assert isinstance(result.blocks[0], RawImageBlock)
-    assert result.blocks[0].alt_text == "A photo"
+    assert result.blocks == ()
     assert result.extracted_assets == ()
 
 
@@ -245,18 +243,15 @@ def test_data_uri_image(parser: HTMLParser, metadata: FileMetadata) -> None:
 
 
 def test_image_inside_paragraph(parser: HTMLParser, metadata: FileMetadata) -> None:
-    """Image inside a paragraph splits the text block."""
+    """An unresolved image inside a paragraph does not create a dangling block."""
     html = b'<body><p>Text before <img src="a.jpg" alt="img" /> Text after</p></body>'
     result = parser.parse(html, "", metadata)
-    assert len(result.blocks) == 3
+    assert len(result.blocks) == 2
     assert isinstance(result.blocks[0], RawTextBlock)
     assert result.blocks[0].text == "Text before"
 
-    assert isinstance(result.blocks[1], RawImageBlock)
-    assert result.blocks[1].alt_text == "img"
-
-    assert isinstance(result.blocks[2], RawTextBlock)
-    assert result.blocks[2].text == "Text after"
+    assert isinstance(result.blocks[1], RawTextBlock)
+    assert result.blocks[1].text == "Text after"
 
 
 # ── Boilerplate / Document structural tests ────────────────────────────────
@@ -329,7 +324,7 @@ def test_html_parser_edge_cases(parser: HTMLParser, metadata: FileMetadata) -> N
     # Malformed data URI
     html = b'<body><img src="data:image/png;base64,invalid!@#$" alt="broken" /></body>'
     result = parser.parse(html, "", metadata)
-    assert len(result.blocks) == 1
+    assert result.blocks == ()
     assert result.extracted_assets == ()
 
     # Empty table row

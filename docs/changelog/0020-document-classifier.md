@@ -5,7 +5,7 @@
 **Version:** 0.10.7  
 
 ## Overview
-Module 3.8 introduces the `DocumentClassifier`, completing Phase 3 of the ingestion pipeline. The classifier determines the `DocType` of a document using a deterministic, rule-based heuristic approach. It serves as the final pure transformation step on the `ParseResult` before the document moves into the future Phase 5/6 Orchestration layers.
+Module 3.8 introduces the `DocumentClassifier`, completing the pure Phase 3 transformation sequence. The classifier determines the `DocType` of a document using a deterministic, rule-based heuristic approach. It is the final pure `ParseResult` transformation before the ingestion canonicalization bridge proposed in ADR-0014.
 
 ## Implementation Details
 

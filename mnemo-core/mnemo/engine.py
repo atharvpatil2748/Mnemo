@@ -282,7 +282,7 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
     """Return built-in candidates supplied by their designated roadmap modules."""
 
     class CoreStoragePlugin:
-        name = "mnemo.core.storage"
+        name = "mnemo-core-storage"
         version = __version__
         core_version_range = ">=0.0.0"
 
@@ -316,7 +316,45 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
             # Core priority permits an explicitly higher-priority provider override.
             registry.register_storage("primary", composite, priority=0)
 
-    return (CoreStoragePlugin(),)
+    class CoreParserPlugin:
+        name = "mnemo-core-parsers"
+        version = __version__
+        core_version_range = ">=0.0.0"
+
+        def capabilities(self) -> tuple[str, ...]:
+            return ("parser",)
+
+        def register(self, registry: PluginRegistry) -> None:
+            from mnemo.parsers import (
+                CSVParser,
+                DOCXParser,
+                HTMLParser,
+                JSONParser,
+                MarkdownParser,
+                PDFParser,
+                PlainTextParser,
+            )
+
+            parsers = (
+                (PDFParser(), (".pdf", "application/pdf")),
+                (
+                    DOCXParser(),
+                    (
+                        ".docx",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    ),
+                ),
+                (MarkdownParser(), (".md", ".markdown", "text/markdown", "text/x-markdown")),
+                (HTMLParser(), (".html", ".htm", "text/html")),
+                (PlainTextParser(), (".txt", ".log", "text/plain")),
+                (JSONParser(), (".json", "application/json")),
+                (CSVParser(), (".csv", ".tsv", "text/csv", "text/tab-separated-values")),
+            )
+            for parser, slots in parsers:
+                for slot in slots:
+                    registry.register_parser(slot, parser, priority=0)
+
+    return (CoreStoragePlugin(), CoreParserPlugin())
 
 
 def _plugin_candidates(directory: Path) -> tuple[Path, ...]:

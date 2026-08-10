@@ -1,5 +1,6 @@
 """Atomic storage facade composing disparate backends."""
 
+import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from uuid import UUID
@@ -74,6 +75,7 @@ class CompositeStorage:
         self._sql = sqlite
         self._qdr = qdrant
         self._sur = surrealdb
+        self._chunk_write_lock = asyncio.Lock()
 
     async def open(self) -> None:
         try:
@@ -318,23 +320,33 @@ class CompositeStorage:
             for chunk in chunks[1:]
         ):
             raise ContractValidationError("chunk batches must share one document_id and version_id")
+        chunk_ids = tuple(chunk.id for chunk in chunks)
+        if len(frozenset(chunk_ids)) != len(chunk_ids):
+            raise ContractValidationError("chunk batches must not contain duplicate chunk IDs")
 
-        compensator = _Compensator()
-        try:
-            await self._sql.upsert_chunks(chunks)
+        async with self._chunk_write_lock:
+            try:
+                sqlite_snapshot = await self._sql._snapshot_chunks(chunk_ids)
+                qdrant_snapshot = await self._qdr._snapshot_chunks(chunk_ids)
+                await self._sql.upsert_chunks(chunks)
+            except Exception as e:
+                if isinstance(e, StorageError):
+                    raise
+                raise StorageError(f"multi-store write failed: {e}") from e
 
-            # If Qdrant fails, we rollback the SQLite insertion.
-            # We assume upsert_chunks is grouped by document and version.
-            compensator.add(lambda: self._sql.delete_chunks_for_document(document_id, version_id))
-
-            await self._qdr.upsert_chunks(chunks)
-        except Exception as e:
-            rollback_failures = await compensator.rollback()
-            if rollback_failures:
-                raise StorageError("multi-store write and compensating rollback failed") from e
-            if isinstance(e, StorageError):
-                raise
-            raise StorageError(f"multi-store write failed: {e}") from e
+            compensator = _Compensator()
+            compensator.add(lambda: self._sql._restore_chunk_snapshot(chunk_ids, sqlite_snapshot))
+            # Register before the vector write because Qdrant may partially apply a batch.
+            compensator.add(lambda: self._qdr._restore_chunk_snapshot(chunk_ids, qdrant_snapshot))
+            try:
+                await self._qdr.upsert_chunks(chunks)
+            except Exception as e:
+                rollback_failures = await compensator.rollback()
+                if rollback_failures:
+                    raise StorageError("multi-store write and compensating rollback failed") from e
+                if isinstance(e, StorageError):
+                    raise
+                raise StorageError(f"multi-store write failed: {e}") from e
 
     async def get_chunk(self, chunk_id: str) -> Chunk | None:
         return await self._sql.get_chunk(chunk_id)
@@ -344,13 +356,14 @@ class CompositeStorage:
         document_id: UUID,
         version_id: UUID | None,
     ) -> None:
-        try:
-            await self._qdr.delete_chunks_for_document(document_id, version_id)
-            await self._sql.delete_chunks_for_document(document_id, version_id)
-        except Exception as e:
-            if isinstance(e, StorageError):
-                raise
-            raise StorageError(f"multi-store delete failed: {e}") from e
+        async with self._chunk_write_lock:
+            try:
+                await self._qdr.delete_chunks_for_document(document_id, version_id)
+                await self._sql.delete_chunks_for_document(document_id, version_id)
+            except Exception as e:
+                if isinstance(e, StorageError):
+                    raise
+                raise StorageError(f"multi-store delete failed: {e}") from e
 
     async def search_dense(
         self,

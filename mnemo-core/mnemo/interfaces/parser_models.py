@@ -178,6 +178,17 @@ class ParseResult:
             if not isinstance(asset, TransientAsset):
                 raise TypeError("extracted_assets must contain TransientAsset instances")
 
+        asset_ids = tuple(asset.parser_local_id for asset in self.extracted_assets)
+        if len(asset_ids) != len(set(asset_ids)):
+            raise ValueError("extracted asset parser_local_id values must be unique")
+        image_ids = {
+            block.parser_local_id for block in self.blocks if isinstance(block, RawImageBlock)
+        }
+        if image_ids != set(asset_ids):
+            raise ValueError(
+                "RawImageBlock and TransientAsset parser_local_id values must correlate"
+            )
+
         if not isinstance(self.metadata, DocumentMetadata):
             raise TypeError("metadata must be DocumentMetadata")
         require_non_empty(self.language, "language")

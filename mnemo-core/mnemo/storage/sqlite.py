@@ -1,7 +1,7 @@
 """SQLite FTS5 storage backend."""
 
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1281,47 +1281,45 @@ class SQLiteStore:
         db = self._require_open()
 
         async with _transaction(db):
-            for chunk in chunks:
-                await db.execute(
-                    """
-                    INSERT INTO chunks (
-                        id, document_id, version_id, text, chunk_type,
-                        position_section_index, position_chunk_index, position_page_number,
-                        position_start_offset, position_end_offset,
-                        heading_path, parent_chunk_id, sibling_ids, metadata
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(id) DO UPDATE SET
-                        document_id=excluded.document_id,
-                        version_id=excluded.version_id,
-                        text=excluded.text,
-                        chunk_type=excluded.chunk_type,
-                        position_section_index=excluded.position_section_index,
-                        position_chunk_index=excluded.position_chunk_index,
-                        position_page_number=excluded.position_page_number,
-                        position_start_offset=excluded.position_start_offset,
-                        position_end_offset=excluded.position_end_offset,
-                        heading_path=excluded.heading_path,
-                        parent_chunk_id=excluded.parent_chunk_id,
-                        sibling_ids=excluded.sibling_ids,
-                        metadata=excluded.metadata
-                    """,
-                    (
-                        chunk.id,
-                        str(chunk.document_id),
-                        str(chunk.version_id),
-                        chunk.text,
-                        chunk.chunk_type.value,
-                        chunk.position.section_index,
-                        chunk.position.chunk_index_in_section,
-                        chunk.position.page_number,
-                        chunk.position.start_offset,
-                        chunk.position.end_offset,
-                        json.dumps(list(chunk.heading_path)),
-                        chunk.parent_chunk_id,
-                        json.dumps(list(chunk.sibling_ids)),
-                        json.dumps(dict(chunk.metadata)),
-                    ),
-                )
+            await self._upsert_chunk_rows(db, chunks)
+
+    async def _snapshot_chunks(self, chunk_ids: tuple[str, ...]) -> tuple[Chunk, ...]:
+        """Capture the current SQLite values for affected chunk identities."""
+        if not chunk_ids:
+            return ()
+        db = self._require_open()
+        placeholders = ",".join("?" for _ in chunk_ids)
+        async with db.execute(
+            f"""
+            SELECT id, document_id, version_id, text, chunk_type,
+                   position_section_index, position_chunk_index, position_page_number,
+                   position_start_offset, position_end_offset,
+                   heading_path, parent_chunk_id, sibling_ids, metadata
+            FROM chunks WHERE id IN ({placeholders})
+            """,
+            chunk_ids,
+        ) as cursor:
+            rows = await cursor.fetchall()
+        by_id = {str(row[0]): self._chunk_from_row(row) for row in rows}
+        return tuple(by_id[chunk_id] for chunk_id in chunk_ids if chunk_id in by_id)
+
+    async def _restore_chunk_snapshot(
+        self,
+        attempted_ids: tuple[str, ...],
+        previous_chunks: tuple[Chunk, ...],
+    ) -> None:
+        """Restore affected rows and remove only identities introduced by an attempt."""
+        if not attempted_ids:
+            return
+        db = self._require_open()
+        previous_ids = frozenset(chunk.id for chunk in previous_chunks)
+        new_ids = tuple(chunk_id for chunk_id in attempted_ids if chunk_id not in previous_ids)
+        async with _transaction(db):
+            # Restore old relationships before removing newly introduced parents.
+            await self._upsert_chunk_rows(db, previous_chunks)
+            if new_ids:
+                placeholders = ",".join("?" for _ in new_ids)
+                await db.execute(f"DELETE FROM chunks WHERE id IN ({placeholders})", new_ids)
 
     async def get_chunk(self, chunk_id: str) -> Chunk | None:
         """Return one chunk by its stable SHA-256 identity."""
@@ -1341,24 +1339,75 @@ class SQLiteStore:
             if row is None:
                 return None
 
-            return Chunk(
-                id=row[0],
-                document_id=UUID(row[1]),
-                version_id=UUID(row[2]),
-                text=row[3],
-                chunk_type=ChunkType(row[4]),
-                position=ChunkPosition(
-                    section_index=row[5],
-                    chunk_index_in_section=row[6],
-                    page_number=row[7],
-                    start_offset=row[8],
-                    end_offset=row[9],
+            return self._chunk_from_row(row)
+
+    async def _upsert_chunk_rows(
+        self,
+        db: aiosqlite.Connection,
+        chunks: tuple[Chunk, ...],
+    ) -> None:
+        for chunk in chunks:
+            await db.execute(
+                """
+                INSERT INTO chunks (
+                    id, document_id, version_id, text, chunk_type,
+                    position_section_index, position_chunk_index, position_page_number,
+                    position_start_offset, position_end_offset,
+                    heading_path, parent_chunk_id, sibling_ids, metadata
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    document_id=excluded.document_id,
+                    version_id=excluded.version_id,
+                    text=excluded.text,
+                    chunk_type=excluded.chunk_type,
+                    position_section_index=excluded.position_section_index,
+                    position_chunk_index=excluded.position_chunk_index,
+                    position_page_number=excluded.position_page_number,
+                    position_start_offset=excluded.position_start_offset,
+                    position_end_offset=excluded.position_end_offset,
+                    heading_path=excluded.heading_path,
+                    parent_chunk_id=excluded.parent_chunk_id,
+                    sibling_ids=excluded.sibling_ids,
+                    metadata=excluded.metadata
+                """,
+                (
+                    chunk.id,
+                    str(chunk.document_id),
+                    str(chunk.version_id),
+                    chunk.text,
+                    chunk.chunk_type.value,
+                    chunk.position.section_index,
+                    chunk.position.chunk_index_in_section,
+                    chunk.position.page_number,
+                    chunk.position.start_offset,
+                    chunk.position.end_offset,
+                    json.dumps(list(chunk.heading_path)),
+                    chunk.parent_chunk_id,
+                    json.dumps(list(chunk.sibling_ids)),
+                    json.dumps(dict(chunk.metadata)),
                 ),
-                heading_path=tuple(json.loads(row[10])),
-                parent_chunk_id=row[11],
-                sibling_ids=tuple(json.loads(row[12])),
-                metadata=FrozenMetadata(json.loads(row[13])),
             )
+
+    @staticmethod
+    def _chunk_from_row(row: Sequence[Any]) -> Chunk:
+        return Chunk(
+            id=row[0],
+            document_id=UUID(row[1]),
+            version_id=UUID(row[2]),
+            text=row[3],
+            chunk_type=ChunkType(row[4]),
+            position=ChunkPosition(
+                section_index=row[5],
+                chunk_index_in_section=row[6],
+                page_number=row[7],
+                start_offset=row[8],
+                end_offset=row[9],
+            ),
+            heading_path=tuple(json.loads(row[10])),
+            parent_chunk_id=row[11],
+            sibling_ids=tuple(json.loads(row[12])),
+            metadata=FrozenMetadata(json.loads(row[13])),
+        )
 
     async def delete_chunks_for_document(
         self,

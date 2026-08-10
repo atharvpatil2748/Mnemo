@@ -28,7 +28,9 @@ We move the Cleaner boundary to operate exclusively on `ParseResult` before Cano
      ↓
    Cleaned ParseResult
      ↓
-   Blob Persistence (Orchestration)
+   Document Classifier
+     ↓
+   Module 3.9 Ingestion Pipeline (Blob Persistence and Asset Resolution)
      ↓
    Document Canonicalizer
      ↓
