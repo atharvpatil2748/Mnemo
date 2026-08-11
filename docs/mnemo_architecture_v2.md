@@ -382,10 +382,15 @@ the implemented ownership split.
 Normalizes a `ParseResult` before classification and canonicalization. Removes duplicate whitespace and running headers/footers (detected via frequency analysis across pages), fixes hyphenated line breaks, normalizes Unicode to NFC, and detects and tags block language.
 
 **Chunker**  
-Converts a `ParsedDocument` into `Chunk[]`. Selects the appropriate strategy
-based on `doc_type`. All strategies are behind `ChunkerInterface`. Planned
-built-in strategies include generic recursive, Markdown header-aware, HTML
-header-aware, and email thread-aware chunking. Phase 4 has not started.
+Phase 4 consumes the canonical `ParsedDocument` from Module 3.9 together with a
+`ChunkingContext` that binds a `DocumentVersion` and `ChunkingOptions`. A
+version-isolated `ChunkerInterfaceV2` strategy selected by `doc_type` emits
+ordered immutable `ChunkDraft` values. The dispatcher validates provenance,
+size, and hierarchy, then deterministically materializes final `Chunk` IDs and
+relationships. Strategies own semantic splitting; the dispatcher performs no
+storage, network, embedding, indexing, retrieval, or semantic text generation.
+This accepted contract is defined by ADR-0015. Module 4.1 implements only the
+contract infrastructure and dispatcher; semantic strategies remain later work.
 
 **Embedder**  
 Transforms text into float vectors. Manages a content-addressable embedding cache. Sends batches to the configured `EmbeddingProvider`. `EmbedderInterface` is the later orchestration boundary for batching, caching, and provider selection. It handles dimension mismatch detection when the model is changed.
@@ -396,7 +401,12 @@ failures restore exact affected-key snapshots, preserving replacements and
 removing only newly introduced identities. Because Qdrant has no distributed
 transaction with SQLite, catastrophic interruption during compensation may
 require reconciliation. The indexer maintains document ingestion status and
-version history.
+version history. Under ADR-0015, SQLite columns, Qdrant payloads, and
+CompositeStorage snapshots must preserve required `Chunk.source_span` exactly.
+Legacy chunks are re-created from canonical documents rather than assigned
+fabricated provenance. Atomic replacement of an entire prior chunk set during
+incremental re-chunking requires a separate later storage/indexing contract;
+ADR-0015 does not change ADR-0002 affected-ID upsert semantics.
 
 #### 4.2 Retrieval Pipeline
 
@@ -804,11 +814,31 @@ no network or persistent-storage I/O.
 
 ### 8.2 ChunkerInterface
 
-`ChunkerInterfaceV1` synchronously and deterministically converts a
-`ParsedDocument`, document `version_id`, and `ChunkingOptions` into an ordered
-tuple of `Chunk` values. The canonical `Chunk` schema is defined by ADR-0001.
-Chunk identity uses `version_id`, the canonical block-ordinal span, and text;
-`heading_path` and text offsets remain navigation metadata only.
+`ChunkerInterfaceV1` is the released contract from ADR-0002 and remains
+unchanged. ADR-0015 defines `ChunkerInterfaceV2` as the Phase 4 contract. V2
+synchronously accepts `ParsedDocument`, `ChunkingContext`, and one canonical
+local `TokenCounterInterfaceV1`, then returns an ordered tuple of immutable,
+non-persisted `ChunkDraft` values. `ChunkingContext` contains the authoritative
+`DocumentVersion` and `ChunkingOptions`; it does not add identity to
+`ParsedDocument`. The existing `register_chunker()`/`resolve_chunker()` methods
+and `ChunkerInterface` alias remain V1 during the compatibility window. V2 uses
+explicit `register_chunker_v2()`/`resolve_chunker_v2()` methods, and registry
+identity, priority, conflicts, active selection, and deterministic listing are
+isolated by interface version.
+
+Each draft carries an inclusive, contiguous canonical `BlockSpan` and an
+explicit earlier-draft `parent_index` or is a root. The dispatcher finalizes
+the canonical `Chunk` values. Chunk identity uses `version_id`, the persisted
+source span, and text; `heading_path`, text offsets, tokenizer identity,
+metadata, and relationships remain outside identity. The canonical tokenizer
+is the explicitly provisioned, hash-verified, offline-only
+`tiktoken==0.13.0`/`o200k_base` adapter defined by ADR-0015.
+
+The released `ChunkingOptions` model retains its V1 validation. The accepted
+`ChunkingContext` owns the additional V2 minimum of 15 target tokens and
+defensively validates all option relationships. The dispatcher computes the
+effective maximum as `min(max_tokens, 2 * target_tokens)` and applies it to
+draft text; it does not change V1 construction semantics.
 
 ### 8.3 EmbeddingProvider
 
@@ -905,8 +935,8 @@ INPUT: file bytes (from API upload, watch folder, or programmatic call)
     └──────┬──────┘
            │
     ┌──────▼──────┐
-    │  STAGE 8    │  Adaptive chunking: select ChunkerInterface by doc_type.
-    │  Chunking   │  Produce Chunk[] with full hierarchy metadata.
+    │  STAGE 8    │  ParsedDocument + ChunkingContext -> ChunkerInterfaceV2.
+    │  Chunking   │  Drafts -> validated IDs/relationships -> immutable Chunk[].
     └──────┬──────┘
            │
     ┌──────▼──────┐
@@ -960,6 +990,21 @@ The Adaptive Chunker is the most consequential module in the entire system. Retr
 
 The fundamental principle: **chunking is semantic compression, not text splitting**.
 
+The canonical boundary is:
+
+```text
+Parser -> ParseResult -> DocumentCleaner -> DocumentClassifier
+       -> IngestionPipeline (asset persistence and resolution)
+       -> DocumentCanonicalizer -> ParsedDocument
+       -> ChunkingContext + ChunkerInterfaceV2 + TokenCounterInterfaceV1
+       -> ordered ChunkDraft values -> dispatcher finalization
+       -> immutable Chunk values -> later embedding and indexing
+```
+
+`ParsedDocument` remains content-only. `DocumentVersion` in `ChunkingContext`
+provides the authoritative document/version binding, and the dispatcher rejects
+a mismatch between their content hashes.
+
 ### 10.1 Book
 
 Books have narrative hierarchy: Part → Chapter → Section → Subsection → Paragraph.
@@ -967,8 +1012,8 @@ Books have narrative hierarchy: Part → Chapter → Section → Subsection → 
 **Strategy: Three-Level Hierarchical Chunking**
 
 1. Parse the Table of Contents to establish the hierarchy. If no ToC exists, infer it from heading patterns.
-2. For each section, produce three chunk types:
-   - `SUMMARY`: LLM-generated, 50–100 tokens. Used for high-level routing.
+2. For each section, produce deterministic local chunk types:
+   - `SUMMARY`: only when a source-authored summary is present. Used for high-level routing.
    - `PASSAGE`: 200–500 tokens, bounded by paragraph breaks (never character count). This is the primary retrieval unit.
    - `VERBATIM`: For key definitions, quotes, claims. 30–150 tokens.
 3. Each chunk carries `heading_path`: `["Thinking Fast and Slow", "Part II", "Chapter 11", "The Illusion of Understanding"]`.
@@ -986,8 +1031,11 @@ Papers have canonical structure: Abstract, Introduction, Background, Methods, Re
 3. Never chunk across section boundaries.
 4. Abstract → always one atomic chunk. It is the highest-priority retrieval anchor and should be complete and unmodified.
 5. References → parsed for structured citation metadata but excluded from embedding.
-6. Figures and tables: caption becomes `CAPTION` chunk; figure content, if Vision LLM available, becomes `IMAGE` chunk as a sibling.
-7. Equations: LaTeX preserved verbatim in the chunk; a plain-language description generated as a sibling `EQUATION_DESCRIPTION` chunk.
+6. Figures and tables: source captions become `CAPTION` chunks. Figure content
+   remains represented by the frozen canonical models; later enrichment may
+   add a description using namespaced metadata and an existing `ChunkType`.
+7. Equations: source LaTeX is preserved with `ChunkType.EQUATION`. Any generated
+   plain-language description belongs to later enrichment.
 
 ### 10.3 Resume
 
@@ -997,7 +1045,8 @@ Papers have canonical structure: Abstract, Introduction, Background, Methods, Re
 2. Each section becomes one chunk.
 3. Within Experience: each role is a distinct chunk with preserved structure (company, title, dates, description).
 4. Never overlap sections. A query for "Python experience" must not retrieve an education section.
-5. Generate a `PROFILE_SUMMARY` chunk at the top level (LLM-generated): a dense paragraph synthesizing the complete profile. Used when the query is holistic ("tell me about this candidate").
+5. Preserve a source-authored profile summary when present. Generated holistic
+   summaries belong to later enrichment and are not created by Phase 4.
 
 ### 10.4 Code
 
@@ -1020,26 +1069,33 @@ Papers have canonical structure: Abstract, Introduction, Background, Methods, Re
 3. The content between each H3 and the next H3 is a passage chunk.
 4. Code blocks within Markdown: separate `CODE` chunk with language tag.
 5. Tables: convert to a text description + preserved Markdown table string.
-6. Internal links: extracted as graph edges in SurrealDB (enables cross-section navigation).
+6. Internal links: retained as namespaced metadata for a later graph/indexing
+   owner; the chunker does not write SurrealDB.
 
 ### 10.6 Email
 
 **Strategy: Thread-Aware Chunking**
 
 1. Parse the entire email thread as an ordered sequence of messages.
-2. Each message is a distinct chunk with metadata: `sender`, `recipient`, `date`, `subject`, `reply_to_chunk_id`.
-3. Thread structure is preserved as a chain in SurrealDB.
-4. Long message bodies: recursive character split at paragraph boundaries.
+2. Each message is a distinct draft with namespaced metadata: `sender`,
+   `recipient`, `date`, `subject`, and stable source-thread correlation.
+3. Reply hierarchy is expressed by `parent_index`; final parent IDs are created
+   by dispatcher finalization and may be indexed as a chain later.
+4. Long message bodies: split only at legal message-internal semantic boundaries
+   using the canonical token counter; never by blind character count.
 5. Newsletters/announcements: treated as flat HTML and chunked via Markdown strategy post-extraction.
-6. Attachments: extracted and ingested as separate documents, linked to their parent email chunk.
+6. Attachment extraction and ingestion as separate documents belongs to the
+   ingestion/indexing workflow. The Email strategy only preserves available
+   attachment correlation metadata.
 
 ### 10.7 Slides / Presentations
 
 **Strategy: Slide-Level Atomic Chunking**
 
 1. One chunk per slide: title + body text + speaker notes (if present).
-2. Images on slides → Vision LLM description appended.
-3. If slides have a section structure (revealed by slide titles or section dividers), group slides by section with a section-level `SUMMARY` chunk.
+2. Images remain linked through canonical `Asset` references; generated vision
+   descriptions belong to later enrichment.
+3. If slides have a section structure (revealed by slide titles or section dividers), group slides by section. A section-level `SUMMARY` exists only when supported by source text.
 4. The title slide → `SUMMARY` chunk for the deck.
 
 ### 10.8 Documentation
@@ -1055,11 +1111,43 @@ Papers have canonical structure: Abstract, Introduction, Background, Methods, Re
 
 Regardless of strategy, all chunkers must satisfy:
 
-1. **Minimum size:** No chunk under 15 tokens. Filter and drop.
-2. **Maximum size:** No chunk over 2× the target token count. Apply secondary splitting if exceeded.
-3. **Heading path:** Every chunk carries enough path context to be interpreted without surrounding text.
-4. **Semantic atomicity:** A chunk never crosses a major semantic boundary.
-5. **Identity stability:** The chunk ID is the SHA-256 of `version_id`, the canonical source block-ordinal span, and chunk text. `heading_path` and text offsets do not participate in identity.
+1. **Canonical counting:** One deterministic, offline token counter instance is
+   supplied to both strategy and dispatcher. No strategy selects its own
+   tokenizer. The frozen engine is `tiktoken==0.13.0` with a hash-verified
+   `o200k_base` asset and adapter V1. Mnemo never redistributes that asset.
+   A user explicitly provisions it from the frozen upstream URL (or imports an
+   independently obtained copy for an air-gapped deployment) into local,
+   content-addressed storage. Provisioning is the only network-capable step;
+   runtime loading and chunking are strictly offline and have no fallback.
+2. **Minimum size:** A draft below 15 tokens is removed only when it is a leaf.
+   A short parent with children is an invalid strategy result.
+3. **Maximum size:** The effective hard maximum is
+   `min(max_tokens, 2 * target_tokens)`. Strategies perform legal semantic
+   splitting before return. The dispatcher rejects oversized output; it never
+   blindly splits or truncates atomic content, and failure is all-or-nothing.
+4. **Provenance:** Every draft and final chunk has a valid inclusive,
+   contiguous canonical `BlockSpan`. Multiple chunks may share a span,
+   including secondary splits within one block. Text boundaries are represented
+   by chunk text; `ChunkPosition` offsets are navigation metadata.
+5. **Heading path:** Hierarchical sources retain sufficient canonical heading
+   context. A hierarchy-free source may use an empty path.
+6. **Hierarchy:** Strategies declare a single-parent forest using
+   `parent_index` references to earlier drafts. Multiple roots and multiple
+   levels are allowed. Parentage is never inferred from `section_index` or
+   `heading_path`. Siblings share one non-null parent, exclude self, are
+   symmetric, and have deterministic order; roots are not siblings by default.
+7. **Semantic atomicity:** A chunk never crosses a major semantic boundary.
+8. **Identity stability:** The chunk ID is the SHA-256 of `version_id`, the
+   canonical source block-ordinal span, and chunk text. `heading_path`, text
+   offsets, tokenizer identity, metadata, and relationships do not participate.
+
+The frozen `ChunkType` enum remains authoritative. Architecture labels such as
+`IMAGE`, `EQUATION_DESCRIPTION`, and `PROFILE_SUMMARY` are not new enum values;
+the corresponding source or later-enrichment role uses an existing
+`ChunkType` plus namespaced metadata. Phase 4 performs no LLM or network calls
+and creates no placeholder summaries or descriptions. Optional generated
+content belongs to a future post-chunk enrichment pipeline that requires its
+own ADR and roadmap assignment before implementation.
 
 ---
 
@@ -1123,9 +1211,9 @@ USER QUESTION: "What did Graham say about market volatility?"
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │ STEP 6: PARENT RETRIEVAL (Hierarchical Upgrade)                 │
-│  For each retrieved chunk: inspect its siblings.                │
-│  If ≥50% of a section's chunks are in the result set,          │
-│  replace them with the parent (section-level) chunk.            │
+│  For each retrieved chunk: inspect its stored sibling family.   │
+│  If ≥50% of chunks sharing its non-null parent are present,     │
+│  replace them with that explicitly linked parent chunk.         │
 │  This upgrades snippet-level hits to section-level context.     │
 └───────────────────────────────┬─────────────────────────────────┘
                                 │
@@ -1713,7 +1801,8 @@ sequence and completion state are defined by `mnemo_engineering_roadmap.md`.
 ### Product Stage 2 — Adaptive Chunking + Full Parser Suite (Weeks 9–16)
 **Goal:** All document types handled correctly.
 
-- Implement all built-in `ChunkerInterface` strategies (book, paper, code, resume, email, slides).
+- Implement all built-in `ChunkerInterfaceV2` strategies (generic, book, paper,
+  code, Markdown, email, resume, slides, documentation).
 - Plugin: `deepdoc-parser` (advanced PDF layout understanding).
 - Plugin: `ocr-paddle` (scanned document support).
 - Plugin: `git-ingestion` (codebase ingestion via AST chunking).

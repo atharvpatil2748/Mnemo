@@ -436,6 +436,14 @@ It neither embeds nor persists chunks. It raises validation, unsupported, or
 integrity errors. Extensions register by document type. Expected implementations
 are the Phase 4 dispatch strategies.
 
+This section defines the released `ChunkerInterfaceV1`. ADR-0015 defines a
+versioned Phase 4 successor rather than modifying V1 in place. V2
+accepts `ParsedDocument`, a `ChunkingContext` containing `DocumentVersion` and
+`ChunkingOptions`, and the canonical token counter; it returns ordered,
+non-persisted `ChunkDraft` values for deterministic dispatcher finalization.
+ADR-0015 also strengthens the V2 meaning of `ChunkingOptions`. V1 remains
+available but deprecated during its compatibility window.
+
 ### 6.3 `EmbeddingProvider`
 
 **Purpose.** Represents one model endpoint that turns text into vectors. This is
@@ -606,6 +614,13 @@ After freeze, mutation raises a lifecycle error and lock-free concurrent lookup
 is expected. The registry does not instantiate concrete backends, scan paths,
 or catch runtime capability errors; discovery/loading orchestration in Module
 1.3 owns those tasks.
+
+ADR-0015 evolves the registry key so V1 and V2 chunker registrations and
+resolution include an explicit interface-version discriminator. It adds
+explicit `register_chunker_v2()` and `resolve_chunker_v2()` methods while the
+existing methods and unversioned `ChunkerInterface` alias remain V1 throughout
+the compatibility window. Priority and conflicts are isolated per interface
+version. This narrow evolution does not otherwise change Module 1.3 behavior.
 
 ## 10. Operational contracts
 

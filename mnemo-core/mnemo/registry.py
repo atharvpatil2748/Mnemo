@@ -18,6 +18,7 @@ from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import InvalidVersion, Version
 
 from mnemo.interfaces import (
+    CHUNKER_INTERFACE_V2_VERSION,
     CHUNKER_INTERFACE_VERSION,
     EMBEDDING_PROVIDER_INTERFACE_VERSION,
     LLM_INTERFACE_VERSION,
@@ -26,6 +27,7 @@ from mnemo.interfaces import (
     RETRIEVER_INTERFACE_VERSION,
     STORAGE_INTERFACE_VERSION,
     ChunkerInterfaceV1,
+    ChunkerInterfaceV2,
     ConflictError,
     EmbeddingProviderV1,
     LifecycleError,
@@ -243,7 +245,7 @@ class PluginRegistry:
         _validate_semver(core_version, "core_version")
         self._core_version = core_version
         self._state = RegistryState.OPEN
-        self._slots: dict[tuple[CapabilityKind, str], list[_Registration]] = {}
+        self._slots: dict[tuple[CapabilityKind, str, str], list[_Registration]] = {}
         self._plugins: dict[str, PluginDescriptor] = {}
         self._loading_plugin: PluginDescriptor | None = None
 
@@ -441,6 +443,27 @@ class PluginRegistry:
             ChunkerInterfaceV1,
         )
 
+    def register_chunker_v2(
+        self,
+        doc_type: DocType,
+        implementation: ChunkerInterfaceV2,
+        *,
+        priority: int,
+        plugin_name: str | None = None,
+    ) -> None:
+        """Register a version-two chunker candidate independently from V1."""
+        if not isinstance(doc_type, DocType):
+            raise PluginValidationError("doc_type must be DocType")
+        self._register(
+            CapabilityKind.CHUNKER,
+            doc_type.value,
+            implementation,
+            priority,
+            plugin_name,
+            CHUNKER_INTERFACE_V2_VERSION,
+            ChunkerInterfaceV2,
+        )
+
     def register_embedding_provider(
         self,
         slot: str,
@@ -539,7 +562,7 @@ class PluginRegistry:
     def resolve(self, capability: CapabilityKind, slot: str) -> object | None:
         """Resolve the active implementation for a capability slot."""
         require_non_empty(slot, "slot")
-        registrations = self._slots.get((capability, slot))
+        registrations = self._slots.get((capability, slot, _interface_version(capability)))
         return None if not registrations else registrations[0].implementation
 
     def resolve_parser(self, slot: str) -> ParserInterfaceV1 | None:
@@ -549,6 +572,18 @@ class PluginRegistry:
     def resolve_chunker(self, doc_type: DocType) -> ChunkerInterfaceV1 | None:
         """Resolve the active chunker for a document type."""
         return cast(ChunkerInterfaceV1 | None, self.resolve(CapabilityKind.CHUNKER, doc_type.value))
+
+    def resolve_chunker_v2(self, doc_type: DocType) -> ChunkerInterfaceV2 | None:
+        """Resolve the active V2 chunker without consulting V1 registrations."""
+        if not isinstance(doc_type, DocType):
+            raise TypeError("doc_type must be DocType")
+        registrations = self._slots.get(
+            (CapabilityKind.CHUNKER, doc_type.value, CHUNKER_INTERFACE_V2_VERSION)
+        )
+        return cast(
+            ChunkerInterfaceV2 | None,
+            None if not registrations else registrations[0].implementation,
+        )
 
     def resolve_embedding_provider(self, slot: str) -> EmbeddingProviderV1 | None:
         """Resolve the active embedding provider for a slot."""
@@ -577,13 +612,20 @@ class PluginRegistry:
     ) -> tuple[RegistrationDescriptor, ...]:
         """Return immutable, deterministic registry metadata."""
         result: list[RegistrationDescriptor] = []
-        for (kind, _), registrations in self._slots.items():
+        for (kind, _, _), registrations in self._slots.items():
             if capability is None or capability is kind:
                 result.extend(item.descriptor for item in registrations)
         return tuple(
             sorted(
                 result,
-                key=lambda item: (item.capability, item.slot, -item.priority, item.provider_name),
+                key=lambda item: (
+                    item.capability,
+                    item.slot,
+                    item.interface_version,
+                    -item.priority,
+                    item.provider_name,
+                    item.plugin_name,
+                ),
             )
         )
 
@@ -608,7 +650,7 @@ class PluginRegistry:
         if not isinstance(implementation, contract):
             raise PluginValidationError(f"implementation does not satisfy {contract.__name__}")
         descriptor = self._require_loading_plugin(plugin_name)
-        key = (capability, slot)
+        key = (capability, slot, interface_version)
         registrations = self._slots.setdefault(key, [])
         for existing in registrations:
             if (
@@ -658,6 +700,19 @@ class PluginRegistry:
 def _validate_plugin_name(value: str) -> None:
     if _PLUGIN_NAME_PATTERN.fullmatch(value) is None:
         raise ValueError("plugin name must be lowercase ASCII with digits, underscores, or hyphens")
+
+
+def _interface_version(capability: CapabilityKind) -> str:
+    """Return the released version used by the generic compatibility lookup."""
+    return {
+        CapabilityKind.PARSER: PARSER_INTERFACE_VERSION,
+        CapabilityKind.CHUNKER: CHUNKER_INTERFACE_VERSION,
+        CapabilityKind.EMBEDDING_PROVIDER: EMBEDDING_PROVIDER_INTERFACE_VERSION,
+        CapabilityKind.RETRIEVER: RETRIEVER_INTERFACE_VERSION,
+        CapabilityKind.RERANKER: RERANKER_INTERFACE_VERSION,
+        CapabilityKind.LLM: LLM_INTERFACE_VERSION,
+        CapabilityKind.STORAGE: STORAGE_INTERFACE_VERSION,
+    }[capability]
 
 
 def _normalize_plugin_name(value: str) -> str:

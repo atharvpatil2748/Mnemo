@@ -15,6 +15,7 @@ from mnemo.interfaces.types import (
 )
 from mnemo.models import (
     Asset,
+    BlockSpan,
     Chunk,
     ChunkPosition,
     ChunkType,
@@ -263,6 +264,10 @@ class QdrantStore:
                 version_id=UUID(payload["version_id"]),
                 chunk_type=ChunkType(payload["chunk_type"]),
                 position=position,
+                source_span=BlockSpan(
+                    start_ordinal=payload["source_span"]["start_ordinal"],
+                    end_ordinal=payload["source_span"]["end_ordinal"],
+                ),
                 heading_path=tuple(payload["heading_path"]),
                 parent_chunk_id=payload.get("parent_chunk_id"),
                 sibling_ids=tuple(payload.get("sibling_ids", [])),
@@ -476,6 +481,10 @@ def _chunk_payload(chunk: Chunk) -> dict[str, object]:
             "start_offset": chunk.position.start_offset,
             "end_offset": chunk.position.end_offset,
         },
+        "source_span": {
+            "start_ordinal": chunk.source_span.start_ordinal,
+            "end_ordinal": chunk.source_span.end_ordinal,
+        },
         "heading_path": list(chunk.heading_path),
         "parent_chunk_id": chunk.parent_chunk_id,
         "sibling_ids": list(chunk.sibling_ids),
@@ -494,6 +503,7 @@ def _record_to_chunk(record: models.Record) -> Chunk:
         raise ValueError("stored Qdrant chunk snapshot is incomplete")
     values = cast(list[int | float], vector)
     position = cast(dict[str, object], payload["position"])
+    source_span = cast(dict[str, object], payload["source_span"])
     return Chunk(
         id=str(payload["id"]),
         text=str(payload["text"]),
@@ -506,6 +516,10 @@ def _record_to_chunk(record: models.Record) -> Chunk:
             page_number=cast(int | None, position.get("page_number")),
             start_offset=cast(int | None, position.get("start_offset")),
             end_offset=cast(int | None, position.get("end_offset")),
+        ),
+        source_span=BlockSpan(
+            start_ordinal=int(cast(int, source_span["start_ordinal"])),
+            end_ordinal=int(cast(int, source_span["end_ordinal"])),
         ),
         heading_path=tuple(cast(list[str], payload["heading_path"])),
         parent_chunk_id=cast(str | None, payload.get("parent_chunk_id")),

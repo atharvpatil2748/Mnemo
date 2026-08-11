@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from mnemo.models import (
+    BlockSpan,
     Chunk,
     ChunkPosition,
     ChunkType,
@@ -31,6 +32,7 @@ def _chunk(document_id: UUID, version_id: UUID) -> Chunk:
             start_offset=10,
             end_offset=27,
         ),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=("Chapter 1",),
         parent_chunk_id="d" * 64,
         sibling_ids=("e" * 64,),

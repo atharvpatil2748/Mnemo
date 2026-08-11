@@ -16,6 +16,7 @@ from mnemo.interfaces.types import (
     StorageCapabilities,
 )
 from mnemo.models import (
+    BlockSpan,
     Chunk,
     ChunkPosition,
     ChunkType,
@@ -36,6 +37,7 @@ def _chunk() -> Chunk:
         text="abc",
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=(),
         parent_chunk_id=None,
         sibling_ids=(),
@@ -357,6 +359,7 @@ async def test_upsert_chunks_success(
         text="abc",
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=(),
         parent_chunk_id=None,
         sibling_ids=(),
@@ -386,6 +389,7 @@ async def test_upsert_chunks_rollback(
         text="abc",
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=(),
         parent_chunk_id=None,
         sibling_ids=(),

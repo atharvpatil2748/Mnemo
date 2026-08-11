@@ -1,6 +1,6 @@
 """Public Phase 1 Module 1.2 interface contracts."""
 
-from .chunker import ChunkerInterface, ChunkerInterfaceV1
+from .chunker import ChunkerInterface, ChunkerInterfaceV1, ChunkerInterfaceV2
 from .embedding import EmbeddingProvider, EmbeddingProviderV1
 from .errors import (
     ConflictError,
@@ -21,8 +21,10 @@ from .parser import ParserInterface, ParserInterfaceV1
 from .reranker import RerankerInterface, RerankerInterfaceV1
 from .retriever import RetrieverInterface, RetrieverInterfaceV1
 from .storage import StorageInterface, StorageInterfaceV1
+from .tokenizer import TokenCounterInterfaceV1
 from .types import (
     ChunkerCapabilities,
+    ChunkingContext,
     ChunkingOptions,
     CompletionResult,
     EmbeddingBatch,
@@ -40,6 +42,7 @@ from .types import (
     StorageCapabilities,
 )
 from .versions import (
+    CHUNKER_INTERFACE_V2_VERSION,
     CHUNKER_INTERFACE_VERSION,
     EMBEDDING_PROVIDER_INTERFACE_VERSION,
     LLM_INTERFACE_VERSION,
@@ -50,6 +53,7 @@ from .versions import (
 )
 
 __all__ = [
+    "CHUNKER_INTERFACE_V2_VERSION",
     "CHUNKER_INTERFACE_VERSION",
     "EMBEDDING_PROVIDER_INTERFACE_VERSION",
     "LLM_INTERFACE_VERSION",
@@ -60,6 +64,8 @@ __all__ = [
     "ChunkerCapabilities",
     "ChunkerInterface",
     "ChunkerInterfaceV1",
+    "ChunkerInterfaceV2",
+    "ChunkingContext",
     "ChunkingOptions",
     "CompletionResult",
     "ConflictError",
@@ -98,5 +104,6 @@ __all__ = [
     "StorageError",
     "StorageInterface",
     "StorageInterfaceV1",
+    "TokenCounterInterfaceV1",
     "UnsupportedError",
 ]

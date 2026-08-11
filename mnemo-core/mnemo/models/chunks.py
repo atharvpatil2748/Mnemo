@@ -32,6 +32,21 @@ class ChunkType(StrEnum):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class BlockSpan:
+    """Inclusive contiguous canonical block-ordinal provenance."""
+
+    start_ordinal: int
+    end_ordinal: int
+
+    def __post_init__(self) -> None:
+        """Validate the inclusive ordinal range."""
+        require_non_negative(self.start_ordinal, "start_ordinal")
+        require_non_negative(self.end_ordinal, "end_ordinal")
+        if self.start_ordinal > self.end_ordinal:
+            raise ValueError("start_ordinal must not exceed end_ordinal")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ChunkPosition:
     """Navigation coordinates for a chunk within canonical extracted text."""
 
@@ -66,6 +81,7 @@ class Chunk:
     version_id: UUID
     chunk_type: ChunkType
     position: ChunkPosition
+    source_span: BlockSpan
     heading_path: tuple[str, ...]
     parent_chunk_id: str | None = None
     sibling_ids: tuple[str, ...] = ()
@@ -81,6 +97,8 @@ class Chunk:
         require_enum(self.chunk_type, ChunkType, "chunk_type")
         if not isinstance(self.position, ChunkPosition):
             raise TypeError("position must be ChunkPosition")
+        if not isinstance(self.source_span, BlockSpan):
+            raise TypeError("source_span must be BlockSpan")
         require_tuple(self.heading_path, "heading_path")
         for heading in self.heading_path:
             require_non_empty(heading, "heading_path entry")
@@ -110,3 +128,32 @@ class Chunk:
     def __hash__(self) -> int:
         """Hash the stable chunk identity."""
         return hash(self.id)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ChunkDraft:
+    """Non-persisted semantic strategy output awaiting finalization."""
+
+    text: str
+    chunk_type: ChunkType
+    position: ChunkPosition
+    heading_path: tuple[str, ...]
+    source_span: BlockSpan
+    parent_index: int | None = None
+    metadata: FrozenMetadata = field(default_factory=FrozenMetadata)
+
+    def __post_init__(self) -> None:
+        """Validate draft-local fields; graph ordering is dispatcher-owned."""
+        require_non_empty(self.text, "text")
+        require_enum(self.chunk_type, ChunkType, "chunk_type")
+        if not isinstance(self.position, ChunkPosition):
+            raise TypeError("position must be ChunkPosition")
+        if not isinstance(self.source_span, BlockSpan):
+            raise TypeError("source_span must be BlockSpan")
+        require_tuple(self.heading_path, "heading_path")
+        for heading in self.heading_path:
+            require_non_empty(heading, "heading_path entry")
+        if self.parent_index is not None:
+            require_non_negative(self.parent_index, "parent_index")
+        if not isinstance(self.metadata, FrozenMetadata):
+            raise TypeError("metadata must be FrozenMetadata")

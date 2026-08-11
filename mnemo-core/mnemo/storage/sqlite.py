@@ -19,6 +19,7 @@ from mnemo.interfaces.types import (
 )
 from mnemo.models import (
     Asset,
+    BlockSpan,
     Chunk,
     Citation,
     Document,
@@ -40,7 +41,7 @@ from mnemo.models.chunks import ChunkPosition, ChunkType
 from mnemo.models.documents import DocumentMetadata, DocumentVersion, DocumentVersionStatus
 from mnemo.models.notebook import InsightType, NoteOrigin, TurnRole
 
-_SCHEMA_VERSION = 1
+_SCHEMA_VERSION = 2
 
 _SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -82,6 +83,8 @@ CREATE TABLE IF NOT EXISTS chunks (
     position_page_number INTEGER,
     position_start_offset INTEGER,
     position_end_offset INTEGER,
+    source_start_ordinal INTEGER NOT NULL,
+    source_end_ordinal INTEGER NOT NULL,
     heading_path TEXT NOT NULL,
     parent_chunk_id TEXT REFERENCES chunks(id) ON DELETE CASCADE,
     sibling_ids TEXT NOT NULL,
@@ -293,6 +296,20 @@ class SQLiteStore:
                     (_SCHEMA_VERSION, datetime.now().isoformat()),
                 )
                 await db.commit()
+                return
+        async with db.execute("SELECT MAX(version) FROM schema_versions") as cursor:
+            version_row = await cursor.fetchone()
+        current_version = (
+            0 if version_row is None or version_row[0] is None else int(version_row[0])
+        )
+        if current_version < 2:
+            await db.execute("ALTER TABLE chunks ADD COLUMN source_start_ordinal INTEGER")
+            await db.execute("ALTER TABLE chunks ADD COLUMN source_end_ordinal INTEGER")
+            await db.execute(
+                "INSERT INTO schema_versions (version, applied_at) VALUES (?, ?)",
+                (2, datetime.now().isoformat()),
+            )
+            await db.commit()
 
     async def close(self) -> None:
         """Close the database connection idempotently."""
@@ -1294,6 +1311,7 @@ class SQLiteStore:
             SELECT id, document_id, version_id, text, chunk_type,
                    position_section_index, position_chunk_index, position_page_number,
                    position_start_offset, position_end_offset,
+                   source_start_ordinal, source_end_ordinal,
                    heading_path, parent_chunk_id, sibling_ids, metadata
             FROM chunks WHERE id IN ({placeholders})
             """,
@@ -1330,6 +1348,7 @@ class SQLiteStore:
             SELECT id, document_id, version_id, text, chunk_type,
                    position_section_index, position_chunk_index, position_page_number,
                    position_start_offset, position_end_offset,
+                   source_start_ordinal, source_end_ordinal,
                    heading_path, parent_chunk_id, sibling_ids, metadata
             FROM chunks WHERE id = ?
             """,
@@ -1353,8 +1372,9 @@ class SQLiteStore:
                     id, document_id, version_id, text, chunk_type,
                     position_section_index, position_chunk_index, position_page_number,
                     position_start_offset, position_end_offset,
+                    source_start_ordinal, source_end_ordinal,
                     heading_path, parent_chunk_id, sibling_ids, metadata
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     document_id=excluded.document_id,
                     version_id=excluded.version_id,
@@ -1365,6 +1385,8 @@ class SQLiteStore:
                     position_page_number=excluded.position_page_number,
                     position_start_offset=excluded.position_start_offset,
                     position_end_offset=excluded.position_end_offset,
+                    source_start_ordinal=excluded.source_start_ordinal,
+                    source_end_ordinal=excluded.source_end_ordinal,
                     heading_path=excluded.heading_path,
                     parent_chunk_id=excluded.parent_chunk_id,
                     sibling_ids=excluded.sibling_ids,
@@ -1381,6 +1403,8 @@ class SQLiteStore:
                     chunk.position.page_number,
                     chunk.position.start_offset,
                     chunk.position.end_offset,
+                    chunk.source_span.start_ordinal,
+                    chunk.source_span.end_ordinal,
                     json.dumps(list(chunk.heading_path)),
                     chunk.parent_chunk_id,
                     json.dumps(list(chunk.sibling_ids)),
@@ -1403,10 +1427,11 @@ class SQLiteStore:
                 start_offset=row[8],
                 end_offset=row[9],
             ),
-            heading_path=tuple(json.loads(row[10])),
-            parent_chunk_id=row[11],
-            sibling_ids=tuple(json.loads(row[12])),
-            metadata=FrozenMetadata(json.loads(row[13])),
+            source_span=BlockSpan(start_ordinal=row[10], end_ordinal=row[11]),
+            heading_path=tuple(json.loads(row[12])),
+            parent_chunk_id=row[13],
+            sibling_ids=tuple(json.loads(row[14])),
+            metadata=FrozenMetadata(json.loads(row[15])),
         )
 
     async def delete_chunks_for_document(

@@ -50,7 +50,7 @@ DocumentCanonicalizer
   ↓
 ParsedDocument
   ↓
-Chunker
+ChunkingContext + ChunkerInterfaceV2 (ADR-0015)
 ```
 
 ## Consequences

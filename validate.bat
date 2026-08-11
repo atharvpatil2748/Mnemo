@@ -18,6 +18,10 @@ uv run mypy --strict mnemo-core/mnemo mnemo-core/tests mnemo-server/mnemo_server
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo Running pytest...
+echo Explicitly provisioning canonical tokenizer test data...
+uv run mnemo provision-tokenizer
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
 uv run pytest --cov=mnemo --cov-report=term-missing
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 

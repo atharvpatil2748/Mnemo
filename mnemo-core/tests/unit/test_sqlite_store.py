@@ -21,6 +21,7 @@ import aiosqlite
 import pytest
 from mnemo.interfaces.errors import ConflictError
 from mnemo.models import (
+    BlockSpan,
     Chunk,
     ChunkPosition,
     ChunkType,
@@ -343,6 +344,7 @@ def test_session_crud(
         version_id=ver_id,
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=(),
     )
     _run(open_store.upsert_chunks((chunk,)))
@@ -386,11 +388,14 @@ def test_chunk_crud_and_search(
         version_id=ver_id,
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=("h1",),
     )
 
     _run(open_store.upsert_chunks((chunk,)))
-    assert _run(open_store.get_chunk(c_id)) is not None
+    stored = _run(open_store.get_chunk(c_id))
+    assert stored is not None
+    assert stored.source_span == chunk.source_span
 
     # Sparse search
     results = _run(open_store.search_sparse("alpha", MetadataFilter(), top_k=5))
@@ -413,6 +418,7 @@ def test_chunk_snapshot_restore_preserves_replaced_rows(
         version_id=ver_id,
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=("original",),
         metadata=FrozenMetadata({"parser.source": "old"}),
     )
@@ -427,6 +433,7 @@ def test_chunk_snapshot_restore_preserves_replaced_rows(
     assert restored is not None
     assert restored.text == original.text
     assert restored.heading_path == original.heading_path
+    assert restored.source_span == original.source_span
     assert dict(restored.metadata) == dict(original.metadata)
     assert _run(open_store.get_chunk(introduced.id)) is None
 
@@ -443,6 +450,7 @@ def test_chunk_batch_failure_rolls_back_replacement(
         version_id=ver_id,
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=(),
     )
     invalid = replace(original, id="b" * 64, document_id=uuid4())
@@ -483,6 +491,7 @@ def test_cascade_delete(
         version_id=ver_id,
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=("h1",),
     )
     _run(open_store.upsert_chunks((chunk,)))

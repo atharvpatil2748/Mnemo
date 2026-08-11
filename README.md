@@ -2,7 +2,7 @@
 
 > One knowledge layer. Thousands of documents. Your hardware, your data.
 
-![Version](https://img.shields.io/badge/version-0.10.9-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-0.11.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
 
 ## Why Mnemo Exists
 
@@ -108,8 +108,8 @@ Mnemo's component-based design allows it to eventually serve multiple roles:
 
 Mnemo is in active engineering development. Every module is rigorously tested before being marked complete.
 
-Here is the current implementation status (Module 3.9 complete; latest frozen
-release v0.10.9):
+Here is the current implementation status (Module 4.1 complete; latest frozen
+release v0.11.0):
 
 | Capability | Status | Notes |
 |---|---|---|
@@ -119,7 +119,7 @@ release v0.10.9):
 | Local Storage Layer | ✅ Implemented | Qdrant, SQLite FTS5, SurrealDB, FS |
 | Document Parsing | ✅ Implemented | PDF, DOCX, Markdown, HTML, TXT, JSON, CSV |
 | Ingestion Canonicalization | ✅ Complete | Phase 3.9 bridge produces canonical `ParsedDocument` values |
-| Adaptive Chunking | 📋 Planned | Phase 4 has not started |
+| Chunking Contracts / Dispatcher | ✅ Complete | Module 4.1 finalizes V2 drafts; semantic strategies begin in 4.2 |
 | Embedding Pipeline | 📋 Planned | Phase 5 |
 | Hybrid Retrieval | 📋 Planned | Phase 6 |
 | REST API | 📋 Planned | Phase 7 |
@@ -134,6 +134,16 @@ release v0.10.9):
 * **`uv` 0.12.2** or compatible
 * **Node.js 22** and **pnpm 11.16** (for UI scaffold)
 * **Docker** with Compose (for integration checks)
+
+Phase 4 token counting requires an explicit user-initiated provisioning step:
+
+```console
+mnemo provision-tokenizer
+```
+
+The command downloads the frozen `o200k_base` asset directly from upstream,
+verifies its SHA-256, and installs it in user-local content-addressed storage.
+Mnemo does not bundle the asset, and chunking never accesses the network.
 
 ### 2. Setup and Validation
 Clone the repository and run the validation script to ensure your environment is clean:

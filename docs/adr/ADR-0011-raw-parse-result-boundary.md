@@ -58,7 +58,7 @@ Document Canonicalizer
   ↓
 ParsedDocument
   ↓
-Chunker
+ChunkingContext + ChunkerInterfaceV2 (ADR-0015)
 ```
 
 ### 3. DocumentCanonicalizer

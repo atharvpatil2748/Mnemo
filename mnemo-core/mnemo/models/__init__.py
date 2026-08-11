@@ -12,7 +12,7 @@ from .blocks import (
     TableBlock,
     TextBlock,
 )
-from .chunks import Chunk, ChunkPosition, ChunkType
+from .chunks import BlockSpan, Chunk, ChunkDraft, ChunkPosition, ChunkType
 from .documents import (
     DocType,
     Document,
@@ -40,9 +40,11 @@ from .retrieval import MetadataFilter, ScoredChunk
 __all__ = [
     "Asset",
     "Block",
+    "BlockSpan",
     "BoundingBox",
     "CaptionBlock",
     "Chunk",
+    "ChunkDraft",
     "ChunkPosition",
     "ChunkType",
     "Citation",

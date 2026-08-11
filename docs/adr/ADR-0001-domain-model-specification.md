@@ -596,7 +596,8 @@ last source block contributing content. The ID is the SHA-256 digest of the
 UTF-8 bytes of a canonical JSON array containing, in order, the lowercase
 canonical `version_id` string, a two-integer array containing those block
 ordinals, and `text`. JSON uses the shared canonical form. The block-ordinal span
-is generation provenance rather than a public `Chunk` field. `heading_path`, all
+is generation provenance rather than a public `Chunk` field in the released V1
+schema. `heading_path`, all
 `ChunkPosition` fields (including text offsets), `document_id`, chunk type,
 metadata, relationships, and embedding do not participate.
 
@@ -612,6 +613,12 @@ cross-record invariants for the chunking/storage modules.
 
 **Future extension points:** Named embeddings belong in storage payloads until a
 later ADR changes the public model. Chunker-specific fields belong in metadata.
+
+**Phase 4 evolution:** ADR-0015 makes the already-required
+inclusive block-ordinal provenance a first-class immutable `BlockSpan` and a
+required persisted `Chunk.source_span`. It does not change the identity formula
+above. V1 remains available during its compatibility window, while Phase 4
+uses the evolved persisted schema.
 
 ### 8.3 `ScoredChunk`
 

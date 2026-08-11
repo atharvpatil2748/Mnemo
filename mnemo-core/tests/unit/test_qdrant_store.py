@@ -7,6 +7,7 @@ from uuid import uuid4
 import pytest
 from mnemo.config import QdrantStorageConfig
 from mnemo.models import (
+    BlockSpan,
     Chunk,
     ChunkPosition,
     ChunkType,
@@ -89,6 +90,7 @@ async def test_qdrant_upsert_and_search(qdrant_store: QdrantStore) -> None:
         version_id=ver_id,
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=(),
         sibling_ids=(),
         metadata=FrozenMetadata({"foo": "bar"}),
@@ -112,6 +114,7 @@ async def test_qdrant_upsert_and_search(qdrant_store: QdrantStore) -> None:
     assert scored.source == "qdrant"
     assert scored.rank == 1
     assert scored.chunk.metadata["foo"] == "bar"
+    assert scored.chunk.source_span == chunk.source_span
 
 
 @pytest.mark.anyio
@@ -126,6 +129,7 @@ async def test_qdrant_snapshot_restore_preserves_replaced_points(
         version_id=uuid4(),
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=("old",),
         metadata=FrozenMetadata({"parser.source": "old"}),
         embedding=(0.1, 0.2, 0.3),
@@ -140,6 +144,7 @@ async def test_qdrant_snapshot_restore_preserves_replaced_points(
     await qdrant_store._restore_chunk_snapshot((original.id, introduced.id), snapshot)
 
     restored = await qdrant_store._snapshot_chunks((original.id, introduced.id))
+    assert restored[0].source_span == original.source_span
     assert len(restored) == 1
     assert restored[0].text == original.text
     assert restored[0].heading_path == original.heading_path
@@ -160,6 +165,7 @@ async def test_qdrant_delete_chunks_for_document(qdrant_store: QdrantStore) -> N
         version_id=ver_id,
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=(),
         sibling_ids=(),
         metadata=FrozenMetadata(),
@@ -172,6 +178,7 @@ async def test_qdrant_delete_chunks_for_document(qdrant_store: QdrantStore) -> N
         version_id=ver_id,
         chunk_type=ChunkType.PASSAGE,
         position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
         heading_path=(),
         sibling_ids=(),
         metadata=FrozenMetadata(),

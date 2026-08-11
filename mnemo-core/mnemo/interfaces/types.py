@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 
-from mnemo.models import DocType, FrozenMetadata, JSONValue
+from mnemo.models import DocType, DocumentVersion, FrozenMetadata, JSONValue
 from mnemo.models._shared import (
     require_finite,
     require_non_empty,
@@ -74,6 +74,34 @@ class ChunkingOptions:
             raise ValueError("overlap_tokens must be smaller than target_tokens")
         if not isinstance(self.metadata, FrozenMetadata):
             raise TypeError("metadata must be FrozenMetadata")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ChunkingContext:
+    """Authoritative identity binding and V2 options for one operation."""
+
+    document_version: DocumentVersion
+    options: ChunkingOptions
+
+    def __post_init__(self) -> None:
+        """Enforce the additional Phase 4 option invariants."""
+        if not isinstance(self.document_version, DocumentVersion):
+            raise TypeError("document_version must be DocumentVersion")
+        if not isinstance(self.options, ChunkingOptions):
+            raise TypeError("options must be ChunkingOptions")
+        if self.options.target_tokens < 15:
+            raise ValueError("target_tokens must be at least 15 for V2")
+        if self.options.max_tokens < self.options.target_tokens:
+            raise ValueError("max_tokens must not be smaller than target_tokens")
+        if self.options.overlap_tokens < 0:
+            raise ValueError("overlap_tokens must be non-negative")
+        if self.options.overlap_tokens >= self.options.target_tokens:
+            raise ValueError("overlap_tokens must be smaller than target_tokens")
+
+    @property
+    def effective_max_tokens(self) -> int:
+        """Return the universal hard maximum for finalized draft text."""
+        return min(self.options.max_tokens, 2 * self.options.target_tokens)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

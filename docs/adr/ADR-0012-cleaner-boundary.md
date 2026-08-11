@@ -36,7 +36,7 @@ We move the Cleaner boundary to operate exclusively on `ParseResult` before Cano
      ↓
    ParsedDocument
      ↓
-   Chunker
+   ChunkingContext + ChunkerInterfaceV2 (ADR-0015)
    ```
 
 ## Consequences

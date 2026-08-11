@@ -10,8 +10,9 @@
 ADR-0011 correctly separates pure parsers from canonical domain models. ADR-0012
 places cleaning on `ParseResult`, and ADR-0013 places deterministic
 classification after cleaning. The implemented Phase 3 boundary therefore ends
-with a classified `ParseResult`. `ChunkerInterfaceV1`, however, accepts only a
-canonical `ParsedDocument`.
+with a classified `ParseResult`. The released `ChunkerInterfaceV1` accepts a
+canonical `ParsedDocument`; ADR-0015 defines a V2 contract that preserves that
+same canonical Phase 3.9 output while supplying registry identity separately.
 
 At decision time, no implemented component persisted `TransientAsset` values,
 resolved their parser-local identifiers to permanent `Asset` identities,
@@ -152,7 +153,7 @@ bytes + filename + version_id
           -> DocumentCanonicalizer
           -> ParsedDocument
           -> StorageInterfaceV1.put_parsed_document
-          -> Phase 4 ChunkerInterfaceV1
+          -> Phase 4 ChunkingContext + ChunkerInterfaceV2 (ADR-0015)
 ```
 
 ## Dependencies and ownership
@@ -162,7 +163,9 @@ Module 3.9 may depend on Phase 1 contracts/models, `ParserRouter`,
 depend on concrete filesystem, SQLite, Qdrant, or SurrealDB classes; HTTP, MCP,
 or UI code; Phase 4 chunkers; or LLM implementations.
 
-Phase 4 depends on Module 3.9 for real ingestion flows. Chunker unit tests may
+Phase 4 depends on Module 3.9 for real ingestion flows. ADR-0015's
+contract does not change Module 3.9 ownership or the canonical output type.
+Chunker unit tests may
 continue to construct canonical fixtures directly.
 
 ## Consequences

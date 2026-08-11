@@ -5,8 +5,8 @@
 **Status:** Living Implementation Tracker  
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
-**Current baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 through Module 3.9
-are complete. Phase 4 has not started.
+**Current baseline:** Phase 0, Phase 1, Phase 2, Phase 3 through Module 3.9,
+and Phase 4 Module 4.1 are complete. Modules 4.2–4.10 have not started.
 Completed checklist items are marked below; later tasks describe planned work.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
@@ -92,7 +92,7 @@ This is the front door of all data. Quality here directly determines quality eve
 
 ### Phase 4 — Chunking Engine
 **Duration:** Weeks 11–15  
-**Goal:** All nine document-type-aware chunking strategies are implemented behind `ChunkerInterface`. Parent-child chunk relationships are correctly established. Every `Chunk` carries a full `heading_path`.
+**Goal:** All nine document-type-aware chunking strategies are implemented behind the accepted `ChunkerInterfaceV2`. Strategies emit provenance-bearing drafts; the dispatcher deterministically establishes final identity and explicit parent/sibling relationships. Every hierarchical `Chunk` carries its canonical `heading_path`.
 
 Chunking quality is the single biggest lever on retrieval quality. More implementation time is allocated here than anywhere else in mnemo-core.
 
@@ -232,7 +232,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Task | Subtask | Notes | Difficulty | Dependency |
 |---|---|---|---|---|
 | Define `ParserInterface` | Protocol with `supported_formats` + `parse()` | From architecture §8.1 | Low | 1.1 |
-| Define `ChunkerInterface` | Protocol with `supported_doc_types` + `chunk()` | From architecture §8.2 | Low | 1.1 |
+| Define `ChunkerInterfaceV1` | Protocol with `supported_doc_types` + `chunk()` | Released Phase 1 contract; ADR-0015 defines V2 for Phase 4 | Low | 1.1 |
 | Define `EmbeddingProvider` | Protocol with `model_name`, `dimensions`, `embed()`, `embed_batch()` | Provider abstraction from ADR-0002 | Low | 1.1 |
 | Define `RetrieverInterface` | Protocol with `retrieval_mode` + `retrieve()` | From architecture §8.4 | Low | 1.1 |
 | Define `RerankerInterface` | Protocol with `rerank()` | From architecture §8.5 | Low | 1.1 |
@@ -420,13 +420,34 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 **Module 4.1 — Chunker Dispatcher**
 
+> **Status:** Module 4.1 complete. ADR-0015 is accepted; Modules 4.2–4.10
+> remain unimplemented.
+
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Implement `ChunkerDispatcher` | Selects `ChunkerInterface` by `doc_type` from registry | Medium | Phase 3 |
-| Implement parent-child ID linking | After chunking, link chunk IDs to parent IDs | Must happen post-chunk, pre-index | High | 4.1a |
-| Implement sibling ID linking | Group chunks by section, set `sibling_ids` | Required for parent retrieval | High | 4.1a |
-| Enforce chunking invariants | Min 15 tokens, max 2× target. Drop short. Split long. | Architecture §10.9 | Medium | 4.1a |
-| Implement chunk ID computation | SHA-256 of version, canonical block-ordinal span, and text | Heading path and offsets excluded | Low | 4.1a |
+| Freeze Phase 4 contracts | Accept ADR-0015; freeze context, drafts, provenance, registry isolation, and storage migration | — | Phase 3.9 |
+| Freeze canonical tokenizer | `tiktoken==0.13.0`, adapter V1, explicitly user-provisioned and hash-verified `o200k_base`; Mnemo distributions remain asset-free and runtime remains offline | — | ADR-0015 |
+| Define `ChunkerInterfaceV2` | `ParsedDocument` + context + canonical token counter → ordered drafts; V1 and its alias unchanged during compatibility | High | Contract freeze |
+| Version-isolate registry | Add explicit V2 registration/resolution; key priority/conflicts/active selection by interface version | Medium | Contract freeze |
+| Implement `ChunkerDispatcher` | Resolve only V2 by `doc_type`; validate context and capabilities | Medium | Contract freeze |
+| Finalize provenance and identity | Validate required span; SHA-256 from version, span, and text | High | 4.1 dispatcher |
+| Finalize parent and sibling links | Validate earlier-draft forest; materialize deterministic IDs and sibling families | High | 4.1 dispatcher |
+| Enforce size invariants | Remove short leaves; reject short parents and oversized strategy output; never split or truncate | High | 4.1 dispatcher |
+| Specify later indexing evolution | Persist source span; define migration/rechunk and atomic full-set replacement separately | High | Before production indexing |
+
+**Module 4.1 readiness prerequisites**
+
+- ADR-0015 accepted;
+- tokenizer implementation, asset checksum, explicit provisioning boundary, adapter identity, and golden counts frozen;
+- V1/V2 registry isolation frozen;
+- `BlockSpan` and required `Chunk.source_span` frozen;
+- `ChunkDraft` and `ChunkingContext` frozen;
+- parent and sibling semantics frozen;
+- oversized atomic-content failure behavior frozen;
+- storage provenance migration specified;
+- Email ownership resolved;
+- later LLM enrichment ownership resolved; and
+- ADR-0015 acceptance tests specified.
 
 **Module 4.2 — Generic Recursive Chunker**
 
@@ -442,7 +463,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Implement `BookChunker` | Architecture §10.1 three-level hierarchy | RAGFlow | High | 4.1 |
 | ToC extraction | Parse Table of Contents → section hierarchy | RAGFlow deepdoc | High | 4.3a |
 | ToC inference | If no ToC: infer hierarchy from heading patterns | — | High | 4.3b |
-| Three chunk types per section | SUMMARY stub (filled later), PASSAGE, VERBATIM for key claims | — | High | 4.3a |
+| Source-derived chunk types per section | Source-authored SUMMARY when present, PASSAGE, VERBATIM for key claims | No placeholders | High | 4.3a |
 | Never cross chapter boundaries | Chapter boundary = hard split | — | Medium | 4.3a |
 | Skip ToC itself | Detect and skip ToC pages | — | Low | 4.3a |
 
@@ -455,7 +476,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Canonical section mapping | Assign `section_type` enum: Abstract, Introduction, etc. | — | Medium | 4.4a |
 | Abstract → atomic chunk | Single chunk, never split | — | Low | 4.4a |
 | References → metadata only | Extract DOIs, not embedded | — | Medium | 4.4a |
-| Equation handling | Preserve LaTeX + generate plain-language description (slow path) | — | High | 4.4a |
+| Equation handling | Preserve source LaTeX as EQUATION | Generated descriptions are later enrichment | High | 4.4a |
 
 **Module 4.5 — Code Chunker**
 
@@ -477,31 +498,40 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Code blocks → CODE chunks | With language tag | Low | 4.6a |
 | Tables → structured chunk | Markdown table preserved as text | Low | 4.6a |
 
-**Module 4.7 — Resume Chunker**
+**Module 4.7 — Email Chunker**
+
+| Task | Notes | Difficulty | Dependency |
+|---|---|---|---|
+| Implement `EmailChunker` | Architecture §10.6 thread-aware chunking for `DocType.EMAIL` | High | 4.1 |
+| Preserve message boundaries | One semantic draft per message when within limits | High | 4.7a |
+| Preserve thread relationships | Explicit draft parent hierarchy plus namespaced source-thread metadata | High | 4.7a |
+| Handle long messages | Split only at legal message-internal semantic boundaries | Medium | 4.7a |
+
+**Module 4.8 — Resume Chunker**
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
 | Implement `ResumeChunker` | Architecture §10.3 semantic section isolation | High | 4.1 |
-| Section detection | Contact, Summary, Experience, Education, Skills, Projects | Medium | 4.7a |
-| Role isolation | Each Experience role = distinct chunk | High | 4.7a |
-| Profile summary chunk | LLM-generated holistic summary (slow path) | High | 4.7a |
+| Section detection | Contact, Summary, Experience, Education, Skills, Projects | Medium | 4.8a |
+| Role isolation | Each Experience role = distinct chunk | High | 4.8a |
+| Profile summary | Preserve only when source-authored | Generated summaries are later enrichment | Medium | 4.8a |
 
-**Module 4.8 — Slides Chunker**
+**Module 4.9 — Slides Chunker**
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
 | Implement `SlidesChunker` | Architecture §10.7 slide-level atomic | Medium | 4.1 |
-| One chunk per slide | Title + body + speaker notes | Low | 4.8a |
-| Detect section dividers | Title slides mark section boundaries | Medium | 4.8a |
+| One chunk per slide | Title + body + speaker notes | Low | 4.9a |
+| Detect section dividers | Title slides mark section boundaries | Medium | 4.9a |
 
-**Module 4.9 — Documentation Chunker**
+**Module 4.10 — Documentation Chunker**
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
 | Implement `DocumentationChunker` | Architecture §10.8 task-and-topic | Medium | 4.1 |
-| Detect task blocks | Numbered procedures stay atomic | Medium | 4.9a |
-| API reference format | One chunk per function/endpoint | High | 4.9a |
-| Preserve callout type tags | Note, Warning, Tip in chunk metadata | Low | 4.9a |
+| Detect task blocks | Numbered procedures stay atomic | Medium | 4.10a |
+| API reference format | One chunk per function/endpoint | High | 4.10a |
+| Preserve callout type tags | Note, Warning, Tip in chunk metadata | Low | 4.10a |
 
 ---
 
@@ -569,7 +599,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
 | Implement `ParentRetriever` | Architecture §11 hierarchical upgrade | High | 6.2, 6.3 |
-| Sibling co-occurrence check | ≥50% of a section's siblings in result set → upgrade to parent | High | 6.4a |
+| Sibling co-occurrence check | ≥50% of the stored family sharing one non-null parent → upgrade to that parent | High | 6.4a |
 | Fetch parent chunk from storage | Parent ID lookup | Low | 6.4a |
 
 **Module 6.5 — Result Fusion**
@@ -1177,11 +1207,18 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 
 | Type | Tests |
 |---|---|
-| **Unit** | Every chunker: min/max invariants enforced on synthetic input |
+| **Contract** | Explicit V1 and V2 methods resolve independently; priority/conflicts/active flags cannot cross versions; listing order includes version |
+| **Contract** | V1 aliases remain V1 during compatibility; context owns V2-only option checks and rejects document/version content-hash mismatch |
+| **Contract** | `BlockSpan` is inclusive, contiguous, in range, persisted, and independently usable to recompute identity |
+| **Unit** | Draft forests reject dangling/forward parents; permit multiple roots and multiple levels |
+| **Unit** | Sibling families are symmetric, self-excluding, deterministic, and limited to a shared non-null parent |
+| **Unit** | Canonical tokenizer golden vectors cover Unicode and remain identical offline |
+| **Unit** | Every chunker: short leaves removed, every short parent rejected, oversized drafts rejected without partial output |
 | **Unit** | `BookChunker`: chunks never cross chapter boundaries |
 | **Unit** | `CodeChunker`: functions never split mid-body |
-| **Unit** | Chunk IDs are stable on re-chunking identical content |
+| **Unit** | Chunk IDs are stable; heading, offsets, metadata, and tokenizer identity do not affect them |
 | **Unit** | `heading_path` is correct on all chunker types |
+| **Round trip** | SQLite and Qdrant preserve `source_span` exactly; legacy rows never receive fabricated spans |
 | **Integration** | Parse + chunk a real 500-page book → verify chapter/section hierarchy |
 | **Performance** | Chunk 1000 pages in < 10 seconds |
 | **Regression** | Re-chunk after minor edit → only changed chunks get new IDs |
@@ -1366,7 +1403,7 @@ mnemo/
 │   │   │   ├── json.py
 │   │   │   └── csv.py
 │   │   │
-│   │   ├── chunkers/            ← Built-in ChunkerInterface implementations
+│   │   ├── chunkers/            ← Planned built-in ChunkerInterfaceV2 implementations
 │   │   │   ├── __init__.py
 │   │   │   ├── dispatcher.py    ← ChunkerDispatcher (doctype → chunker)
 │   │   │   ├── generic.py
@@ -1374,6 +1411,7 @@ mnemo/
 │   │   │   ├── paper.py
 │   │   │   ├── code.py
 │   │   │   ├── markdown.py
+│   │   │   ├── email.py
 │   │   │   ├── resume.py
 │   │   │   ├── slides.py
 │   │   │   └── documentation.py
@@ -1559,7 +1597,7 @@ EPIC 1: mnemo-core — Foundation
 
   FEATURE 1.2: Interface Contracts
     ISSUE: ParserInterface Protocol + acceptance test
-    ISSUE: ChunkerInterface Protocol + acceptance test
+    ISSUE: ChunkerInterfaceV1 Protocol + acceptance test
     ISSUE: EmbeddingProvider Protocol + acceptance test
     ISSUE: RetrieverInterface Protocol + acceptance test
     ISSUE: RerankerInterface Protocol + acceptance test
@@ -1629,9 +1667,10 @@ EPIC 3: mnemo-core — Parser System
 
 EPIC 4: mnemo-core — Chunking Engine
   FEATURE 4.1: Chunker Infrastructure
-    ISSUE: ChunkerDispatcher (doctype → strategy)
-    ISSUE: Parent-child and sibling ID linking
-    ISSUE: Chunking invariants enforcement
+    ISSUE: Freeze ADR-0015 contracts and canonical offline tokenizer
+    ISSUE: Version-isolated ChunkerDispatcher (doctype → V2 strategy)
+    ISSUE: Provenance, identity, parent-child, and sibling finalization
+    ISSUE: Chunking invariant validation (no dispatcher text splitting)
 
   FEATURE 4.2: Chunker Implementations
     ISSUE: GenericChunker
@@ -1639,6 +1678,7 @@ EPIC 4: mnemo-core — Chunking Engine
     ISSUE: PaperChunker (canonical sections + equation handling)
     ISSUE: CodeChunker (tree-sitter AST + call context)
     ISSUE: MarkdownChunker
+    ISSUE: EmailChunker (thread-aware)
     ISSUE: ResumeChunker (section isolation + role chunks)
     ISSUE: SlidesChunker
     ISSUE: DocumentationChunker
@@ -1834,7 +1874,7 @@ These rules are non-negotiable. Any violation is a bug, not a style preference.
 ### Highest-Risk Modules (Detailed)
 
 #### Risk 1: Interface Contract Design (Phase 1)
-**Risk:** If `StorageInterface` or `ChunkerInterface` is underspecified, every implementation breaks when the interface is corrected later.  
+**Risk:** If `StorageInterface` or a versioned `ChunkerInterface` is underspecified, every implementation breaks when the interface is corrected later.
 **Mitigation:** Spend extra time here. Write acceptance tests for each interface *before* any implementation. Use the ADR process to record any interface evolution decisions.
 
 #### Risk 2: CompositeStorage Atomic Rollback (Phase 2)
@@ -1894,7 +1934,7 @@ interruption during compensation remains a documented reconciliation risk.
 - ☑ `Document` (registry model)
 - ☑ `Notebook`, `Source`, `Note`, `Insight`
 - ☑ `ParserInterface` Protocol
-- ☑ `ChunkerInterface` Protocol
+- ☑ `ChunkerInterfaceV1` Protocol (released; V2 is the accepted Phase 4 contract)
 - ☑ `EmbeddingProvider` Protocol
 - ☑ `RetrieverInterface` Protocol
 - ☑ `RerankerInterface` Protocol
@@ -1958,16 +1998,20 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 
 ### Phase 4 — Chunking Engine
 
-- □ `ChunkerDispatcher`
-- □ Parent-child ID linking
-- □ Sibling ID linking
-- □ Chunking invariants enforcement
-- □ Chunk ID computation (`sha256`)
+- ☑ Accept ADR-0015 and satisfy every Module 4.1 readiness prerequisite
+- ☑ Implement the canonical offline tokenizer adapter and explicit asset provisioner with frozen checksum and golden vectors
+- ☑ Version-isolate `ChunkerInterfaceV1` and `ChunkerInterfaceV2` registrations
+- ☑ `ChunkerDispatcher`
+- ☑ Required `BlockSpan`/`Chunk.source_span` persistence and migration
+- ☑ Explicit parent-child forest and deterministic sibling linking
+- ☑ Chunking invariant validation without blind splitting or truncation
+- ☑ Chunk ID computation (`sha256`)
 - □ `GenericChunker`
 - □ `BookChunker` (ToC extraction + inference + 3 levels)
 - □ `PaperChunker` (section detection + canonical mapping)
 - □ `CodeChunker` (tree-sitter + 6 language grammars + call context)
 - □ `MarkdownChunker`
+- □ `EmailChunker` (thread-aware message boundaries)
 - □ `ResumeChunker` (section isolation + role chunks)
 - □ `SlidesChunker`
 - □ `DocumentationChunker`
