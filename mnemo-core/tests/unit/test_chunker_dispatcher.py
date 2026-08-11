@@ -121,7 +121,7 @@ def _draft(text: str, *, parent: int | None = None) -> ChunkDraft:
 
 
 def _registry(doc_type: DocType, chunker: DraftChunker) -> PluginRegistry:
-    registry = PluginRegistry(core_version="0.12.0")
+    registry = PluginRegistry(core_version="0.13.0")
 
     def register(current: PluginRegistry) -> None:
         current.register_chunker_v2(doc_type, chunker, priority=10, plugin_name="v2-test")
@@ -199,7 +199,7 @@ def test_oversized_duplicate_and_short_parent_fail_closed() -> None:
 def test_missing_strategy_hash_mismatch_and_invalid_parent_fail_before_output() -> None:
     document = _document()
     context = _context(document)
-    empty_registry = PluginRegistry(core_version="0.12.0")
+    empty_registry = PluginRegistry(core_version="0.13.0")
     with pytest.raises(UnsupportedError):
         ChunkerDispatcher(empty_registry, WordCounter()).dispatch(document, context)
 

@@ -33,7 +33,7 @@ def test_release_versions_are_synchronized() -> None:
         mnemo.__version__,
         mnemo_server.__version__,
     }
-    assert versions == {"0.12.0"}
+    assert versions == {"0.13.0"}
 
 
 def test_top_level_core_exports_are_intentional() -> None:

@@ -2,7 +2,7 @@
 
 > One knowledge layer. Thousands of documents. Your hardware, your data.
 
-![Version](https://img.shields.io/badge/version-0.12.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-0.13.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
 
 ## Why Mnemo Exists
 
@@ -108,8 +108,8 @@ Mnemo's component-based design allows it to eventually serve multiple roles:
 
 Mnemo is in active engineering development. Every module is rigorously tested before being marked complete.
 
-Here is the current implementation status (Module 4.2 complete; latest frozen
-release v0.12.0):
+Here is the current implementation status (Module 4.3 complete; latest frozen
+release v0.13.0):
 
 | Capability | Status | Notes |
 |---|---|---|
@@ -119,7 +119,7 @@ release v0.12.0):
 | Local Storage Layer | ✅ Implemented | Qdrant, SQLite FTS5, SurrealDB, FS |
 | Document Parsing | ✅ Implemented | PDF, DOCX, Markdown, HTML, TXT, JSON, CSV |
 | Ingestion Canonicalization | ✅ Complete | Phase 3.9 bridge produces canonical `ParsedDocument` values |
-| Chunking Engine | 🚧 In progress | Modules 4.1–4.2 complete: deterministic dispatcher plus Generic strategy |
+| Chunking Engine | 🚧 In progress | Modules 4.1–4.3 complete: dispatcher, Generic strategy, and Book strategy |
 | Embedding Pipeline | 📋 Planned | Phase 5 |
 | Hybrid Retrieval | 📋 Planned | Phase 6 |
 | REST API | 📋 Planned | Phase 7 |

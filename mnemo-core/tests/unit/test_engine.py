@@ -193,6 +193,7 @@ def test_builtin_parser_plugin_registers_all_frozen_phase3_formats(tmp_path: Pat
     from mnemo.models import DocType
 
     assert registry.resolve_chunker_v2(DocType.GENERIC) is not None
+    assert registry.resolve_chunker_v2(DocType.BOOK) is not None
 
 
 def test_initialize_resolves_freezes_and_exposes_runtime(
