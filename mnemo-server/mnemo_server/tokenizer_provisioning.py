@@ -39,6 +39,9 @@ def provision_tokenizer(*, source: Path | None = None, data_root: Path | None = 
     """Explicitly download or import, verify, and atomically install the asset."""
     destination = provisioned_tokenizer_path(data_root)
     destination.parent.mkdir(parents=True, exist_ok=True)
+    if source is None and _asset_is_valid(destination):
+        _write_manifest(destination)
+        return destination
     temporary_path: Path | None = None
     try:
         if source is None:
@@ -66,17 +69,30 @@ def provision_tokenizer(*, source: Path | None = None, data_root: Path | None = 
             shutil.copyfile(candidate, install_path)
         os.replace(install_path, destination)
         temporary_path = None
-        manifest = {
-            "adapter_version": "v1",
-            "asset_sha256": O200K_BASE_ASSET_SHA256,
-            "engine_version": "tiktoken-0.13.0",
-            "tokenizer_id": O200K_BASE_TOKENIZER_ID,
-        }
-        manifest_path = destination.with_suffix(".json")
-        manifest_path.write_text(
-            json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        _write_manifest(destination)
         return destination
     finally:
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)
+
+
+def _asset_is_valid(path: Path) -> bool:
+    try:
+        payload = path.read_bytes()
+    except OSError:
+        return False
+    return len(payload) == O200K_BASE_ASSET_SIZE and (
+        sha256(payload).hexdigest() == O200K_BASE_ASSET_SHA256
+    )
+
+
+def _write_manifest(destination: Path) -> None:
+    manifest = {
+        "adapter_version": "v1",
+        "asset_sha256": O200K_BASE_ASSET_SHA256,
+        "engine_version": "tiktoken-0.13.0",
+        "tokenizer_id": O200K_BASE_TOKENIZER_ID,
+    }
+    destination.with_suffix(".json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )

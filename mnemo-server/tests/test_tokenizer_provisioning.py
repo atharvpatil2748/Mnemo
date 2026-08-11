@@ -68,6 +68,20 @@ def test_air_gapped_import_is_verified_and_atomic(tmp_path: Path) -> None:
     assert O200K_BASE_TOKENIZER_ID in manifest
 
 
+def test_repeated_provision_reuses_verified_asset_offline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    installed = provision_tokenizer(source=_provisioned_asset(), data_root=tmp_path)
+
+    def reject_download(url: str, filename: Path) -> tuple[str, None]:
+        raise AssertionError("a verified provisioned asset must be reused offline")
+
+    monkeypatch.setattr(
+        "mnemo_server.tokenizer_provisioning.urllib.request.urlretrieve", reject_download
+    )
+    assert provision_tokenizer(data_root=tmp_path) == installed
+
+
 def test_explicit_download_uses_frozen_source(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

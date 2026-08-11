@@ -33,7 +33,7 @@ def test_release_versions_are_synchronized() -> None:
         mnemo.__version__,
         mnemo_server.__version__,
     }
-    assert versions == {"0.11.0"}
+    assert versions == {"0.12.0"}
 
 
 def test_top_level_core_exports_are_intentional() -> None:
@@ -98,8 +98,10 @@ def test_core_has_no_infrastructure_or_reverse_layer_imports() -> None:
     assert _internal_imports(_CORE / "config.py") == set()
     assert _internal_imports(_CORE / "engine.py") <= {
         "mnemo._version",
+        "mnemo.chunkers",
         "mnemo.config",
         "mnemo.interfaces",
+        "mnemo.models",
         "mnemo.parsers",
         "mnemo.registry",
         "mnemo.storage",

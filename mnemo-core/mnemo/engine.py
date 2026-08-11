@@ -354,7 +354,21 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
                 for slot in slots:
                     registry.register_parser(slot, parser, priority=0)
 
-    return (CoreStoragePlugin(), CoreParserPlugin())
+    class CoreChunkerPlugin:
+        name = "mnemo-core-chunkers"
+        version = __version__
+        core_version_range = ">=0.0.0"
+
+        def capabilities(self) -> tuple[str, ...]:
+            return ("chunker",)
+
+        def register(self, registry: PluginRegistry) -> None:
+            from mnemo.chunkers import GenericChunker
+            from mnemo.models import DocType
+
+            registry.register_chunker_v2(DocType.GENERIC, GenericChunker(), priority=0)
+
+    return (CoreStoragePlugin(), CoreParserPlugin(), CoreChunkerPlugin())
 
 
 def _plugin_candidates(directory: Path) -> tuple[Path, ...]:
