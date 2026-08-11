@@ -108,7 +108,7 @@ def _context(document: ParsedDocument, *, target: int = 20, maximum: int = 40) -
 
 
 def _registry(chunker: BookChunker) -> PluginRegistry:
-    registry = PluginRegistry(core_version="0.13.0")
+    registry = PluginRegistry(core_version="0.14.0")
 
     def register(current: PluginRegistry) -> None:
         current.register_chunker_v2(DocType.BOOK, chunker, priority=10, plugin_name="book-test")

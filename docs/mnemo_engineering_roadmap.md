@@ -6,7 +6,7 @@
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
 **Current baseline:** Phase 0, Phase 1, Phase 2, Phase 3 through Module 3.9,
-and Phase 4 Modules 4.1–4.3 are complete. Modules 4.4–4.10 have not started.
+and Phase 4 Modules 4.1–4.4 are complete. Modules 4.5–4.10 have not started.
 Completed checklist items are marked below; later tasks describe planned work.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
@@ -462,7 +462,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 **Module 4.3 — Book Chunker**
 
 > **Status:** Complete. The built-in V2 strategy owns only `DocType.BOOK`;
-> Module 4.4 has not started.
+> it remains unchanged by Module 4.4.
 
 | Task | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|
@@ -474,6 +474,9 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Skip ToC itself | Detect and skip ToC pages | — | Low | 4.3a |
 
 **Module 4.4 — Paper Chunker**
+
+> **Status:** Complete. The built-in V2 strategy owns only `DocType.PAPER`;
+> Module 4.5 has not started.
 
 | Task | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|
@@ -2014,7 +2017,7 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ Chunk ID computation (`sha256`)
 - ☑ `GenericChunker`
 - ☑ `BookChunker` (ToC extraction + inference + 3 levels)
-- □ `PaperChunker` (section detection + canonical mapping)
+- ☑ `PaperChunker` (section detection + canonical mapping)
 - □ `CodeChunker` (tree-sitter + 6 language grammars + call context)
 - □ `MarkdownChunker`
 - □ `EmailChunker` (thread-aware message boundaries)

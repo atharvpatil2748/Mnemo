@@ -363,11 +363,12 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
             return ("chunker",)
 
         def register(self, registry: PluginRegistry) -> None:
-            from mnemo.chunkers import BookChunker, GenericChunker
+            from mnemo.chunkers import BookChunker, GenericChunker, PaperChunker
             from mnemo.models import DocType
 
             registry.register_chunker_v2(DocType.GENERIC, GenericChunker(), priority=0)
             registry.register_chunker_v2(DocType.BOOK, BookChunker(), priority=0)
+            registry.register_chunker_v2(DocType.PAPER, PaperChunker(), priority=0)
 
     return (CoreStoragePlugin(), CoreParserPlugin(), CoreChunkerPlugin())
 
