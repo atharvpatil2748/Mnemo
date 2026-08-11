@@ -476,7 +476,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 **Module 4.4 — Paper Chunker**
 
 > **Status:** Complete. The built-in V2 strategy owns only `DocType.PAPER`;
-> Module 4.5 has not started.
+> it remains unchanged by Module 4.5.
 
 | Task | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|
@@ -488,6 +488,9 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Equation handling | Preserve source LaTeX as EQUATION | Generated descriptions are later enrichment | High | 4.4a |
 
 **Module 4.5 — Code Chunker**
+
+> **Status:** Complete. The built-in V2 strategy owns only `DocType.CODE`;
+> Module 4.6 has not started.
 
 | Task | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|

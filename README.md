@@ -2,7 +2,7 @@
 
 > One knowledge layer. Thousands of documents. Your hardware, your data.
 
-![Version](https://img.shields.io/badge/version-0.14.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-0.15.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
 
 ## Why Mnemo Exists
 
@@ -108,8 +108,8 @@ Mnemo's component-based design allows it to eventually serve multiple roles:
 
 Mnemo is in active engineering development. Every module is rigorously tested before being marked complete.
 
-Here is the current implementation status (Module 4.4 complete; latest frozen
-release v0.14.0):
+Here is the current implementation status (Module 4.5 complete; latest frozen
+release v0.15.0):
 
 | Capability | Status | Notes |
 |---|---|---|
