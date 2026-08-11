@@ -1,6 +1,11 @@
 """Unit tests for the MarkdownParser (Module 3.4)."""
 
+import socket
+from types import MappingProxyType
+
 import pytest
+from mnemo.cleaner import DocumentCleaner
+from mnemo.ingestion import DocumentCanonicalizer
 from mnemo.interfaces.parser_models import (
     ParseResult,
     RawCodeBlock,
@@ -11,6 +16,7 @@ from mnemo.interfaces.parser_models import (
     RawTextBlock,
 )
 from mnemo.interfaces.types import FileMetadata
+from mnemo.models import FrozenMetadata, TextBlock
 from mnemo.parsers.markdown import MarkdownParser
 
 _SHA256 = "a" * 64
@@ -295,3 +301,153 @@ def test_language_is_en(parser: MarkdownParser, metadata: FileMetadata) -> None:
     """ParseResult.language is 'en' (default, no language detection)."""
     result = _parse(parser, b"Hello.\n", metadata)
     assert result.language == "en"
+
+
+def test_markdown_source_kind_and_internal_links_are_preserved(
+    parser: MarkdownParser, metadata: FileMetadata
+) -> None:
+    markdown = (
+        b"Paragraph with *emphasis*, [local](guide.md#start), "
+        b"[section][part], and [external](https://example.com).\n\n"
+        b'[part]: #details "Details"\n'
+    )
+
+    first = _parse(parser, markdown, metadata)
+    second = _parse(parser, markdown, metadata)
+    block = first.blocks[0]
+
+    assert first == second
+    assert block.metadata["parser.markdown.kind"] == "paragraph"
+    assert block.metadata["parser.markdown.source"] == (
+        "Paragraph with *emphasis*, [local](guide.md#start), "
+        "[section][part], and [external](https://example.com).\n"
+    )
+    assert block.metadata["parser.markdown.links"] == (
+        FrozenMetadata(
+            {
+                "label": "local",
+                "target": "guide.md#start",
+                "title": None,
+            }
+        ),
+        FrozenMetadata({"label": "section", "target": "#details", "title": "Details"}),
+    )
+    assert "Token" not in repr(block.metadata)
+    with pytest.raises(TypeError):
+        block.metadata["parser.markdown.kind"] = "changed"  # type: ignore[index]
+
+
+def test_nested_list_structure_is_serializable_and_source_exact(
+    parser: MarkdownParser, metadata: FileMetadata
+) -> None:
+    markdown = b"3. Parent\n   - Child\n   - [Local](#child)\n4. Second\n"
+    block = _parse(parser, markdown, metadata).blocks[0]
+
+    assert isinstance(block, RawListBlock)
+    assert block.metadata["parser.markdown.kind"] == "list"
+    assert block.metadata["parser.markdown.source"] == markdown.decode()
+    structure = block.metadata["parser.markdown.list"]
+    assert isinstance(structure, FrozenMetadata)
+    assert structure["ordered"] is True
+    assert structure["marker"] == "."
+    assert structure["start"] == 3
+    items = structure["items"]
+    assert isinstance(items, tuple)
+    assert tuple(item["depth"] for item in items if isinstance(item, FrozenMetadata)) == (
+        0,
+        1,
+        1,
+        0,
+    )
+    assert block.metadata["parser.markdown.links"] == (
+        FrozenMetadata({"label": "Local", "target": "#child", "title": None}),
+    )
+
+
+def test_table_blockquote_code_and_thematic_break_retain_source_metadata(
+    parser: MarkdownParser, metadata: FileMetadata
+) -> None:
+    markdown = (
+        b"> Quoted **source** with [section](#part).\n\n"
+        b"---\n\n"
+        b"```python\nprint('exact')\n```\n\n"
+        b"| Name | Value |\n|:--|--:|\n| A | 1 |\n"
+    )
+    result = _parse(parser, markdown, metadata)
+
+    assert tuple(block.metadata["parser.markdown.kind"] for block in result.blocks) == (
+        "blockquote",
+        "thematic_break",
+        "code",
+        "table",
+    )
+    assert result.blocks[0].metadata["parser.markdown.source"] == (
+        "> Quoted **source** with [section](#part).\n"
+    )
+    assert result.blocks[0].metadata["parser.markdown.block_type"] == "blockquote"
+    assert result.blocks[1].metadata["parser.markdown.source"] == "---\n"
+    assert result.blocks[2].metadata["parser.markdown.source"] == (
+        "```python\nprint('exact')\n```\n"
+    )
+    assert result.blocks[3].metadata["parser.markdown.source"] == (
+        "| Name | Value |\n|:--|--:|\n| A | 1 |\n"
+    )
+
+
+def test_metadata_survives_cleaner_and_canonicalizer_unchanged(
+    parser: MarkdownParser, metadata: FileMetadata
+) -> None:
+    parsed = _parse(parser, b"- First item\n  - Nested item\n", metadata)
+    original_metadata = parsed.blocks[0].metadata
+
+    cleaned = DocumentCleaner().clean(parsed)
+    canonical = DocumentCanonicalizer().canonicalize(cleaned, MappingProxyType({}))
+
+    assert cleaned.blocks[0].metadata is original_metadata
+    assert canonical.blocks[0].metadata is original_metadata
+    assert canonical.blocks[0].metadata["parser.markdown.kind"] == "list"
+    assert canonical.blocks[0].metadata["parser.markdown.source"] == (
+        "- First item\n  - Nested item\n"
+    )
+
+
+def test_paragraph_source_is_stored_once_when_inline_asset_splits_blocks(
+    parser: MarkdownParser, metadata: FileMetadata
+) -> None:
+    markdown = b"Before ![pixel](data:image/png;base64,aQ==) after.\n"
+    result = _parse(parser, markdown, metadata)
+
+    assert tuple(block.metadata["parser.markdown.kind"] for block in result.blocks) == (
+        "paragraph",
+        "inline_image",
+        "paragraph_fragment",
+    )
+    assert sum("parser.markdown.source" in block.metadata for block in result.blocks) == 1
+
+
+def test_markdown_metadata_extraction_performs_no_network_access(
+    parser: MarkdownParser,
+    metadata: FileMetadata,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def prohibited(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("network access is prohibited")
+
+    monkeypatch.setattr(socket, "create_connection", prohibited)
+    result = _parse(parser, b"[Local](guide.md) and [web](https://example.com)\n", metadata)
+    assert result.blocks[0].metadata["parser.markdown.links"] == (
+        FrozenMetadata({"label": "Local", "target": "guide.md", "title": None}),
+    )
+
+
+def test_markdown_metadata_does_not_change_existing_document_or_chunk_identity_inputs(
+    parser: MarkdownParser, metadata: FileMetadata
+) -> None:
+    parsed = _parse(parser, b"Plain **canonical** text.\n", metadata)
+    canonical = DocumentCanonicalizer().canonicalize(parsed, MappingProxyType({}))
+
+    block = canonical.blocks[0]
+    assert isinstance(block, TextBlock)
+    assert block.text == "Plain canonical text."
+    assert canonical.metadata.content_hash == _SHA256
+    assert block.ordinal == 0

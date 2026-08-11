@@ -490,7 +490,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 **Module 4.5 — Code Chunker**
 
 > **Status:** Complete. The built-in V2 strategy owns only `DocType.CODE`;
-> Module 4.6 has not started.
+> it remains unchanged by Module 4.6.
 
 | Task | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|
@@ -503,8 +503,13 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 **Module 4.6 — Markdown Chunker**
 
+> **Status:** Complete. The built-in V2 strategy owns only
+> `DocType.MARKDOWN`, consumes canonical `parser.markdown.*` metadata without
+> reparsing source bytes, and leaves Module 4.7 unstarted.
+
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
+| Validate Markdown metadata prerequisite | Block kind/source, internal links, list nesting, and thematic boundaries survive parser → cleaner → canonicalizer | Medium | 3.4, 3.9 |
 | Implement `MarkdownChunker` | Header-hierarchy chunking from architecture §10.5 | Medium | 4.1 |
 | Split boundaries: H1, H2, H3 | Content between H3s = one chunk | Low | 4.6a |
 | Code blocks → CODE chunks | With language tag | Low | 4.6a |
@@ -2022,7 +2027,7 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ `BookChunker` (ToC extraction + inference + 3 levels)
 - ☑ `PaperChunker` (section detection + canonical mapping)
 - □ `CodeChunker` (tree-sitter + 6 language grammars + call context)
-- □ `MarkdownChunker`
+- ☑ `MarkdownChunker`
 - □ `EmailChunker` (thread-aware message boundaries)
 - □ `ResumeChunker` (section isolation + role chunks)
 - □ `SlidesChunker`

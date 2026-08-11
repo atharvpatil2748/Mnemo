@@ -33,6 +33,42 @@ We introduce the following transient hierarchy:
 
 `TransientAsset` contains raw bytes, MIME type, page number, and a deterministic parser-local identifier (e.g. `block-1`, `page1-image1`). This identifier is ONLY a temporary correlation key between a `RawImageBlock` and a `TransientAsset` within a single `ParseResult`. It is NEVER persisted, NEVER exposed outside of `ParseResult`, and NEVER treated as a permanent Asset ID. `RawImageBlock` references this deterministic local identifier rather than a UUID.
 
+#### Approved Markdown semantic metadata correction
+
+The pure Markdown parser owns Markdown AST interpretation because it is the
+only boundary that has both the source and parser tokens. Information required
+by a later deterministic Markdown chunker MAY cross the raw boundary through
+the existing immutable `RawBlock.metadata` field under `parser.markdown.*`.
+This is parser-produced data, not an AST object or a new domain model.
+
+The approved metadata contract is:
+
+| Key | Immutable value | Rule |
+|---|---|---|
+| `parser.markdown.kind` | string | One of `heading`, `paragraph`, `paragraph_fragment`, `list`, `blockquote`, `thematic_break`, `code`, `table`, or `inline_image`. |
+| `parser.markdown.block_type` | string | Compatibility alias of `parser.markdown.kind` retained for the frozen Book strategy; both values SHALL be identical. Consolidation is deferred to the end-of-Phase-4 audit. |
+| `parser.markdown.source` | string | Exact UTF-8-decoded source-line slice, including original line endings, owned by a source-bearing block. It is stored once for a paragraph split by inline assets and is absent from continuation/image records. |
+| `parser.markdown.links` | tuple of objects | Resolved internal links in source order. Each object contains `label: string`, `target: string`, and `title: string or null`. URI-scheme and network-path targets are external and are not included. |
+| `parser.markdown.list` | object | Present only for lists. Contains root `ordered: boolean`, `marker: string`, `start: integer or null`, and preorder `items`. Each item contains `depth`, `ordered`, `marker`, `start`, and canonical plain `text`. |
+
+`parser.markdown.source` supplies the original table string and preserves
+inline Markdown without requiring a later reconstruction. Resolved internal
+link records are sufficient for the later graph/indexing owner; reference
+definitions and external links are not separately persisted. Heading level,
+code language, table cells, and canonical text remain in their existing typed
+fields rather than being duplicated in metadata.
+
+Thematic breaks are emitted as source-exact `RawTextBlock` boundary records so
+they retain an ordinal and can be recognized without adding a new raw or
+canonical block type. Lists retain their released `RawListBlock.items`
+behavior while the metadata records type and nesting that would otherwise be
+lost during canonicalization.
+
+Metadata values SHALL be recursively immutable, deterministic, JSON-
+serializable, local, and free of parser token/node instances. The correction
+does not preserve a complete AST or character offsets, does not alter parser
+purity, and does not change `ParsedDocument`, chunk provenance, or identity.
+
 ### 2. The Ingestion Pipeline
 
 The ingestion orchestration layer replaces "Phase 5/6" logic and becomes the exclusive owner of blob persistence and asset ID generation. The flow is:
@@ -86,3 +122,6 @@ and performs no I/O or identity generation.
 - **Clear Orchestration Boundaries:** `IngestionPipeline` coordinates blob
   persistence exclusively through `StorageInterfaceV1`; storage alone creates
   permanent Asset identities.
+- **Downstream Semantic Fidelity:** Approved immutable parser metadata survives
+  cleaning and canonicalization, allowing deterministic consumers to use
+  source semantics without reparsing bytes or expanding the canonical schema.

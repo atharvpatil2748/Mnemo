@@ -112,6 +112,16 @@ canonical hierarchy has no `ListBlock`, `RawListBlock` becomes one `TextBlock`
 whose text is the ordered list items joined by newline characters. This
 preserves item order and boundaries without adding a new public domain model.
 
+Canonicalization also preserves approved namespaced raw-block metadata without
+interpreting or rewriting it. In particular, the ADR-0011
+`parser.markdown.*` correction remains parser-owned semantic data: the cleaner
+may normalize typed block content but carries the immutable metadata unchanged,
+and `DocumentCanonicalizer` copies the same metadata onto the corresponding
+canonical block. For `RawListBlock -> TextBlock`, this is how list type,
+nesting, marker information, and exact Markdown source remain available to the
+later Markdown strategy. The canonicalizer does not parse Markdown, validate a
+Markdown AST, derive links, or own Markdown semantics.
+
 ### Asset identity and correlation
 
 `StorageInterfaceV1.put_asset()` remains the sole owner of permanent asset

@@ -1057,7 +1057,7 @@ wheels = [
 
 [[package]]
 name = "mnemo-core"
-version = "0.15.0"
+version = "0.16.0"
 source = { editable = "mnemo-core" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1114,7 +1114,7 @@ requires-dist = [
 
 [[package]]
 name = "mnemo-server"
-version = "0.15.0"
+version = "0.16.0"
 source = { editable = "mnemo-server" }
 dependencies = [
     { name = "mnemo-core" },
@@ -1125,7 +1125,7 @@ requires-dist = [{ name = "mnemo-core", editable = "mnemo-core" }]
 
 [[package]]
 name = "mnemo-workspace"
-version = "0.15.0"
+version = "0.16.0"
 source = { virtual = "." }
 
 [package.dev-dependencies]

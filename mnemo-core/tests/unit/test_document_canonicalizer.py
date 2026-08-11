@@ -168,6 +168,43 @@ def test_canonicalizer_is_deterministic_and_accepts_empty_document() -> None:
     assert first.blocks == ()
 
 
+def test_canonicalizer_preserves_markdown_list_semantics_without_interpreting_them() -> None:
+    markdown_metadata = FrozenMetadata(
+        {
+            "parser.markdown.kind": "list",
+            "parser.markdown.source": "- Parent\n  - Child\n",
+            "parser.markdown.list": {
+                "items": (
+                    {"depth": 0, "marker": "-", "ordered": False, "start": None, "text": "Parent"},
+                    {"depth": 1, "marker": "-", "ordered": False, "start": None, "text": "Child"},
+                ),
+                "marker": "-",
+                "ordered": False,
+                "start": None,
+            },
+        }
+    )
+    result = ParseResult(
+        blocks=(
+            RawListBlock(
+                ordinal=0,
+                items=("Parent\nChild",),
+                metadata=markdown_metadata,
+            ),
+        ),
+        extracted_assets=(),
+        metadata=DocumentMetadata(content_hash="a" * 64),
+        language="en",
+        doc_type=DocType.MARKDOWN,
+    )
+
+    document = DocumentCanonicalizer().canonicalize(result, MappingProxyType({}))
+
+    assert isinstance(document.blocks[0], TextBlock)
+    assert document.blocks[0].metadata is markdown_metadata
+    assert document.blocks[0].metadata["parser.markdown.kind"] == "list"
+
+
 @pytest.mark.parametrize(
     "resolution",
     ({}, {"image-1": _asset(), "unexpected": _asset()}),

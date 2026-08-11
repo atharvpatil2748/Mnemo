@@ -1064,13 +1064,39 @@ Papers have canonical structure: Abstract, Introduction, Background, Methods, Re
 
 **Strategy: Header-Hierarchy Chunking**
 
-1. Parse the Markdown AST.
+The Phase 3 Markdown parser interprets the Markdown AST while it still owns the
+source. It records only the bounded immutable semantics required downstream in
+`parser.markdown.*` block metadata: block kind, one exact source slice per
+source-bearing block, resolved internal links, and structured list type and
+nesting. The cleaner carries this metadata unchanged and the pure canonicalizer
+copies it to the corresponding canonical block. AST/token objects and a full
+AST never cross the parser boundary.
+
+The implemented information flow is:
+
+```text
+Markdown bytes
+  -> MarkdownParser AST interpretation
+  -> RawBlock + immutable parser.markdown.* metadata
+  -> DocumentCleaner (typed content normalization; metadata unchanged)
+  -> DocumentCanonicalizer (metadata copied, not interpreted)
+  -> ParsedDocument
+  -> MarkdownChunker (Module 4.6)
+```
+
+1. Consume canonical blocks and the approved parser-produced Markdown metadata;
+   do not reparse the original file.
 2. Split boundaries: H1, H2, H3 headings.
 3. The content between each H3 and the next H3 is a passage chunk.
 4. Code blocks within Markdown: separate `CODE` chunk with language tag.
-5. Tables: convert to a text description + preserved Markdown table string.
+5. Tables: derive a text description from canonical `TableBlock.rows` and retain
+   the exact Markdown table string from `parser.markdown.source`.
 6. Internal links: retained as namespaced metadata for a later graph/indexing
-   owner; the chunker does not write SurrealDB.
+   owner using the parser-resolved `parser.markdown.links` records; the chunker
+   does not write SurrealDB.
+7. Lists, blockquotes, thematic breaks, and inline source fidelity use their
+   approved parser metadata. The chunker does not reconstruct lost syntax or
+   consume parser implementation objects.
 
 ### 10.6 Email
 
