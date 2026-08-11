@@ -7,6 +7,7 @@ from .email import EmailChunker
 from .generic import GenericChunker
 from .markdown import MarkdownChunker
 from .paper import PaperChunker
+from .resume import ResumeChunker
 
 __all__ = [
     "BookChunker",
@@ -16,5 +17,6 @@ __all__ = [
     "GenericChunker",
     "MarkdownChunker",
     "PaperChunker",
+    "ResumeChunker",
     "compute_chunk_id",
 ]

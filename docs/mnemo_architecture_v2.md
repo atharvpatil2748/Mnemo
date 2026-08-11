@@ -1041,9 +1041,11 @@ Papers have canonical structure: Abstract, Introduction, Background, Methods, Re
 
 **Strategy: Semantic Section Isolation**
 
-1. Identify canonical sections: Contact, Summary, Experience, Education, Skills, Projects, Publications.
+_Prerequisite: The Phase 3 `DocumentClassifier` deterministically annotates canonical section boundaries (`parser.resume.section`) and Experience role boundaries (`parser.resume.role_local_id`) onto the blocks of a `DocType.RESUME` document (per ADR-0017)._
+
+1. Identify canonical sections from Phase 3 metadata: Contact, Summary, Experience, Education, Skills, Projects, Publications.
 2. Each section becomes one chunk.
-3. Within Experience: each role is a distinct chunk with preserved structure (company, title, dates, description).
+3. Within Experience: each explicitly annotated role (`role_local_id`) is a distinct chunk. Ambiguous blocks lacking a role ID fall back into a generic experience chunk.
 4. Never overlap sections. A query for "Python experience" must not retrieve an education section.
 5. Preserve a source-authored profile summary when present. Generated holistic
    summaries belong to later enrichment and are not created by Phase 4.

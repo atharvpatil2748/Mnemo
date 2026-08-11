@@ -18,9 +18,11 @@ However, ADR-0011 strictly established that Phase 3 components (Parsers, Cleaner
 To resolve the architectural contradiction and maintain domain purity, we make the following decisions:
 
 ### 1. Pure Classifier Boundary
-Module 3.8 (`DocumentClassifier`) is implemented as a pure, synchronous, deterministic component. Its sole responsibility is: `ParseResult -> ParseResult`. 
+Module 3.8 (`DocumentClassifier`) is implemented as a pure, synchronous, deterministic component. It holds two deterministic responsibilities over the `ParseResult -> ParseResult` transformation:
+1. Deterministic `DocType` classification.
+2. Deterministic Resume semantic annotation when `DocType.RESUME` is detected.
 
-It uses ONLY information already present in the `ParseResult` (and optionally the filename) to perform rule-based classification (checking file extensions, heading text, block structure). It updates `ParseResult.doc_type` and returns a new immutable `ParseResult`, preserving all other data.
+It uses ONLY information already present in the `ParseResult` (and optionally the filename) to perform rule-based classification (checking file extensions, heading text, block structure). It updates `ParseResult.doc_type` (and when applicable, semantic boundaries for Resume) and returns a new immutable `ParseResult`, preserving all other data.
 
 ### 2. Deferral of LLM Classification
 The LLM-assisted classification fallback is explicitly removed from Module 3.8.

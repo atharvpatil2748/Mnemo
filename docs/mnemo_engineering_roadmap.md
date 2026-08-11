@@ -532,12 +532,11 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Handle long messages ✓ | Paragraph → sentence → safe-word splitting within one message region | Medium | 4.7a |
 
 **Module 4.8 — Resume Chunker**
-
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Implement `ResumeChunker` | Architecture §10.3 semantic section isolation | High | 4.1 |
-| Section detection | Contact, Summary, Experience, Education, Skills, Projects | Medium | 4.8a |
-| Role isolation | Each Experience role = distinct chunk | High | 4.8a |
+| Implement `ResumeChunker` | Architecture §10.3 semantic section isolation (consumes Phase 3 `parser.resume.*` metadata per ADR-0017) | High | 4.1 |
+| Section detection | Emits chunks aligned with `parser.resume.section` boundaries | Medium | 4.8a |
+| Role isolation | Emits distinct chunk per `parser.resume.role_local_id` | High | 4.8a |
 | Profile summary | Preserve only when source-authored | Generated summaries are later enrichment | Medium | 4.8a |
 
 **Module 4.9 — Slides Chunker**

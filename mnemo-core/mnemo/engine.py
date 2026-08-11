@@ -370,6 +370,7 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
                 GenericChunker,
                 MarkdownChunker,
                 PaperChunker,
+                ResumeChunker,
             )
             from mnemo.models import DocType
 
@@ -379,6 +380,7 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
             registry.register_chunker_v2(DocType.CODE, CodeChunker(), priority=0)
             registry.register_chunker_v2(DocType.MARKDOWN, MarkdownChunker(), priority=0)
             registry.register_chunker_v2(DocType.EMAIL, EmailChunker(), priority=0)
+            registry.register_chunker_v2(DocType.RESUME, ResumeChunker(), priority=0)
 
     return (CoreStoragePlugin(), CoreParserPlugin(), CoreChunkerPlugin())
 
