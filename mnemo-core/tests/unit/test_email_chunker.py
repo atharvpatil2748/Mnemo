@@ -211,7 +211,7 @@ def _context(document: ParsedDocument, *, target: int = 20, maximum: int = 40) -
 
 
 def _registry() -> PluginRegistry:
-    registry = PluginRegistry(core_version="0.18.0")
+    registry = PluginRegistry(core_version="0.19.0")
     registry.load_plugin(Plugin())
     registry.freeze()
     return registry

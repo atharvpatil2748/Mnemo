@@ -1,8 +1,9 @@
 # ADR-0017: Resume Ingestion Semantic Boundary
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-08-11
 **Decision owners:** Mnemo maintainers
+**Approval:** Implemented and released with Module 4.8
 **Depends on:** ADR-0001, ADR-0002, ADR-0011, ADR-0012, ADR-0013, ADR-0014, ADR-0015
 
 ## Context
@@ -45,7 +46,7 @@ Sections are identified deterministically by encountering a `RawHeadingBlock` ma
 Within the `experience` section, a new role boundary is explicitly defined as any child `RawHeadingBlock` (a heading with a deeper level than the section heading). 
 If roles are formatted merely as bold text within a `RawTextBlock`, the boundary is considered ambiguous. The classifier will fail closed: it will group all ambiguous blocks under the parent experience section without inventing a local role identifier.
 
-## Proposed Metadata Schema
+## Metadata Schema
 
 ### Document Metadata
 | Key | Type | Meaning |
@@ -75,7 +76,14 @@ If roles are formatted merely as bold text within a `RawTextBlock`, the boundary
 
 ## Module 4.8 Dependency
 
-Module 4.8 `ResumeChunker` SHALL remain unimplemented until:
+Module 4.8 `ResumeChunker` was blocked until:
 - ADR-0017 is reviewed and Accepted.
 - The `DocumentClassifier` is updated to emit the `parser.resume.*` schema.
 - All boundary acceptance tests pass.
+
+## Implementation status
+
+Accepted and implemented. The classifier emits schema-v1 metadata, the
+canonicalizer preserves it, and the released Module 4.8 strategy consumes it.
+Unclassified source content is preserved under the deterministic `unknown`
+fallback rather than discarded or guessed.

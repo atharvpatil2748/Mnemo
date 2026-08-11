@@ -2,7 +2,7 @@
 
 > One knowledge layer. Thousands of documents. Your hardware, your data.
 
-![Version](https://img.shields.io/badge/version-0.18.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-0.19.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
 
 ## Why Mnemo Exists
 
@@ -108,8 +108,7 @@ Mnemo's component-based design allows it to eventually serve multiple roles:
 
 Mnemo is in active engineering development. Every module is rigorously tested before being marked complete.
 
-Here is the current implementation status (Module 4.7 complete; release
-candidate version 0.18.0):
+Here is the current implementation status (Phase 4 complete; release 0.19.0):
 
 | Capability | Status | Notes |
 |---|---|---|
@@ -119,7 +118,7 @@ candidate version 0.18.0):
 | Local Storage Layer | ✅ Implemented | Qdrant, SQLite FTS5, SurrealDB, FS |
 | Document Parsing | ✅ Implemented | PDF, DOCX, Markdown, HTML, TXT, JSON, CSV |
 | Ingestion Canonicalization | ✅ Complete | Phase 3.9 bridge produces canonical `ParsedDocument` values |
-| Chunking Engine | 🚧 In progress | Modules 4.1–4.7 complete: dispatcher plus Generic, Book, Paper, Code, Markdown, and Email strategies |
+| Chunking Engine | ✅ Complete | Modules 4.1–4.10: dispatcher plus all nine document-aware V2 strategies |
 | Embedding Pipeline | 📋 Planned | Phase 5 |
 | Hybrid Retrieval | 📋 Planned | Phase 6 |
 | REST API | 📋 Planned | Phase 7 |
@@ -218,9 +217,9 @@ Mnemo represents a serious systems and AI infrastructure challenge. It is not a 
 
 Mnemo's roadmap is structured to ensure every phase produces a runnable, testable artifact.
 
-* **CURRENT (Phases 0–3):** Core scaffolding, storage layer, and parser systems are fully implemented.
-* **NEXT:** Begin Phase 4 only after review of the completed Module 3.9 canonicalization bridge.
-* **FUTURE (Phases 5–13):** Embedding, hybrid retrieval, REST/WebSocket APIs, MCP Server, Web UI, cross-document reasoning, and production hardening.
+* **CURRENT (Phases 0–4):** Core scaffolding, storage, canonical ingestion, and deterministic V2 chunking are complete.
+* **NEXT:** Phase 5 embedding pipeline.
+* **FUTURE (Phases 6–13):** Hybrid retrieval, REST/WebSocket APIs, MCP Server, Web UI, cross-document reasoning, and production hardening.
 
 See the complete execution plan in the [Engineering Roadmap](docs/mnemo_engineering_roadmap.md).
 

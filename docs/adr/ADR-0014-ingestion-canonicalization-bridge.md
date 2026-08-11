@@ -129,6 +129,12 @@ or attachments. The Email parser
 remains the sole owner of those source semantics. No Email-specific conversion
 or storage orchestration is added to `DocumentCanonicalizer`.
 
+ADR-0017, ADR-0036, and ADR-0037 define the corresponding classifier-owned
+`parser.resume.*`, `parser.slide.*`, and `parser.documentation.*` semantic
+metadata. The cleaner does not reinterpret those annotations, and the
+canonicalizer copies them unchanged. No format-specific semantic logic moves
+into `DocumentCanonicalizer`.
+
 ### Asset identity and correlation
 
 `StorageInterfaceV1.put_asset()` remains the sole owner of permanent asset

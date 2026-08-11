@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-08-08
 **Scope:** Phase 3
-**Related documents:** ADR-0001, ADR-0011, ADR-0012
+**Related documents:** ADR-0001, ADR-0011, ADR-0012, ADR-0014, ADR-0017, ADR-0036, ADR-0037
 
 ## Context
 
@@ -20,9 +20,16 @@ To resolve the architectural contradiction and maintain domain purity, we make t
 ### 1. Pure Classifier Boundary
 Module 3.8 (`DocumentClassifier`) is implemented as a pure, synchronous, deterministic component. It holds two deterministic responsibilities over the `ParseResult -> ParseResult` transformation:
 1. Deterministic `DocType` classification.
-2. Deterministic Resume semantic annotation when `DocType.RESUME` is detected.
+2. Deterministic, type-specific semantic annotation when `DocType.RESUME`,
+   `DocType.SLIDES`, or `DocType.DOCUMENTATION` is detected, as defined by
+   ADR-0017, ADR-0036, and ADR-0037.
 
 It uses ONLY information already present in the `ParseResult` (and optionally the filename) to perform rule-based classification (checking file extensions, heading text, block structure). It updates `ParseResult.doc_type` (and when applicable, semantic boundaries for Resume) and returns a new immutable `ParseResult`, preserving all other data.
+
+These annotations use immutable namespaced `parser.resume.*`, `parser.slide.*`,
+and `parser.documentation.*` metadata. The classifier does not parse original
+source bytes, allocate permanent identities, or perform I/O. Parser-owned
+Markdown and Email metadata remains parser-owned and is not reinterpreted.
 
 ### 2. Deferral of LLM Classification
 The LLM-assisted classification fallback is explicitly removed from Module 3.8.

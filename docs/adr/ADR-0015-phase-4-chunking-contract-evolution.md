@@ -616,5 +616,7 @@ Mnemo does not redistribute the asset.
 
 ## Implementation status
 
-Accepted. Module 4.1 implements the contract infrastructure and dispatcher.
-Modules 4.2 through 4.10 remain unimplemented.
+Accepted and implemented. Module 4.1 provides the contract infrastructure and
+dispatcher. Modules 4.2 through 4.10 provide all nine built-in V2 semantic
+strategies. Every strategy remains synchronous, deterministic, local, and
+identity-free; final IDs and relationships remain dispatcher-owned.

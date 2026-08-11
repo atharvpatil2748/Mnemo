@@ -4,6 +4,8 @@ from types import MappingProxyType
 from uuid import uuid4
 
 import pytest
+from mnemo.classifier import DocumentClassifier
+from mnemo.cleaner import DocumentCleaner
 from mnemo.ingestion import DocumentCanonicalizer
 from mnemo.interfaces.errors import IntegrityError
 from mnemo.interfaces.parser_models import (
@@ -256,3 +258,41 @@ def test_canonicalizer_rejects_duplicate_image_correlations() -> None:
             language="und",
             doc_type=DocType.GENERIC,
         )
+
+
+@pytest.mark.parametrize(
+    ("heading", "filename", "expected_type", "metadata_key"),
+    (
+        ("Experience", "profile.pdf", DocType.RESUME, "parser.resume.section"),
+        ("Slide 1", "deck.pptx", DocType.SLIDES, "parser.slide.number"),
+        (
+            "API Reference",
+            "reference.pdf",
+            DocType.DOCUMENTATION,
+            "parser.documentation.role",
+        ),
+    ),
+)
+def test_classifier_semantic_metadata_survives_phase_3_boundary(
+    heading: str,
+    filename: str,
+    expected_type: DocType,
+    metadata_key: str,
+) -> None:
+    """Classifier-owned semantic metadata reaches ParsedDocument unchanged."""
+    parsed = ParseResult(
+        blocks=(RawHeadingBlock(ordinal=0, text=heading, level=1, page_number=1),),
+        extracted_assets=(),
+        metadata=DocumentMetadata(content_hash="a" * 64),
+        language="en",
+        doc_type=DocType.GENERIC,
+    )
+
+    cleaned = DocumentCleaner().clean(parsed)
+    classified = DocumentClassifier().classify(cleaned, filename=filename)
+    document = DocumentCanonicalizer().canonicalize(classified, MappingProxyType({}))
+
+    assert document.doc_type is expected_type
+    assert document.metadata.metadata is classified.metadata.metadata
+    assert document.blocks[0].metadata is classified.blocks[0].metadata
+    assert metadata_key in document.blocks[0].metadata

@@ -6,8 +6,8 @@
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
 **Current baseline:** Phase 0, Phase 1, Phase 2, Phase 3 through Module 3.9,
-and Phase 4 Modules 4.1–4.4 are complete. Modules 4.5–4.10 have not started.
-Completed checklist items are marked below; later tasks describe planned work.
+and Phase 4 Modules 4.1–4.10 are complete. Phase 4 is frozen at the final
+reconciled release; Phase 5 remains unimplemented.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
 
@@ -92,6 +92,7 @@ This is the front door of all data. Quality here directly determines quality eve
 
 ### Phase 4 — Chunking Engine
 **Duration:** Weeks 11–15  
+**Status:** Complete
 **Goal:** All nine document-type-aware chunking strategies are implemented behind the accepted `ChunkerInterfaceV2`. Strategies emit provenance-bearing drafts; the dispatcher deterministically establishes final identity and explicit parent/sibling relationships. Every hierarchical `Chunk` carries its canonical `heading_path`.
 
 Chunking quality is the single biggest lever on retrieval quality. More implementation time is allocated here than anywhere else in mnemo-core.
@@ -397,14 +398,15 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Task | Subtask | Notes | Difficulty | Dependency |
 |---|---|---|---|---|
 | ✅ Implement rule-based classification | DocType from extension + heading patterns + structure | Fast path, no LLM (ADR-0013) | Medium | 3.7 |
+| ✅ Preserve classifier-owned semantic boundaries | Emit deterministic `parser.resume.*`, `parser.slide.*`, and `parser.documentation.*` metadata | ADR-0017, ADR-0036, ADR-0037 | Medium | 3.8a |
 | ⏩ *Deferred:* LLM-assisted classification | Optional future ingestion enhancement | Not required by Module 3.9 or Phase 4 | High | 3.8a |
 
 ---
 
 **Module 3.9 — Ingestion Canonicalization Bridge**
 
-> **Status:** Complete. ADR-0014 is accepted and implemented. Phase 4 has not
-> started.
+> **Status:** Complete. ADR-0014 is accepted and implemented; its canonical
+> output is the frozen input to completed Phase 4.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
@@ -420,8 +422,8 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 **Module 4.1 — Chunker Dispatcher**
 
-> **Status:** Module 4.1 complete. ADR-0015 is accepted; Modules 4.2–4.10
-> remain unimplemented.
+> **Status:** Complete. ADR-0015 is accepted and all V2 strategies in Modules
+> 4.2–4.10 are implemented.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
@@ -532,6 +534,10 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Handle long messages ✓ | Paragraph → sentence → safe-word splitting within one message region | Medium | 4.7a |
 
 **Module 4.8 — Resume Chunker**
+
+> **Status:** Complete. The built-in V2 strategy owns only `DocType.RESUME`
+> and consumes canonical schema-v1 `parser.resume.*` metadata from ADR-0017.
+
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
 | Implement `ResumeChunker` | Architecture §10.3 semantic section isolation (consumes Phase 3 `parser.resume.*` metadata per ADR-0017) | High | 4.1 |
@@ -541,6 +547,9 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 **Module 4.9 — Slides Chunker**
 
+> **Status:** Complete. The built-in V2 strategy owns only `DocType.SLIDES`
+> and consumes canonical schema-v1 `parser.slide.*` metadata from ADR-0036.
+
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
 | Implement `SlidesChunker` | Architecture §10.7 slide-level atomic | Medium | 4.1 |
@@ -548,6 +557,10 @@ This is the most complex phase. It has six interdependent modules and integratio
 | Detect section dividers | Title slides mark section boundaries | Medium | 4.9a |
 
 **Module 4.10 — Documentation Chunker**
+
+> **Status:** Complete. The built-in V2 strategy owns only
+> `DocType.DOCUMENTATION` and consumes canonical schema-v1
+> `parser.documentation.*` metadata from ADR-0037.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|

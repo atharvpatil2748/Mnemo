@@ -469,9 +469,9 @@ Before the Email ingestion boundary is complete, tests must prove:
 19. No changes to Phase 3.9 identity and asset ownership.
 20. Contract fixtures suitable for future Module 4.7 tests.
 
-## Explicit Module 4.7 dependency
+## Module 4.7 implementation prerequisites
 
-Module 4.7 SHALL remain unimplemented until:
+Module 4.7 was blocked until all of these prerequisites were satisfied:
 
 - ADR-0016 is reviewed and Accepted;
 - the `email-ingestion` V1 parser plugin implements this schema;
@@ -482,3 +482,9 @@ Module 4.7 SHALL remain unimplemented until:
 After those prerequisites, Module 4.7 may consume only the approved canonical
 metadata. It must not parse Email source, assemble independent documents, access
 storage or network services, or generate permanent identities.
+
+## Implementation status
+
+Accepted and implemented. The optional `email-ingestion` V1 parser produces the
+schema above, metadata preservation is covered through canonicalization, and
+Module 4.7 consumes only the resulting canonical `parser.email.*` metadata.

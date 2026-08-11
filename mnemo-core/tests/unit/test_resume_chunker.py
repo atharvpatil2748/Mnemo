@@ -14,7 +14,6 @@ from mnemo.interfaces import (
 )
 from mnemo.models import (
     Block,
-    ChunkType,
     DocType,
     DocumentMetadata,
     DocumentVersion,
@@ -22,9 +21,7 @@ from mnemo.models import (
     EquationBlock,
     FrozenMetadata,
     HeadingBlock,
-    ImageBlock,
     ParsedDocument,
-    TableBlock,
     TextBlock,
 )
 
@@ -86,14 +83,14 @@ def test_v2_contract_capabilities() -> None:
 def test_rejects_non_resume_doc_types() -> None:
     chunker = ResumeChunker()
     doc = _document(doc_type=DocType.GENERIC)
-    with pytest.raises(UnsupportedError, match="ResumeChunker supports only DocType.RESUME"):
+    with pytest.raises(UnsupportedError, match=r"ResumeChunker supports only DocType\.RESUME"):
         chunker.chunk(doc, _context(doc), WordCounter())
 
 
 def test_rejects_missing_or_invalid_schema_version() -> None:
     chunker = ResumeChunker()
     doc = _document(schema_version=2)
-    with pytest.raises(UnsupportedError, match="parser.resume.schema_version == 1"):
+    with pytest.raises(UnsupportedError, match=r"parser\.resume\.schema_version == 1"):
         chunker.chunk(doc, _context(doc), WordCounter())
 
 
@@ -176,17 +173,24 @@ def test_resume_all_canonical_sections() -> None:
 def test_resume_content_before_first_recognized_section_preserved_as_unknown() -> None:
     chunker = ResumeChunker()
     b1 = TextBlock(ordinal=0, text="Unknown stuff", metadata=FrozenMetadata())
-    b2 = HeadingBlock(ordinal=1, text="Experience", level=1, metadata=FrozenMetadata({"parser.resume.section": "experience"}))
-    b3 = TextBlock(ordinal=2, text="Job", metadata=FrozenMetadata({"parser.resume.section": "experience"}))
-    
+    b2 = HeadingBlock(
+        ordinal=1,
+        text="Experience",
+        level=1,
+        metadata=FrozenMetadata({"parser.resume.section": "experience"}),
+    )
+    b3 = TextBlock(
+        ordinal=2, text="Job", metadata=FrozenMetadata({"parser.resume.section": "experience"})
+    )
+
     doc = _document(b1, b2, b3)
     drafts = chunker.chunk(doc, _context(doc), WordCounter())
-    
+
     assert len(drafts) == 2
     assert "Unknown" in drafts[0].text
     assert drafts[0].metadata.get("chunker.resume.section") == "unknown"
     assert drafts[0].metadata.get("chunker.resume.role_local_id") is None
-    
+
     assert "Job" in drafts[1].text
     assert drafts[1].metadata.get("chunker.resume.section") == "experience"
 

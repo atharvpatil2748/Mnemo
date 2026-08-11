@@ -225,7 +225,7 @@ class ResumeChunker:
                 sec,
                 role,
             )
-        if isinstance(block, TextBlock) or isinstance(block, HeadingBlock):
+        if isinstance(block, (TextBlock, HeadingBlock)):
             text, chunk_type = block.text, ChunkType.PASSAGE
         elif isinstance(block, CodeBlock):
             text, chunk_type = block.code, ChunkType.CODE

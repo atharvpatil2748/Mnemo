@@ -389,8 +389,9 @@ ordered immutable `ChunkDraft` values. The dispatcher validates provenance,
 size, and hierarchy, then deterministically materializes final `Chunk` IDs and
 relationships. Strategies own semantic splitting; the dispatcher performs no
 storage, network, embedding, indexing, retrieval, or semantic text generation.
-This accepted contract is defined by ADR-0015. Module 4.1 implements only the
-contract infrastructure and dispatcher; semantic strategies remain later work.
+This accepted contract is defined by ADR-0015. Module 4.1 implements the
+contract infrastructure and dispatcher; Modules 4.2 through 4.10 implement all
+nine built-in semantic strategies.
 
 **Embedder**  
 Transforms text into float vectors. Manages a content-addressable embedding cache. Sends batches to the configured `EmbeddingProvider`. `EmbedderInterface` is the later orchestration boundary for batching, caching, and provider selection. It handles dimension mismatch detection when the model is changed.
@@ -910,8 +911,8 @@ INPUT: file bytes (from API upload, watch folder, or programmatic call)
     └──────┬──────┘
            │
     ┌──────▼──────┐
-    │  STAGE 4    │  Classification: assign doc_type (book, paper, code, etc.)
-    │  Classify   │  Rule-based ONLY (fast). Returns Classified ParseResult.
+    │  STAGE 4    │  Assign doc_type and approved deterministic semantic
+    │  Classify   │  annotations. Returns a classified ParseResult.
     └──────┬──────┘
            │
     ┌──────▼──────┐
@@ -1149,6 +1150,11 @@ Email container bytes
 
 **Strategy: Slide-Level Atomic Chunking**
 
+The Phase 3 classifier owns the deterministic `parser.slide.*` semantic
+boundary defined by ADR-0036. Canonicalization preserves that immutable
+metadata; the V2 strategy consumes it without inspecting raw presentation
+source. Slide-number groups must be contiguous and source ordered.
+
 1. One chunk per slide: title + body text + speaker notes (if present).
 2. Images remain linked through canonical `Asset` references; generated vision
    descriptions belong to later enrichment.
@@ -1158,6 +1164,12 @@ Email container bytes
 ### 10.8 Documentation
 
 **Strategy: Task-and-Topic Chunking**
+
+The Phase 3 classifier owns the deterministic `parser.documentation.*`
+semantic boundary defined by ADR-0037. Canonicalization preserves the metadata;
+the V2 strategy consumes it without reparsing Markdown, HTML, or original
+source. Unannotated blocks remain ordinary topic content rather than being
+discarded.
 
 1. Respect the documentation navigation structure (sidebar, ToC) as the primary hierarchy.
 2. Identify **task blocks** — numbered procedures, command sequences — and keep them atomic.

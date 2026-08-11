@@ -1,6 +1,6 @@
 [project]
 name = "mnemo-email-ingestion"
-version = "0.18.0"
+version = "0.19.0"
 description = "Deterministic local Email ingestion plugin for Mnemo."
 readme = "README.md"
 license = "Apache-2.0"

@@ -197,6 +197,11 @@ def test_builtin_parser_plugin_registers_all_frozen_phase3_formats(tmp_path: Pat
     assert registry.resolve_chunker_v2(DocType.PAPER) is not None
     assert registry.resolve_chunker_v2(DocType.MARKDOWN) is not None
     assert registry.resolve_chunker_v2(DocType.EMAIL) is not None
+    assert registry.resolve_chunker_v2(DocType.RESUME) is not None
+    assert registry.resolve_chunker_v2(DocType.SLIDES) is not None
+    assert registry.resolve_chunker_v2(DocType.DOCUMENTATION) is not None
+    for doc_type in DocType:
+        assert registry.resolve_chunker(doc_type) is None
 
 
 def test_initialize_resolves_freezes_and_exposes_runtime(
