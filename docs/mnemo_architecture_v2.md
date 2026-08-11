@@ -1102,17 +1102,46 @@ Markdown bytes
 
 **Strategy: Thread-Aware Chunking**
 
-1. Parse the entire email thread as an ordered sequence of messages.
-2. Each message is a distinct draft with namespaced metadata: `sender`,
-   `recipient`, `date`, `subject`, and stable source-thread correlation.
-3. Reply hierarchy is expressed by `parent_index`; final parent IDs are created
-   by dispatcher finalization and may be indexed as a chain later.
-4. Long message bodies: split only at legal message-internal semantic boundaries
+ADR-0016 defines the implemented Email ingestion boundary. One supplied Email
+source container maps to one `ParsedDocument`: `.eml` contains one top-level
+message, while `mbox` may contain one or more source-correlated thread
+components. The optional `email-ingestion` parser owns MIME interpretation,
+deterministic message ordering, source relationship resolution, and immutable
+`parser.email.*` metadata. It performs no remote acquisition, storage, or UUID
+generation. Outlook `.msg` is deferred and is not supported merely because the
+classifier recognizes its extension.
+
+The implemented boundary and strategy flow are:
+
+```text
+Email container bytes
+  -> email-ingestion ParserInterfaceV1
+  -> ParseResult + immutable parser.email.* metadata
+  -> DocumentCleaner (typed content normalization; metadata unchanged)
+  -> DocumentCanonicalizer (metadata copied, not interpreted)
+  -> ParsedDocument
+  -> EmailChunker (Module 4.7; implemented V2 strategy)
+```
+
+1. Partition messages by stable source-thread correlation and never merge
+   distinct thread components.
+2. Each message with retrievable text produces distinct draft content carrying
+   source `sender`, recipients, timestamp, subject, and thread correlation in
+   namespaced metadata. Empty messages are not represented by fabricated text.
+3. Reply hierarchy is expressed by `parent_index` only when the source parent
+   resolves uniquely inside the same canonical document. Dispatcher
+   finalization creates final parent IDs.
+4. Independently ingested Email documents are not assembled by the parser or
+   chunker. Later indexing/retrieval orchestration may correlate them without
+   changing chunk identity.
+5. Long message bodies split only at legal message-internal semantic boundaries
    using the canonical token counter; never by blind character count.
-5. Newsletters/announcements: treated as flat HTML and chunked via Markdown strategy post-extraction.
-6. Attachment extraction and ingestion as separate documents belongs to the
-   ingestion/indexing workflow. The Email strategy only preserves available
-   attachment correlation metadata.
+6. HTML-only newsletters and announcements are deterministically extracted by
+   the Email parser and remain flat Email content. The chunker applies local
+   semantic prose splitting but never reparses or redispatches source.
+7. Attachment extraction and ingestion as separate documents belongs to later
+   acquisition/indexing workflow. The Email strategy preserves only available
+   source attachment correlation metadata.
 
 ### 10.7 Slides / Presentations
 

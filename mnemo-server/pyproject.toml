@@ -1,6 +1,6 @@
 [project]
 name = "mnemo-server"
-version = "0.16.0"
+version = "0.18.0"
 description = "Transport adapters for the Mnemo local knowledge engine."
 readme = "README.md"
 license = "Apache-2.0"

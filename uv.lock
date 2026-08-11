@@ -11,6 +11,7 @@ resolution-markers = [
 [manifest]
 members = [
     "mnemo-core",
+    "mnemo-email-ingestion",
     "mnemo-server",
     "mnemo-workspace",
 ]
@@ -1057,7 +1058,7 @@ wheels = [
 
 [[package]]
 name = "mnemo-core"
-version = "0.16.0"
+version = "0.18.0"
 source = { editable = "mnemo-core" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1113,8 +1114,19 @@ requires-dist = [
 ]
 
 [[package]]
+name = "mnemo-email-ingestion"
+version = "0.18.0"
+source = { editable = "plugins/email-ingestion" }
+dependencies = [
+    { name = "mnemo-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "mnemo-core", editable = "mnemo-core" }]
+
+[[package]]
 name = "mnemo-server"
-version = "0.16.0"
+version = "0.18.0"
 source = { editable = "mnemo-server" }
 dependencies = [
     { name = "mnemo-core" },
@@ -1125,7 +1137,7 @@ requires-dist = [{ name = "mnemo-core", editable = "mnemo-core" }]
 
 [[package]]
 name = "mnemo-workspace"
-version = "0.16.0"
+version = "0.18.0"
 source = { virtual = "." }
 
 [package.dev-dependencies]

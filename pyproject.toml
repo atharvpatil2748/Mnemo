@@ -1,6 +1,6 @@
 [project]
 name = "mnemo-workspace"
-version = "0.16.0"
+version = "0.18.0"
 requires-python = ">=3.12"
 
 [dependency-groups]
@@ -17,7 +17,7 @@ dev = [
 package = false
 
 [tool.uv.workspace]
-members = ["mnemo-core", "mnemo-server"]
+members = ["mnemo-core", "mnemo-server", "plugins/email-ingestion"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -28,7 +28,7 @@ exclude = ["references", "mnemo-ui", ".venv"]
 
 [tool.coverage.run]
 branch = true
-source = ["mnemo", "mnemo_server"]
+source = ["mnemo", "mnemo_server", "email_ingestion"]
 
 [tool.coverage.report]
 fail_under = 90

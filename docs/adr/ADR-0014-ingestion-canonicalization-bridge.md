@@ -122,6 +122,13 @@ nesting, marker information, and exact Markdown source remain available to the
 later Markdown strategy. The canonicalizer does not parse Markdown, validate a
 Markdown AST, derive links, or own Markdown semantics.
 
+ADR-0016 defines an equivalent preservation rule for `parser.email.*` document
+and block metadata. The cleaner and canonicalizer carry that immutable metadata
+without interpreting MIME, thread relationships, headers, quotes, signatures,
+or attachments. The Email parser
+remains the sole owner of those source semantics. No Email-specific conversion
+or storage orchestration is added to `DocumentCanonicalizer`.
+
 ### Asset identity and correlation
 
 `StorageInterfaceV1.put_asset()` remains the sole owner of permanent asset

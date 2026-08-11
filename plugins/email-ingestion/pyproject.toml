@@ -1,0 +1,21 @@
+[project]
+name = "mnemo-email-ingestion"
+version = "0.18.0"
+description = "Deterministic local Email ingestion plugin for Mnemo."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.12"
+dependencies = ["mnemo-core>=0.18.0,<1"]
+
+[tool.uv.sources]
+mnemo-core = { workspace = true }
+
+[project.entry-points."mnemo.plugins"]
+email_ingestion = "email_ingestion:plugin"
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["email_ingestion"]

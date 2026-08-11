@@ -69,6 +69,20 @@ serializable, local, and free of parser token/node instances. The correction
 does not preserve a complete AST or character offsets, does not alter parser
 purity, and does not change `ParsedDocument`, chunk provenance, or identity.
 
+#### Email semantic metadata boundary
+
+ADR-0016 defines the corresponding boundary for Email source containers. The
+optional `email-ingestion` parser interprets MIME and source message
+relationships while it owns the input bytes, then carries only the bounded
+immutable semantics required downstream through existing
+`DocumentMetadata.metadata` and `RawBlock.metadata` fields under
+`parser.email.*`. The decision does not add an Email-specific canonical model,
+change `ParserInterfaceV1`, or permit parsing inside Module 4.7.
+
+`DocType.EMAIL` classification alone does not establish that a `ParseResult` or
+`ParsedDocument` satisfies the Email semantic boundary; the document must have
+been parsed through an ADR-0016-compatible plugin.
+
 ### 2. The Ingestion Pipeline
 
 The ingestion orchestration layer replaces "Phase 5/6" logic and becomes the exclusive owner of blob persistence and asset ID generation. The flow is:

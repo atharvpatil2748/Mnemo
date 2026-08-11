@@ -445,6 +445,13 @@ only eight. Before implementation, Email becomes Module 4.7 and the currently
 unimplemented Resume, Slides, and Documentation modules shift to 4.8, 4.9, and
 4.10. Generic fallback is not a substitute for thread-aware semantics.
 
+ADR-0016 identifies the required upstream Email semantic boundary. Module 4.7
+may begin only after an approved `email-ingestion` parser has produced
+canonical `ParsedDocument` values carrying valid `parser.email.*` metadata.
+That prerequisite is implemented and validated. The Email strategy consumes
+that metadata only; it does not parse MIME, assemble independently ingested
+documents, or infer lost thread structure.
+
 ### Chunk types and LLM-derived content
 
 The ADR-0001 `ChunkType` enum is unchanged. Architecture shorthand such as

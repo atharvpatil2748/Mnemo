@@ -14,7 +14,7 @@ uv run ruff check .
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo Running mypy...
-uv run mypy --strict mnemo-core/mnemo mnemo-core/tests mnemo-server/mnemo_server
+uv run mypy --strict mnemo-core/mnemo mnemo-core/tests mnemo-server/mnemo_server plugins/email-ingestion/email_ingestion plugins/email-ingestion/tests
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo Running pytest...
@@ -40,6 +40,12 @@ cd mnemo-server
 uv build
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 cd ..
+
+echo Building email-ingestion...
+cd plugins\email-ingestion
+uv build
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+cd ..\..
 
 echo Running twine check...
 uv run twine check dist/*

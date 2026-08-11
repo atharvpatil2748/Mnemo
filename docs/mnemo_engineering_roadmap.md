@@ -505,7 +505,7 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 > **Status:** Complete. The built-in V2 strategy owns only
 > `DocType.MARKDOWN`, consumes canonical `parser.markdown.*` metadata without
-> reparsing source bytes, and leaves Module 4.7 unstarted.
+> reparsing source bytes.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
@@ -517,12 +517,19 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 **Module 4.7 — Email Chunker**
 
+> **Status:** Complete. ADR-0016 and the `email-ingestion` parser boundary are
+> implemented and validated. The built-in V2 `EmailChunker` consumes only
+> canonical `parser.email.*` metadata and leaves Module 4.8 unstarted.
+
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Implement `EmailChunker` | Architecture §10.6 thread-aware chunking for `DocType.EMAIL` | High | 4.1 |
-| Preserve message boundaries | One semantic draft per message when within limits | High | 4.7a |
-| Preserve thread relationships | Explicit draft parent hierarchy plus namespaced source-thread metadata | High | 4.7a |
-| Handle long messages | Split only at legal message-internal semantic boundaries | Medium | 4.7a |
+| Accept ADR-0016 ✓ | Source-container granularity, thread ownership, metadata, MIME, and format contracts frozen | High | ADR-0011, ADR-0014, ADR-0015 |
+| Implement `email-ingestion` V1 parser plugin ✓ | Pure `.eml`/`mbox` parsing through `ParserInterfaceV1`; `.msg` deferred | High | ADR-0016, 3.9 |
+| Validate Email semantic preservation ✓ | `parser.email.*` survives ParseResult → Cleaner → Canonicalizer → ParsedDocument unchanged | High | email-ingestion parser |
+| Implement `EmailChunker` ✓ | Architecture §10.6 thread-aware chunking for `DocType.EMAIL` | High | 4.1, accepted/implemented ADR-0016 boundary |
+| Preserve message boundaries ✓ | Distinct message/region drafts with no empty placeholders | High | 4.7a |
+| Preserve thread relationships ✓ | Explicit draft parent hierarchy only for uniquely resolved parents in the same ParsedDocument | High | 4.7a |
+| Handle long messages ✓ | Paragraph → sentence → safe-word splitting within one message region | Medium | 4.7a |
 
 **Module 4.8 — Resume Chunker**
 
@@ -1695,6 +1702,7 @@ EPIC 4: mnemo-core — Chunking Engine
     ISSUE: PaperChunker (canonical sections + equation handling)
     ISSUE: CodeChunker (tree-sitter AST + call context)
     ISSUE: MarkdownChunker
+    ISSUE: ADR-0016 + email-ingestion semantic boundary prerequisite
     ISSUE: EmailChunker (thread-aware)
     ISSUE: ResumeChunker (section isolation + role chunks)
     ISSUE: SlidesChunker
@@ -2028,7 +2036,8 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ `PaperChunker` (section detection + canonical mapping)
 - □ `CodeChunker` (tree-sitter + 6 language grammars + call context)
 - ☑ `MarkdownChunker`
-- □ `EmailChunker` (thread-aware message boundaries)
+- ☑ Accept ADR-0016 and implement the `email-ingestion` semantic boundary
+- ☑ `EmailChunker` (thread-aware message boundaries)
 - □ `ResumeChunker` (section isolation + role chunks)
 - □ `SlidesChunker`
 - □ `DocumentationChunker`
