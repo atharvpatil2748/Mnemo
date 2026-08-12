@@ -7,9 +7,10 @@
 
 **Current baseline:** Phase 0, Phase 1, Phase 2, Phase 3 through Module 3.9,
 Phase 4 Modules 4.1–4.10 and Phase 5 Modules 5.1–5.3 are implemented. Phase 4
-is frozen and released at v0.19.0. The published v0.20.0 Phase 5 tag failed its
-release CI formatting gate; a corrective release remains pending. The live M5
-Ollama-to-Qdrant milestone has not been executed. Phase 6 has not started.
+is frozen and released at v0.19.0. Phase 5 Modules 5.1–5.3 are released in the
+corrective v0.20.1 patch after local and CI validation. The historical v0.20.0
+tag remains immutable. The live M5 Ollama-to-Qdrant milestone has not been
+executed. Phase 6 has not started.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
 
@@ -103,8 +104,8 @@ Chunking quality is the single biggest lever on retrieval quality. More implemen
 
 ### Phase 5 — Embedding Pipeline
 **Duration:** Weeks 16–17
-**Status:** Implementation complete; local release gate corrected; clean
-corrective release and live M5 verification pending
+**Status:** Complete and released at v0.20.1; local and CI validation passed;
+live M5 verification pending
 **Goal:** Ollama embedding provider is implemented behind `EmbeddingProvider`. Content-addressable embedding cache is operational. Batch embedding works. Dimension mismatch detection works.
 
 ---

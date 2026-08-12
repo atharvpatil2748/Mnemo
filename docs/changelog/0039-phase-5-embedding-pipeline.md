@@ -1,6 +1,6 @@
 # Phase 5 — Embedding Pipeline
 
-**Published tag:** v0.20.0 (failed release CI; not release-validated)
+**Corrective release:** v0.20.1
 **Date:** 2026-08-12  
 **Modules:** 5.1, 5.2, 5.3  
 **ADR:** ADR-0018 (Embedding Initialization Lifecycle)
@@ -131,7 +131,7 @@ Decorator wrapping any `EmbeddingProviderV1` with transparent caching.
 | `tests/unit/test_embedding_cache.py` | 10 | SQLiteCache CRUD/TTL/concurrency, CachedProvider |
 | `tests/unit/test_embedder_module.py` | 5 | EmbedderModule batching, concurrency, idempotency |
 
-All 27 Phase 5 tests pass. The release-correction full suite contains 757 tests
+All 27 Phase 5 tests pass. The v0.20.1 release full suite contains 757 tests
 and passes locally with the repository coverage gate satisfied.
 
 ---
@@ -151,12 +151,14 @@ and passes locally with the repository coverage gate satisfied.
 - **Implemented:** Modules 5.1, 5.2, and 5.3 are present. There is no Module
   5.4.
 - **Locally validated:** Ruff formatting/linting, mypy, the complete test suite,
-  package builds, and artifact checks pass in the corrective working state.
-- **Published:** `v0.20.0` exists, but its release commit failed GitHub Actions
-  at `ruff format --check`; it is not a clean release-validated baseline.
+  package builds, and artifact checks pass for `v0.20.1`.
+- **CI validated:** The corrective v0.20.1 release commit passed the complete
+  GitHub Actions pipeline.
+- **Historical release:** `v0.20.0` remains published and immutable at its
+  original release commit; CI found its `ruff format --check` defect. It is not
+  rewritten or moved.
 - **Live M5 verified:** No. The milestone criterion (1,000 chunks embedded via
   a live Ollama instance and stored in Qdrant) has not been executed and remains
   open. Unit tests and mocked provider tests do not satisfy that criterion.
-- Current release metadata is consistently `0.20.0`. A corrective release must
-  follow the repository's patch-version policy only after corrective-main CI is
-  green.
+- Current release metadata is consistently `0.20.1`. This is the immutable
+  corrective patch release after v0.20.0.

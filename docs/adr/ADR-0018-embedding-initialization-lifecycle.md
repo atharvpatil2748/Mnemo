@@ -114,3 +114,11 @@ engine READY
   later if needed.
 - **Negative**: Plugin authors must know to use `register_startup_hook` for
   any async initialization that precedes capability validation.
+
+## 5. Release status
+
+The Phase 5 implementation (Modules 5.1, 5.2, and 5.3 only) is released in
+v0.20.1 after local and GitHub Actions validation. The historical v0.20.0 tag
+remains immutable despite its release-commit formatting failure. The live M5
+milestone—embedding 1,000 chunks through a running Ollama instance and storing
+them in Qdrant—remains pending and is not asserted by this ADR.

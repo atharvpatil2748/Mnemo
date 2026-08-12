@@ -2,7 +2,7 @@
 
 > One knowledge layer. Thousands of documents. Your hardware, your data.
 
-![Version](https://img.shields.io/badge/version-0.20.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-0.20.1-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
 
 ## Why Mnemo Exists
 
@@ -108,9 +108,9 @@ Mnemo's component-based design allows it to eventually serve multiple roles:
 
 Mnemo is in active engineering development. Every module is rigorously tested before being marked complete.
 
-Here is the current implementation status. Phase 5 code is implemented and
-locally validated; the published `v0.20.0` tag failed its release CI formatting
-gate and is not considered a clean release. Live M5 verification remains open.
+Here is the current implementation status. Phase 5 Modules 5.1–5.3 are
+implemented, locally validated, and CI validated in the corrective `v0.20.1`
+release. Live M5 verification remains open.
 
 | Capability | Status | Notes |
 |---|---|---|
@@ -121,7 +121,7 @@ gate and is not considered a clean release. Live M5 verification remains open.
 | Document Parsing | ✅ Implemented | PDF, DOCX, Markdown, HTML, TXT, JSON, CSV |
 | Ingestion Canonicalization | ✅ Complete | Phase 3.9 bridge produces canonical `ParsedDocument` values |
 | Chunking Engine | ✅ Complete | Modules 4.1–4.10: dispatcher plus all nine document-aware V2 strategies |
-| Embedding Pipeline | ⚠️ Implemented | Modules 5.1–5.3 are locally validated; corrective release and live M5 verification remain pending |
+| Embedding Pipeline | ✅ Released | Modules 5.1–5.3 released in v0.20.1; live M5 verification remains pending |
 | Hybrid Retrieval | 📋 Planned | Phase 6 |
 | REST API | 📋 Planned | Phase 7 |
 | MCP Integration | 📋 Planned | Phase 8 |
