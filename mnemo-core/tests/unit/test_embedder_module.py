@@ -55,13 +55,13 @@ class MockBatchLimitingProvider(EmbeddingProviderV1):
         self.embed_batch_call_count += 1
         if len(texts) > self._max_batch:
             raise ValueError(f"Batch too large: {len(texts)} > {self._max_batch}")
-        
+
         await anyio.sleep(self._delay)
-        
+
         vectors = []
         for text in texts:
             vectors.append((float(len(text)),) * self._dimensions)
-            
+
         return EmbeddingBatch(
             vectors=tuple(vectors),
             model_name=self.model_name,
@@ -89,7 +89,7 @@ def _make_chunk(text: str, id_str: str, has_embedding: bool = False) -> Chunk:
 async def test_embedder_module_basic() -> None:
     provider = MockBatchLimitingProvider(dimensions=2, max_batch=2, delay=0.0)
     embedder = EmbedderModule(provider=provider, max_concurrency=2)
-    
+
     # 5 chunks, max_batch=2 -> should result in 3 batches (2, 2, 1)
     chunks = [
         _make_chunk("a", "1" * 64),
@@ -98,11 +98,11 @@ async def test_embedder_module_basic() -> None:
         _make_chunk("dddd", "4" * 64),
         _make_chunk("e", "5" * 64),
     ]
-    
+
     results = await embedder.embed_chunks(chunks)
     assert len(results) == 5
     assert provider.embed_batch_call_count == 3
-    
+
     # Check that embeddings are correct based on length
     assert results[0].embedding == (1.0, 1.0)
     assert results[1].embedding == (2.0, 2.0)
@@ -115,26 +115,26 @@ async def test_embedder_module_basic() -> None:
 async def test_embedder_module_skips_existing() -> None:
     provider = MockBatchLimitingProvider(dimensions=2, max_batch=10, delay=0.0)
     embedder = EmbedderModule(provider=provider, max_concurrency=2)
-    
+
     chunks = [
         _make_chunk("a", "1" * 64, has_embedding=True),
         _make_chunk("bb", "2" * 64, has_embedding=False),
         _make_chunk("ccc", "3" * 64, has_embedding=True),
     ]
-    
+
     results = await embedder.embed_chunks(chunks)
     assert len(results) == 3
-    
+
     # Only 1 chunk needs embedding, so 1 batch
     assert provider.embed_batch_call_count == 1
-    
+
     # Pre-existing embeddings remain
     assert results[0].embedding == (1.0, 2.0)
     assert results[2].embedding == (1.0, 2.0)
-    
+
     # Missing embedding was populated
     assert results[1].embedding == (2.0, 2.0)
-    
+
     # Same IDs
     assert results[0].id == "1" * 64
     assert results[1].id == "2" * 64
@@ -148,16 +148,16 @@ async def test_embedder_module_concurrency() -> None:
     # If concurrency was 1, it would take ~0.5s
     provider = MockBatchLimitingProvider(dimensions=2, max_batch=10, delay=0.1)
     embedder = EmbedderModule(provider=provider, max_concurrency=5)
-    
+
     chunks = [_make_chunk("a", "1" * 64) for _ in range(50)]
-    
+
     start = anyio.current_time()
     results = await embedder.embed_chunks(chunks)
     end = anyio.current_time()
-    
+
     assert len(results) == 50
     assert provider.embed_batch_call_count == 5
-    
+
     # Should be well under 0.5s if concurrent
     assert end - start < 0.4
 
@@ -166,21 +166,22 @@ async def test_embedder_module_concurrency() -> None:
 async def test_embedder_module_empty() -> None:
     provider = MockBatchLimitingProvider(dimensions=2, max_batch=10, delay=0.0)
     embedder = EmbedderModule(provider=provider, max_concurrency=5)
-    
+
     results = await embedder.embed_chunks([])
     assert len(results) == 0
     assert provider.embed_batch_call_count == 0
+
 
 @pytest.mark.anyio
 async def test_embedder_module_all_existing() -> None:
     provider = MockBatchLimitingProvider(dimensions=2, max_batch=10, delay=0.0)
     embedder = EmbedderModule(provider=provider, max_concurrency=5)
-    
+
     chunks = [
         _make_chunk("a", "1" * 64, has_embedding=True),
         _make_chunk("b", "2" * 64, has_embedding=True),
     ]
-    
+
     results = await embedder.embed_chunks(chunks)
     assert len(results) == 2
     assert provider.embed_batch_call_count == 0

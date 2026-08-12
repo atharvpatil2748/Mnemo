@@ -45,9 +45,7 @@ class MockEmbeddingProvider(EmbeddingProviderV1):
         )
 
     async def health_check(self) -> HealthStatus:
-        return HealthStatus(
-            healthy=True, component="mock", checked_at=datetime.now(UTC)
-        )
+        return HealthStatus(healthy=True, component="mock", checked_at=datetime.now(UTC))
 
     async def embed(self, text: str) -> EmbeddingVector:
         self.call_count += 1
@@ -118,7 +116,7 @@ async def test_sqlite_cache_corrupted_blob(sqlite_cache: SQLiteEmbeddingCache) -
     async with aiosqlite.connect(sqlite_cache._path) as db:
         await db.execute("UPDATE embedding_cache SET vector = ? WHERE key = ?", (b"bad", "key"))
         await db.commit()
-    
+
     with pytest.raises(IntegrityError, match="Corrupted cache blob"):
         await sqlite_cache.get("key")
 
@@ -182,18 +180,20 @@ async def test_cached_provider_dimension_mismatch(sqlite_cache: SQLiteEmbeddingC
     with pytest.raises(IntegrityError, match="Dimension mismatch"):
         await wrapper.embed_batch(("hello",))
 
+
 @pytest.mark.anyio
 async def test_cached_provider_bad_underlying_dimension(sqlite_cache: SQLiteEmbeddingCache) -> None:
     # If the provider itself returns wrong dimensions
     class BadProvider(MockEmbeddingProvider):
         async def embed(self, text: str) -> EmbeddingVector:
-            return (1.0,) # Only 1D, but claims 2D
+            return (1.0,)  # Only 1D, but claims 2D
 
     bad_provider = BadProvider(dimensions=2)
     wrapper = CachedEmbeddingProvider(bad_provider, sqlite_cache)
-    
+
     with pytest.raises(IntegrityError, match="Dimension mismatch"):
         await wrapper.embed("hello")
+
 
 @pytest.mark.anyio
 async def test_cached_provider_duplicate_batch_inputs(sqlite_cache: SQLiteEmbeddingCache) -> None:
@@ -207,10 +207,11 @@ async def test_cached_provider_duplicate_batch_inputs(sqlite_cache: SQLiteEmbedd
     assert res.vectors[0] == res.vectors[3]
     assert res.vectors[2] != res.vectors[0]
 
+
 @pytest.mark.anyio
 async def test_sqlite_cache_concurrency(sqlite_cache: SQLiteEmbeddingCache) -> None:
     import anyio
-    
+
     async def write_cache(idx: int) -> None:
         await sqlite_cache.put(f"key_{idx}", (float(idx),))
 
@@ -218,7 +219,7 @@ async def test_sqlite_cache_concurrency(sqlite_cache: SQLiteEmbeddingCache) -> N
     async with anyio.create_task_group() as tg:
         for i in range(50):
             tg.start_soon(write_cache, i)
-            
+
     # Verify all were written safely without locking each other
     for i in range(50):
         val = await sqlite_cache.get(f"key_{i}")

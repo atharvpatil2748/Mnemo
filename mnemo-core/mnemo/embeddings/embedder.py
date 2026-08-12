@@ -52,7 +52,7 @@ class EmbedderModule:
             async with limiter:
                 texts = tuple(c.text for c in batch_chunks)
                 batch_result = await self._provider.embed_batch(texts)
-                
+
                 # Write back to new_embeddings at correct offsets
                 offset = batch_idx * max_batch
                 for j, vec in enumerate(batch_result.vectors):

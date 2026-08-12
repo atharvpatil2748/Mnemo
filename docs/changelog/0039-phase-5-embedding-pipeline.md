@@ -1,6 +1,6 @@
 # Phase 5 — Embedding Pipeline
 
-**Release:** v0.20.0  
+**Published tag:** v0.20.0 (failed release CI; not release-validated)
 **Date:** 2026-08-12  
 **Modules:** 5.1, 5.2, 5.3  
 **ADR:** ADR-0018 (Embedding Initialization Lifecycle)
@@ -131,7 +131,8 @@ Decorator wrapping any `EmbeddingProviderV1` with transparent caching.
 | `tests/unit/test_embedding_cache.py` | 10 | SQLiteCache CRUD/TTL/concurrency, CachedProvider |
 | `tests/unit/test_embedder_module.py` | 5 | EmbedderModule batching, concurrency, idempotency |
 
-All 27 Phase 5 tests pass. Full suite: 697 passed.
+All 27 Phase 5 tests pass. The release-correction full suite contains 757 tests
+and passes locally with the repository coverage gate satisfied.
 
 ---
 
@@ -145,11 +146,17 @@ All 27 Phase 5 tests pass. Full suite: 697 passed.
 
 ---
 
-## Release Blockers
+## Validation and release state
 
-- M5 milestone exit criterion ("1000 chunks embedded via Ollama, stored in
-  Qdrant") requires a live Ollama instance and is an integration-level
-  acceptance test, not a unit test. It must be executed before the Phase 5
-  release tag is applied.
-- Version bump: `_version.py` and `pyproject.toml` must be updated from
-  `0.19.0` → `0.20.0` at release time.
+- **Implemented:** Modules 5.1, 5.2, and 5.3 are present. There is no Module
+  5.4.
+- **Locally validated:** Ruff formatting/linting, mypy, the complete test suite,
+  package builds, and artifact checks pass in the corrective working state.
+- **Published:** `v0.20.0` exists, but its release commit failed GitHub Actions
+  at `ruff format --check`; it is not a clean release-validated baseline.
+- **Live M5 verified:** No. The milestone criterion (1,000 chunks embedded via
+  a live Ollama instance and stored in Qdrant) has not been executed and remains
+  open. Unit tests and mocked provider tests do not satisfy that criterion.
+- Current release metadata is consistently `0.20.0`. A corrective release must
+  follow the repository's patch-version policy only after corrective-main CI is
+  green.

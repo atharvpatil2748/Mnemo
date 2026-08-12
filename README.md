@@ -108,7 +108,9 @@ Mnemo's component-based design allows it to eventually serve multiple roles:
 
 Mnemo is in active engineering development. Every module is rigorously tested before being marked complete.
 
-Here is the current implementation status (Phase 5 complete; release 0.20.0):
+Here is the current implementation status. Phase 5 code is implemented and
+locally validated; the published `v0.20.0` tag failed its release CI formatting
+gate and is not considered a clean release. Live M5 verification remains open.
 
 | Capability | Status | Notes |
 |---|---|---|
@@ -119,7 +121,7 @@ Here is the current implementation status (Phase 5 complete; release 0.20.0):
 | Document Parsing | ✅ Implemented | PDF, DOCX, Markdown, HTML, TXT, JSON, CSV |
 | Ingestion Canonicalization | ✅ Complete | Phase 3.9 bridge produces canonical `ParsedDocument` values |
 | Chunking Engine | ✅ Complete | Modules 4.1–4.10: dispatcher plus all nine document-aware V2 strategies |
-| Embedding Pipeline | ✅ Complete | Phase 5: OllamaEmbedder, SQLite cache, CachedEmbeddingProvider, EmbedderModule |
+| Embedding Pipeline | ⚠️ Implemented | Modules 5.1–5.3 are locally validated; corrective release and live M5 verification remain pending |
 | Hybrid Retrieval | 📋 Planned | Phase 6 |
 | REST API | 📋 Planned | Phase 7 |
 | MCP Integration | 📋 Planned | Phase 8 |

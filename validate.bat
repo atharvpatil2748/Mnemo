@@ -5,8 +5,8 @@ echo Running uv lock...
 uv lock
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
-echo Running ruff format...
-uv run ruff format .
+echo Checking ruff formatting...
+uv run ruff format --check .
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo Running ruff check...
@@ -30,25 +30,19 @@ uv run pre-commit run --all-files
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo Building mnemo-core...
-cd mnemo-core
-uv build
+uv build --package mnemo-core
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
-cd ..
 
 echo Building mnemo-server...
-cd mnemo-server
-uv build
+uv build --package mnemo-server
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
-cd ..
 
 echo Building email-ingestion...
-cd plugins\email-ingestion
-uv build
+uv build --package mnemo-email-ingestion
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
-cd ..\..
 
 echo Running twine check...
-uv run twine check dist/*
+uv run twine check dist/*.whl dist/*.tar.gz
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo ALL CHECKS PASSED

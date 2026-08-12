@@ -7,17 +7,17 @@ from mnemo.embeddings.ollama import OllamaEmbedder
 
 
 @pytest.fixture
-def mock_config():
+def mock_config() -> EmbeddingConfig:
     return EmbeddingConfig(
         provider="ollama",
         model="nomic-embed-text",
         dimensions=768,
-        api_base="http://127.0.0.1:11434"
+        api_base="http://127.0.0.1:11434",
     )
 
 
 @pytest.fixture
-def embedder(mock_config):
+def embedder(mock_config: EmbeddingConfig) -> OllamaEmbedder:
     embedder = OllamaEmbedder(config=mock_config)
     # Bypass initialize() for most tests that don't test startup lifecycle
     embedder._discovered_dimensions = mock_config.dimensions
@@ -25,7 +25,7 @@ def embedder(mock_config):
 
 
 @pytest.mark.anyio
-async def test_embed_success(embedder, mock_config):
+async def test_embed_success(embedder: OllamaEmbedder, mock_config: EmbeddingConfig) -> None:
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -40,11 +40,8 @@ async def test_embed_success(embedder, mock_config):
         mock_post.assert_called_once()
 
 
-
-
-
 @pytest.mark.anyio
-async def test_embed_malformed_response(embedder):
+async def test_embed_malformed_response(embedder: OllamaEmbedder) -> None:
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -58,7 +55,9 @@ async def test_embed_malformed_response(embedder):
 
 @pytest.mark.anyio
 @patch("asyncio.sleep", new_callable=AsyncMock)
-async def test_embed_retry_transient_error(mock_sleep, embedder, mock_config):
+async def test_embed_retry_transient_error(
+    mock_sleep: AsyncMock, embedder: OllamaEmbedder, mock_config: EmbeddingConfig
+) -> None:
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_response_success = MagicMock()
         mock_response_success.status_code = 200
@@ -69,11 +68,11 @@ async def test_embed_retry_transient_error(mock_sleep, embedder, mock_config):
         mock_post.side_effect = [
             httpx.ConnectError("Connection refused"),
             httpx.ConnectError("Connection refused"),
-            mock_response_success
+            mock_response_success,
         ]
 
         vector = await embedder.embed("Hello world")
-        
+
         assert len(vector) == mock_config.dimensions
         assert vector[0] == 0.2
         assert mock_post.call_count == 3
@@ -82,24 +81,26 @@ async def test_embed_retry_transient_error(mock_sleep, embedder, mock_config):
 
 @pytest.mark.anyio
 @patch("asyncio.sleep", new_callable=AsyncMock)
-async def test_embed_retry_exhausted(mock_sleep, embedder, mock_config):
+async def test_embed_retry_exhausted(
+    mock_sleep: AsyncMock, embedder: OllamaEmbedder, mock_config: EmbeddingConfig
+) -> None:
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_post.side_effect = httpx.ConnectError("Connection refused")
 
         with pytest.raises(RuntimeError, match="Ollama connection error"):
             await embedder.embed("Hello world")
-            
+
         assert mock_post.call_count == 3
         assert mock_sleep.call_count == 2
 
 
 @pytest.mark.anyio
-async def test_embed_deterministic_error(embedder):
+async def test_embed_deterministic_error(embedder: OllamaEmbedder) -> None:
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_response = MagicMock()
         mock_response.status_code = 404
         mock_response.text = "model not found"
-        
+
         error = httpx.HTTPStatusError(
             "404 Client Error", request=MagicMock(), response=mock_response
         )
@@ -107,13 +108,13 @@ async def test_embed_deterministic_error(embedder):
 
         with pytest.raises(ValueError, match="Ollama provider error 404"):
             await embedder.embed("Hello world")
-            
+
         # Should not retry deterministic errors
         assert mock_post.call_count == 1
 
 
 @pytest.mark.anyio
-async def test_embed_batch_success(embedder, mock_config):
+async def test_embed_batch_success(embedder: OllamaEmbedder, mock_config: EmbeddingConfig) -> None:
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -131,7 +132,7 @@ async def test_embed_batch_success(embedder, mock_config):
 
 
 @pytest.mark.anyio
-async def test_health_check_success(embedder, mock_config):
+async def test_health_check_success(embedder: OllamaEmbedder, mock_config: EmbeddingConfig) -> None:
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -145,7 +146,9 @@ async def test_health_check_success(embedder, mock_config):
 
 
 @pytest.mark.anyio
-async def test_health_check_model_not_found(embedder, mock_config):
+async def test_health_check_model_not_found(
+    embedder: OllamaEmbedder, mock_config: EmbeddingConfig
+) -> None:
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -155,25 +158,28 @@ async def test_health_check_model_not_found(embedder, mock_config):
 
         status = await embedder.health_check()
         assert status.healthy is False
+        assert status.detail is not None
         assert "not found" in status.detail
 
 
 @pytest.mark.anyio
-async def test_health_check_server_error(embedder):
+async def test_health_check_server_error(embedder: OllamaEmbedder) -> None:
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
         mock_get.side_effect = httpx.ConnectError("Server down")
 
         status = await embedder.health_check()
         assert status.healthy is False
+        assert status.detail is not None
         assert "Server down" in status.detail
 
 
 @pytest.mark.anyio
-async def test_initialize_success(mock_config):
+async def test_initialize_success(mock_config: EmbeddingConfig) -> None:
     embedder = OllamaEmbedder(config=mock_config)
-    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get, \
-         patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
-
+    with (
+        patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get,
+        patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post,
+    ):
         # Health check success
         mock_get_response = MagicMock()
         mock_get_response.status_code = 200
@@ -193,11 +199,12 @@ async def test_initialize_success(mock_config):
 
 
 @pytest.mark.anyio
-async def test_initialize_dimension_mismatch(mock_config):
+async def test_initialize_dimension_mismatch(mock_config: EmbeddingConfig) -> None:
     embedder = OllamaEmbedder(config=mock_config)
-    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get, \
-         patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
-
+    with (
+        patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get,
+        patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post,
+    ):
         # Health check success
         mock_get_response = MagicMock()
         mock_get_response.status_code = 200
@@ -217,7 +224,7 @@ async def test_initialize_dimension_mismatch(mock_config):
 
 
 @pytest.mark.anyio
-async def test_initialize_health_failure(mock_config):
+async def test_initialize_health_failure(mock_config: EmbeddingConfig) -> None:
     embedder = OllamaEmbedder(config=mock_config)
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
         mock_get_response = MagicMock()
