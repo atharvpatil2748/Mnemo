@@ -180,6 +180,7 @@ class EmbeddingConfig(_FrozenConfigModel):
     provider: NonEmptyString
     model: NonEmptyString
     dimensions: PositiveInteger
+    api_base: str | None = None
 
 
 class RerankerConfig(_FrozenConfigModel):

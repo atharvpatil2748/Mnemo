@@ -358,7 +358,6 @@ def test_later_roadmap_contracts_are_not_implemented() -> None:
         "TaskQueueInterface",
         "ProgressReporter",
         "TelemetryInterface",
-        "CacheInterface",
         "EmbedderInterface",
         "DenseRetriever",
         "SparseRetriever",

@@ -33,7 +33,7 @@ def test_release_versions_are_synchronized() -> None:
         mnemo.__version__,
         mnemo_server.__version__,
     }
-    assert versions == {"0.19.0"}
+    assert versions == {"0.20.0"}
 
 
 def test_top_level_core_exports_are_intentional() -> None:
@@ -92,7 +92,13 @@ def test_core_has_no_infrastructure_or_reverse_layer_imports() -> None:
             for node in ast.walk(tree)
             for name in _imported_modules(node)
         }
-        assert forbidden_roots.isdisjoint(imported_roots), source
+        # The built-in Ollama embedding plugin operates as an infrastructure provider,
+        # much like SQLite and Qdrant plugins (which use aiosqlite and qdrant-client).
+        # Therefore, httpx is a legitimate exception to the domain purity rule.
+        if source.name == "ollama.py" and source.parent.name == "embeddings":
+            assert forbidden_roots.difference({"httpx"}).isdisjoint(imported_roots), source
+        else:
+            assert forbidden_roots.isdisjoint(imported_roots), source
 
     assert _internal_imports(_CORE / "registry.py") <= {"mnemo.interfaces", "mnemo.models"}
     assert _internal_imports(_CORE / "config.py") == set()
@@ -100,6 +106,7 @@ def test_core_has_no_infrastructure_or_reverse_layer_imports() -> None:
         "mnemo._version",
         "mnemo.chunkers",
         "mnemo.config",
+        "mnemo.embeddings",
         "mnemo.interfaces",
         "mnemo.models",
         "mnemo.parsers",

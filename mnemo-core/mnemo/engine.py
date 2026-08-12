@@ -160,7 +160,9 @@ class KnowledgeEngine:
                 self._registry = self._new_registry()
             self._state = EngineState.INITIALIZING
             try:
-                providers = self._compose_runtime()
+                self._compose_runtime()
+                await self._registry.execute_startup_hooks()
+                providers = self._resolve_providers()
             except Exception as error:
                 self._providers = None
                 self._registry = self._new_registry()
@@ -196,7 +198,7 @@ class KnowledgeEngine:
             self._providers = None
             self._state = EngineState.STOPPED
 
-    def _compose_runtime(self) -> _ResolvedProviders:
+    def _compose_runtime(self) -> None:
         results: list[PluginLoadResult] = []
         builtins = self._registry.load_plugins(_builtin_plugins(self._config))
         self._log_failures("built-in", builtins)
@@ -210,7 +212,6 @@ class KnowledgeEngine:
         results.extend(paths)
         _reject_required_plugin_failures(tuple(results))
         self._registry.freeze()
-        return self._resolve_providers()
 
     def _resolve_providers(self) -> _ResolvedProviders:
         storage = self._registry.resolve_storage(_PRIMARY_SLOT)
@@ -386,7 +387,22 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
             registry.register_chunker_v2(DocType.SLIDES, SlidesChunker(), priority=0)
             registry.register_chunker_v2(DocType.DOCUMENTATION, DocumentationChunker(), priority=0)
 
-    return (CoreStoragePlugin(), CoreParserPlugin(), CoreChunkerPlugin())
+    class CoreEmbeddingPlugin:
+        name = "mnemo-core-embedding"
+        version = __version__
+        core_version_range = ">=0.0.0"
+
+        def capabilities(self) -> tuple[str, ...]:
+            return ("embedding",)
+
+        def register(self, registry: PluginRegistry) -> None:
+            from mnemo.embeddings.ollama import OllamaEmbedder
+
+            ollama = OllamaEmbedder(config.embedding)
+            registry.register_embedding_provider("primary", ollama, priority=0)
+            registry.register_startup_hook(ollama.initialize)
+
+    return (CoreStoragePlugin(), CoreParserPlugin(), CoreChunkerPlugin(), CoreEmbeddingPlugin())
 
 
 def _plugin_candidates(directory: Path) -> tuple[Path, ...]:

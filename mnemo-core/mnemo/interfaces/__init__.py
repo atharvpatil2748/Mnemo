@@ -1,5 +1,6 @@
 """Public Phase 1 Module 1.2 interface contracts."""
 
+from .cache import CacheInterface, CacheInterfaceV1
 from .chunker import ChunkerInterface, ChunkerInterfaceV1, ChunkerInterfaceV2
 from .embedding import EmbeddingProvider, EmbeddingProviderV1
 from .errors import (
@@ -61,6 +62,8 @@ __all__ = [
     "RERANKER_INTERFACE_VERSION",
     "RETRIEVER_INTERFACE_VERSION",
     "STORAGE_INTERFACE_VERSION",
+    "CacheInterface",
+    "CacheInterfaceV1",
     "ChunkerCapabilities",
     "ChunkerInterface",
     "ChunkerInterfaceV1",

@@ -94,7 +94,7 @@ def test_parser_protocol_capabilities_and_exact_plugin_registration() -> None:
     assert parser.capabilities().supports_images
     assert parser.capabilities().metadata["plugin.email-ingestion.thread_aware"] is True
 
-    registry = PluginRegistry(core_version="0.19.0")
+    registry = PluginRegistry(core_version="0.20.0")
     registry.load_plugin(plugin)
     assert isinstance(plugin, EmailIngestionPlugin)
     assert all(registry.resolve_parser(slot) is not None for slot in parser.supported_formats)
@@ -127,7 +127,7 @@ async def test_router_resolves_approved_extension_and_mime_slots(
     data = _eml()
     if filename.endswith(".mbox") or mime_type == "application/mbox":
         data = _mbox(data)
-    registry = PluginRegistry(core_version="0.19.0")
+    registry = PluginRegistry(core_version="0.20.0")
     registry.load_plugin(plugin)
     storage = AsyncMock(spec=StorageInterfaceV1)
     storage.get_document_by_content_hash.return_value = None
@@ -140,7 +140,7 @@ async def test_router_resolves_approved_extension_and_mime_slots(
 
 @pytest.mark.anyio
 async def test_msg_is_not_registered_and_router_reports_unsupported() -> None:
-    registry = PluginRegistry(core_version="0.19.0")
+    registry = PluginRegistry(core_version="0.20.0")
     registry.load_plugin(plugin)
     storage = AsyncMock(spec=StorageInterfaceV1)
     storage.get_document_by_content_hash.return_value = None

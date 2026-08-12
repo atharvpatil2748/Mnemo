@@ -7,7 +7,7 @@ import importlib.util
 import inspect
 import os
 import re
-from collections.abc import Callable, Iterable
+from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from pathlib import Path
@@ -248,6 +248,7 @@ class PluginRegistry:
         self._slots: dict[tuple[CapabilityKind, str, str], list[_Registration]] = {}
         self._plugins: dict[str, PluginDescriptor] = {}
         self._loading_plugin: PluginDescriptor | None = None
+        self._startup_hooks: list[Callable[[], Awaitable[None]]] = []
 
     @property
     def core_version(self) -> str:
@@ -262,6 +263,18 @@ class PluginRegistry:
     def freeze(self) -> None:
         """Prevent all future registration and loading mutations."""
         self._state = RegistryState.FROZEN
+
+    def register_startup_hook(self, hook: Callable[[], Awaitable[None]]) -> None:
+        """Register an asynchronous callback to run before capability validation."""
+        self._require_open()
+        if not callable(hook):
+            raise PluginValidationError("startup hook must be callable")
+        self._startup_hooks.append(hook)
+
+    async def execute_startup_hooks(self) -> None:
+        """Execute all registered startup hooks sequentially."""
+        for hook in self._startup_hooks:
+            await hook()
 
     def load_plugin(
         self,

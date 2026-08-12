@@ -6,8 +6,8 @@
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
 **Current baseline:** Phase 0, Phase 1, Phase 2, Phase 3 through Module 3.9,
-and Phase 4 Modules 4.1–4.10 are complete. Phase 4 is frozen at the final
-reconciled release; Phase 5 remains unimplemented.
+Phase 4 Modules 4.1–4.10, and Phase 5 Modules 5.1–5.3 are complete. Phase 4
+is frozen and released at v0.19.0. Phase 5 is COMPLETE / FROZEN / RELEASED at v0.20.0.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
 
@@ -100,7 +100,8 @@ Chunking quality is the single biggest lever on retrieval quality. More implemen
 ---
 
 ### Phase 5 — Embedding Pipeline
-**Duration:** Weeks 16–17  
+**Duration:** Weeks 16–17
+**Status:** COMPLETE / FROZEN / RELEASED (v0.20.0)
 **Goal:** Ollama embedding provider is implemented behind `EmbeddingProvider`. Content-addressable embedding cache is operational. Batch embedding works. Dimension mismatch detection works.
 
 ---
@@ -575,29 +576,35 @@ This is the most complex phase. It has six interdependent modules and integratio
 
 **Module 5.1 — Ollama Embedding Provider**
 
+> **Status:** Complete. `OllamaEmbedder` implemented behind `EmbeddingProviderV1` with ADR-0018 Option D startup-hook dimension discovery.
+
 | Task | Notes | Ref. Repo | Difficulty | Dependency |
 |---|---|---|---|---|
-| Implement `OllamaEmbedder` | `httpx` async calls to Ollama `/api/embeddings` | Open Notebook | Medium | Phase 4 |
-| Implement batch embedding | Chunk text list → vector list | — | Medium | 5.1a |
-| Implement dimension detection | Query model on init, cache `dimensions` property | — | Low | 5.1a |
-| Implement connection retry | Exponential backoff if Ollama unavailable | — | Medium | 5.1a |
+| ✅ Implement `OllamaEmbedder` | `httpx` async calls to Ollama `/api/embeddings` | Open Notebook | Medium | Phase 4 |
+| ✅ Implement batch embedding | Chunk text list → vector list | — | Medium | 5.1a |
+| ✅ Implement dimension detection | Query model on init via startup hook (ADR-0018 Option D), cache `dimensions` property | — | Low | 5.1a |
+| ✅ Implement connection retry | Exponential backoff if Ollama unavailable | — | Medium | 5.1a |
 
 **Module 5.2 — Embedding Cache**
 
+> **Status:** Complete. `SQLiteEmbeddingCache` and `CachedEmbeddingProvider` implemented behind `CacheInterfaceV1`.
+
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Implement content-addressable cache | `sha256(text) + "::" + model_name → vector BLOB` in SQLite | Architecture §15 | Medium | 5.1 |
-| Implement cache lookup | Check before calling Ollama | Low | 5.2a |
-| Implement cache write | After Ollama call, persist to SQLite | Low | 5.2a |
-| Implement dimension mismatch detection | Compare stored `dimensions` to current model's | Medium | 5.2a |
+| ✅ Implement content-addressable cache | `sha256(text) + "::" + model_name → vector BLOB` in SQLite (`SQLiteEmbeddingCache`) | Architecture §15 | Medium | 5.1 |
+| ✅ Implement cache lookup | Check before calling Ollama (`CachedEmbeddingProvider`) | Low | 5.2a |
+| ✅ Implement cache write | After Ollama call, persist to SQLite | Low | 5.2a |
+| ✅ Implement dimension mismatch detection | Compare stored `dimensions` to current model's | Medium | 5.2a |
 
 **Module 5.3 — Embedder Module**
 
+> **Status:** Complete. `EmbedderModule` implemented with parallel batching and chunk embedding idempotency.
+
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Implement `EmbedderModule` | Coordinates cache + provider | Medium | 5.1, 5.2 |
-| Implement parallel batch embedding | Async batch with concurrency limit | Medium | 5.3a |
-| Implement question embedding | Generate question embeddings separately for storage | Low | 5.3a |
+| ✅ Implement `EmbedderModule` | Coordinates cache + provider; skips chunks with existing embeddings | Medium | 5.1, 5.2 |
+| ✅ Implement parallel batch embedding | Async batch with `anyio.CapacityLimiter` concurrency control | Medium | 5.3a |
+| ⏳ Implement question embedding | Generate question embeddings separately for storage | Low | 5.3a |
 
 ---
 
@@ -2046,22 +2053,22 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ `GenericChunker`
 - ☑ `BookChunker` (ToC extraction + inference + 3 levels)
 - ☑ `PaperChunker` (section detection + canonical mapping)
-- □ `CodeChunker` (tree-sitter + 6 language grammars + call context)
+- ☑ `CodeChunker` (tree-sitter + 6 language grammars + call context)
 - ☑ `MarkdownChunker`
 - ☑ Accept ADR-0016 and implement the `email-ingestion` semantic boundary
 - ☑ `EmailChunker` (thread-aware message boundaries)
-- □ `ResumeChunker` (section isolation + role chunks)
-- □ `SlidesChunker`
-- □ `DocumentationChunker`
+- ☑ `ResumeChunker` (section isolation + role chunks)
+- ☑ `SlidesChunker`
+- ☑ `DocumentationChunker`
 - □ **[MILESTONE M4] 500-page book → chunks with correct heading_path hierarchy**
 
 ### Phase 5 — Embedding Pipeline
 
-- □ `OllamaEmbedder` (batch + retry + dimension detection)
-- □ Embedding cache (lookup + write)
-- □ Dimension mismatch detection
-- □ `EmbedderModule` (cache + provider + batch orchestration)
-- □ **[MILESTONE M5] 1000 chunks embedded and stored in Qdrant**
+- ☑ `OllamaEmbedder` (batch + retry + dimension detection)
+- ☑ Embedding cache (lookup + write)
+- ☑ Dimension mismatch detection
+- ☑ `EmbedderModule` (cache + provider + batch orchestration)
+- □ **[MILESTONE M5] 1000 chunks embedded and stored in Qdrant — pending live integration verification**
 
 ### Phase 6 — Retrieval Pipeline
 

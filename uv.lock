@@ -1058,12 +1058,14 @@ wheels = [
 
 [[package]]
 name = "mnemo-core"
-version = "0.19.0"
+version = "0.20.0"
 source = { editable = "mnemo-core" }
 dependencies = [
     { name = "aiosqlite" },
+    { name = "anyio" },
     { name = "beautifulsoup4" },
     { name = "html5lib" },
+    { name = "httpx" },
     { name = "langdetect" },
     { name = "markdown-it-py" },
     { name = "packaging" },
@@ -1089,8 +1091,10 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.22.1" },
+    { name = "anyio", specifier = ">=4.0" },
     { name = "beautifulsoup4", specifier = ">=4.15.0" },
     { name = "html5lib", specifier = ">=1.1" },
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "langdetect", specifier = ">=1.0.9" },
     { name = "markdown-it-py", specifier = ">=4.2.0" },
     { name = "packaging", specifier = ">=24,<27" },
@@ -1115,7 +1119,7 @@ requires-dist = [
 
 [[package]]
 name = "mnemo-email-ingestion"
-version = "0.19.0"
+version = "0.20.0"
 source = { editable = "plugins/email-ingestion" }
 dependencies = [
     { name = "mnemo-core" },
@@ -1126,7 +1130,7 @@ requires-dist = [{ name = "mnemo-core", editable = "mnemo-core" }]
 
 [[package]]
 name = "mnemo-server"
-version = "0.19.0"
+version = "0.20.0"
 source = { editable = "mnemo-server" }
 dependencies = [
     { name = "mnemo-core" },
@@ -1137,7 +1141,7 @@ requires-dist = [{ name = "mnemo-core", editable = "mnemo-core" }]
 
 [[package]]
 name = "mnemo-workspace"
-version = "0.19.0"
+version = "0.20.0"
 source = { virtual = "." }
 
 [package.dev-dependencies]
