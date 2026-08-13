@@ -222,6 +222,44 @@ def test_valid_toc_with_page_numbers_is_extracted_and_excluded() -> None:
     assert "Contents" not in draft.text
 
 
+def test_pdf_clickable_toc_and_word_numbered_chapter_title_are_preserved() -> None:
+    document = _document(
+        HeadingBlock(
+            ordinal=0,
+            text="Table of Contents with clickable chapter links:",
+            level=1,
+        ),
+        TextBlock(
+            ordinal=1,
+            text="CHAPTER ONE!40\nCHAPTER ELEVEN!577\nCHAPTER EIGHTEEN!827",
+        ),
+        HeadingBlock(ordinal=2, text="CHAPTER ELEVEN", level=1, page_number=577),
+        ImageBlock(ordinal=3, asset_id=uuid4(), page_number=577),
+        HeadingBlock(ordinal=4, text="The Universal Form", level=1, page_number=577),
+        HeadingBlock(ordinal=5, text="Revealed", level=1, page_number=577),
+        TextBlock(ordinal=6, text=_words(20, "body"), page_number=577),
+    )
+    draft = BookChunker().chunk(document, _context(document), WordCounter())[0]
+    assert draft.source_span == BlockSpan(start_ordinal=6, end_ordinal=6)
+    assert draft.heading_path[1:] == (
+        "CHAPTER ELEVEN",
+        "The Universal Form Revealed",
+    )
+    assert draft.metadata["chunker.book.hierarchy_source"] == "toc"
+
+
+def test_word_numbered_chapter_does_not_keep_front_matter_as_parent() -> None:
+    document = _document(
+        HeadingBlock(ordinal=0, text="Introduction", level=1),
+        TextBlock(ordinal=1, text=_words(15, "intro")),
+        HeadingBlock(ordinal=2, text="CHAPTER EIGHTEEN", level=1, page_number=10),
+        HeadingBlock(ordinal=3, text="Conclusion", level=1, page_number=10),
+        TextBlock(ordinal=4, text=_words(15, "body"), page_number=10),
+    )
+    drafts = BookChunker().chunk(document, _context(document), WordCounter())
+    assert drafts[-1].heading_path[1:] == ("CHAPTER EIGHTEEN", "Conclusion")
+
+
 def test_valid_toc_without_page_numbers_in_one_block_is_excluded() -> None:
     document = _document(
         TextBlock(

@@ -3,7 +3,7 @@
 from typing import Any
 from uuid import UUID
 
-from surrealdb import Surreal
+from surrealdb import AsyncSurreal as Surreal
 
 from mnemo.config import SurrealDBStorageConfig
 from mnemo.interfaces.storage import StorageInterfaceV1
@@ -52,15 +52,26 @@ class SurrealDBStore(StorageInterfaceV1):
         """Open the SurrealDB connection."""
         if self._connected:
             return
-        self._client = Surreal(str(self._config.url))
+        # surrealdb 2.x exposes separate blocking and asynchronous factories.
+        # Its asynchronous HTTP transport does not implement the connection
+        # lifecycle, while the websocket transport does. Preserve the public
+        # HTTP(S) configuration contract and adapt it at this backend boundary.
+        endpoint = str(self._config.url).rstrip("/")
+        if endpoint.endswith("/rpc"):
+            endpoint = endpoint.removesuffix("/rpc")
+        if endpoint.startswith("https://"):
+            endpoint = "wss://" + endpoint.removeprefix("https://")
+        elif endpoint.startswith("http://"):
+            endpoint = "ws://" + endpoint.removeprefix("http://")
+        self._client = Surreal(endpoint)
         await self._client.connect()  # type: ignore
-        await self._client.signin(  # type: ignore
+        await self._client.signin(
             {
                 "user": self._config.username,
                 "pass": self._config.password,
             }
         )
-        await self._client.use(self._config.namespace, self._config.database)  # type: ignore
+        await self._client.use(self._config.namespace, self._config.database)
         self._connected = True
 
     async def close(self) -> None:

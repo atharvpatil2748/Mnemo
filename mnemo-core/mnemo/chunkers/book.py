@@ -30,13 +30,18 @@ from mnemo.models import (
 _PARAGRAPH_BOUNDARY = re.compile(r"\n[ \t]*\n+")
 _SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?\u3002\uff01\uff1f])\s+")
 _WORD_WITH_SPACE = re.compile(r"\S+(?:\s+|$)")
-_TOC_MARKER = re.compile(r"^(?:table\s+of\s+)?contents$", re.IGNORECASE)
-_PAGE_SUFFIX = re.compile(r"(?:\.{2,}|\s{2,})\s*(?:\d+|[ivxlcdm]+)\s*$", re.IGNORECASE)
-_PART = re.compile(
-    r"^part\s+(?:[ivxlcdm]+|\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b", re.IGNORECASE
+_TOC_MARKER = re.compile(
+    r"^(?:table\s+of\s+)?contents(?:\s+with\s+clickable\s+chapter\s+links?)?:?$",
+    re.IGNORECASE,
 )
+_PAGE_SUFFIX = re.compile(r"(?:\.{2,}|\s{2,}|!)\s*(?:\d+|[ivxlcdm]+)\s*$", re.IGNORECASE)
+_CARDINAL = (
+    r"one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+    r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty"
+)
+_PART = re.compile(rf"^part\s+(?:[ivxlcdm]+|\d+|{_CARDINAL})\b", re.IGNORECASE)
 _CHAPTER = re.compile(
-    r"^(?:chapter|book)\s+(?:[ivxlcdm]+|\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b",
+    rf"^(?:chapter|book)\s+(?:[ivxlcdm]+|\d+|{_CARDINAL})\b",
     re.IGNORECASE,
 )
 _SECTION = re.compile(r"^section\b", re.IGNORECASE)
@@ -161,6 +166,9 @@ class BookChunker:
         section_index = 0
         chapter_index = 0
         part_active = False
+        pending_chapter_title_page: int | None = None
+        pending_chapter_title_level: int | None = None
+        pending_chapter_title_parts: list[str] = []
         level_map = dict(toc.levels)
         canonical_levels_informative = (
             len(
@@ -182,20 +190,54 @@ class BookChunker:
                     continue
                 level = self._heading_level(block, level_map, canonical_levels_informative)
                 kind = self._heading_kind(block.text)
+                if (
+                    kind == "other"
+                    and _DECIMAL.match(block.text.strip()) is None
+                    and pending_chapter_title_level is not None
+                    and block.page_number == pending_chapter_title_page
+                ):
+                    # Real PDFs often split a visual chapter title into multiple
+                    # same-font text blocks. Treat those adjacent source headings as
+                    # one deeper title without inventing or discarding any text.
+                    pending_chapter_title_parts.append(block.text)
+                    level = pending_chapter_title_level
+                    headings = headings[: level - 1]
+                    headings.append(" ".join(pending_chapter_title_parts))
+                    section_index += 1
+                    continue
                 if kind == "part":
                     part_active = True
                     chapter_index += 1
-                elif (
-                    kind == "chapter"
-                    or kind == "matter"
-                    or block.level == 1
-                    or (part_active and block.level == 2)
-                ):
+                    pending_chapter_title_page = None
+                    pending_chapter_title_level = None
+                    pending_chapter_title_parts.clear()
+                elif kind == "chapter":
+                    # A chapter is the top authored level unless a Part is active.
+                    # Font-only PDF parsers commonly emit every display heading at
+                    # canonical level 1, so preserving a previous front-matter
+                    # heading here would create a false parent for the chapter.
+                    level = 2 if part_active else 1
                     chapter_index += 1
+                    pending_chapter_title_page = block.page_number
+                    pending_chapter_title_level = min(4, level + 1)
+                    pending_chapter_title_parts.clear()
+                elif kind == "matter" or block.level == 1 or (part_active and block.level == 2):
+                    chapter_index += 1
+                    pending_chapter_title_page = None
+                    pending_chapter_title_level = None
+                    pending_chapter_title_parts.clear()
+
                 headings = headings[: level - 1]
                 headings.append(block.text)
                 section_index += 1
                 continue
+            # Decorative PDF images can occur between the chapter label and its
+            # visual title. An image without authored alt text emits no unit, so
+            # it must not terminate the pending chapter-title sequence.
+            if not (isinstance(block, ImageBlock) and block.alt_text is None):
+                pending_chapter_title_page = None
+                pending_chapter_title_level = None
+                pending_chapter_title_parts.clear()
             heading_path = title + tuple(headings)
             result.extend(
                 self._block_units(

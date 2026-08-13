@@ -10,7 +10,10 @@ from pydantic import HttpUrl
 
 
 class MockSurreal:
+    last_url: str | None = None
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        type(self).last_url = str(args[0]) if args else None
         self.connected = False
         self.signed_in = False
         self.namespace = ""
@@ -170,6 +173,8 @@ async def test_surreal_lifecycle(
     assert not health[0].healthy
 
     await store.open()
+
+    assert MockSurreal.last_url == "ws://localhost:8000"
 
     # Should be healthy after open
     health = await store.health_check()

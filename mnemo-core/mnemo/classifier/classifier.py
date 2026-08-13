@@ -58,7 +58,11 @@ class DocumentClassifier:
     _PAPER_PATTERN = re.compile(r"^(abstract|references|methodology|conclusion)$", re.IGNORECASE)
     # BOOK patterns
     _BOOK_PATTERN = re.compile(
-        r"^(chapter\s+\d+|prologue|epilogue|table of contents)$", re.IGNORECASE
+        r"^(?:chapter\s+(?:\d+|[ivxlcdm]+|"
+        r"one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+        r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)"
+        r"|prologue|epilogue|table of contents)$",
+        re.IGNORECASE,
     )
     # RESUME patterns
     _RESUME_PATTERN = re.compile(

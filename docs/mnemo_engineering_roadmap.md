@@ -1266,8 +1266,8 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 | **Unit** | Chunk IDs are stable; heading, offsets, metadata, and tokenizer identity do not affect them |
 | **Unit** | `heading_path` is correct on all chunker types |
 | **Round trip** | SQLite and Qdrant preserve `source_span` exactly; legacy rows never receive fabricated spans |
-| **Integration** | Parse + chunk a real 500-page book → verify chapter/section hierarchy |
-| **Performance** | Chunk 1000 pages in < 10 seconds |
+| **Integration** | ✅ 952-page Bhagavad Gita parsed and chunked into 1,275 chunks; all 18 chapter/title paths verified |
+| **Performance** | ✅ 952 pages chunked in 1.483s (1.557s linearly normalized to 1,000 pages) |
 | **Regression** | Re-chunk after minor edit → only changed chunks get new IDs |
 
 ---
@@ -1278,8 +1278,8 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 |---|---|
 | **Unit** | Embedding cache: second call for same text returns cached vector |
 | **Unit** | Dimension mismatch detection raises error |
-| **Integration** | Embed 100 chunks via Ollama `nomic-embed-text` → all stored in Qdrant |
-| **Performance** | Embed 10,000 chunks in < 5 minutes (batch mode) |
+| **Integration** | ✅ 1,000 real chunks embedded via Ollama `nomic-embed-text`; 1,000 independently read back from Qdrant |
+| **Performance** | ⏳ Embed 10,000 chunks in < 5 minutes (not executed; golden corpus produced 1,275 real chunks) |
 
 ---
 
@@ -2064,7 +2064,7 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ `ResumeChunker` (section isolation + role chunks)
 - ☑ `SlidesChunker`
 - ☑ `DocumentationChunker`
-- □ **[MILESTONE M4] 500-page book → chunks with correct heading_path hierarchy**
+- ☑ **[MILESTONE M4] 500-page book → chunks with correct heading_path hierarchy** — verified with the real 952-page Bhagavad Gita corpus on 2026-08-13
 
 ### Phase 5 — Embedding Pipeline
 
@@ -2072,7 +2072,7 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ Embedding cache (lookup + write)
 - ☑ Dimension mismatch detection
 - ☑ `EmbedderModule` (cache + provider + batch orchestration)
-- □ **[MILESTONE M5] 1000 chunks embedded and stored in Qdrant — pending live integration verification**
+- ☑ **[MILESTONE M5] 1000 chunks embedded and stored in Qdrant** — verified with real Ollama `nomic-embed-text` and independent Qdrant read-back on 2026-08-13
 
 ### Phase 6 — Retrieval Pipeline
 

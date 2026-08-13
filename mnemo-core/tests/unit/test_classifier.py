@@ -78,6 +78,16 @@ def test_classify_by_heading_book(
     assert classified.doc_type == DocType.BOOK
 
 
+@pytest.mark.parametrize("heading", ["CHAPTER ONE", "Chapter XVIII", "Chapter 18"])
+def test_classify_book_accepts_common_chapter_numbering(
+    classifier: DocumentClassifier,
+    empty_metadata: DocumentMetadata,
+    heading: str,
+) -> None:
+    result = build_result((RawHeadingBlock(ordinal=0, text=heading, level=1),), empty_metadata)
+    assert classifier.classify(result, filename="book.pdf").doc_type == DocType.BOOK
+
+
 def test_classify_by_heading_resume(
     classifier: DocumentClassifier, empty_metadata: DocumentMetadata
 ) -> None:
