@@ -2,7 +2,7 @@
 
 **Verdict:** PASS  
 **Executed:** 2026-08-15 15:30:00 UTC  
-**Mnemo:** v0.21.1  
+**Mnemo:** v0.21.2  
 **Platform:** Windows 11, Python 3.12.10, Intel64 Family 6 Model 183  
 
 ---
