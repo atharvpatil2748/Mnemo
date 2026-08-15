@@ -48,10 +48,10 @@ CODE_TABLE_EXTRACTION_SYSTEM_PROMPT = (
     "You are Mnemo's technical code and data extraction assistant. Answer QUESTION using ONLY "
     "factual data from CONTEXT.\n"
     "RULES:\n"
-    "1. For code files: output exact endpoint routes, HTTP methods, function names, parameter types, "
-    "and headers without alteration.\n"
-    "2. For tabular / CSV records: output exact field values (e.g. Roll numbers, CPI, Ranks, dates) "
-    "associated with the queried entity.\n"
+    "1. For code files: output exact endpoint routes, HTTP methods, function names, "
+    "parameter types, and headers without alteration.\n"
+    "2. For tabular / CSV records: output exact field values (e.g. Roll numbers, CPI, Ranks, "
+    "dates) associated with the queried entity.\n"
     "3. Every claim MUST include exact citations in the format [source:N].\n"
     "4. If the requested function, route, or table record is not in CONTEXT, state that the "
     "available context is insufficient."
@@ -61,10 +61,11 @@ CROSS_DOCUMENT_SYNTHESIS_SYSTEM_PROMPT = (
     "You are Mnemo's multi-source comparative reasoning assistant. Answer QUESTION by synthesizing "
     "evidence across multiple documents in CONTEXT.\n"
     "RULES:\n"
-    "1. When comparing entities across multiple sources, provide distinct breakdowns for each source "
-    "and state their respective claims clearly.\n"
+    "1. When comparing entities across multiple sources, provide distinct breakdowns for each "
+    "source and state their respective claims clearly.\n"
     "2. Do NOT merge conflicting data points from different documents.\n"
-    "3. Every claim MUST include exact citations in the format [source:N] indicating the exact document source.\n"
+    "3. Every claim MUST include exact citations in the format [source:N] indicating the exact "
+    "document source.\n"
     "4. If any requested document or entity is missing from CONTEXT, state what is missing."
 )
 
@@ -75,38 +76,77 @@ def classify_prompt_template(
 ) -> str:
     """Conservatively classify query intent into specialized prompt templates with S1 default."""
     q_lower = query.lower()
-    
+
     # 1. Multi-document cross synthesis
     cross_doc_signals = [
-        "compare", "contrast", "across", "between", "both resume and",
-        "connect with the server", "connect with server", "connects with",
-        "resume and coordinator", "resume with the y24", "resume with y24",
-        "academic record of atharv in his resume", "resume with coordinator"
+        "compare",
+        "contrast",
+        "across",
+        "between",
+        "both resume and",
+        "connect with the server",
+        "connect with server",
+        "connects with",
+        "resume and coordinator",
+        "resume with the y24",
+        "resume with y24",
+        "academic record of atharv in his resume",
+        "resume with coordinator",
     ]
     if any(sig in q_lower for sig in cross_doc_signals):
         return CROSS_DOCUMENT_SYNTHESIS_SYSTEM_PROMPT
-        
+
     # 2. Exact structural extraction (verses, tolerances, equations)
     exact_signals = [
-        "exact verse", "exact text", "exact tolerance", "exact estimated",
-        "exact cnc", "tolerances specified", "gita 2.47", "gita 18.66",
-        "gita 2.48", "gita 2.13", "gita 4.9", "chapter 2 text 47",
-        "chapter 18 text 66", "chapter 2 text 48", "chapter 2 text 13",
-        "chapter 4 text 9", "2.47", "18.66", "2.48", "2.13", "4.9",
-        "roughness spec", "chassis bulk strip"
+        "exact verse",
+        "exact text",
+        "exact tolerance",
+        "exact estimated",
+        "exact cnc",
+        "tolerances specified",
+        "gita 2.47",
+        "gita 18.66",
+        "gita 2.48",
+        "gita 2.13",
+        "gita 4.9",
+        "chapter 2 text 47",
+        "chapter 18 text 66",
+        "chapter 2 text 48",
+        "chapter 2 text 13",
+        "chapter 4 text 9",
+        "2.47",
+        "18.66",
+        "2.48",
+        "2.13",
+        "4.9",
+        "roughness spec",
+        "chassis bulk strip",
     ]
     if any(sig in q_lower for sig in exact_signals):
         return STRUCTURED_EXTRACTION_SYSTEM_PROMPT
-        
+
     # 3. Code functions, routes, and tabular CSV lookups
     code_table_signals = [
-        "server.js", "endpoint", "route", "routes", "function", "validatewhisperoutput",
-        "pcmtowav", "sse header", "y24 cpi", "csv table", "csv dataset",
-        "roll number", "roll 240", "cpi and rank", "rank of roll", "which student has rank"
+        "server.js",
+        "endpoint",
+        "route",
+        "routes",
+        "function",
+        "validatewhisperoutput",
+        "pcmtowav",
+        "sse header",
+        "y24 cpi",
+        "csv table",
+        "csv dataset",
+        "roll number",
+        "roll 240",
+        "cpi and rank",
+        "rank of roll",
+        "which student has rank",
     ]
     if any(sig in q_lower for sig in code_table_signals):
         return CODE_TABLE_EXTRACTION_SYSTEM_PROMPT
-        
+
     # 4. Conservative default for all general, conceptual, and semantic queries
     return GROUNDED_ANSWER_SYSTEM_PROMPT
 
@@ -159,12 +199,12 @@ class GroundedAnswerGenerator:
         synthesizer = self._registry.resolve_llm(SYNTHESIZER_SLOT)
         if synthesizer is None:
             raise DependencyUnavailableError("llm/synthesizer capability is unavailable")
-            
+
         system_prompt = classify_prompt_template(query, context_result)
         user_content = _user_message(query, context_result.rendered_context)
-        prompt_token_count = self._token_counter.count(
-            system_prompt
-        ) + self._token_counter.count(user_content)
+        prompt_token_count = self._token_counter.count(system_prompt) + self._token_counter.count(
+            user_content
+        )
         if prompt_token_count + max_output_tokens > synthesizer.max_context_tokens:
             raise ContractValidationError("answer prompt and output bound exceed model context")
 

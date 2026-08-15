@@ -26,6 +26,7 @@ from mnemo.interfaces import (
 from mnemo.models import (
     Chunk,
     CrossEncoderEvidence,
+    FusedChunkResult,
     RerankedChunkResult,
     RerankFallbackReason,
     RerankPolicy,
@@ -462,11 +463,18 @@ def _validate_positive_bound(value: int, field_name: str, maximum: int) -> None:
 
 def _get_item_source(item: FusedChunkResult) -> str:
     meta = getattr(item.chunk, "metadata", None)
-    raw = meta.get("source_name", "") if hasattr(meta, "get") else ""
-    if not raw and getattr(item.chunk, "heading_path", ()):
-        raw = item.chunk.heading_path[0]
+    raw = ""
+    if meta is not None and hasattr(meta, "get"):
+        val = meta.get("source_name", "")
+        if isinstance(val, str):
+            raw = val
     if not raw:
-        raw = getattr(item.chunk, "source_id", "") or getattr(item.chunk, "document_id", "")
+        hp = getattr(item.chunk, "heading_path", None)
+        if isinstance(hp, (tuple, list)) and len(hp) > 0:
+            raw = str(hp[0])
+    if not raw:
+        source_id = getattr(item.chunk, "source_id", "") or getattr(item.chunk, "document_id", "")
+        raw = str(source_id)
     return str(raw)
 
 
@@ -477,30 +485,110 @@ def _detect_query_relevant_sources(
 ) -> list[str]:
     """Detect distinct source documents genuinely relevant to the query."""
     q_lower = query.lower()
-    
+
     doc_signatures = {
-        "Atharv_Patil_RESUME_SDE.pdf": ["resume", "atharv", "skills", "experience", "education", "scholastic", "award", "arvsal", "spi", "cpi"],
-        "Bhagavad-gita-As-It-Is.pdf": ["gita", "bhagavad", "verse", "chapter", "text", "krishna", "krsna", "arjuna", "karma", "duty", "surrender", "sarva-dharman"],
-        "Coordinator Application 2026–27.pptx": ["coordinator", "application", "fine arts", "budget", "art fest", "kintsugi", "secretar", "club"],
-        "ME333 - Exp2-LabReport_To_Submit.docx": ["me333", "lab report", "vibration", "sdof", "accelerometer", "frequency", "mass", "damper", "resonance", "transmissibility", "b6"],
-        "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1).pptx": ["me361", "manufacturing", "iphone", "chassis", "tolerance", "milling", "stripping", "mmw", "sulawesi", "roughness"],
-        "server.js": ["server.js", "endpoint", "route", "express", "whisper", "tts", "validatewhisperoutput", "pcmtowav", "buffer", "speech", "intent", "/command", "/speak", "/stream"],
-        "Y24_CPI.csv": ["cpi", "rank", "roll", "y24", "csv", "240740", "inesh", "student", "dataset"]
+        "Atharv_Patil_RESUME_SDE.pdf": [
+            "resume",
+            "atharv",
+            "skills",
+            "experience",
+            "education",
+            "scholastic",
+            "award",
+            "arvsal",
+            "spi",
+            "cpi",
+        ],
+        "Bhagavad-gita-As-It-Is.pdf": [
+            "gita",
+            "bhagavad",
+            "verse",
+            "chapter",
+            "text",
+            "krishna",
+            "krsna",
+            "arjuna",
+            "karma",
+            "duty",
+            "surrender",
+            "sarva-dharman",
+        ],
+        "Coordinator Application 2026\u201327.pptx": [
+            "coordinator",
+            "application",
+            "fine arts",
+            "budget",
+            "art fest",
+            "kintsugi",
+            "secretar",
+            "club",
+        ],
+        "ME333 - Exp2-LabReport_To_Submit.docx": [
+            "me333",
+            "lab report",
+            "vibration",
+            "sdof",
+            "accelerometer",
+            "frequency",
+            "mass",
+            "damper",
+            "resonance",
+            "transmissibility",
+            "b6",
+        ],
+        "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1).pptx": [
+            "me361",
+            "manufacturing",
+            "iphone",
+            "chassis",
+            "tolerance",
+            "milling",
+            "stripping",
+            "mmw",
+            "sulawesi",
+            "roughness",
+        ],
+        "server.js": [
+            "server.js",
+            "endpoint",
+            "route",
+            "express",
+            "whisper",
+            "tts",
+            "validatewhisperoutput",
+            "pcmtowav",
+            "buffer",
+            "speech",
+            "intent",
+            "/command",
+            "/speak",
+            "/stream",
+        ],
+        "Y24_CPI.csv": [
+            "cpi",
+            "rank",
+            "roll",
+            "y24",
+            "csv",
+            "240740",
+            "inesh",
+            "student",
+            "dataset",
+        ],
     }
-    
+
     matched_sources: set[str] = set()
     for item in fused_items:
         source_name = _get_item_source(item)
-            
+
         for doc_key, keywords in doc_signatures.items():
-            if doc_key.lower() in source_name.lower():
-                if any(kw in q_lower for kw in keywords):
-                    matched_sources.add(source_name)
-                    
+            if doc_key.lower() in source_name.lower() and any(kw in q_lower for kw in keywords):
+                matched_sources.add(source_name)
+
         score = scores_by_id.get(item.chunk.id, 0.0)
         if score >= 0.50 and source_name:
             matched_sources.add(source_name)
-            
+
     return list(matched_sources)
 
 
@@ -512,9 +600,9 @@ def _apply_diversity_ordering(
     """Applies diversity-aware ordering while preserving strict determinism and relevance."""
     if not fused_items:
         return []
-        
+
     items_list = list(fused_items)
-    
+
     sorted_by_score = sorted(
         items_list,
         key=lambda item: (
@@ -523,21 +611,21 @@ def _apply_diversity_ordering(
             item.chunk.id,
         ),
     )
-    
+
     relevant_sources = _detect_query_relevant_sources(query, tuple(fused_items), scores_by_id)
     if len(relevant_sources) <= 1:
         return sorted_by_score
-        
+
     selected_chunks: list[FusedChunkResult] = []
     selected_ids: set[str] = set()
-    
+
     source_best_score: dict[str, float] = {}
     for s in relevant_sources:
         s_cands = [item for item in sorted_by_score if _get_item_source(item) == s]
         source_best_score[s] = scores_by_id.get(s_cands[0].chunk.id, 0.0) if s_cands else -999.0
-        
+
     sorted_sources = sorted(relevant_sources, key=lambda s: source_best_score[s], reverse=True)
-    
+
     num_to_take = 2 if len(sorted_sources) <= 2 else 1
     for round_idx in range(num_to_take):
         for s in sorted_sources:
@@ -547,10 +635,10 @@ def _apply_diversity_ordering(
                 if cand.chunk.id not in selected_ids:
                     selected_chunks.append(cand)
                     selected_ids.add(cand.chunk.id)
-                
+
     for item in sorted_by_score:
         if item.chunk.id not in selected_ids:
             selected_chunks.append(item)
             selected_ids.add(item.chunk.id)
-            
+
     return selected_chunks
