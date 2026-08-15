@@ -1,6 +1,7 @@
 """SQLite FTS5 storage backend."""
 
 import json
+import unicodedata
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -10,7 +11,7 @@ from uuid import UUID
 
 import aiosqlite
 
-from mnemo.interfaces.errors import ConflictError
+from mnemo.interfaces.errors import ConflictError, IntegrityError, StorageError
 from mnemo.interfaces.types import (
     EmbeddingVector,
     HealthStatus,
@@ -40,8 +41,9 @@ from mnemo.models import (
 from mnemo.models.chunks import ChunkPosition, ChunkType
 from mnemo.models.documents import DocumentMetadata, DocumentVersion, DocumentVersionStatus
 from mnemo.models.notebook import InsightType, NoteOrigin, TurnRole
+from mnemo.storage.retrieval_projection import RetrievalMetadataProjection
 
-_SCHEMA_VERSION = 2
+_SCHEMA_VERSION = 4
 
 _SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -89,6 +91,16 @@ CREATE TABLE IF NOT EXISTS chunks (
     parent_chunk_id TEXT REFERENCES chunks(id) ON DELETE CASCADE,
     sibling_ids TEXT NOT NULL,
     metadata TEXT NOT NULL
+);
+
+-- Version-aware derived metadata for pre-ranking sparse filters. Canonical
+-- truth remains ParsedDocument and DocumentVersion.
+CREATE TABLE IF NOT EXISTS retrieval_version_metadata (
+    document_id TEXT NOT NULL REFERENCES documents(document_id) ON DELETE CASCADE,
+    version_id TEXT NOT NULL REFERENCES document_versions(version_id) ON DELETE CASCADE,
+    doc_type TEXT NOT NULL,
+    publication_date TEXT,
+    PRIMARY KEY (document_id, version_id)
 );
 
 -- Notebook Tables
@@ -222,9 +234,15 @@ END;
 CREATE INDEX IF NOT EXISTS idx_document_versions_document_id ON document_versions(document_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_version_id ON chunks(version_id);
+CREATE INDEX IF NOT EXISTS idx_retrieval_version_metadata_type
+ON retrieval_version_metadata(doc_type);
+CREATE INDEX IF NOT EXISTS idx_retrieval_version_metadata_date
+ON retrieval_version_metadata(publication_date);
 CREATE INDEX IF NOT EXISTS idx_chunks_parent_id ON chunks(parent_chunk_id);
 CREATE INDEX IF NOT EXISTS idx_sources_notebook_id ON sources(notebook_id);
 CREATE INDEX IF NOT EXISTS idx_sources_document_id ON sources(document_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_sources_notebook_document
+ON sources(notebook_id, document_id);
 CREATE INDEX IF NOT EXISTS idx_notes_notebook_id ON notes(notebook_id);
 CREATE INDEX IF NOT EXISTS idx_insights_notebook_id ON insights(notebook_id);
 CREATE INDEX IF NOT EXISTS idx_insights_source_id ON insights(source_id);
@@ -251,6 +269,21 @@ async def _transaction(db: aiosqlite.Connection) -> AsyncIterator[None]:
 
 def _iso_to_dt(iso_str: str) -> datetime:
     return datetime.fromisoformat(iso_str)
+
+
+def _fts_terms(query: str) -> tuple[str, ...]:
+    """Split user text into Unicode letter/mark/number runs without FTS syntax."""
+    terms: list[str] = []
+    current: list[str] = []
+    for character in query:
+        if unicodedata.category(character)[0] in {"L", "M", "N"}:
+            current.append(character)
+        elif current:
+            terms.append("".join(current))
+            current = []
+    if current:
+        terms.append("".join(current))
+    return tuple(terms)
 
 
 class SQLiteStore:
@@ -308,6 +341,55 @@ class SQLiteStore:
             await db.execute(
                 "INSERT INTO schema_versions (version, applied_at) VALUES (?, ?)",
                 (2, datetime.now().isoformat()),
+            )
+            await db.commit()
+        if current_version < 3:
+            async with db.execute(
+                """
+                SELECT notebook_id, document_id, COUNT(*)
+                FROM sources
+                GROUP BY notebook_id, document_id
+                HAVING COUNT(*) > 1
+                LIMIT 1
+                """
+            ) as cursor:
+                duplicate = await cursor.fetchone()
+            if duplicate is not None:
+                raise StorageError(
+                    "SQLite migration 3 cannot enforce unique Source membership: "
+                    f"notebook {duplicate[0]} and document {duplicate[1]} have "
+                    f"{duplicate[2]} associations"
+                )
+            await db.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_sources_notebook_document "
+                "ON sources(notebook_id, document_id)"
+            )
+            await db.execute(
+                "INSERT INTO schema_versions (version, applied_at) VALUES (?, ?)",
+                (3, datetime.now().isoformat()),
+            )
+            await db.commit()
+        if current_version < 4:
+            await db.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS retrieval_version_metadata (
+                    document_id TEXT NOT NULL
+                        REFERENCES documents(document_id) ON DELETE CASCADE,
+                    version_id TEXT NOT NULL
+                        REFERENCES document_versions(version_id) ON DELETE CASCADE,
+                    doc_type TEXT NOT NULL,
+                    publication_date TEXT,
+                    PRIMARY KEY (document_id, version_id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_retrieval_version_metadata_type
+                    ON retrieval_version_metadata(doc_type);
+                CREATE INDEX IF NOT EXISTS idx_retrieval_version_metadata_date
+                    ON retrieval_version_metadata(publication_date);
+                """
+            )
+            await db.execute(
+                "INSERT INTO schema_versions (version, applied_at) VALUES (?, ?)",
+                (4, datetime.now().isoformat()),
             )
             await db.commit()
 
@@ -677,23 +759,28 @@ class SQLiteStore:
         """Insert or replace a source association."""
         db = self._require_open()
 
-        async with db.execute(
-            """
-            INSERT INTO sources (source_id, notebook_id, document_id, created_at)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(source_id) DO UPDATE SET
-                notebook_id=excluded.notebook_id,
-                document_id=excluded.document_id,
-                created_at=excluded.created_at
-            """,
-            (
-                str(source.source_id),
-                str(source.notebook_id),
-                str(source.document_id),
-                _dt_to_iso(source.created_at),
-            ),
-        ):
-            await db.commit()
+        try:
+            async with db.execute(
+                """
+                INSERT INTO sources (source_id, notebook_id, document_id, created_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(source_id) DO UPDATE SET
+                    notebook_id=excluded.notebook_id,
+                    document_id=excluded.document_id,
+                    created_at=excluded.created_at
+                """,
+                (
+                    str(source.source_id),
+                    str(source.notebook_id),
+                    str(source.document_id),
+                    _dt_to_iso(source.created_at),
+                ),
+            ):
+                await db.commit()
+        except aiosqlite.IntegrityError as exc:
+            raise ConflictError(
+                "a notebook cannot contain duplicate Source associations for one document"
+            ) from exc
 
     async def get_source(self, source_id: UUID) -> Source | None:
         """Return a source association when present."""
@@ -713,6 +800,52 @@ class SQLiteStore:
                 document_id=UUID(row[2]),
                 created_at=_iso_to_dt(row[3]),
             )
+
+    async def _list_sources_for_document(self, document_id: UUID) -> tuple[Source, ...]:
+        """Return all canonical notebook associations for one logical document."""
+        db = self._require_open()
+        async with db.execute(
+            """
+            SELECT source_id, notebook_id, document_id, created_at
+            FROM sources
+            WHERE document_id = ?
+            ORDER BY source_id ASC
+            """,
+            (str(document_id),),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return tuple(
+            Source(
+                source_id=UUID(row[0]),
+                notebook_id=UUID(row[1]),
+                document_id=UUID(row[2]),
+                created_at=_iso_to_dt(row[3]),
+            )
+            for row in rows
+        )
+
+    async def _list_sources_for_notebook(self, notebook_id: UUID) -> tuple[Source, ...]:
+        """Return all canonical source associations owned by one notebook."""
+        db = self._require_open()
+        async with db.execute(
+            """
+            SELECT source_id, notebook_id, document_id, created_at
+            FROM sources
+            WHERE notebook_id = ?
+            ORDER BY source_id ASC
+            """,
+            (str(notebook_id),),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return tuple(
+            Source(
+                source_id=UUID(row[0]),
+                notebook_id=UUID(row[1]),
+                document_id=UUID(row[2]),
+                created_at=_iso_to_dt(row[3]),
+            )
+            for row in rows
+        )
 
     async def delete_source(self, source_id: UUID) -> bool:
         """Delete a source association and report whether it existed."""
@@ -1300,6 +1433,86 @@ class SQLiteStore:
         async with _transaction(db):
             await self._upsert_chunk_rows(db, chunks)
 
+    async def _upsert_chunks_with_projection(
+        self,
+        chunks: tuple[Chunk, ...],
+        projection: RetrievalMetadataProjection,
+    ) -> None:
+        """Atomically persist chunks and their exact-version derived metadata."""
+        if not chunks:
+            return
+        document_id = chunks[0].document_id
+        version_id = chunks[0].version_id
+        if any(
+            chunk.document_id != document_id or chunk.version_id != version_id for chunk in chunks
+        ):
+            raise ValueError("projected chunk batches must share one document version")
+        db = self._require_open()
+        async with _transaction(db):
+            await db.execute(
+                """
+                INSERT INTO retrieval_version_metadata (
+                    document_id, version_id, doc_type, publication_date
+                ) VALUES (?, ?, ?, ?)
+                ON CONFLICT(document_id, version_id) DO UPDATE SET
+                    doc_type=excluded.doc_type,
+                    publication_date=excluded.publication_date
+                """,
+                (
+                    str(document_id),
+                    str(version_id),
+                    projection.doc_type.value,
+                    projection.publication_date.isoformat()
+                    if projection.publication_date is not None
+                    else None,
+                ),
+            )
+            await self._upsert_chunk_rows(db, chunks)
+
+    async def _snapshot_retrieval_projection(
+        self, document_id: UUID, version_id: UUID
+    ) -> tuple[str, str | None] | None:
+        """Capture derived version metadata for compensating a failed index write."""
+        db = self._require_open()
+        async with db.execute(
+            """
+            SELECT doc_type, publication_date
+            FROM retrieval_version_metadata
+            WHERE document_id = ? AND version_id = ?
+            """,
+            (str(document_id), str(version_id)),
+        ) as cursor:
+            row = await cursor.fetchone()
+        return None if row is None else (str(row[0]), row[1])
+
+    async def _restore_retrieval_projection(
+        self,
+        document_id: UUID,
+        version_id: UUID,
+        snapshot: tuple[str, str | None] | None,
+    ) -> None:
+        """Restore or remove one derived projection during compensation."""
+        db = self._require_open()
+        async with _transaction(db):
+            if snapshot is None:
+                await db.execute(
+                    "DELETE FROM retrieval_version_metadata "
+                    "WHERE document_id = ? AND version_id = ?",
+                    (str(document_id), str(version_id)),
+                )
+            else:
+                await db.execute(
+                    """
+                    INSERT INTO retrieval_version_metadata (
+                        document_id, version_id, doc_type, publication_date
+                    ) VALUES (?, ?, ?, ?)
+                    ON CONFLICT(document_id, version_id) DO UPDATE SET
+                        doc_type=excluded.doc_type,
+                        publication_date=excluded.publication_date
+                    """,
+                    (str(document_id), str(version_id), snapshot[0], snapshot[1]),
+                )
+
     async def _snapshot_chunks(self, chunk_ids: tuple[str, ...]) -> tuple[Chunk, ...]:
         """Capture the current SQLite values for affected chunk identities."""
         if not chunk_ids:
@@ -1465,33 +1678,56 @@ class SQLiteStore:
         """Run bounded sparse retrieval utilizing FTS5 BM25."""
         db = self._require_open()
 
-        # Very basic conversion for FTS5 syntax
-        clean_query = query.replace('"', '""')
-        fts_query = f'"{clean_query}"'
+        if not isinstance(query, str):
+            raise TypeError("query must be a string")
+        terms = _fts_terms(query)
+        if not terms:
+            raise ValueError("query must contain searchable text")
+        if not isinstance(filters, MetadataFilter):
+            raise TypeError("filters must be MetadataFilter")
+        if isinstance(top_k, bool) or not isinstance(top_k, int):
+            raise TypeError("top_k must be an integer")
+        if top_k < 1:
+            raise ValueError("top_k must be positive")
+        # Quoted OR terms prevent user text from becoming FTS syntax while allowing
+        # natural-language questions to retrieve rows without requiring an exact phrase.
+        fts_query = " OR ".join(f'"{term.replace(chr(34), chr(34) * 2)}"' for term in terms)
 
         sql = """
-        SELECT c.id, bm25(fts_chunks) AS score
+        SELECT c.id, -bm25(fts_chunks) AS score
         FROM fts_chunks
         JOIN chunks c ON fts_chunks.rowid = c.rowid
+        LEFT JOIN retrieval_version_metadata rvm
+          ON rvm.document_id = c.document_id AND rvm.version_id = c.version_id
         WHERE fts_chunks MATCH ?
         """
         params: list[Any] = [fts_query]
 
-        if filters.notebook_id:
-            sql += " AND c.document_id IN (SELECT document_id FROM sources WHERE notebook_id = ?)"
-            params.append(str(filters.notebook_id))
-
-        if filters.source_ids:
-            source_placeholders = ",".join(["?"] * len(filters.source_ids))
-            sql += f" AND c.document_id IN (SELECT document_id FROM sources WHERE source_id IN ({source_placeholders}))"  # noqa: E501
-            params.extend([str(s) for s in filters.source_ids])
+        if filters.notebook_id is not None or filters.source_ids:
+            sql += " AND EXISTS (SELECT 1 FROM sources s WHERE s.document_id = c.document_id"
+            if filters.notebook_id is not None:
+                sql += " AND s.notebook_id = ?"
+                params.append(str(filters.notebook_id))
+            if filters.source_ids:
+                source_placeholders = ",".join(["?"] * len(filters.source_ids))
+                sql += f" AND s.source_id IN ({source_placeholders})"
+                params.extend([str(source_id) for source_id in filters.source_ids])
+            sql += ")"
 
         if filters.doc_types:
             type_placeholders = ",".join(["?"] * len(filters.doc_types))
-            sql += f" AND c.document_id IN (SELECT document_id FROM documents WHERE type IN ({type_placeholders}))"  # noqa: E501
+            sql += f" AND rvm.doc_type IN ({type_placeholders})"
             params.extend([t.value for t in filters.doc_types])
 
-        sql += " ORDER BY score LIMIT ?"
+        if filters.date_after is not None:
+            sql += " AND rvm.publication_date IS NOT NULL AND rvm.publication_date >= ?"
+            params.append(filters.date_after.isoformat())
+
+        if filters.date_before is not None:
+            sql += " AND rvm.publication_date IS NOT NULL AND rvm.publication_date <= ?"
+            params.append(filters.date_before.isoformat())
+
+        sql += " ORDER BY score DESC, c.id ASC LIMIT ?"
         params.append(top_k)
 
         async with db.execute(sql, params) as cursor:
@@ -1500,13 +1736,16 @@ class SQLiteStore:
         results: list[ScoredChunk] = []
         for chunk_id, score in rows:
             chunk = await self.get_chunk(chunk_id)
-            if chunk is not None:
-                # FTS5 bm25 score is negative (more negative = more relevant), so we invert it for returning  # noqa: E501
-                results.append(
-                    ScoredChunk(
-                        chunk=chunk, score=abs(score), source="sqlite-fts5", rank=len(results) + 1
-                    )
+            if chunk is None:
+                raise IntegrityError("FTS result does not have a canonical chunk row")
+            results.append(
+                ScoredChunk(
+                    chunk=chunk,
+                    score=float(score),
+                    source="sqlite-fts5",
+                    rank=len(results) + 1,
                 )
+            )
 
         return tuple(results)
 

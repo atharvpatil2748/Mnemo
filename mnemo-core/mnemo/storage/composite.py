@@ -5,7 +5,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from uuid import UUID
 
-from mnemo.interfaces.errors import ContractValidationError, StorageError
+from mnemo.interfaces.errors import ContractValidationError, IntegrityError, StorageError
 from mnemo.interfaces.types import (
     EmbeddingVector,
     HealthStatus,
@@ -34,6 +34,7 @@ from mnemo.models import (
 
 from .filesystem import FilesystemBlobStore
 from .qdrant import QdrantStore
+from .retrieval_projection import RetrievalMetadataProjection
 from .sqlite import SQLiteStore
 from .surrealdb import SurrealDBStore
 
@@ -76,6 +77,7 @@ class CompositeStorage:
         self._qdr = qdrant
         self._sur = surrealdb
         self._chunk_write_lock = asyncio.Lock()
+        self._projection_lock = asyncio.Lock()
 
     async def open(self) -> None:
         try:
@@ -183,19 +185,73 @@ class CompositeStorage:
         return await self._sql.get_notebook(notebook_id)
 
     async def delete_notebook(self, notebook_id: UUID) -> bool:
-        return await self._sql.delete_notebook(notebook_id)
+        async with self._projection_lock:
+            if await self._sql.get_notebook(notebook_id) is None:
+                return False
+            sources = await self._sql._list_sources_for_notebook(notebook_id)
+            affected = tuple(source.document_id for source in sources)
+            try:
+                await self._refresh_memberships_excluding_notebook(affected, notebook_id)
+            except Exception as error:
+                failures = await self._compensate_memberships(affected)
+                if failures:
+                    raise StorageError(
+                        "notebook delete pre-projection failed and compensation was incomplete"
+                    ) from error
+                raise StorageError("notebook delete pre-projection failed") from error
+            try:
+                return await self._sql.delete_notebook(notebook_id)
+            except Exception as error:
+                failures = await self._compensate_memberships(affected)
+                if failures:
+                    raise StorageError(
+                        "notebook delete failed and projection compensation was incomplete"
+                    ) from error
+                raise StorageError("notebook delete failed; projection restored") from error
 
     async def list_notebooks(self, limit: int, cursor: str | None) -> Page[Notebook]:
         return await self._sql.list_notebooks(limit, cursor)
 
     async def upsert_source(self, source: Source) -> None:
-        return await self._sql.upsert_source(source)
+        async with self._projection_lock:
+            previous = await self._sql.get_source(source.source_id)
+            await self._sql.upsert_source(source)
+            affected: tuple[UUID, ...] = (source.document_id,)
+            if previous is not None and previous.document_id != source.document_id:
+                affected = (previous.document_id, source.document_id)
+            try:
+                await self._refresh_memberships(affected)
+            except Exception as error:
+                failures = await self._restore_source(source.source_id, previous, affected)
+                if failures:
+                    raise StorageError(
+                        "source upsert projection failed and compensation was incomplete"
+                    ) from error
+                raise StorageError(
+                    "source upsert projection failed; canonical write rolled back"
+                ) from error
 
     async def get_source(self, source_id: UUID) -> Source | None:
         return await self._sql.get_source(source_id)
 
     async def delete_source(self, source_id: UUID) -> bool:
-        return await self._sql.delete_source(source_id)
+        async with self._projection_lock:
+            previous = await self._sql.get_source(source_id)
+            if previous is None:
+                return False
+            deleted = await self._sql.delete_source(source_id)
+            try:
+                await self._refresh_memberships((previous.document_id,))
+            except Exception as error:
+                failures = await self._restore_source(source_id, previous, (previous.document_id,))
+                if failures:
+                    raise StorageError(
+                        "source delete projection failed and compensation was incomplete"
+                    ) from error
+                raise StorageError(
+                    "source delete projection failed; canonical write rolled back"
+                ) from error
+            return deleted
 
     async def list_sources(
         self,
@@ -324,22 +380,33 @@ class CompositeStorage:
         if len(frozenset(chunk_ids)) != len(chunk_ids):
             raise ContractValidationError("chunk batches must not contain duplicate chunk IDs")
 
-        async with self._chunk_write_lock:
+        async with self._projection_lock, self._chunk_write_lock:
             try:
+                projection = await self._build_retrieval_projection(document_id, version_id)
                 sqlite_snapshot = await self._sql._snapshot_chunks(chunk_ids)
-                qdrant_snapshot = await self._qdr._snapshot_chunks(chunk_ids)
-                await self._sql.upsert_chunks(chunks)
+                sqlite_projection = await self._sql._snapshot_retrieval_projection(
+                    document_id, version_id
+                )
+                qdrant_snapshot = await self._qdr._snapshot_chunks_with_projection(chunk_ids)
+                await self._sql._upsert_chunks_with_projection(chunks, projection)
             except Exception as e:
                 if isinstance(e, StorageError):
                     raise
                 raise StorageError(f"multi-store write failed: {e}") from e
 
             compensator = _Compensator()
+            compensator.add(
+                lambda: self._sql._restore_retrieval_projection(
+                    document_id, version_id, sqlite_projection
+                )
+            )
             compensator.add(lambda: self._sql._restore_chunk_snapshot(chunk_ids, sqlite_snapshot))
             # Register before the vector write because Qdrant may partially apply a batch.
-            compensator.add(lambda: self._qdr._restore_chunk_snapshot(chunk_ids, qdrant_snapshot))
+            compensator.add(
+                lambda: self._qdr._restore_projected_chunk_snapshot(chunk_ids, qdrant_snapshot)
+            )
             try:
-                await self._qdr.upsert_chunks(chunks)
+                await self._qdr._upsert_chunks_with_projection(chunks, projection)
             except Exception as e:
                 rollback_failures = await compensator.rollback()
                 if rollback_failures:
@@ -372,6 +439,88 @@ class CompositeStorage:
         top_k: int,
     ) -> tuple[ScoredChunk, ...]:
         return await self._qdr.search_dense(embedding, filters, top_k)
+
+    async def _build_retrieval_projection(
+        self,
+        document_id: UUID,
+        version_id: UUID,
+    ) -> RetrievalMetadataProjection:
+        """Derive one exact-version vector payload from canonical stores."""
+        document = await self._sql.get_document(document_id)
+        if document is None:
+            raise IntegrityError("cannot index chunks without their canonical document")
+        version = next(
+            (candidate for candidate in document.versions if candidate.version_id == version_id),
+            None,
+        )
+        if version is None:
+            raise IntegrityError("chunk version does not belong to its canonical document")
+        parsed = await self._fs.get_parsed_document(version_id)
+        if parsed is None:
+            raise IntegrityError("cannot index chunks without exact-version parsed IR")
+        if parsed.metadata.content_hash != version.content_hash:
+            raise IntegrityError("parsed IR content hash does not match document version")
+        sources = await self._sql._list_sources_for_document(document_id)
+        return RetrievalMetadataProjection(
+            doc_type=parsed.doc_type,
+            publication_date=version.metadata.publication_date,
+            source_ids=tuple(sorted({source.source_id for source in sources}, key=str)),
+            notebook_ids=tuple(sorted({source.notebook_id for source in sources}, key=str)),
+        )
+
+    async def _refresh_memberships(self, document_ids: tuple[UUID, ...]) -> None:
+        """Rebuild mutable membership payloads from canonical Source rows."""
+        for document_id in tuple(dict.fromkeys(document_ids)):
+            sources = await self._sql._list_sources_for_document(document_id)
+            await self._qdr._set_document_membership(
+                document_id,
+                source_ids=tuple(sorted({source.source_id for source in sources}, key=str)),
+                notebook_ids=tuple(sorted({source.notebook_id for source in sources}, key=str)),
+            )
+
+    async def _refresh_memberships_excluding_notebook(
+        self,
+        document_ids: tuple[UUID, ...],
+        notebook_id: UUID,
+    ) -> None:
+        """Project post-delete membership before a notebook cascade."""
+        for document_id in tuple(dict.fromkeys(document_ids)):
+            sources = tuple(
+                source
+                for source in await self._sql._list_sources_for_document(document_id)
+                if source.notebook_id != notebook_id
+            )
+            await self._qdr._set_document_membership(
+                document_id,
+                source_ids=tuple(sorted({source.source_id for source in sources}, key=str)),
+                notebook_ids=tuple(sorted({source.notebook_id for source in sources}, key=str)),
+            )
+
+    async def _compensate_memberships(
+        self, document_ids: tuple[UUID, ...]
+    ) -> tuple[Exception, ...]:
+        try:
+            await self._refresh_memberships(document_ids)
+        except Exception as error:
+            return (error,)
+        return ()
+
+    async def _restore_source(
+        self,
+        source_id: UUID,
+        previous: Source | None,
+        affected: tuple[UUID, ...],
+    ) -> tuple[Exception, ...]:
+        compensator = _Compensator()
+        compensator.add(lambda: self._refresh_memberships(affected))
+        if previous is None:
+            compensator.add(lambda: self._delete_source_for_compensation(source_id))
+        else:
+            compensator.add(lambda: self._sql.upsert_source(previous))
+        return await compensator.rollback()
+
+    async def _delete_source_for_compensation(self, source_id: UUID) -> None:
+        await self._sql.delete_source(source_id)
 
     async def search_sparse(
         self,

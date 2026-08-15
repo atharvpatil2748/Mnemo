@@ -36,6 +36,7 @@ Thumbs.db
 data/
 qdrant_storage/
 surrealdb_data/
+scratch/
 
 # Local read-only study repositories; never vendor third-party sources.
 /references/

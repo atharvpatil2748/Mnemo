@@ -137,7 +137,19 @@ def _atomic_write(path: Path, data: bytes) -> None:
             os.write(fd, data)
         finally:
             os.close(fd)
-        os.replace(tmp_path, path)
+        try:
+            os.replace(tmp_path, path)
+        except PermissionError:  # pragma: no cover
+            import time
+
+            for attempt in range(4):
+                time.sleep(0.2)
+                try:
+                    os.replace(tmp_path, path)
+                    break
+                except PermissionError:
+                    if attempt == 3:
+                        raise
     except BaseException:
         with contextlib.suppress(OSError):
             os.unlink(tmp_path)

@@ -26,18 +26,22 @@ from mnemo import (
     StorageConfig,
     __version__,
 )
-from mnemo.engine import _builtin_plugins
+from mnemo.engine import FinalQAComponents, _builtin_plugins
 from mnemo.interfaces import (
+    DependencyUnavailableError,
     EmbeddingCapabilities,
     EmbeddingProviderV1,
     LLMCapabilities,
     LLMInterfaceV1,
+    ParentPromotionInterfaceV1,
     RerankerCapabilities,
     RerankerInterfaceV1,
+    RetrieverInterfaceV1,
     StorageCapabilities,
     StorageInterfaceV1,
 )
 from mnemo.registry import PluginInterfaceV1, RegistryState
+from mnemo.tokenizers import O200K_BASE_TOKENIZER_ID
 
 
 @dataclass(slots=True)
@@ -237,6 +241,68 @@ def test_initialize_resolves_freezes_and_exposes_runtime(
         capabilities["storage"] = capabilities["storage"]  # type: ignore[index]
     with pytest.raises(ValueError, match="unknown LLM role"):
         engine.llm("unknown")  # type: ignore[arg-type]
+    with pytest.raises(DependencyUnavailableError):
+        _ = engine.final_qa
+
+
+class _Counter:
+    tokenizer_id = O200K_BASE_TOKENIZER_ID
+
+    def count(self, text: str) -> int:
+        return len(text)
+
+
+def _phase6_plugin(providers: Providers) -> RuntimePlugin:
+    retriever = create_autospec(RetrieverInterfaceV1, instance=True)
+    promoter = create_autospec(ParentPromotionInterfaceV1, instance=True)
+
+    def register(registry: PluginRegistry) -> None:
+        runtime_plugin(providers).register(registry)
+        registry.register_retriever("dense", retriever, priority=10)
+        registry.register_retriever("sparse", retriever, priority=10)
+        registry.register_parent_promoter("default", promoter, priority=10)
+
+    return RuntimePlugin(name="phase6-runtime", callback=register)
+
+
+def test_final_qa_components_compose_and_shutdown_drop_graph(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    providers = make_providers()
+    install_builtins(monkeypatch, _phase6_plugin(providers))
+    clock = Mock()
+    engine = KnowledgeEngine(
+        make_config(tmp_path),
+        final_qa_components=FinalQAComponents(_Counter(), clock),
+    )
+
+    asyncio.run(engine.initialize())
+    graph = engine.final_qa
+    assert graph is engine.final_qa
+    clock.assert_not_called()
+    asyncio.run(engine.shutdown())
+    with pytest.raises(EngineLifecycleError):
+        _ = engine.final_qa
+
+
+def test_invalid_final_qa_counter_fails_initialization_without_clock_use(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    providers = make_providers()
+    install_builtins(monkeypatch, _phase6_plugin(providers))
+    counter = _Counter()
+    counter.tokenizer_id = "wrong"
+    clock = Mock()
+    engine = KnowledgeEngine(
+        make_config(tmp_path),
+        final_qa_components=FinalQAComponents(counter, clock),
+    )
+    with pytest.raises(EngineInitializationError, match="token counter"):
+        asyncio.run(engine.initialize())
+    assert engine.state is EngineState.FAILED
+    clock.assert_not_called()
 
 
 def test_initialize_and_shutdown_are_idempotent_and_restartable(

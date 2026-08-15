@@ -62,12 +62,16 @@ from mnemo.models import (
     EquationBlock,
     HeadingBlock,
     ImageBlock,
+    MetadataFilter,
+    Notebook,
     ParsedDocument,
+    Source,
     TableBlock,
     TextBlock,
 )
 from mnemo.parsers import ParserRouter
 from mnemo.registry import PluginRegistry
+from mnemo.retrieval import DenseRetriever
 from mnemo.storage.cache import SQLiteEmbeddingCache
 from mnemo.tokenizers import O200KBaseTokenCounter
 from pydantic import HttpUrl
@@ -510,6 +514,21 @@ async def _run_m5(
 ) -> dict[str, Any]:
     _assert(len(chunks) >= 1000, f"M4 produced only {len(chunks)} real chunks")
     selected = chunks[:1000]
+    document_id = selected[0].document_id
+    notebook = Notebook(
+        notebook_id=uuid5(NAMESPACE_URL, f"mnemo-m6.2-notebook:{run_id}"),
+        title="Module 6.2 Bhagavad Gita acceptance",
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    source = Source(
+        source_id=uuid5(NAMESPACE_URL, f"mnemo-m6.2-source:{run_id}"),
+        notebook_id=notebook.notebook_id,
+        document_id=document_id,
+        created_at=datetime.now(UTC),
+    )
+    await storage.upsert_notebook(notebook)
+    await storage.upsert_source(source)
 
     # ADR-0018: initialization hooks execute before synchronous provider
     # resolution/capability reads.
@@ -587,6 +606,9 @@ async def _run_m5(
             "id": chunk.id,
             "document_id": str(chunk.document_id),
             "version_id": str(chunk.version_id),
+            "doc_type": DocType.BOOK.value,
+            "source_ids": [str(source.source_id)],
+            "notebook_ids": [str(notebook.notebook_id)],
             "heading_path": list(chunk.heading_path),
             "source_span": {
                 "start_ordinal": chunk.source_span.start_ordinal,
@@ -595,6 +617,42 @@ async def _run_m5(
         }
         for key, expected in expected_payload.items():
             _assert(payload.get(key) == expected, f"payload mismatch for {key} at sample {index}")
+
+    query = "What does the Bhagavad Gita teach about duty?"
+    query_embedding = await provider.embed(query)
+    retriever = DenseRetriever(storage)
+    unfiltered = await retriever.retrieve(query, query_embedding, MetadataFilter(), 5)
+    filtered = await retriever.retrieve(
+        query,
+        query_embedding,
+        MetadataFilter(
+            notebook_id=notebook.notebook_id,
+            source_ids=(source.source_id,),
+            doc_types=(DocType.BOOK,),
+        ),
+        5,
+    )
+    empty = await retriever.retrieve(
+        query,
+        query_embedding,
+        MetadataFilter(doc_types=(DocType.PAPER,)),
+        5,
+    )
+    _assert(len(unfiltered) == 5, "unfiltered DenseRetriever did not return top_k")
+    _assert(len(filtered) == 5, "filtered DenseRetriever did not return top_k")
+    _assert(empty == (), "nonmatching filter did not return an empty tuple")
+    _assert(
+        tuple(item.chunk.id for item in filtered) == tuple(item.chunk.id for item in unfiltered),
+        "eligible filtered ranking differs from unfiltered ranking",
+    )
+    _assert(
+        all(item.chunk.document_id == document_id for item in filtered),
+        "filtered result escaped the golden document",
+    )
+    _assert(
+        tuple(item.rank for item in filtered) == tuple(range(1, 6)),
+        "DenseRetriever ranks are not contiguous",
+    )
 
     repeat_source = selected[:100]
     repeat_start = time.perf_counter()
@@ -648,6 +706,22 @@ async def _run_m5(
         "qdrant_exact_count": after.count,
         "payload_samples_validated": len(sample_indices),
         "payload_validation": True,
+        "dense_retrieval": {
+            "query": query,
+            "query_embedding_source": provider.model_name,
+            "top_k": 5,
+            "filter": {
+                "notebook_id": str(notebook.notebook_id),
+                "source_ids": [str(source.source_id)],
+                "doc_types": [DocType.BOOK.value],
+            },
+            "unfiltered_chunk_ids": [item.chunk.id for item in unfiltered],
+            "filtered_chunk_ids": [item.chunk.id for item in filtered],
+            "filtered_raw_scores": [item.score for item in filtered],
+            "filtered_version_ids": [str(item.chunk.version_id) for item in filtered],
+            "empty_nonmatching_filter": True,
+            "version_projection_validated": True,
+        },
         "benchmark_10000": "not executed: the golden corpus was not duplicated or fabricated",
     }
 

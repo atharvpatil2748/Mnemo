@@ -21,7 +21,9 @@ from mnemo.interfaces import (
     CHUNKER_INTERFACE_V2_VERSION,
     CHUNKER_INTERFACE_VERSION,
     EMBEDDING_PROVIDER_INTERFACE_VERSION,
+    FUSION_RERANKER_INTERFACE_VERSION,
     LLM_INTERFACE_VERSION,
+    PARENT_PROMOTION_INTERFACE_VERSION,
     PARSER_INTERFACE_VERSION,
     RERANKER_INTERFACE_VERSION,
     RETRIEVER_INTERFACE_VERSION,
@@ -30,8 +32,10 @@ from mnemo.interfaces import (
     ChunkerInterfaceV2,
     ConflictError,
     EmbeddingProviderV1,
+    FusionRerankingInterfaceV1,
     LifecycleError,
     LLMInterfaceV1,
+    ParentPromotionInterfaceV1,
     ParserInterfaceV1,
     PluginError,
     RerankerInterfaceV1,
@@ -58,7 +62,9 @@ class CapabilityKind(StrEnum):
     CHUNKER = "chunker"
     EMBEDDING_PROVIDER = "embedding_provider"
     RETRIEVER = "retriever"
+    PARENT_PROMOTION = "parent_promotion"
     RERANKER = "reranker"
+    FUSION_RERANKER = "fusion_reranker"
     LLM = "llm"
     STORAGE = "storage"
 
@@ -249,6 +255,7 @@ class PluginRegistry:
         self._plugins: dict[str, PluginDescriptor] = {}
         self._loading_plugin: PluginDescriptor | None = None
         self._startup_hooks: list[Callable[[], Awaitable[None]]] = []
+        self._shutdown_hooks: list[Callable[[], Awaitable[None]]] = []
 
     @property
     def core_version(self) -> str:
@@ -275,6 +282,24 @@ class PluginRegistry:
         """Execute all registered startup hooks sequentially."""
         for hook in self._startup_hooks:
             await hook()
+
+    def register_shutdown_hook(self, hook: Callable[[], Awaitable[None]]) -> None:
+        """Register asynchronous provider cleanup in registration order."""
+        self._require_open()
+        if not callable(hook):
+            raise PluginValidationError("shutdown hook must be callable")
+        self._shutdown_hooks.append(hook)
+
+    async def execute_shutdown_hooks(self) -> None:
+        """Attempt every cleanup in reverse order and surface the first failure."""
+        failures: list[Exception] = []
+        for hook in reversed(self._shutdown_hooks):
+            try:
+                await hook()
+            except Exception as error:
+                failures.append(error)
+        if failures:
+            raise failures[0]
 
     def load_plugin(
         self,
@@ -303,11 +328,15 @@ class PluginRegistry:
             raise RegistrationConflictError("plugin name is already registered")
 
         snapshot = {key: list(values) for key, values in self._slots.items()}
+        startup_snapshot = list(self._startup_hooks)
+        shutdown_snapshot = list(self._shutdown_hooks)
         self._loading_plugin = descriptor
         try:
             plugin.register(self)
         except Exception as error:
             self._slots = snapshot
+            self._startup_hooks = startup_snapshot
+            self._shutdown_hooks = shutdown_snapshot
             raise PluginValidationError(
                 f"plugin {descriptor.name} registration failed",
                 details=FrozenMetadata({"plugin.error.type": type(error).__name__}),
@@ -515,6 +544,25 @@ class PluginRegistry:
             RetrieverInterfaceV1,
         )
 
+    def register_parent_promoter(
+        self,
+        slot: str,
+        implementation: ParentPromotionInterfaceV1,
+        *,
+        priority: int,
+        plugin_name: str | None = None,
+    ) -> None:
+        """Register a source-local parent-promotion candidate."""
+        self._register(
+            CapabilityKind.PARENT_PROMOTION,
+            slot,
+            implementation,
+            priority,
+            plugin_name,
+            PARENT_PROMOTION_INTERFACE_VERSION,
+            ParentPromotionInterfaceV1,
+        )
+
     def register_reranker(
         self,
         slot: str,
@@ -532,6 +580,25 @@ class PluginRegistry:
             plugin_name,
             RERANKER_INTERFACE_VERSION,
             RerankerInterfaceV1,
+        )
+
+    def register_fusion_reranker(
+        self,
+        slot: str,
+        implementation: FusionRerankingInterfaceV1,
+        *,
+        priority: int,
+        plugin_name: str | None = None,
+    ) -> None:
+        """Register a provenance-preserving fusion-aware reranker."""
+        self._register(
+            CapabilityKind.FUSION_RERANKER,
+            slot,
+            implementation,
+            priority,
+            plugin_name,
+            FUSION_RERANKER_INTERFACE_VERSION,
+            FusionRerankingInterfaceV1,
         )
 
     def register_llm(
@@ -608,9 +675,23 @@ class PluginRegistry:
         """Resolve the active retriever for a mode slot."""
         return cast(RetrieverInterfaceV1 | None, self.resolve(CapabilityKind.RETRIEVER, slot))
 
+    def resolve_parent_promoter(self, slot: str) -> ParentPromotionInterfaceV1 | None:
+        """Resolve the active parent promoter for a capability slot."""
+        return cast(
+            ParentPromotionInterfaceV1 | None,
+            self.resolve(CapabilityKind.PARENT_PROMOTION, slot),
+        )
+
     def resolve_reranker(self, slot: str) -> RerankerInterfaceV1 | None:
         """Resolve the active reranker for a slot."""
         return cast(RerankerInterfaceV1 | None, self.resolve(CapabilityKind.RERANKER, slot))
+
+    def resolve_fusion_reranker(self, slot: str) -> FusionRerankingInterfaceV1 | None:
+        """Resolve the active fusion-aware reranker for a slot."""
+        return cast(
+            FusionRerankingInterfaceV1 | None,
+            self.resolve(CapabilityKind.FUSION_RERANKER, slot),
+        )
 
     def resolve_llm(self, slot: str) -> LLMInterfaceV1 | None:
         """Resolve the active language model for a role slot."""
@@ -722,7 +803,9 @@ def _interface_version(capability: CapabilityKind) -> str:
         CapabilityKind.CHUNKER: CHUNKER_INTERFACE_VERSION,
         CapabilityKind.EMBEDDING_PROVIDER: EMBEDDING_PROVIDER_INTERFACE_VERSION,
         CapabilityKind.RETRIEVER: RETRIEVER_INTERFACE_VERSION,
+        CapabilityKind.PARENT_PROMOTION: PARENT_PROMOTION_INTERFACE_VERSION,
         CapabilityKind.RERANKER: RERANKER_INTERFACE_VERSION,
+        CapabilityKind.FUSION_RERANKER: FUSION_RERANKER_INTERFACE_VERSION,
         CapabilityKind.LLM: LLM_INTERFACE_VERSION,
         CapabilityKind.STORAGE: STORAGE_INTERFACE_VERSION,
     }[capability]

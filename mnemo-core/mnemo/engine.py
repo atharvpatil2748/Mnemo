@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 import logging
 import warnings
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from contextlib import suppress
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 from types import MappingProxyType
@@ -18,6 +21,7 @@ from mnemo.interfaces import (
     DependencyUnavailableError,
     EmbeddingCapabilities,
     EmbeddingProviderV1,
+    FinalQAInterfaceV1,
     LifecycleError,
     LLMCapabilities,
     LLMInterfaceV1,
@@ -26,6 +30,7 @@ from mnemo.interfaces import (
     RerankerInterfaceV1,
     StorageCapabilities,
     StorageInterfaceV1,
+    TokenCounterInterfaceV1,
 )
 from mnemo.registry import PluginInterfaceV1, PluginLoadResult, PluginRegistry
 
@@ -80,14 +85,39 @@ class _ResolvedProviders:
     capabilities: Mapping[str, _ProviderCapability]
 
 
+@dataclass(frozen=True, slots=True)
+class FinalQAComponents:
+    """Explicit local resources required to compose ADR-0046."""
+
+    token_counter: TokenCounterInterfaceV1
+    clock: Callable[[], datetime]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.token_counter, TokenCounterInterfaceV1):
+            raise TypeError("token_counter must implement TokenCounterInterfaceV1")
+        if not callable(self.clock):
+            raise TypeError("clock must be callable")
+
+
 class KnowledgeEngine:
     """Compose and validate one Mnemo core runtime from frozen configuration."""
 
-    def __init__(self, config: MnemoConfig) -> None:
+    def __init__(
+        self,
+        config: MnemoConfig,
+        *,
+        final_qa_components: FinalQAComponents | None = None,
+    ) -> None:
         """Create an uninitialized runtime without performing discovery or I/O."""
         if not isinstance(config, MnemoConfig):
             raise TypeError("config must be MnemoConfig")
+        if final_qa_components is not None and not isinstance(
+            final_qa_components, FinalQAComponents
+        ):
+            raise TypeError("final_qa_components must be FinalQAComponents or None")
         self._config = config
+        self._final_qa_components = final_qa_components
+        self._final_qa: FinalQAInterfaceV1 | None = None
         self._registry = self._new_registry()
         self._state = EngineState.UNINITIALIZED
         self._providers: _ResolvedProviders | None = None
@@ -128,6 +158,14 @@ class KnowledgeEngine:
         """Return the resolved primary reranker while ready."""
         return self._require_ready().reranker
 
+    @property
+    def final_qa(self) -> FinalQAInterfaceV1:
+        """Return the configured final-QA graph while ready."""
+        self._require_ready()
+        if self._final_qa is None:
+            raise DependencyUnavailableError("final QA components were not supplied")
+        return self._final_qa
+
     def llm(self, role: _LLMRole) -> LLMInterfaceV1:
         """Return the resolved language model for one fixed role while ready."""
         providers = self._require_ready()
@@ -162,9 +200,14 @@ class KnowledgeEngine:
             try:
                 self._compose_runtime()
                 await self._registry.execute_startup_hooks()
+                self._registry.freeze()
                 providers = self._resolve_providers()
+                final_qa = self._compose_final_qa(providers)
             except Exception as error:
+                with suppress(Exception):
+                    await self._registry.execute_shutdown_hooks()
                 self._providers = None
+                self._final_qa = None
                 self._registry = self._new_registry()
                 self._state = EngineState.FAILED
                 if isinstance(error, EngineInitializationError):
@@ -173,6 +216,7 @@ class KnowledgeEngine:
                     "KnowledgeEngine initialization failed",
                 ) from error
             self._providers = providers
+            self._final_qa = final_qa
             self._state = EngineState.READY
 
     async def startup(self) -> None:
@@ -191,12 +235,17 @@ class KnowledgeEngine:
                 return
             if self._state is EngineState.FAILED:
                 self._providers = None
+                self._final_qa = None
                 return
             if self._state in (EngineState.INITIALIZING, EngineState.STOPPING):
                 raise EngineLifecycleError(f"cannot shut down while engine is {self._state.value}")
             self._state = EngineState.STOPPING
-            self._providers = None
-            self._state = EngineState.STOPPED
+            try:
+                await self._registry.execute_shutdown_hooks()
+            finally:
+                self._providers = None
+                self._final_qa = None
+                self._state = EngineState.STOPPED
 
     def _compose_runtime(self) -> None:
         results: list[PluginLoadResult] = []
@@ -211,7 +260,46 @@ class KnowledgeEngine:
         self._log_failures("path", paths)
         results.extend(paths)
         _reject_required_plugin_failures(tuple(results))
-        self._registry.freeze()
+
+    def _compose_final_qa(self, providers: _ResolvedProviders) -> FinalQAInterfaceV1 | None:
+        components = self._final_qa_components
+        if components is None:
+            return None
+        counter = components.token_counter
+        tokenizer_id = importlib.import_module("mnemo.tokenizers").O200K_BASE_TOKENIZER_ID
+        if counter.tokenizer_id != tokenizer_id or counter.count("") != 0:
+            raise EngineInitializationError("canonical final-QA token counter is unavailable")
+        for slot in ("dense", "sparse"):
+            if self._registry.resolve_retriever(slot) is None:
+                raise EngineInitializationError(f"required retriever '{slot}' is unavailable")
+        if self._registry.resolve_parent_promoter("default") is None:
+            raise EngineInitializationError("required parent promoter 'default' is unavailable")
+        from mnemo.retrieval import (
+            CitationEngine,
+            ContextBuilder,
+            FinalQAOrchestrator,
+            GroundedAnswerGenerator,
+            MultiSourceRetriever,
+            QueryPlanner,
+            RerankingModule,
+        )
+
+        planner = QueryPlanner(providers.planner, providers.embedding)
+        fusion = MultiSourceRetriever(self._registry, providers.embedding)
+        reranker = RerankingModule(self._registry)
+        context = ContextBuilder(self._registry, counter)
+        answer = GroundedAnswerGenerator(self._registry, counter)
+        citation = CitationEngine(providers.storage, components.clock)
+        return FinalQAOrchestrator(
+            planner,
+            fusion,
+            reranker,
+            context,
+            answer,
+            citation,
+            providers.storage,
+            components.clock,
+        )
 
     def _resolve_providers(self) -> _ResolvedProviders:
         storage = self._registry.resolve_storage(_PRIMARY_SLOT)
@@ -281,6 +369,7 @@ class KnowledgeEngine:
 
 def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
     """Return built-in candidates supplied by their designated roadmap modules."""
+    primary_storage: StorageInterfaceV1 | None = None
 
     class CoreStoragePlugin:
         name = "mnemo-core-storage"
@@ -291,6 +380,7 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
             return ("storage",)
 
         def register(self, registry: PluginRegistry) -> None:
+            nonlocal primary_storage
             from mnemo.storage import (
                 CompositeStorage,
                 FilesystemBlobStore,
@@ -313,9 +403,40 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
                 qdrant=qdrant,
                 surrealdb=surrealdb,
             )
+            primary_storage = composite
 
             # Core priority permits an explicitly higher-priority provider override.
             registry.register_storage("primary", composite, priority=0)
+
+            async def open_when_active() -> None:
+                if registry.resolve_storage("primary") is composite:
+                    await composite.open()
+
+            async def close_when_active() -> None:
+                if registry.resolve_storage("primary") is composite:
+                    await composite.close()
+
+            registry.register_startup_hook(open_when_active)
+            registry.register_shutdown_hook(close_when_active)
+
+    class CoreRetrievalPlugin:
+        name = "mnemo-core-retrieval"
+        version = __version__
+        core_version_range = ">=0.0.0"
+
+        def capabilities(self) -> tuple[str, ...]:
+            return ("retriever", "parent_promotion")
+
+        def register(self, registry: PluginRegistry) -> None:
+            from mnemo.retrieval import DenseRetriever, ParentRetriever, SparseRetriever
+
+            if primary_storage is None:
+                raise EngineInitializationError("primary storage must register before retrieval")
+            registry.register_retriever("dense", DenseRetriever(primary_storage), priority=0)
+            registry.register_retriever("sparse", SparseRetriever(primary_storage), priority=0)
+            registry.register_parent_promoter(
+                "default", ParentRetriever(primary_storage), priority=0
+            )
 
     class CoreParserPlugin:
         name = "mnemo-core-parsers"
@@ -402,7 +523,39 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
             registry.register_embedding_provider("primary", ollama, priority=0)
             registry.register_startup_hook(ollama.initialize)
 
-    return (CoreStoragePlugin(), CoreParserPlugin(), CoreChunkerPlugin(), CoreEmbeddingPlugin())
+    class CoreLLMPlugin:
+        name = "mnemo-core-llm"
+        version = __version__
+        core_version_range = ">=0.0.0"
+
+        def capabilities(self) -> tuple[str, ...]:
+            return ("llm",)
+
+        def register(self, registry: PluginRegistry) -> None:
+            from mnemo.llms import OllamaLLM
+
+            for role in _LLM_ROLES:
+                role_config = getattr(config.llm, role)
+                if role_config.provider != "ollama":
+                    continue
+                provider = OllamaLLM(role_config)
+                registry.register_llm(role, provider, priority=0)
+                registry.register_startup_hook(provider.initialize)
+                registry.register_shutdown_hook(provider.close)
+
+    plugins: list[PluginInterfaceV1] = [
+        CoreStoragePlugin(),
+        CoreRetrievalPlugin(),
+        CoreParserPlugin(),
+        CoreChunkerPlugin(),
+        CoreEmbeddingPlugin(),
+        CoreLLMPlugin(),
+    ]
+    if config.reranker.provider == "sentence-transformers":
+        from mnemo.retrieval.reranker import CrossEncoderReranker, CrossEncoderRerankerPlugin
+
+        plugins.append(CrossEncoderRerankerPlugin(CrossEncoderReranker(config.reranker)))
+    return tuple(plugins)
 
 
 def _plugin_candidates(directory: Path) -> tuple[Path, ...]:

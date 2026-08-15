@@ -1,0 +1,131 @@
+{
+  "verdict": "PASS",
+  "timestamp_utc": "2026-08-13T12:42:32.292299+00:00",
+  "dataset": "goldenDataset/Bhagavad-gita-As-It-Is.pdf",
+  "dataset_sha256": "ff112b0b056d303b792f6f2e68cbd73a89adf612fa9113f932446cdea7741583",
+  "module_6_5_evidence": "docs/milestone-evidence/module-6.5-fusion.json",
+  "module_6_5_collection": "mnemo_m6_5_gita_20260813t113208280320z",
+  "module_6_5_points": 1275,
+  "query": "What does the Bhagavad Gita teach about duty?",
+  "candidate_count_before": 10,
+  "candidate_count_after": 10,
+  "model_id": "cross-encoder/ms-marco-MiniLM-L6-v2",
+  "model_revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a",
+  "device": "cpu",
+  "model_startup_seconds": 19.653636100003496,
+  "first_rerank_seconds": 0.6379988999979105,
+  "second_rerank_seconds": 0.5440092999924673,
+  "total_acceptance_seconds": 27.647448499992606,
+  "score_min": 9.156862380676444e-05,
+  "score_max": 0.0939947070901,
+  "score_mean": 0.013078815894375057,
+  "below_threshold_count": 10,
+  "reranked_results": [
+    {
+      "chunk_id": "3c8dcb0bfba173029ff590e6a064178743aefe9ee0b73dbcd5821ad9efef53dd",
+      "reranked_rank": 1,
+      "original_global_rank": 7,
+      "rrf_score": 0.03076923076923077,
+      "raw_logit": -2.2658066749572754,
+      "relevance_score": 0.0939947070901,
+      "below_relevance_threshold": true,
+      "evidence_count": 2
+    },
+    {
+      "chunk_id": "c4e1656e44c90f0cd725ac281411af9604d11b7ef1143aecc6bf57a428347710",
+      "reranked_rank": 2,
+      "original_global_rank": 6,
+      "rrf_score": 0.031024531024531024,
+      "raw_logit": -3.6739211082458496,
+      "relevance_score": 0.024748726809273654,
+      "below_relevance_threshold": true,
+      "evidence_count": 2
+    },
+    {
+      "chunk_id": "13af9334fd485712ae94056945657d2866322e07b431d011ef13867bf99faf57",
+      "reranked_rank": 3,
+      "original_global_rank": 4,
+      "rrf_score": 0.03128054740957967,
+      "raw_logit": -4.681056499481201,
+      "relevance_score": 0.009184086510753931,
+      "below_relevance_threshold": true,
+      "evidence_count": 2
+    },
+    {
+      "chunk_id": "70a5a0adeada1ba3ad5d17e10a1f6f61b323d3f3db62fa1eb32303a8b13c12a8",
+      "reranked_rank": 4,
+      "original_global_rank": 8,
+      "rrf_score": 0.01639344262295082,
+      "raw_logit": -6.774849891662598,
+      "relevance_score": 0.0011408389321269292,
+      "below_relevance_threshold": true,
+      "evidence_count": 1
+    },
+    {
+      "chunk_id": "04f156543005258b6833d636f9bcda957ce61bd68f681392dc0c33763da0fd80",
+      "reranked_rank": 5,
+      "original_global_rank": 5,
+      "rrf_score": 0.031099324975891997,
+      "raw_logit": -7.1577959060668945,
+      "relevance_score": 0.0007781631338715822,
+      "below_relevance_threshold": true,
+      "evidence_count": 2
+    },
+    {
+      "chunk_id": "fb0eff399442aea2b5729862eb1578751813f98e18041cfa28f8f1b3edc888a7",
+      "reranked_rank": 6,
+      "original_global_rank": 1,
+      "rrf_score": 0.04839549075403121,
+      "raw_logit": -7.832510471343994,
+      "relevance_score": 0.0003964712530779987,
+      "below_relevance_threshold": true,
+      "evidence_count": 3
+    },
+    {
+      "chunk_id": "cc3c1a957112dce0acac04380adaa95bc5728f0289de70755774e297c0c50f82",
+      "reranked_rank": 7,
+      "original_global_rank": 10,
+      "rrf_score": 0.015873015873015872,
+      "raw_logit": -8.458169937133789,
+      "relevance_score": 0.00021211497940865374,
+      "below_relevance_threshold": true,
+      "evidence_count": 1
+    },
+    {
+      "chunk_id": "7484e4b9f63c238455f2cd254fa9aee448a55b018ff40a1ebe15611b6fc07427",
+      "reranked_rank": 8,
+      "original_global_rank": 9,
+      "rrf_score": 0.016129032258064516,
+      "raw_logit": -8.845845222473145,
+      "relevance_score": 0.00014395796786771136,
+      "below_relevance_threshold": true,
+      "evidence_count": 1
+    },
+    {
+      "chunk_id": "687105222255085e0e36efa651a50e3e585bcfc4d5c4752a8635ef3028683fde",
+      "reranked_rank": 9,
+      "original_global_rank": 2,
+      "rrf_score": 0.03252247488101534,
+      "raw_logit": -9.235318183898926,
+      "relevance_score": 9.752364346335033e-05,
+      "below_relevance_threshold": true,
+      "evidence_count": 2
+    },
+    {
+      "chunk_id": "990117de48d3c6d69372f7232dd008b0c239f4ae1c2f8a5870087a936c324d5f",
+      "reranked_rank": 10,
+      "original_global_rank": 3,
+      "rrf_score": 0.03149801587301587,
+      "raw_logit": -9.298330307006836,
+      "relevance_score": 9.156862380676444e-05,
+      "below_relevance_threshold": true,
+      "evidence_count": 2
+    }
+  ],
+  "deterministic_repeat": true,
+  "provenance_preserved": true,
+  "candidate_cardinality_preserved": true,
+  "fallback_verified": true,
+  "provider_failure_propagation_verified": true,
+  "retrieval_or_refill_performed_by_module_6_6": false
+}

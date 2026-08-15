@@ -1,6 +1,6 @@
 [project]
 name = "mnemo-core"
-version = "0.20.1"
+version = "0.21.0"
 description = "Core library for the Mnemo local knowledge engine."
 readme = "README.md"
 license = "Apache-2.0"
@@ -32,6 +32,9 @@ dependencies = [
     "tree-sitter-rust>=0.23,<0.26",
     "tree-sitter-typescript>=0.23,<0.26",
 ]
+
+[project.optional-dependencies]
+reranking = ["sentence-transformers>=5.1,<6"]
 
 [project.urls]
 Homepage = "https://github.com/atharvpatil2748/Mnemo"

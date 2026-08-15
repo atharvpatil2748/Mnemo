@@ -92,10 +92,15 @@ def test_core_has_no_infrastructure_or_reverse_layer_imports() -> None:
             for node in ast.walk(tree)
             for name in _imported_modules(node)
         }
-        # The built-in Ollama embedding plugin operates as an infrastructure provider,
-        # much like SQLite and Qdrant plugins (which use aiosqlite and qdrant-client).
-        # Therefore, httpx is a legitimate exception to the domain purity rule.
-        if source.name == "ollama.py" and source.parent.name == "embeddings":
+        # The built-in Ollama embedding and LLM plugins operate as infrastructure
+        # providers, much like SQLite and Qdrant plugins (which use aiosqlite and
+        # qdrant-client). Therefore, httpx is a legitimate exception to the domain
+        # purity rule for both Ollama adapters.
+        is_ollama_adapter = source.name == "ollama.py" and source.parent.name in (
+            "embeddings",
+            "llms",
+        )
+        if is_ollama_adapter:
             assert forbidden_roots.difference({"httpx"}).isdisjoint(imported_roots), source
         else:
             assert forbidden_roots.isdisjoint(imported_roots), source
@@ -108,9 +113,11 @@ def test_core_has_no_infrastructure_or_reverse_layer_imports() -> None:
         "mnemo.config",
         "mnemo.embeddings",
         "mnemo.interfaces",
+        "mnemo.llms",
         "mnemo.models",
         "mnemo.parsers",
         "mnemo.registry",
+        "mnemo.retrieval",
         "mnemo.storage",
     }
 

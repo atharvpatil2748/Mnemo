@@ -1,6 +1,7 @@
 """Qdrant-backed dense vector storage."""
 
-from datetime import UTC
+from dataclasses import dataclass
+from datetime import UTC, date
 from typing import cast
 from uuid import UUID
 
@@ -20,6 +21,7 @@ from mnemo.models import (
     ChunkPosition,
     ChunkType,
     Citation,
+    DocType,
     Document,
     DocumentStatus,
     Entity,
@@ -35,6 +37,14 @@ from mnemo.models import (
     Source,
     Turn,
 )
+
+from .retrieval_projection import RetrievalMetadataProjection
+
+
+@dataclass(frozen=True, slots=True)
+class _ProjectedChunkSnapshot:
+    chunk: Chunk
+    projection: RetrievalMetadataProjection | None
 
 
 class QdrantStore:
@@ -77,6 +87,7 @@ class QdrantStore:
                         on_disk=self._config.on_disk,
                     ),
                 )
+            await self._ensure_retrieval_payload_indexes()
         except Exception as e:
             await self._client.close()
             self._client = None
@@ -148,6 +159,22 @@ class QdrantStore:
 
     async def upsert_chunks(self, chunks: tuple[Chunk, ...]) -> None:
         """Atomically persist chunks to every configured index."""
+        await self._upsert_chunks(chunks, projection=None)
+
+    async def _upsert_chunks_with_projection(
+        self,
+        chunks: tuple[Chunk, ...],
+        projection: RetrievalMetadataProjection,
+    ) -> None:
+        """Persist chunks with version-aware derived retrieval metadata."""
+        await self._upsert_chunks(chunks, projection=projection)
+
+    async def _upsert_chunks(
+        self,
+        chunks: tuple[Chunk, ...],
+        *,
+        projection: RetrievalMetadataProjection | None,
+    ) -> None:
         client = self._require_open()
         if not chunks:
             return
@@ -161,7 +188,7 @@ class QdrantStore:
                 models.PointStruct(
                     id=_point_id(chunk.id),
                     vector=list(chunk.embedding),
-                    payload=_chunk_payload(chunk),
+                    payload=_chunk_payload(chunk, projection),
                 )
             )
 
@@ -169,6 +196,49 @@ class QdrantStore:
         await client.upsert(
             collection_name=self._config.collection_name,
             points=points,
+            wait=True,
+        )
+
+    async def _ensure_retrieval_payload_indexes(self) -> None:
+        """Create indexes for derived fields used by pre-ANN filtering."""
+        client = self._require_open()
+        fields = (
+            ("doc_type", models.PayloadSchemaType.KEYWORD),
+            ("publication_date_ordinal", models.PayloadSchemaType.INTEGER),
+            ("source_ids", models.PayloadSchemaType.KEYWORD),
+            ("notebook_ids", models.PayloadSchemaType.KEYWORD),
+        )
+        for field_name, schema in fields:
+            await client.create_payload_index(
+                collection_name=self._config.collection_name,
+                field_name=field_name,
+                field_schema=schema,
+                wait=True,
+            )
+
+    async def _set_document_membership(
+        self,
+        document_id: UUID,
+        *,
+        source_ids: tuple[UUID, ...],
+        notebook_ids: tuple[UUID, ...],
+    ) -> None:
+        """Refresh mutable document-level membership on all indexed versions."""
+        await self._require_open().set_payload(
+            collection_name=self._config.collection_name,
+            payload={
+                "source_ids": [str(value) for value in source_ids],
+                "notebook_ids": [str(value) for value in notebook_ids],
+            },
+            points=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="document_id",
+                        match=models.MatchValue(value=str(document_id)),
+                    )
+                ]
+            ),
+            wait=True,
         )
 
     async def _snapshot_chunks(self, chunk_ids: tuple[str, ...]) -> tuple[Chunk, ...]:
@@ -210,6 +280,48 @@ class QdrantStore:
                 wait=True,
             )
 
+    async def _snapshot_chunks_with_projection(
+        self, chunk_ids: tuple[str, ...]
+    ) -> tuple[_ProjectedChunkSnapshot, ...]:
+        """Capture chunks and their derived retrieval payload for exact rollback."""
+        if not chunk_ids:
+            return ()
+        records = await self._require_open().retrieve(
+            collection_name=self._config.collection_name,
+            ids=[_point_id(chunk_id) for chunk_id in chunk_ids],
+            with_payload=True,
+            with_vectors=True,
+        )
+        requested = frozenset(chunk_ids)
+        by_id: dict[str, _ProjectedChunkSnapshot] = {}
+        for record in records:
+            chunk = _record_to_chunk(record)
+            if chunk.id in requested:
+                by_id[chunk.id] = _ProjectedChunkSnapshot(
+                    chunk=chunk,
+                    projection=_projection_from_payload(record.payload),
+                )
+        return tuple(by_id[chunk_id] for chunk_id in chunk_ids if chunk_id in by_id)
+
+    async def _restore_projected_chunk_snapshot(
+        self,
+        attempted_ids: tuple[str, ...],
+        snapshots: tuple[_ProjectedChunkSnapshot, ...],
+    ) -> None:
+        """Restore projected points exactly and remove newly introduced identities."""
+        for snapshot in snapshots:
+            await self._upsert_chunks((snapshot.chunk,), projection=snapshot.projection)
+        previous_ids = frozenset(snapshot.chunk.id for snapshot in snapshots)
+        new_ids = tuple(chunk_id for chunk_id in attempted_ids if chunk_id not in previous_ids)
+        if new_ids:
+            await self._require_open().delete(
+                collection_name=self._config.collection_name,
+                points_selector=models.PointIdsList(
+                    points=[_point_id(chunk_id) for chunk_id in new_ids]
+                ),
+                wait=True,
+            )
+
     async def search_dense(
         self,
         embedding: EmbeddingVector,
@@ -221,12 +333,35 @@ class QdrantStore:
 
         qdrant_filters: list[models.Condition] = []
 
-        # So we only map doc_types and defer relational filters to the Composite router.
         if filters.doc_types:
             qdrant_filters.append(
                 models.FieldCondition(
                     key="doc_type",
                     match=models.MatchAny(any=[t.value for t in filters.doc_types]),
+                )
+            )
+        if filters.notebook_id is not None:
+            qdrant_filters.append(
+                models.FieldCondition(
+                    key="notebook_ids",
+                    match=models.MatchValue(value=str(filters.notebook_id)),
+                )
+            )
+        if filters.source_ids:
+            qdrant_filters.append(
+                models.FieldCondition(
+                    key="source_ids",
+                    match=models.MatchAny(any=[str(value) for value in filters.source_ids]),
+                )
+            )
+        if filters.date_after is not None or filters.date_before is not None:
+            qdrant_filters.append(
+                models.FieldCondition(
+                    key="publication_date_ordinal",
+                    range=models.Range(
+                        gte=(filters.date_after.toordinal() if filters.date_after else None),
+                        lte=(filters.date_before.toordinal() if filters.date_before else None),
+                    ),
                 )
             )
 
@@ -467,8 +602,11 @@ def _point_id(chunk_id: str) -> str:
     return str(UUID(chunk_id[:32]))
 
 
-def _chunk_payload(chunk: Chunk) -> dict[str, object]:
-    return {
+def _chunk_payload(
+    chunk: Chunk,
+    projection: RetrievalMetadataProjection | None = None,
+) -> dict[str, object]:
+    payload: dict[str, object] = {
         "id": chunk.id,
         "text": chunk.text,
         "document_id": str(chunk.document_id),
@@ -490,6 +628,31 @@ def _chunk_payload(chunk: Chunk) -> dict[str, object]:
         "sibling_ids": list(chunk.sibling_ids),
         "metadata": dict(chunk.metadata),
     }
+    if projection is not None:
+        payload.update(projection.payload())
+    return payload
+
+
+def _projection_from_payload(
+    payload: dict[str, object] | None,
+) -> RetrievalMetadataProjection | None:
+    if payload is None or "doc_type" not in payload:
+        return None
+    publication_date_raw = payload.get("publication_date")
+    source_values = payload.get("source_ids", [])
+    notebook_values = payload.get("notebook_ids", [])
+    if not isinstance(source_values, list) or not isinstance(notebook_values, list):
+        raise ValueError("invalid retrieval membership payload")
+    return RetrievalMetadataProjection(
+        doc_type=DocType(str(payload["doc_type"])),
+        publication_date=(
+            date.fromisoformat(str(publication_date_raw))
+            if publication_date_raw is not None
+            else None
+        ),
+        source_ids=tuple(sorted((UUID(str(value)) for value in source_values), key=str)),
+        notebook_ids=tuple(sorted((UUID(str(value)) for value in notebook_values), key=str)),
+    )
 
 
 def _record_to_chunk(record: models.Record) -> Chunk:

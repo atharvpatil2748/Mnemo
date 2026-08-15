@@ -305,6 +305,27 @@ class RetrieverCapabilities:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class ParentPromotionCapabilities:
+    """Descriptive capabilities of a parent candidate promoter."""
+
+    source_local: bool
+    single_pass: bool
+    preserves_raw_scores: bool
+    validates_exact_version: bool
+    metadata: FrozenMetadata = field(default_factory=FrozenMetadata)
+
+    def __post_init__(self) -> None:
+        """Validate parent-promotion capability metadata."""
+        _validate_booleans(
+            self.source_local,
+            self.single_pass,
+            self.preserves_raw_scores,
+            self.validates_exact_version,
+        )
+        _validate_metadata(self.metadata)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class RerankerCapabilities:
     """Descriptive capabilities of a reranker implementation."""
 
@@ -320,6 +341,34 @@ class RerankerCapabilities:
             self.supports_batch,
             self.preserves_raw_scores,
         )
+        _validate_metadata(self.metadata)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FusionRerankerCapabilities:
+    """Descriptive capabilities of a fusion-aware reranker."""
+
+    supports_cross_encoder: bool
+    supports_batch: bool
+    preserves_fusion_evidence: bool
+    max_candidates: int
+    model_id: str
+    model_revision: str
+    metadata: FrozenMetadata = field(default_factory=FrozenMetadata)
+
+    def __post_init__(self) -> None:
+        """Validate the additive ADR-0042 capability metadata."""
+        _validate_booleans(
+            self.supports_cross_encoder,
+            self.supports_batch,
+            self.preserves_fusion_evidence,
+        )
+        if isinstance(self.max_candidates, bool) or not isinstance(self.max_candidates, int):
+            raise TypeError("max_candidates must be an integer")
+        if self.max_candidates != 100:
+            raise ValueError("max_candidates must equal 100 for FusionRerankerInterfaceV1")
+        require_non_empty(self.model_id, "model_id")
+        require_non_empty(self.model_revision, "model_revision")
         _validate_metadata(self.metadata)
 
 

@@ -20,11 +20,13 @@ from mnemo.models import (
     Chunk,
     ChunkPosition,
     ChunkType,
+    DocType,
     FrozenMetadata,
 )
 from mnemo.storage.composite import CompositeStorage
 from mnemo.storage.filesystem import FilesystemBlobStore
 from mnemo.storage.qdrant import QdrantStore
+from mnemo.storage.retrieval_projection import RetrievalMetadataProjection
 from mnemo.storage.sqlite import SQLiteStore
 from mnemo.storage.surrealdb import SurrealDBStore
 
@@ -78,6 +80,27 @@ class _StatefulChunkBackend:
                 self.fail_after_first_write = False
                 raise RuntimeError("injected partial write")
 
+    async def _snapshot_chunks_with_projection(
+        self, chunk_ids: tuple[str, ...]
+    ) -> tuple[Chunk, ...]:
+        return await self._snapshot_chunks(chunk_ids)
+
+    async def _snapshot_retrieval_projection(self, document_id, version_id):
+        return None
+
+    async def _restore_retrieval_projection(self, document_id, version_id, snapshot) -> None:
+        return None
+
+    async def _restore_projected_chunk_snapshot(
+        self, attempted_ids: tuple[str, ...], previous_chunks: tuple[Chunk, ...]
+    ) -> None:
+        await self._restore_chunk_snapshot(attempted_ids, previous_chunks)
+
+    async def _upsert_chunks_with_projection(
+        self, chunks: tuple[Chunk, ...], projection: RetrievalMetadataProjection
+    ) -> None:
+        await self.upsert_chunks(chunks)
+
 
 def _stateful_composite(
     fs_mock: StorageInterfaceV1,
@@ -85,12 +108,16 @@ def _stateful_composite(
     sql: _StatefulChunkBackend,
     qdrant: _StatefulChunkBackend,
 ) -> CompositeStorage:
-    return CompositeStorage(
+    composite = CompositeStorage(
         filesystem=cast(FilesystemBlobStore, fs_mock),
         sqlite=cast(SQLiteStore, sql),
         qdrant=cast(QdrantStore, qdrant),
         surrealdb=cast(SurrealDBStore, sur_mock),
     )
+    composite._build_retrieval_projection = AsyncMock(  # type: ignore[method-assign]
+        return_value=RetrievalMetadataProjection(doc_type=DocType.GENERIC, publication_date=None)
+    )
+    return composite
 
 
 def _logical_chunk(chunk: Chunk) -> tuple[object, ...]:
@@ -129,6 +156,7 @@ def fs_mock() -> StorageInterfaceV1:
 def sql_mock() -> StorageInterfaceV1:
     mock = AsyncMock(spec=SQLiteStore)
     mock._snapshot_chunks.return_value = ()
+    mock._snapshot_retrieval_projection.return_value = None
     mock.capabilities.return_value = StorageCapabilities(
         supports_blobs=False,
         supports_dense_search=False,
@@ -145,6 +173,7 @@ def sql_mock() -> StorageInterfaceV1:
 def qdr_mock() -> StorageInterfaceV1:
     mock = AsyncMock(spec=QdrantStore)
     mock._snapshot_chunks.return_value = ()
+    mock._snapshot_chunks_with_projection.return_value = ()
     mock.capabilities.return_value = StorageCapabilities(
         supports_blobs=False,
         supports_dense_search=True,
@@ -179,12 +208,16 @@ def composite(
     qdr_mock: StorageInterfaceV1,
     sur_mock: StorageInterfaceV1,
 ) -> CompositeStorage:
-    return CompositeStorage(
+    composite = CompositeStorage(
         filesystem=cast(FilesystemBlobStore, fs_mock),
         sqlite=cast(SQLiteStore, sql_mock),
         qdrant=cast(QdrantStore, qdr_mock),
         surrealdb=cast(SurrealDBStore, sur_mock),
     )
+    composite._build_retrieval_projection = AsyncMock(  # type: ignore[method-assign]
+        return_value=RetrievalMetadataProjection(doc_type=DocType.GENERIC, publication_date=None)
+    )
+    return composite
 
 
 @pytest.mark.anyio
@@ -301,10 +334,7 @@ async def test_metadata_and_blob_operations_route_to_owners(
     await composite.upsert_notebook(record)
     await composite.get_notebook(identity)
     await composite.list_notebooks(10, None)
-    await composite.delete_notebook(identity)
-    await composite.upsert_source(record)
     await composite.get_source(identity)
-    await composite.delete_source(identity)
     await composite.list_sources(identity, 10, None)
     await composite.upsert_note(record)
     await composite.get_note(identity)
@@ -336,8 +366,6 @@ async def test_metadata_and_blob_operations_route_to_owners(
     sql_mock.upsert_notebook.assert_awaited_once_with(record)
     sql_mock.get_notebook.assert_awaited_once_with(identity)
     sql_mock.list_notebooks.assert_awaited_once_with(10, None)
-    sql_mock.delete_notebook.assert_awaited_once_with(identity)
-    sql_mock.upsert_source.assert_awaited_once_with(record)
     sql_mock.list_notes.assert_awaited_once_with(identity, 10, None)
     sql_mock.list_insights.assert_awaited_once_with(identity, 10, None)
     sql_mock.list_sessions.assert_awaited_once_with(identity, 10, None)
@@ -369,8 +397,8 @@ async def test_upsert_chunks_success(
 
     await composite.upsert_chunks(chunks)
 
-    sql_mock.upsert_chunks.assert_awaited_once_with(chunks)
-    qdr_mock.upsert_chunks.assert_awaited_once_with(chunks)
+    sql_mock._upsert_chunks_with_projection.assert_awaited_once()
+    qdr_mock._upsert_chunks_with_projection.assert_awaited_once()
     sql_mock._restore_chunk_snapshot.assert_not_called()
     qdr_mock._restore_chunk_snapshot.assert_not_called()
 
@@ -397,15 +425,18 @@ async def test_upsert_chunks_rollback(
     )
     chunks = (chunk,)
 
-    qdr_mock.upsert_chunks.side_effect = Exception("Network timeout")
+    qdr_mock._upsert_chunks_with_projection.side_effect = Exception("Network timeout")
 
     with pytest.raises(StorageError, match="multi-store write failed"):
         await composite.upsert_chunks(chunks)
 
-    sql_mock.upsert_chunks.assert_awaited_once_with(chunks)
-    qdr_mock.upsert_chunks.assert_awaited_once_with(chunks)
+    sql_mock._upsert_chunks_with_projection.assert_awaited_once()
+    qdr_mock._upsert_chunks_with_projection.assert_awaited_once()
     sql_mock._restore_chunk_snapshot.assert_awaited_once_with((chunk.id,), ())
-    qdr_mock._restore_chunk_snapshot.assert_awaited_once_with((chunk.id,), ())
+    sql_mock._restore_retrieval_projection.assert_awaited_once_with(
+        chunk.document_id, chunk.version_id, None
+    )
+    qdr_mock._restore_projected_chunk_snapshot.assert_awaited_once_with((chunk.id,), ())
 
 
 @pytest.mark.anyio
@@ -432,7 +463,7 @@ async def test_upsert_chunks_reports_failed_compensation(
     qdr_mock: Mock,
 ) -> None:
     """A failed rollback is surfaced instead of hiding possible inconsistency."""
-    qdr_mock.upsert_chunks.side_effect = RuntimeError("vector write failed")
+    qdr_mock._upsert_chunks_with_projection.side_effect = RuntimeError("vector write failed")
     sql_mock._restore_chunk_snapshot.side_effect = RuntimeError("rollback failed")
 
     with pytest.raises(StorageError, match="compensating rollback failed"):
@@ -452,7 +483,7 @@ async def test_upsert_chunks_rejects_duplicate_ids(
         await composite.upsert_chunks((chunk, replace(chunk, text="replacement")))
 
     sql_mock._snapshot_chunks.assert_not_awaited()
-    qdr_mock._snapshot_chunks.assert_not_awaited()
+    qdr_mock._snapshot_chunks_with_projection.assert_not_awaited()
 
 
 @pytest.mark.anyio

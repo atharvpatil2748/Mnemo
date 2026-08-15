@@ -17,7 +17,14 @@ from .errors import (
     StorageError,
     UnsupportedError,
 )
+from .final_qa import FinalQAInterface, FinalQAInterfaceV1
+from .fusion_reranker import FusionRerankingInterface, FusionRerankingInterfaceV1
 from .llm import LLMInterface, LLMInterfaceV1
+from .multi_source_retrieval import (
+    MultiSourceRetrievalInterface,
+    MultiSourceRetrievalInterfaceV1,
+)
+from .parent_promotion import ParentPromotionInterface, ParentPromotionInterfaceV1
 from .parser import ParserInterface, ParserInterfaceV1
 from .reranker import RerankerInterface, RerankerInterfaceV1
 from .retriever import RetrieverInterface, RetrieverInterfaceV1
@@ -32,11 +39,13 @@ from .types import (
     EmbeddingCapabilities,
     EmbeddingVector,
     FileMetadata,
+    FusionRerankerCapabilities,
     HealthStatus,
     LLMCapabilities,
     Message,
     MessageRole,
     Page,
+    ParentPromotionCapabilities,
     ParserCapabilities,
     RerankerCapabilities,
     RetrieverCapabilities,
@@ -46,7 +55,9 @@ from .versions import (
     CHUNKER_INTERFACE_V2_VERSION,
     CHUNKER_INTERFACE_VERSION,
     EMBEDDING_PROVIDER_INTERFACE_VERSION,
+    FUSION_RERANKER_INTERFACE_VERSION,
     LLM_INTERFACE_VERSION,
+    PARENT_PROMOTION_INTERFACE_VERSION,
     PARSER_INTERFACE_VERSION,
     RERANKER_INTERFACE_VERSION,
     RETRIEVER_INTERFACE_VERSION,
@@ -57,7 +68,9 @@ __all__ = [
     "CHUNKER_INTERFACE_V2_VERSION",
     "CHUNKER_INTERFACE_VERSION",
     "EMBEDDING_PROVIDER_INTERFACE_VERSION",
+    "FUSION_RERANKER_INTERFACE_VERSION",
     "LLM_INTERFACE_VERSION",
+    "PARENT_PROMOTION_INTERFACE_VERSION",
     "PARSER_INTERFACE_VERSION",
     "RERANKER_INTERFACE_VERSION",
     "RETRIEVER_INTERFACE_VERSION",
@@ -80,6 +93,11 @@ __all__ = [
     "EmbeddingProviderV1",
     "EmbeddingVector",
     "FileMetadata",
+    "FinalQAInterface",
+    "FinalQAInterfaceV1",
+    "FusionRerankerCapabilities",
+    "FusionRerankingInterface",
+    "FusionRerankingInterfaceV1",
     "HealthStatus",
     "IntegrityError",
     "LLMCapabilities",
@@ -89,10 +107,15 @@ __all__ = [
     "Message",
     "MessageRole",
     "MnemoInterfaceError",
+    "MultiSourceRetrievalInterface",
+    "MultiSourceRetrievalInterfaceV1",
     "NotFoundError",
     "OperationCancelledError",
     "OperationTimeoutError",
     "Page",
+    "ParentPromotionCapabilities",
+    "ParentPromotionInterface",
+    "ParentPromotionInterfaceV1",
     "ParserCapabilities",
     "ParserInterface",
     "ParserInterfaceV1",

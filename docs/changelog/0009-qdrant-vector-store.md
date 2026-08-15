@@ -33,3 +33,13 @@ Module 2.3 integrates Qdrant as the dense vector storage backend for Mnemo, impl
 ## Downstream Modules Affected
 - **Module 2.5 (Composite Storage):** Must properly orchestrate requests to avoid relying on `QdrantStore` for non-vector tasks.
 - **Module 6.2 (Dense Retriever):** Will rely on `QdrantStore.search_dense` for semantic similarity search.
+
+## Post-release clarification (Module 6.2)
+
+The original Module 2.3 summary overstated the v0.20.1 payload: historical
+points stored chunk-local `document_id`, `version_id`, and `chunk_type`, but did
+not store canonical notebook/source membership or `doc_type`. ADR-0038 and
+Module 6.2 add those values, plus publication date, as derived version-aware
+retrieval-index metadata coordinated by `CompositeStorage`. Historical M5
+collections remain unchanged and require rebuild into a new collection before
+non-empty `MetadataFilter` constraints are supported.

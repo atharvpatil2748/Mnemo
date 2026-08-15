@@ -6,10 +6,7 @@
 **Project Type:** Standalone Open-Source Software  
 **License Target:** Apache 2.0  
 
-**Implementation baseline:** Phase 0, Phase 1, Phase 2, and Phase 3 through
-Module 3.9 are complete. The parser boundary returns transient
-`ParseResult` values as specified by ADR-0011. Accepted ADRs refine public
-schemas and contracts where this document previously used shorthand.
+**Implementation baseline:** Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 (Milestones M0 through M6) are complete and validated. The parser boundary returns transient `ParseResult` values (ADR-0011), chunking enforces `BlockSpan` ordinal tracking and `sha256` IDs (ADR-0015), storage provides atomic composite rollback (ADR-0010), reranking implements relevance-aware diversity ordering (ADR-0048), and grounded generation implements constrained intent-aware prompt routing (ADR-0048). Accepted ADRs refine public schemas and contracts where this document previously used shorthand.
 
 > *"A knowledge engine. Not an agent. The difference is everything."*
 
@@ -412,7 +409,28 @@ ADR-0015 does not change ADR-0002 affected-ID upsert semantics.
 #### 4.2 Retrieval Pipeline
 
 **QueryPlanner**  
-Receives a natural language question and produces a `RetrievalPlan`. This is a lightweight planning step using the configured Planner LLM. It identifies the retrieval intent (factual, comparative, exploratory) and decomposes the query into one or more `SubQuery` objects.
+Receives a natural language question and produces a `RetrievalPlan`. This is a lightweight planning step using the configured Planner LLM. It identifies the retrieval intent (factual, comparative, exploratory, synthesis) and decomposes the query into one or more `SubQuery` objects.
+
+The canonical Module 6.1 schema is an immutable Pydantic model with
+`intent`, `sub_queries`, `requires_multi_hop`, and `requires_multi_doc`.
+Each `SubQuery` contains `query_text`, an enumerated `retrieval_mode`
+(`dense`, `sparse`, `hybrid`, `graph`, or the compatibility-reserved `parent`), a typed
+`MetadataFilter`, and a bounded positive `max_results`. Plans contain one to
+sixteen ordered sub-queries, each requesting at most 100 results, and reject
+semantic duplicates rather than silently repairing them.
+
+HyDE remains part of planning: at least one dense or hybrid sub-query carries
+the validated hypothetical source-style paragraph in `query_text`. Its vector
+is produced separately through the configured `EmbeddingProviderV1`; neither
+the provider identity nor the transient vector is serialized into
+`RetrievalPlan`.
+
+ADR-0041 defines the execution-time handoff for plans with several dense or
+hybrid subqueries. Module 6.5 embeds the exact text of every effective dense
+invocation through its configured `EmbeddingProviderV1`; it never reuses the
+first HyDE vector for unrelated text. `plan_with_hyde_embedding()` remains a
+standalone Module 6.1 convenience, while the canonical orchestration path uses
+`plan()` and generates the complete invocation-scoped vector set.
 
 **Important:** The `QueryPlanner` plans *retrieval strategy* only. It does not plan user actions, does not invoke external tools, and does not produce action sequences. It answers: "how should I search my documents to answer this question?" — nothing more.
 
@@ -420,18 +438,151 @@ Receives a natural language question and produces a `RetrievalPlan`. This is a l
 Executes individual `SubQuery` objects. Multiple retrievers run in parallel:
 - `DenseRetriever`: ANN search via Qdrant.
 - `SparseRetriever`: BM25 via SQLite FTS5.
-- `ParentRetriever`: Fetches parent chunks for context promotion.
 - `GraphRetriever`: Traverses entity graph in SurrealDB (requires Graph plugin).
 - `SummaryRetriever`: Returns pre-computed section summaries.
 
+**Parent promotion**
+ADR-0040 resolves the historical ParentRetriever contradiction. ParentRetriever
+is not a `RetrieverInterfaceV1` query executor; it implements the separate
+`ParentPromotionInterfaceV1` transformation. Each already bounded, homogeneous
+retriever result stream is promoted independently before Module 6.5 combines
+sources. Qualifying siblings are replaced once by their stored parent, with the
+first-ranked represented child's raw score/source preserved and ranks
+recomputed locally. The implemented promoter uses only bounded, deduplicated
+`StorageInterfaceV1.get_chunk()` lookups and is registered through the separate
+versioned `parent_promotion` capability. New planners do not emit `parent`
+subqueries; the enum value remains deserializable only, and later orchestration
+must reject it explicitly.
+
+**Multi-source orchestration and fusion**
+ADR-0041 is the normative Module 6.5 contract. `MultiSourceRetriever` expands
+each hybrid subquery into independent dense and sparse invocations, resolves
+retrievers and the parent promoter through `PluginRegistry`, embeds every
+effective dense query separately, and executes the bounded invocations with a
+shared configured concurrency limit. Each stream is parent-promoted exactly
+once before cross-source combination.
+
+Fusion never stores RRF in raw `ScoredChunk.score`. Immutable invocation traces
+retain the raw pre/post-promotion streams, while `FusedChunkResult` carries the
+canonical chunk, RRF score, global rank, and per-invocation evidence. RRF uses
+one-based local ranks, equal weights, `k=60`, deterministic binary64
+`math.fsum`, and one contribution per chunk per invocation. Global ordering is
+`(-rrf_score, chunk.id)` and a required caller `global_limit` from 1 through
+100 is applied after fusion.
+
+Module 6.5 is fail-fast: unsupported `graph`/compatibility-reserved `parent`
+modes, unavailable capabilities, malformed streams, or invocation/promotion
+failures produce no partial successful result. `requires_multi_hop` is returned
+as first-stage state for Module 6.10, and `requires_multi_doc` never causes
+immutable notebook/source filters to be stripped.
+
+ADR-0041 supersedes ADR-0002 only where its specification-only
+`HybridRetriever` ownership conflicts with the detailed Phase 6 schedule.
+Hybrid expansion and RRF belong to Module 6.5; no `retriever/hybrid` capability
+is dispatched by the V1 orchestrator.
+
+The ADR-0041 contract is implemented by the additive
+`MultiSourceRetrievalInterfaceV1` and `MultiSourceRetriever`. Local validation
+includes deterministic invocation/fusion tests and a real Bhagavad Gita run
+through Ollama, Qdrant, SQLite sparse search, and the source-local parent
+promotion capability. This implementation status does not verify milestone M6
+and does not start reranking or any later Phase 6 stage.
+
 **Reranker**  
-Cross-encoder scoring of (query, chunk) pairs. Deduplicates by chunk ID. Falls back to Reciprocal Rank Fusion if no cross-encoder model is configured.
+Cross-encoder scoring of (query, chunk) pairs after Module 6.5 has combined,
+deduplicated, and fused the source-local streams. ADR-0042 makes the canonical
+original user query a separate required input and preserves the complete
+`RetrievalFusionResult` inside an additive `RetrievalRerankResult`. The pinned
+reference model returns one raw logit per pair; Module 6.6 stores both that
+logit and its explicit sigmoid relevance score without overwriting RRF or raw
+retrieval evidence. An absent `fusion_reranker/primary` capability returns a
+typed RRF fallback. A registered provider failure propagates.
+
+The ADR-0042 contract is implemented by `FusionRerankingInterfaceV1`,
+`RerankingModule`, and the pinned CPU `CrossEncoderReranker`. The provider is
+an optional `mnemo-core[reranking]` runtime, loads once through registry startup
+hooks, scores batches of at most 16 while preserving input alignment, and
+releases its executor/model references through reverse-order shutdown hooks.
+Local validation includes the complete unit/repository gates and a real
+Bhagavad Gita handoff from Module 6.5: ten fused candidates entered and ten
+reranked candidates exited with deterministic repeat ordering and unchanged
+ADR-0041 provenance. This implementation status does not start context
+construction and does not verify milestone M6.
 
 **ContextBuilder**  
-Assembles the final context from ranked chunks, respecting the token budget provided by the caller. Applies context compression (summarizes low-priority chunks) when the budget is tight. Formats the context with explicit source attribution markers.
+ADR-0043 is the normative Module 6.7 contract. ContextBuilder consumes the
+complete `RetrievalRerankResult`, a caller-supplied text-envelope budget and
+system prompt, immutable session messages, and optional exact-version display
+labels. It uses the existing ADR-0015 `TokenCounterInterfaceV1`; the question is
+always the normalized query already retained by Module 6.6.
+
+The top `min(3, candidate_count)` reranked candidates form an all-or-empty
+mandatory verbatim prefix. Remaining candidates use deterministic skip-over
+selection: accept a complete verbatim rendering when it fits, otherwise request
+one sequential structured compression through the existing `llm/extractor`
+slot and accept it only when the complete rendered context fits. No text is
+blindly truncated. Extractor absence degrades by omitting compression-eligible
+items; configured provider or malformed-output failures propagate.
+
+Each selected item receives a contiguous item-level `[N]` marker containing
+required exact document/version UUIDs and optional caller-supplied title,
+heading, and page fields. Markers segment sources without reordering evidence.
+The immutable `ContextBuildResult` retains the exact `RetrievalRerankResult`,
+exact selected and omitted candidate records, rendered context, tokenizer
+identity, and complete budget accounting. Module 6.8 consumes that typed result
+without parsing text to reconstruct provenance. The contract is implemented
+and validated with focused, repository-wide, and real Bhagavad Gita handoff
+acceptance. Module 6.8 is complete and M6 remains not verified.
+
+**GroundedAnswerGenerator**
+ADR-0044 is the normative Module 6.8 contract. It consumes the exact
+`ContextBuildResult`, resolves the existing `llm/synthesizer` capability, and
+uses one exact grounded prompt to produce marker-bearing answer text. Its
+immutable `GroundedAnswerResult` retains the exact context and separate
+provider/model/token evidence. All ADR-0043 empty outcomes return typed
+`NO_CONTEXT` without provider work. Module 6.8 has no storage dependency and
+does not parse, resolve, or persist citations. The contract is implemented and
+validated with focused, repository-wide, and real Bhagavad Gita context-handoff
+acceptance. Module 6.9 is complete and M6 remains not verified.
 
 **CitationEngine**  
-Parses `[source:N]` markers from synthesized text. Resolves each marker to a `Citation` record: `(chunk_id, document_title, page_number, heading_path, verbatim_quote)`. Persists all citations in SurrealDB. Enables provenance queries.
+ADR-0045 is the normative Module 6.9 contract. The additive `CitationEngine`
+consumes the exact `GroundedAnswerResult`, an already-persisted assistant
+`Turn`, and caller-supplied exact-version `DocumentContextLabel` values. It
+validates canonical `[source:N]` markers against retained `ContextItem`
+provenance, maps each first-occurring unique source to one deterministic
+versioned `Citation`, and persists citations through `StorageInterfaceV1`.
+Canonical `Chunk.text` is the verbatim quote even for compressed context.
+Repeated markers deduplicate; malformed or unknown markers fail; unmarked and
+no-context answers are typed empty outcomes.
+
+Conversation and citation persistence currently uses SQLite behind
+`CompositeStorage`; the SurrealDB conversation/citation methods remain
+unimplemented. Each deterministic citation upsert is an atomic V1 operation,
+but the frozen facade provides no atomic batch or rollback. A later failure can
+leave an idempotently retryable persisted prefix and never returns a partial
+result. The contract is implemented and validated with focused,
+repository-wide, real SQLite/CompositeStorage, and real Bhagavad Gita pipeline
+acceptance. Module 6.10 is complete and M6 remains not verified.
+
+**Final QA Integration**
+Module 6.10 composes the completed Phase 6 stages, defines the final typed QA
+response and typed no-context presentation, and owns any streaming delivery
+contract. ADR-0046 resolves the V1 boundary with immutable `FinalQARequest` and
+`FinalQAResult`, a `FinalQAInterfaceV1`/`FinalQAOrchestrator`, deterministic
+single-writer assistant-turn sequencing, typed no-context and unmarked results,
+and fail-fast stage composition. V1 rejects planner multi-hop requests before
+retrieval and explicitly defers streaming to a future versioned contract. The
+contract is implemented by the additive immutable request/result/interface and
+`FinalQAOrchestrator`, with exact typed handoffs and retained provenance.
+ADR-0047 supplies the runtime composition mechanism: the application injects an
+immutable canonical token counter and UTC clock, while `KnowledgeEngine`
+registers the existing built-in retrievers/parent promoter and constructs the
+complete final graph after provider startup. No new registry family or config,
+storage, or frozen-contract change is required. `KnowledgeEngine` constructs
+one graph after registry startup, exposes it only while ready, and drops it on
+shutdown. Module 6.10 is complete; the comprehensive Phase 6 audit and M6
+milestone verification have not run.
 
 #### 4.3 Notebook Manager
 
@@ -460,7 +611,8 @@ Registry slots:
   chunkers:     { "book": BookChunker, "paper": PaperChunker, ... }
   embedding_providers: { "primary": OllamaEmbeddingProvider }
   retrievers:   { "dense": QdrantRetriever, "sparse": SQLiteRetriever, ... }
-  reranker:     { "primary": CrossEncoderReranker }
+  reranker:     { "primary": CrossEncoderReranker }  # frozen Phase 1 family
+  fusion_rerankers: { "primary": CrossEncoderReranker }  # ADR-0042, optional
   llm:          { "planner": OllamaLLM, "synthesizer": OllamaLLM, ... }
   storage:      { "primary": CompositeStorage }
 ```
@@ -860,6 +1012,13 @@ mode and immutable `RetrieverCapabilities`.
 `RerankerInterfaceV1` reorders a bounded tuple of candidates while preserving
 chunk provenance and exposes immutable `RerankerCapabilities`.
 
+ADR-0042 preserves that Phase 1/source-local compatibility interface but does
+not flatten ADR-0041 fused evidence into it. Canonical Phase 6 reranking uses
+the additive `FusionRerankingInterfaceV1`, which accepts the original user
+query plus `RetrievalFusionResult` and returns `RetrievalRerankResult`. The
+separate versioned registry family is `fusion_reranker/v1`; legacy `reranker/v1`
+registrations are never silently adapted.
+
 ### 8.6 LLMInterface
 
 `LLMInterfaceV1` exposes provider, model, context limit, immutable
@@ -1222,13 +1381,78 @@ own ADR and roadmap assignment before implementation.
 
 ## 11. Retrieval Pipeline
 
+ADR-0040 defines the normative ordering at the Module 6.4/6.5 boundary:
+
+```text
+each source-local retriever stream
+    -> parent candidate promotion (independent, single-pass)
+    -> Module 6.5 cross-source combination/deduplication/fusion
+    -> global ranking and later stages
+```
+
+Any older diagram that visually places merge/deduplication before parent
+promotion is superseded by this ordering. Parent promotion never compares
+dense and sparse raw scores and never counts siblings across source streams.
+
+ADR-0041 completes the next boundary:
+
+```text
+RetrievalPlan
+    -> deterministic dense/sparse invocation expansion
+    -> per-invocation embedding and bounded parallel retrieval
+    -> source-local ADR-0040 promotion
+    -> canonical chunk-ID grouping with raw evidence retained
+    -> unweighted RRF (one-based rank, k=60)
+    -> deterministic global rank
+    -> required caller global_limit (1..100)
+    -> RetrievalFusionResult
+```
+
+The fused result is not a raw-scored retriever stream. It uses additive Phase 6
+records so `ScoredChunk` continues to mean one provider/source's raw score.
+
+ADR-0042 defines the next typed boundary:
+
+```text
+canonical original user query + RetrievalFusionResult
+    -> optional fusion_reranker/primary
+    -> pinned cross-encoder raw logits + explicit sigmoid relevance
+    -> deterministic relevance/RRF-rank/chunk-ID ordering
+    -> RetrievalRerankResult
+    -> Module 6.7 ContextBuilder (implemented)
+```
+
+The output always retains the complete `RetrievalFusionResult`. Missing
+fusion-aware capability produces the same typed result with the existing RRF
+order; a registered provider failure is not treated as fallback. Module 6.6
+cannot retrieve, refill, recompute RRF, or change candidate cardinality.
+
+ADR-0043 defines the following additive context boundary:
+
+```text
+RetrievalRerankResult + budget inputs + exact-version display labels
+    -> ADR-0015 token accounting
+    -> mandatory top-three verbatim prefix
+    -> deterministic skip-over selection
+    -> optional sequential llm/extractor per-item compression
+    -> exact item-level source markers
+    -> ContextBuildResult
+    -> Module 6.8 Grounded Answer Generation
+    -> GroundedAnswerResult
+    -> Module 6.9 Citation Resolution and Persistence
+    -> Module 6.10 Final QA Integration
+```
+
+Context construction never accesses storage, changes prior-stage evidence, or
+implements answer/citation behavior.
+
 ```
 USER QUESTION: "What did Graham say about market volatility?"
     │
     ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │ STEP 1: QUERY ANALYSIS                                          │
-│  – Detect intent: factual | comparative | exploratory           │
+│  – Detect intent: factual | comparative | exploratory | synthesis│
 │  – Extract entities: ["Benjamin Graham", "market volatility"]   │
 │  – Detect temporal markers: none                                │
 │  – Determine scope: single notebook specified? all?             │
@@ -1264,13 +1488,14 @@ USER QUESTION: "What did Graham say about market volatility?"
 │       │                    │                    │               │
 │       └────────────────────┴────────────────────┘               │
 │                            │                                    │
-│                    Merge + Deduplicate by chunk_id              │
+│                    Keep source-local streams separate           │
 └───────────────────────────────┬─────────────────────────────────┘
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 5: METADATA FILTERING                                      │
-│  Apply hard filters from the request:                           │
+│ STEP 5: METADATA FILTER CONTRACT                                │
+│  These hard filters execute inside each storage search BEFORE  │
+│  backend ranking/top_k; this diagram groups their semantics:    │
 │  – doc_type filter (e.g., papers only)                          │
 │  – date_after / date_before                                     │
 │  – source_id filter (specific documents only)                   │
@@ -1279,21 +1504,25 @@ USER QUESTION: "What did Graham say about market volatility?"
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 6: PARENT RETRIEVAL (Hierarchical Upgrade)                 │
+│ STEP 6: PARENT PROMOTION (Hierarchical Upgrade)                 │
 │  For each retrieved chunk: inspect its stored sibling family.   │
 │  If ≥50% of chunks sharing its non-null parent are present,     │
 │  replace them with that explicitly linked parent chunk.         │
 │  This upgrades snippet-level hits to section-level context.     │
+│  Module 6.5 then combines, deduplicates, and fuses streams.     │
 └───────────────────────────────┬─────────────────────────────────┘
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │ STEP 7: RERANKING                                               │
-│  CrossEncoderReranker scores each (question, chunk) pair.       │
-│  Sorts by cross-encoder score (not embedding cosine).           │
-│  Attaches confidence score to each chunk.                       │
-│  Flags chunks with confidence < 0.4 (used for UI display).      │
-│  Falls back to RRF score fusion if no reranker configured.      │
+│  ADR-0042 scores each (original question, chunk) pair.          │
+│  Preserves raw logit, sigmoid relevance, RRF, and provenance.   │
+│  ADR-0048 applies relevance-aware multi-source diversity quota  │
+│  ordering for multi-document queries, while defaulting to pure  │
+│  score ranking for single-source queries.                       │
+│  Flags sigmoid relevance < 0.4; this is not confidence.         │
+│  Absent fusion capability retains typed existing-RRF order.     │
+│  Registered provider failures propagate; RRF is not recomputed. │
 └───────────────────────────────┬─────────────────────────────────┘
                                 │
                                 ▼
@@ -1317,19 +1546,22 @@ USER QUESTION: "What did Graham say about market volatility?"
 │  === Source [2]: "Graham Interview, Forbes 1974" p.3 ===       │
 │  When asked about volatility, Graham stated...                  │
 │                                                                 │
-│  This formatted string is returned to the caller.              │
-│  If synthesis is requested, it goes to STEP 10.                 │
-│  If synthesis is disabled, the context is returned as-is.       │
+│  The typed ContextBuildResult proceeds to Module 6.8.           │
+│  Typed empty context is retained without invented answer text.  │
 └───────────────────────────────┬─────────────────────────────────┘
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 10: SYNTHESIS (optional)                                   │
-│  Synthesizer LLM receives context + question.                   │
-│  Instructed to cite sources as [1], [2] etc.                    │
-│  CitationEngine parses markers → Citation records.              │
-│  Citations persisted in SurrealDB.                              │
-│  Response + citations returned to caller.                       │
+│ STEP 10: ANSWER + CITATION PIPELINE                             │
+│  Module 6.8 receives the exact ContextBuildResult.              │
+│  ADR-0048 selects constrained system prompt:                    │
+│    – PROMPT_S1 (Default grounded semantic QA)                   │
+│    – PROMPT_S2 (Exact structured extraction)                    │
+│    – PROMPT_S3 (Code functions, routes, tabular CSV records)    │
+│    – PROMPT_S4 (Multi-document comparative synthesis)           │
+│  Grounded answer uses exact [source:N] markers.                 │
+│  Module 6.9 resolves markers from retained ContextItem evidence.│
+│  Module 6.10 owns final QA response and delivery.               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1337,7 +1569,8 @@ USER QUESTION: "What did Graham say about market volatility?"
 
 For complex analytical queries (`requires_multi_hop: true` in the plan):
 
-1. **Hop 1:** Standard retrieval pass.
+1. **Hop 1:** Standard ADR-0041 retrieval pass. Module 6.5 returns this typed
+   first-stage result with `requires_multi_hop` intact.
 2. **Entity extraction:** Extract entities from top-5 retrieved chunks.
 3. **Hop 2:** New SubQuery using extracted entities as search terms.
 4. **Fusion:** Merge hop-1 and hop-2 results with RRF.
@@ -1348,7 +1581,9 @@ For complex analytical queries (`requires_multi_hop: true` in the plan):
 
 When `requires_multi_doc: true`:
 
-1. Retrieval is not filtered by source. Results may come from any document.
+1. Module 6.5 adds no implicit single-source restriction. Immutable
+   planner/caller `notebook_id` and `source_ids` hard filters remain enforced;
+   results may come from any eligible document.
 2. The ContextBuilder segments the assembled context by source document.
 3. The Synthesizer receives explicit instructions to compare/contrast/synthesize across sources.
 4. Each source's contribution is tracked in the citation record.
@@ -1424,20 +1659,32 @@ Vector search is fundamentally unable to reliably retrieve exact terms, identifi
 
 SQLite FTS5 ships as part of SQLite (no extra dependency), supports BM25 ranking natively, handles billions of rows efficiently, and is the most stable local text search solution available.
 
+Sparse retrieval metadata follows ADR-0039. Exact-version document type and
+publication date are held in a rebuildable SQLite projection keyed by
+`(document_id, version_id)`, while notebook/source constraints use canonical
+relational `Source` rows. These predicates execute inside the FTS query before
+BM25 ordering and `top_k`. SQLite's negative BM25 cost is sign-inverted once to
+the descending raw-score convention; it is not normalized or compared directly
+with dense scores.
+
 **Deployment:** A single `.db` file. No server, no daemon.
 
 ---
 
 #### SurrealDB — Relational + Graph + Metadata
 
-The source of truth for all structured data.
+The intended graph and future structured-data adapter. The current executable
+facade retains canonical document, notebook, conversation, and citation records
+in SQLite where the corresponding SurrealDB methods remain incomplete.
 
 Used for:
 - Document registry (every ingested document, its metadata, ingestion status, version history).
 - Notebook and source relationships.
 - Chunk-to-document relationships (enables parent retrieval and provenance).
-- Session history and turn storage.
-- Citation records (permanent, every AI statement).
+- Future graph-adapter target for session history and turn storage; current
+  conversation persistence is SQLite behind `CompositeStorage`.
+- Future graph-adapter target for citation records; current citation
+  persistence is SQLite behind `CompositeStorage` under ADR-0045.
 - Entity graph (nodes = entities, edges = relationships).
 - User notes and insights.
 - Job queue for background tasks.
@@ -1463,6 +1710,28 @@ Raw files, parsed IR JSON, extracted images, generated audio.
 ```
 
 All paths are content-addressed (`sha256(bytes)[:2]/sha256(bytes)`). Duplicate files share one blob. This directory is the authoritative source for re-ingestion if any index is corrupted.
+
+---
+
+#### Version-Aware Dense Retrieval Metadata Projection
+
+Per ADR-0038, Qdrant filter payload is derived search-index state rather than
+canonical metadata. `CompositeStorage` projects the exact version's
+`ParsedDocument.doc_type` and `DocumentVersion.metadata.publication_date`, plus
+the logical document's canonical `Source` and notebook memberships, onto each
+vector point identified by `(document_id, version_id)`.
+
+`QdrantStore` applies every non-empty `MetadataFilter` condition before ANN
+ranking and `top_k` truncation. Date bounds are inclusive; versions without a
+publication date do not match a date-bounded query. Multiple values within
+`source_ids` or `doc_types` are OR alternatives, while different filter fields
+intersect. Empty filters retain the direct vector-search path. Qdrant never
+becomes authoritative for type, publication date, source, or notebook state;
+collections may be rebuilt from parsed IR and relational records.
+
+Mutable source and notebook operations synchronously refresh affected vector
+payloads through `CompositeStorage` and use explicit compensation on failure.
+Historical v0.20.1 collections predate this projection and remain unmodified.
 
 ---
 
@@ -1504,8 +1773,8 @@ Mnemo uses four LLM roles. Each role has different model requirements. The confi
 │ embedding      │ Separate provider family:        │ nomic-embed or  │
 │                │ Called at ingest and query time. │ mxbai-embed     │
 ├────────────────┼──────────────────────────────────┼──────────────────┤
-│ reranker       │ Separate provider family:        │ ms-marco family │
-│                │ Not generative.                  │ deterministic   │
+│ reranker       │ Separate provider family:        │ pinned MS MARCO │
+│                │ Not generative.                  │ MiniLM L6       │
 └────────────────┴──────────────────────────────────┴──────────────────┘
 ```
 
@@ -1534,9 +1803,12 @@ model = "embedding-model"
 dimensions = 768
 
 [reranker]
-provider = "local"
-model = "reranker-model"
+provider = "sentence-transformers"
+model = "cross-encoder/ms-marco-MiniLM-L6-v2"
 ```
+
+ADR-0042 pins the built-in model revision independently of the configuration
+string: `233902d25c440f23af6f7d6e94d2946bac0bee0a`.
 
 Every generative role implements `LLMInterface`; embedding implements
 `EmbeddingProvider`, and reranking implements `RerankerInterface`. Provider
@@ -1551,6 +1823,17 @@ The LLMs inside Mnemo are constrained by their prompts and by what the modules a
 - The **Extractor LLM** outputs structured entity and relationship JSON. No free-form generation.
 
 These constraints are architectural, not just prompt engineering. The modules that call these LLMs parse their outputs into typed structures and discard anything that doesn't parse.
+
+### Grounded Answer System Prompt Routing (ADR-0048)
+
+To maximize generation fidelity across diverse query intents while preserving epistemic grounding and negative refusal invariants, `GroundedAnswerGenerator` uses a conservative query-intent prompt router:
+
+| Template | Intent Target | Routing Criteria | Grounding Policy |
+|---|---|---|---|
+| `PROMPT_S1` | Default Semantic / Conceptual QA | General questions, conceptual queries, ambiguous fallback | Strict context grounding with `[source:N]` markers |
+| `PROMPT_S2` | Exact Structural Extraction | Exact verses (e.g. Gita), tolerances, dimensions | Verbatim extraction without paraphrasing |
+| `PROMPT_S3` | Code & Tabular Extraction | Code functions, routes, tabular CSV records | Exact routes, methods, and tabular cell values |
+| `PROMPT_S4` | Cross-Document Synthesis | Multi-document comparisons (`compare`, `across`, etc.) | Separate breakdown per source document |
 
 ---
 
@@ -1646,7 +1929,10 @@ Fits on a 2 TB NVMe drive. The Qdrant in-memory requirement (58 GB) may require 
 
 - If Qdrant is in `memmap` mode (low RAM): dense retrieval degrades to ~50ms. Acceptable.
 - If no GPU: synthesis with a 70B model runs at ~10 tok/s on CPU. Slow but functional.
-- If `graph-retrieval` plugin not installed: graph retrieval is silently skipped. Dense + sparse still work.
+- Module 6.5 V1 rejects a requested `graph` subquery explicitly when graph
+  retrieval is unavailable; it never silently returns a partial dense/sparse
+  success. A later accepted graph/multi-hop contract may define typed graceful
+  degradation.
 
 ---
 
@@ -2031,7 +2317,7 @@ As the plugin ecosystem grows, users will face incompatibility between plugin ve
 │  ─────────────                                                            │
 │  Qdrant        │ HNSW vector index. Dense retrieval.                     │
 │  SQLite FTS5   │ BM25 keyword index. Exact-match retrieval.              │
-│  SurrealDB     │ Relations, graph, sessions, citations.                  │
+│  SurrealDB     │ Graph relations; future structured-data adapter.        │
 │  Filesystem    │ Content-addressable blobs. Ground truth.                │
 │                                                                            │
 ├──────────────────────────────────────────────────────────────────────────┤

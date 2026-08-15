@@ -1,6 +1,7 @@
 import asyncio
 from collections.abc import AsyncGenerator
 from dataclasses import replace
+from datetime import date
 from typing import Any
 from uuid import uuid4
 
@@ -11,10 +12,12 @@ from mnemo.models import (
     Chunk,
     ChunkPosition,
     ChunkType,
+    DocType,
     FrozenMetadata,
     MetadataFilter,
 )
-from mnemo.storage.qdrant import QdrantStore
+from mnemo.storage.qdrant import QdrantStore, _projection_from_payload
+from mnemo.storage.retrieval_projection import RetrievalMetadataProjection
 from pydantic import HttpUrl
 from qdrant_client import AsyncQdrantClient
 
@@ -117,6 +120,157 @@ async def test_qdrant_upsert_and_search(qdrant_store: QdrantStore) -> None:
     assert scored.chunk.source_span == chunk.source_span
 
 
+def _projected_chunk(
+    *, chunk_id: str, document_id: Any, version_id: Any, embedding: tuple[float, ...]
+) -> Chunk:
+    return Chunk(
+        id=chunk_id,
+        text=f"chunk {chunk_id[0]}",
+        document_id=document_id,
+        version_id=version_id,
+        chunk_type=ChunkType.PASSAGE,
+        position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
+        heading_path=(),
+        sibling_ids=(),
+        metadata=FrozenMetadata(),
+        embedding=embedding,
+    )
+
+
+@pytest.mark.anyio
+async def test_qdrant_version_aware_metadata_filters_before_top_k(
+    qdrant_store: QdrantStore,
+) -> None:
+    document_id = uuid4()
+    book_version = uuid4()
+    paper_version = uuid4()
+    undated_version = uuid4()
+    notebook_one = uuid4()
+    notebook_two = uuid4()
+    source_one = uuid4()
+    source_two = uuid4()
+    source_three = uuid4()
+    book = _projected_chunk(
+        chunk_id="1" * 64,
+        document_id=document_id,
+        version_id=book_version,
+        embedding=(1.0, 0.0, 0.0),
+    )
+    paper = _projected_chunk(
+        chunk_id="2" * 64,
+        document_id=document_id,
+        version_id=paper_version,
+        embedding=(0.99, 0.1, 0.0),
+    )
+    undated = _projected_chunk(
+        chunk_id="3" * 64,
+        document_id=document_id,
+        version_id=undated_version,
+        embedding=(0.98, 0.2, 0.0),
+    )
+    await qdrant_store._upsert_chunks_with_projection(
+        (book,),
+        RetrievalMetadataProjection(
+            doc_type=DocType.BOOK,
+            publication_date=date(2020, 1, 1),
+            source_ids=tuple(sorted((source_one, source_two), key=str)),
+            notebook_ids=(notebook_one,),
+        ),
+    )
+    await qdrant_store._upsert_chunks_with_projection(
+        (paper,),
+        RetrievalMetadataProjection(
+            doc_type=DocType.PAPER,
+            publication_date=date(2022, 1, 1),
+            source_ids=(source_three,),
+            notebook_ids=(notebook_two,),
+        ),
+    )
+    await qdrant_store._upsert_chunks_with_projection(
+        (undated,),
+        RetrievalMetadataProjection(
+            doc_type=DocType.BOOK,
+            publication_date=None,
+            source_ids=(source_one,),
+            notebook_ids=(notebook_one,),
+        ),
+    )
+
+    async def ids(filters: MetadataFilter, top_k: int = 10) -> tuple[str, ...]:
+        results = await qdrant_store.search_dense((1.0, 0.0, 0.0), filters, top_k)
+        return tuple(result.chunk.id for result in results)
+
+    assert await ids(MetadataFilter()) == (book.id, paper.id, undated.id)
+    assert await ids(MetadataFilter(notebook_id=notebook_two), top_k=1) == (paper.id,)
+    assert await ids(MetadataFilter(source_ids=(source_two,))) == (book.id,)
+    assert await ids(MetadataFilter(source_ids=(source_two, source_three))) == (
+        book.id,
+        paper.id,
+    )
+    assert await ids(MetadataFilter(doc_types=(DocType.BOOK,))) == (book.id, undated.id)
+    assert await ids(MetadataFilter(doc_types=(DocType.BOOK, DocType.PAPER))) == (
+        book.id,
+        paper.id,
+        undated.id,
+    )
+    assert await ids(MetadataFilter(date_after=date(2020, 1, 1))) == (book.id, paper.id)
+    assert await ids(MetadataFilter(date_before=date(2022, 1, 1))) == (book.id, paper.id)
+    assert await ids(
+        MetadataFilter(
+            notebook_id=notebook_one,
+            source_ids=(source_two, source_three),
+            doc_types=(DocType.BOOK,),
+            date_after=date(2020, 1, 1),
+            date_before=date(2020, 1, 1),
+        )
+    ) == (book.id,)
+    assert await ids(MetadataFilter(date_after=date(2023, 1, 1))) == ()
+
+    paper_only = await qdrant_store.search_dense(
+        (1.0, 0.0, 0.0), MetadataFilter(doc_types=(DocType.PAPER,)), 1
+    )
+    assert paper_only[0].chunk.version_id == paper_version
+    assert paper_only[0].chunk is not paper
+    assert paper_only[0].chunk.id == paper.id
+    assert paper_only[0].score > 0
+
+
+@pytest.mark.anyio
+async def test_qdrant_empty_filter_uses_direct_query_fast_path(
+    qdrant_store: QdrantStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client = qdrant_store._require_open()
+    original = client.query_points
+    seen_filters: list[object] = []
+
+    async def capture(*args: Any, **kwargs: Any) -> Any:
+        seen_filters.append(kwargs.get("query_filter"))
+        return await original(*args, **kwargs)
+
+    monkeypatch.setattr(client, "query_points", capture)
+    await qdrant_store.search_dense((1.0, 0.0, 0.0), MetadataFilter(), 1)
+    assert seen_filters == [None]
+
+
+def test_projected_payload_deserialization_validation() -> None:
+    assert _projection_from_payload(None) is None
+    assert _projection_from_payload({}) is None
+    with pytest.raises(ValueError, match="membership payload"):
+        _projection_from_payload({"doc_type": "book", "source_ids": "invalid"})
+    projection = _projection_from_payload(
+        {
+            "doc_type": "paper",
+            "publication_date": "2024-01-01",
+            "source_ids": [],
+            "notebook_ids": [],
+        }
+    )
+    assert projection == RetrievalMetadataProjection(
+        doc_type=DocType.PAPER, publication_date=date(2024, 1, 1)
+    )
+
+
 @pytest.mark.anyio
 async def test_qdrant_snapshot_restore_preserves_replaced_points(
     qdrant_store: QdrantStore,
@@ -150,6 +304,39 @@ async def test_qdrant_snapshot_restore_preserves_replaced_points(
     assert restored[0].heading_path == original.heading_path
     assert dict(restored[0].metadata) == dict(original.metadata)
     assert restored[0].embedding == pytest.approx(snapshot[0].embedding)
+
+
+@pytest.mark.anyio
+async def test_qdrant_projected_snapshot_restores_derived_payload(
+    qdrant_store: QdrantStore,
+) -> None:
+    chunk = _projected_chunk(
+        chunk_id="d" * 64,
+        document_id=uuid4(),
+        version_id=uuid4(),
+        embedding=(0.1, 0.2, 0.3),
+    )
+    source_id = uuid4()
+    notebook_id = uuid4()
+    original = RetrievalMetadataProjection(
+        doc_type=DocType.BOOK,
+        publication_date=date(2020, 1, 1),
+        source_ids=(source_id,),
+        notebook_ids=(notebook_id,),
+    )
+    await qdrant_store._upsert_chunks_with_projection((chunk,), original)
+    snapshot = await qdrant_store._snapshot_chunks_with_projection((chunk.id,))
+    await qdrant_store._upsert_chunks_with_projection(
+        (chunk,),
+        RetrievalMetadataProjection(doc_type=DocType.PAPER, publication_date=None),
+    )
+    await qdrant_store._restore_projected_chunk_snapshot((chunk.id,), snapshot)
+
+    assert snapshot[0].projection == original
+    results = await qdrant_store.search_dense(
+        (0.1, 0.2, 0.3), MetadataFilter(doc_types=(DocType.BOOK,)), 1
+    )
+    assert tuple(result.chunk.id for result in results) == (chunk.id,)
 
 
 @pytest.mark.anyio

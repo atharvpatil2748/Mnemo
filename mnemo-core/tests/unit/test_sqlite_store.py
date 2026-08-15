@@ -10,9 +10,10 @@ Coverage targets:
 """
 
 import asyncio
+import sqlite3
 from collections.abc import Coroutine, Iterator
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 from uuid import UUID, uuid4
@@ -26,6 +27,7 @@ from mnemo.models import (
     ChunkPosition,
     ChunkType,
     Citation,
+    DocType,
     Document,
     DocumentMetadata,
     DocumentStatus,
@@ -44,6 +46,7 @@ from mnemo.models import (
     Turn,
     TurnRole,
 )
+from mnemo.storage.retrieval_projection import RetrievalMetadataProjection
 from mnemo.storage.sqlite import SQLiteStore
 
 T = TypeVar("T")
@@ -112,6 +115,20 @@ def make_doc(doc_id: UUID, ver_id: UUID, dt: datetime) -> Document:
     )
 
 
+def _search_chunk(document_id: UUID, version_id: UUID, index: int, text: str) -> Chunk:
+    return Chunk(
+        id=f"{index:064x}",
+        document_id=document_id,
+        version_id=version_id,
+        text=text,
+        chunk_type=ChunkType.PASSAGE,
+        position=ChunkPosition(section_index=0, chunk_index_in_section=index),
+        source_span=BlockSpan(start_ordinal=index, end_ordinal=index),
+        heading_path=(),
+        metadata=FrozenMetadata(),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Lifecycle
 # ---------------------------------------------------------------------------
@@ -124,10 +141,184 @@ def test_capabilities(store: SQLiteStore) -> None:
     assert caps.supports_graph is False
 
 
+def test_sparse_projection_is_version_aware_and_filters_before_top_k(
+    open_store: SQLiteStore, dt: datetime
+) -> None:
+    document_id = uuid4()
+    old_version, new_version = uuid4(), uuid4()
+    versions = (
+        DocumentVersion(
+            version_id=old_version,
+            document_id=document_id,
+            content_hash="a" * 64,
+            metadata=DocumentMetadata(content_hash="a" * 64, publication_date=date(2020, 1, 1)),
+            status=DocumentVersionStatus.SUPERSEDED,
+            created_at=dt,
+        ),
+        DocumentVersion(
+            version_id=new_version,
+            document_id=document_id,
+            content_hash="b" * 64,
+            metadata=DocumentMetadata(content_hash="b" * 64, publication_date=date(2024, 1, 1)),
+            status=DocumentVersionStatus.CURRENT,
+            created_at=dt,
+        ),
+    )
+    _run(
+        open_store.upsert_document(
+            Document(
+                document_id=document_id,
+                versions=versions,
+                current_version_id=new_version,
+                current_hash="b" * 64,
+                status=DocumentStatus.INDEXED,
+                created_at=dt,
+                updated_at=dt,
+            )
+        )
+    )
+    old = _search_chunk(document_id, old_version, 9001, "duty duty duty action")
+    new = _search_chunk(document_id, new_version, 9002, "duty action")
+    _run(
+        open_store._upsert_chunks_with_projection(
+            (old,),
+            RetrievalMetadataProjection(doc_type=DocType.BOOK, publication_date=date(2020, 1, 1)),
+        )
+    )
+    _run(
+        open_store._upsert_chunks_with_projection(
+            (new,),
+            RetrievalMetadataProjection(doc_type=DocType.PAPER, publication_date=date(2024, 1, 1)),
+        )
+    )
+
+    paper = _run(
+        open_store.search_sparse(
+            "duty",
+            MetadataFilter(
+                doc_types=(DocType.PAPER,),
+                date_after=date(2024, 1, 1),
+                date_before=date(2024, 1, 1),
+            ),
+            top_k=1,
+        )
+    )
+    assert tuple(result.chunk.id for result in paper) == (new.id,)
+    book = _run(
+        open_store.search_sparse("duty", MetadataFilter(doc_types=(DocType.BOOK,)), top_k=1)
+    )
+    assert tuple(result.chunk.id for result in book) == (old.id,)
+    assert paper[0].score >= 0 and book[0].score >= 0
+    unfiltered = _run(open_store.search_sparse("duty", MetadataFilter(), top_k=2))
+    assert tuple(result.chunk.id for result in unfiltered) == (old.id, new.id)
+    assert unfiltered[0].score > unfiltered[1].score
+
+
+def test_sparse_missing_date_and_unprojected_metadata_fail_closed(
+    open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: datetime
+) -> None:
+    _run(open_store.upsert_document(make_doc(doc_id, ver_id, dt)))
+    chunk = _search_chunk(doc_id, ver_id, 9010, "wisdom duty")
+    _run(
+        open_store._upsert_chunks_with_projection(
+            (chunk,), RetrievalMetadataProjection(doc_type=DocType.BOOK, publication_date=None)
+        )
+    )
+    assert len(_run(open_store.search_sparse("duty", MetadataFilter(), 5))) == 1
+    assert (
+        _run(open_store.search_sparse("duty", MetadataFilter(date_after=date(2000, 1, 1)), 5)) == ()
+    )
+    unprojected = _search_chunk(doc_id, ver_id, 9011, "wisdom duty")
+    _run(open_store.upsert_chunks((unprojected,)))
+    assert (
+        _run(open_store.search_sparse("duty", MetadataFilter(doc_types=(DocType.PAPER,)), 5)) == ()
+    )
+
+
 def test_health_check_unopened(store: SQLiteStore) -> None:
     statuses = _run(store.health_check())
     assert len(statuses) == 1
     assert statuses[0].healthy is False
+
+
+def test_sparse_notebook_source_filters_use_set_semantics(
+    open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: datetime
+) -> None:
+    _run(open_store.upsert_document(make_doc(doc_id, ver_id, dt)))
+    notebook_a, notebook_b = uuid4(), uuid4()
+    source_a, source_b = uuid4(), uuid4()
+    for notebook_id in (notebook_a, notebook_b):
+        _run(
+            open_store.upsert_notebook(
+                Notebook(
+                    notebook_id=notebook_id,
+                    title="Sparse acceptance",
+                    created_at=dt,
+                    updated_at=dt,
+                    metadata=FrozenMetadata(),
+                )
+            )
+        )
+    _run(
+        open_store.upsert_source(
+            Source(
+                source_id=source_a,
+                notebook_id=notebook_a,
+                document_id=doc_id,
+                created_at=dt,
+            )
+        )
+    )
+    _run(
+        open_store.upsert_source(
+            Source(
+                source_id=source_b,
+                notebook_id=notebook_b,
+                document_id=doc_id,
+                created_at=dt,
+            )
+        )
+    )
+    chunk = _search_chunk(doc_id, ver_id, 9020, "deterministic duty")
+    _run(
+        open_store._upsert_chunks_with_projection(
+            (chunk,),
+            RetrievalMetadataProjection(doc_type=DocType.BOOK, publication_date=None),
+        )
+    )
+
+    matches = _run(
+        open_store.search_sparse(
+            "duty",
+            MetadataFilter(
+                notebook_id=notebook_a,
+                source_ids=(uuid4(), source_a, source_b),
+                doc_types=(DocType.BOOK,),
+            ),
+            5,
+        )
+    )
+    assert tuple(result.chunk.id for result in matches) == (chunk.id,)
+    assert (
+        _run(
+            open_store.search_sparse(
+                "duty", MetadataFilter(notebook_id=notebook_a, source_ids=(source_b,)), 5
+            )
+        )
+        == ()
+    )
+
+
+def test_sparse_unicode_punctuation_and_multi_term_query(
+    open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: datetime
+) -> None:
+    _run(open_store.upsert_document(make_doc(doc_id, ver_id, dt)))
+    chunk = _search_chunk(doc_id, ver_id, 9030, "कर्तव्य और धर्म duty action")
+    _run(open_store.upsert_chunks((chunk,)))
+
+    for query in ("कर्तव्य", "duty, action!", "duty duty"):
+        matches = _run(open_store.search_sparse(query, MetadataFilter(), 1))
+        assert tuple(result.chunk.id for result in matches) == (chunk.id,)
 
 
 def test_lifecycle(store: SQLiteStore) -> None:
@@ -137,6 +328,26 @@ def test_lifecycle(store: SQLiteStore) -> None:
     _run(store.close())
     statuses = _run(store.health_check())
     assert statuses[0].healthy is False
+
+
+def test_schema_migration_4_upgrades_v3_idempotently(tmp_path: Path) -> None:
+    path = tmp_path / "v3.db"
+    with sqlite3.connect(path) as db:
+        db.execute("CREATE TABLE schema_versions (version INTEGER PRIMARY KEY, applied_at TEXT)")
+        db.execute("INSERT INTO schema_versions VALUES (3, '2026-08-13T00:00:00+00:00')")
+    store = SQLiteStore(path)
+    _run(store.open())
+    _run(store.close())
+    _run(store.open())
+    _run(store.close())
+    with sqlite3.connect(path) as db:
+        version = db.execute("SELECT MAX(version) FROM schema_versions").fetchone()
+        table = db.execute(
+            "SELECT name FROM sqlite_master "
+            "WHERE type='table' AND name='retrieval_version_metadata'"
+        ).fetchone()
+    assert version == (4,)
+    assert table == ("retrieval_version_metadata",)
 
 
 def test_multiple_open_close(store: SQLiteStore) -> None:
@@ -231,9 +442,47 @@ def test_source_crud(
 
     assert _run(open_store.get_source(src_id)) is not None
     assert len(_run(open_store.list_sources(nb_id, 10, None)).items) == 1
-
     _run(open_store.delete_source(src_id))
     assert _run(open_store.get_source(src_id)) is None
+
+
+def test_source_membership_pair_is_unique(
+    open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: datetime
+) -> None:
+    notebook_id = uuid4()
+    _run(
+        open_store.upsert_notebook(
+            Notebook(
+                notebook_id=notebook_id,
+                title="Unique membership",
+                created_at=dt,
+                updated_at=dt,
+            )
+        )
+    )
+    _run(open_store.upsert_document(make_doc(doc_id, ver_id, dt)))
+    _run(
+        open_store.upsert_source(
+            Source(
+                source_id=uuid4(),
+                notebook_id=notebook_id,
+                document_id=doc_id,
+                created_at=dt,
+            )
+        )
+    )
+
+    with pytest.raises(ConflictError, match="duplicate Source associations"):
+        _run(
+            open_store.upsert_source(
+                Source(
+                    source_id=uuid4(),
+                    notebook_id=notebook_id,
+                    document_id=doc_id,
+                    created_at=dt,
+                )
+            )
+        )
 
 
 def test_note_crud(open_store: SQLiteStore, nb_id: UUID, dt: datetime) -> None:

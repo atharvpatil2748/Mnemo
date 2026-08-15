@@ -1,0 +1,294 @@
+{
+  "verdict": "PASS",
+  "timestamp_utc": "2026-08-13T11:33:53.628544+00:00",
+  "dataset": "goldenDataset/Bhagavad-gita-As-It-Is.pdf",
+  "dataset_sha256": "ff112b0b056d303b792f6f2e68cbd73a89adf612fa9113f932446cdea7741583",
+  "physical_pages": 952,
+  "chunk_count": 1275,
+  "qdrant_collection": "mnemo_m6_5_gita_20260813t113208280320z",
+  "qdrant_points": 1275,
+  "sqlite_database": "data/module-6.5-acceptance/20260813T113208280320Z/mnemo.db",
+  "ollama_model": "nomic-embed-text",
+  "embedding_dimensions": 768,
+  "embedding_seconds": 35.919928299990715,
+  "indexing_seconds": 3.9413076999917394,
+  "query": "What does the Bhagavad Gita teach about duty?",
+  "planner_input": "canonical validated RetrievalPlan (no live planner LLM plugin)",
+  "subqueries": [
+    {
+      "query_text": "What does the Bhagavad Gita teach about duty?",
+      "retrieval_mode": "hybrid",
+      "filters": {
+        "notebook_id": "26780f1a-bbca-5de5-98b0-3e2c9f5887c0",
+        "doc_types": [
+          "book"
+        ],
+        "date_after": null,
+        "date_before": null,
+        "source_ids": [
+          "8715ab76-5bb0-50d2-9906-a1ed4b0483f1"
+        ]
+      },
+      "max_results": 8
+    },
+    {
+      "query_text": "Duty in the Bhagavad Gita is disciplined action performed without attachment to personal reward.",
+      "retrieval_mode": "dense",
+      "filters": {
+        "notebook_id": "26780f1a-bbca-5de5-98b0-3e2c9f5887c0",
+        "doc_types": [
+          "book"
+        ],
+        "date_after": null,
+        "date_before": null,
+        "source_ids": [
+          "8715ab76-5bb0-50d2-9906-a1ed4b0483f1"
+        ]
+      },
+      "max_results": 8
+    },
+    {
+      "query_text": "Bhagavad Gita duty action attachment reward",
+      "retrieval_mode": "sparse",
+      "filters": {
+        "notebook_id": "26780f1a-bbca-5de5-98b0-3e2c9f5887c0",
+        "doc_types": [
+          "book"
+        ],
+        "date_after": null,
+        "date_before": null,
+        "source_ids": [
+          "8715ab76-5bb0-50d2-9906-a1ed4b0483f1"
+        ]
+      },
+      "max_results": 8
+    }
+  ],
+  "invocation_ids": [
+    "sq-1:dense",
+    "sq-1:sparse",
+    "sq-2:dense",
+    "sq-3:sparse"
+  ],
+  "raw_stream_counts": [
+    8,
+    8,
+    8,
+    8
+  ],
+  "promoted_stream_counts": [
+    8,
+    8,
+    8,
+    8
+  ],
+  "source_local_occurrences": 32,
+  "parent_introduced_evidence": 0,
+  "golden_parent_limitation": "The verified corpus contains 1275 canonical root chunks and no stored parent families; real ParentRetriever executed once per stream as a no-op. Controlled canonical family behavior remains validated by Module 6.4 storage fixtures and Module 6.5 promotion/fusion tests.",
+  "deduplicated_candidates": 24,
+  "final_result_count": 10,
+  "final_results": [
+    {
+      "chunk_id": "fb0eff399442aea2b5729862eb1578751813f98e18041cfa28f8f1b3edc888a7",
+      "global_rank": 1,
+      "rrf_score": 0.04839549075403121,
+      "evidence": [
+        {
+          "invocation_id": "sq-1:dense",
+          "source": "dense",
+          "local_rank": 3,
+          "raw_score": 0.73038065,
+          "parent_introduced": false
+        },
+        {
+          "invocation_id": "sq-2:dense",
+          "source": "dense",
+          "local_rank": 1,
+          "raw_score": 0.7657145,
+          "parent_introduced": false
+        },
+        {
+          "invocation_id": "sq-3:sparse",
+          "source": "sparse",
+          "local_rank": 2,
+          "raw_score": 12.723967860441558,
+          "parent_introduced": false
+        }
+      ]
+    },
+    {
+      "chunk_id": "687105222255085e0e36efa651a50e3e585bcfc4d5c4752a8635ef3028683fde",
+      "global_rank": 2,
+      "rrf_score": 0.03252247488101534,
+      "evidence": [
+        {
+          "invocation_id": "sq-2:dense",
+          "source": "dense",
+          "local_rank": 2,
+          "raw_score": 0.7593446,
+          "parent_introduced": false
+        },
+        {
+          "invocation_id": "sq-3:sparse",
+          "source": "sparse",
+          "local_rank": 1,
+          "raw_score": 12.754067822549636,
+          "parent_introduced": false
+        }
+      ]
+    },
+    {
+      "chunk_id": "990117de48d3c6d69372f7232dd008b0c239f4ae1c2f8a5870087a936c324d5f",
+      "global_rank": 3,
+      "rrf_score": 0.03149801587301587,
+      "evidence": [
+        {
+          "invocation_id": "sq-2:dense",
+          "source": "dense",
+          "local_rank": 4,
+          "raw_score": 0.7477237,
+          "parent_introduced": false
+        },
+        {
+          "invocation_id": "sq-3:sparse",
+          "source": "sparse",
+          "local_rank": 3,
+          "raw_score": 11.884450009072914,
+          "parent_introduced": false
+        }
+      ]
+    },
+    {
+      "chunk_id": "13af9334fd485712ae94056945657d2866322e07b431d011ef13867bf99faf57",
+      "global_rank": 4,
+      "rrf_score": 0.03128054740957967,
+      "evidence": [
+        {
+          "invocation_id": "sq-1:dense",
+          "source": "dense",
+          "local_rank": 2,
+          "raw_score": 0.7331376,
+          "parent_introduced": false
+        },
+        {
+          "invocation_id": "sq-2:dense",
+          "source": "dense",
+          "local_rank": 6,
+          "raw_score": 0.74560213,
+          "parent_introduced": false
+        }
+      ]
+    },
+    {
+      "chunk_id": "04f156543005258b6833d636f9bcda957ce61bd68f681392dc0c33763da0fd80",
+      "global_rank": 5,
+      "rrf_score": 0.031099324975891997,
+      "evidence": [
+        {
+          "invocation_id": "sq-1:dense",
+          "source": "dense",
+          "local_rank": 1,
+          "raw_score": 0.73382306,
+          "parent_introduced": false
+        },
+        {
+          "invocation_id": "sq-2:dense",
+          "source": "dense",
+          "local_rank": 8,
+          "raw_score": 0.73417246,
+          "parent_introduced": false
+        }
+      ]
+    },
+    {
+      "chunk_id": "c4e1656e44c90f0cd725ac281411af9604d11b7ef1143aecc6bf57a428347710",
+      "global_rank": 6,
+      "rrf_score": 0.031024531024531024,
+      "evidence": [
+        {
+          "invocation_id": "sq-1:dense",
+          "source": "dense",
+          "local_rank": 6,
+          "raw_score": 0.712392,
+          "parent_introduced": false
+        },
+        {
+          "invocation_id": "sq-2:dense",
+          "source": "dense",
+          "local_rank": 3,
+          "raw_score": 0.750926,
+          "parent_introduced": false
+        }
+      ]
+    },
+    {
+      "chunk_id": "3c8dcb0bfba173029ff590e6a064178743aefe9ee0b73dbcd5821ad9efef53dd",
+      "global_rank": 7,
+      "rrf_score": 0.03076923076923077,
+      "evidence": [
+        {
+          "invocation_id": "sq-1:dense",
+          "source": "dense",
+          "local_rank": 5,
+          "raw_score": 0.71500844,
+          "parent_introduced": false
+        },
+        {
+          "invocation_id": "sq-2:dense",
+          "source": "dense",
+          "local_rank": 5,
+          "raw_score": 0.7456026,
+          "parent_introduced": false
+        }
+      ]
+    },
+    {
+      "chunk_id": "70a5a0adeada1ba3ad5d17e10a1f6f61b323d3f3db62fa1eb32303a8b13c12a8",
+      "global_rank": 8,
+      "rrf_score": 0.01639344262295082,
+      "evidence": [
+        {
+          "invocation_id": "sq-1:sparse",
+          "source": "sparse",
+          "local_rank": 1,
+          "raw_score": 9.351617995457696,
+          "parent_introduced": false
+        }
+      ]
+    },
+    {
+      "chunk_id": "7484e4b9f63c238455f2cd254fa9aee448a55b018ff40a1ebe15611b6fc07427",
+      "global_rank": 9,
+      "rrf_score": 0.016129032258064516,
+      "evidence": [
+        {
+          "invocation_id": "sq-1:sparse",
+          "source": "sparse",
+          "local_rank": 2,
+          "raw_score": 9.269531160380218,
+          "parent_introduced": false
+        }
+      ]
+    },
+    {
+      "chunk_id": "cc3c1a957112dce0acac04380adaa95bc5728f0289de70755774e297c0c50f82",
+      "global_rank": 10,
+      "rrf_score": 0.015873015873015872,
+      "evidence": [
+        {
+          "invocation_id": "sq-1:sparse",
+          "source": "sparse",
+          "local_rank": 3,
+          "raw_score": 8.004111685954335,
+          "parent_introduced": false
+        }
+      ]
+    }
+  ],
+  "global_limit": 10,
+  "configured_concurrency": 4,
+  "first_orchestration_seconds": 0.3240059000090696,
+  "cached_repeat_seconds": 0.07507379999151453,
+  "deterministic_repeat": true,
+  "total_acceptance_seconds": 105.1417664999899
+}

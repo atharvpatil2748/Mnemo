@@ -1,6 +1,7 @@
 """Public Module 1.1 domain model exports."""
 
 from ._shared import BoundingBox, FrozenMetadata, JSONPrimitive, JSONValue
+from .answer import GenerationEvidence, GroundedAnswerResult, GroundedAnswerStatus
 from .assets import Asset
 from .blocks import (
     Block,
@@ -13,6 +14,15 @@ from .blocks import (
     TextBlock,
 )
 from .chunks import BlockSpan, Chunk, ChunkDraft, ChunkPosition, ChunkType
+from .citation import CitationResolutionResult, CitationResolutionStatus
+from .context import (
+    CompressionEvidence,
+    ContextBuildResult,
+    ContextEmptyReason,
+    ContextItem,
+    ContextItemKind,
+    DocumentContextLabel,
+)
 from .documents import (
     DocType,
     Document,
@@ -22,6 +32,7 @@ from .documents import (
     DocumentVersionStatus,
     ParsedDocument,
 )
+from .final_qa import FinalQARequest, FinalQAResult, FinalQAStatus
 from .graph import Entity, GraphEdge
 from .notebook import (
     Citation,
@@ -35,9 +46,30 @@ from .notebook import (
     Turn,
     TurnRole,
 )
-from .retrieval import MetadataFilter, ScoredChunk
+from .retrieval import (
+    MAX_SUBQUERIES,
+    MAX_SUBQUERY_RESULTS,
+    CrossEncoderEvidence,
+    FusedChunkResult,
+    FusionEvidence,
+    MetadataFilter,
+    RerankedChunkResult,
+    RerankFallbackReason,
+    RerankPolicy,
+    RetrievalFusionResult,
+    RetrievalIntent,
+    RetrievalInvocationTrace,
+    RetrievalMode,
+    RetrievalPlan,
+    RetrievalRerankResult,
+    ScoredChunk,
+    SubQuery,
+    stable_sigmoid,
+)
 
 __all__ = [
+    "MAX_SUBQUERIES",
+    "MAX_SUBQUERY_RESULTS",
     "Asset",
     "Block",
     "BlockSpan",
@@ -48,17 +80,34 @@ __all__ = [
     "ChunkPosition",
     "ChunkType",
     "Citation",
+    "CitationResolutionResult",
+    "CitationResolutionStatus",
     "CodeBlock",
+    "CompressionEvidence",
+    "ContextBuildResult",
+    "ContextEmptyReason",
+    "ContextItem",
+    "ContextItemKind",
+    "CrossEncoderEvidence",
     "DocType",
     "Document",
+    "DocumentContextLabel",
     "DocumentMetadata",
     "DocumentStatus",
     "DocumentVersion",
     "DocumentVersionStatus",
     "Entity",
     "EquationBlock",
+    "FinalQARequest",
+    "FinalQAResult",
+    "FinalQAStatus",
     "FrozenMetadata",
+    "FusedChunkResult",
+    "FusionEvidence",
+    "GenerationEvidence",
     "GraphEdge",
+    "GroundedAnswerResult",
+    "GroundedAnswerStatus",
     "HeadingBlock",
     "ImageBlock",
     "Insight",
@@ -70,11 +119,22 @@ __all__ = [
     "NoteOrigin",
     "Notebook",
     "ParsedDocument",
+    "RerankFallbackReason",
+    "RerankPolicy",
+    "RerankedChunkResult",
+    "RetrievalFusionResult",
+    "RetrievalIntent",
+    "RetrievalInvocationTrace",
+    "RetrievalMode",
+    "RetrievalPlan",
+    "RetrievalRerankResult",
     "ScoredChunk",
     "Session",
     "Source",
+    "SubQuery",
     "TableBlock",
     "TextBlock",
     "Turn",
     "TurnRole",
+    "stable_sigmoid",
 ]

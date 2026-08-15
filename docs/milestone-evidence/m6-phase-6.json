@@ -1,0 +1,433 @@
+{
+  "verdict": "PASS",
+  "timestamp_utc": "2026-08-14T18:30:34.984772+00:00",
+  "version": "0.20.1",
+  "run_id": "20260814T182834880992Z",
+  "dataset": "goldenDataset/Bhagavad-gita-As-It-Is.pdf",
+  "dataset_sha256": "ff112b0b056d303b792f6f2e68cbd73a89adf612fa9113f932446cdea7741583",
+  "source_pdf_preserved": true,
+  "old_acceptance_data_reused": false,
+  "fresh_run_directory": "data/milestone-acceptance/20260814T182834880992Z",
+  "document_id": "d8ef0c53-8596-5b6d-b250-da5d91d3a20c",
+  "version_id": "ee50fc6e-cc8d-59cb-97c2-17dbd8d166e9",
+  "source_id": "cb34d62d-2d99-51ee-89f1-037a8ea02039",
+  "notebook_id": "2d872bc0-780a-5f19-a928-5dd6cb5ba06c",
+  "document_title": "Bhagavad-gita As It Is with pics!",
+  "fresh_chunk_count": 1275,
+  "fresh_embedding_count": 1000,
+  "qdrant_collection": "mnemo_m5_gita_20260814t182834880992z",
+  "qdrant_point_count": 1000,
+  "embedding_model": "nomic-embed-text",
+  "embedding_dimensions": 768,
+  "sqlite_schema_version": 4,
+  "query": "What does the Bhagavad Gita teach about duty? You MUST cite your claims using the exact format [source:N] (e.g. [source:1]).",
+  "planner_subqueries": 3,
+  "retrieval_invocations": 4,
+  "fusion_candidates": 6,
+  "reranking_candidates": 6,
+  "context_selected": 6,
+  "context_omitted": 0,
+  "context_tokens": 2137,
+  "answer": "*   **The Importance of Action:**\n    *   Action (or performing prescribed duty) is superior to remaining inactive, as a person cannot maintain even his physical body without work [source:5].\n    *   The discharge of one’s prescribed duty is a concept discussed under Karma-yoga [source:1].\n\n*   **The Practice of Duty (Karma-yoga):**\n    *   To practice duty, one must perform it while remaining steadfast in yoga [source:2].\n    *   Specifically, one must \"Perform your duty and abandon all attachment to success or failure\" [source:2]. Such evenness of mind is described as yoga [source:2].\n    *   A man is advised to \"",
+  "answer_model": "gemma4:e4b",
+  "answer_token_count": 147,
+  "final_qa_status": "citation_resolved",
+  "citation_count": 3,
+  "citations": [
+    {
+      "citation_id": "3359e938-ec37-5601-abd7-837579661921",
+      "turn_id": "a3c77696-194c-5016-9297-807ea9cfda04",
+      "source_number": 5,
+      "chunk_id": "be6102761642ba221e8ce4ee9603a3d94df0a6edf99854e6d5adbb331d323228",
+      "document_id": "d8ef0c53-8596-5b6d-b250-da5d91d3a20c",
+      "version_id": "ee50fc6e-cc8d-59cb-97c2-17dbd8d166e9",
+      "title": "Bhagavad-gita As It Is with pics!",
+      "heading_path": [
+        "Bhagavad-gita As It Is with pics!",
+        "CHAPTER THREE",
+        "Karma-yoga"
+      ],
+      "page_number": 185,
+      "quote_sha256": "863c919e73cd3701ee9ac3ceb8d0f2173aa6636f01c4c25709dc95466e6b4e31",
+      "exact_canonical_quote": true
+    },
+    {
+      "citation_id": "a076e172-b1e1-5542-8531-c206d85f2abb",
+      "turn_id": "a3c77696-194c-5016-9297-807ea9cfda04",
+      "source_number": 1,
+      "chunk_id": "e0aaaa808a573a4e4e48bfc5672f9fee3310227172d2ba013131c347b37c8df8",
+      "document_id": "d8ef0c53-8596-5b6d-b250-da5d91d3a20c",
+      "version_id": "ee50fc6e-cc8d-59cb-97c2-17dbd8d166e9",
+      "title": "Bhagavad-gita As It Is with pics!",
+      "heading_path": [
+        "Bhagavad-gita As It Is with pics!",
+        "CHAPTER THREE",
+        "Karma-yoga"
+      ],
+      "page_number": 231,
+      "quote_sha256": "4b2408d529799f4f9670f56ffce6add9674d4ad0c78cbba33eab54874a208fd0",
+      "exact_canonical_quote": true
+    },
+    {
+      "citation_id": "2038aec4-b544-5be7-ad1a-06447d44dddf",
+      "turn_id": "a3c77696-194c-5016-9297-807ea9cfda04",
+      "source_number": 2,
+      "chunk_id": "0e4dc52388756e567ceaa948e97808ef755a19847017760041a14555a8dcdfe2",
+      "document_id": "d8ef0c53-8596-5b6d-b250-da5d91d3a20c",
+      "version_id": "ee50fc6e-cc8d-59cb-97c2-17dbd8d166e9",
+      "title": "Bhagavad-gita As It Is with pics!",
+      "heading_path": [
+        "Bhagavad-gita As It Is with pics!",
+        "CHAPTER TWO",
+        "Contents of the Gétä Summarized"
+      ],
+      "page_number": 148,
+      "quote_sha256": "3bf59cdaa771aebf6012e52f4b6371575129b57bc67fcc67173e9730c9a28cb9",
+      "exact_canonical_quote": true
+    }
+  ],
+  "assistant_turn_id": "a3c77696-194c-5016-9297-807ea9cfda04",
+  "assistant_turn_sequence": 1,
+  "clock_calls": 2,
+  "nested_provenance_preserved": true,
+  "qa_seconds": 34.2630175000013,
+  "total_seconds": 120.19385359999796,
+  "m4": {
+    "verdict": "PASS",
+    "timestamp_utc": "2026-08-14T18:29:25.400943+00:00",
+    "dataset": "goldenDataset/Bhagavad-gita-As-It-Is.pdf",
+    "dataset_bytes": 66135830,
+    "dataset_sha256": "ff112b0b056d303b792f6f2e68cbd73a89adf612fa9113f932446cdea7741583",
+    "physical_pages": 952,
+    "metadata_pages": 952,
+    "parser": "ParserRouter -> PDFParser",
+    "block_count": 6512,
+    "asset_count": 69,
+    "heading_count": 95,
+    "document_type": "book",
+    "chunker": "BookChunker",
+    "chunk_count": 1275,
+    "root_count": 1275,
+    "maximum_hierarchy_depth": 3,
+    "empty_heading_path_count": 0,
+    "chunks_per_chapter": {
+      "<front/back matter>": 108,
+      "CHAPTER ONE": 56,
+      "CHAPTER TWO": 133,
+      "CHAPTER THREE": 73,
+      "CHAPTER FOUR": 82,
+      "CHAPTER FIVE": 50,
+      "CHAPTER SIX": 80,
+      "CHAPTER SEVEN": 73,
+      "CHAPTER EIGHT": 45,
+      "CHAPTER NINE": 76,
+      "CHAPTER TEN": 70,
+      "CHAPTER ELEVEN": 79,
+      "CHAPTER TWELVE": 35,
+      "CHAPTER THIRTEEN": 61,
+      "CHAPTER FOURTEEN": 41,
+      "CHAPTER FIFTEEN": 41,
+      "CHAPTER SIXTEEN": 41,
+      "CHAPTER SEVENTEEN": 34,
+      "CHAPTER EIGHTEEN": 97
+    },
+    "authored_chapter_count": 18,
+    "chunks_with_chapter_path": 1167,
+    "hierarchy_examples": [
+      {
+        "chapter": "CHAPTER ONE",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER ONE",
+          "Observing the Armies on the Battlefield of Kurukṣetra"
+        ],
+        "page": 40,
+        "chunk_id": "95b9c379c868bca546359e911c63e04466980c0b4e11696fcdf5fe66a52717db"
+      },
+      {
+        "chapter": "CHAPTER TWO",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER TWO",
+          "Contents of the Gétä Summarized"
+        ],
+        "page": 82,
+        "chunk_id": "d380cd658389365d82ee2da589b9cdfefceb9d801e2b6267404d6a5ce48cc0d7"
+      },
+      {
+        "chapter": "CHAPTER THREE",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER THREE",
+          "Karma-yoga"
+        ],
+        "page": 177,
+        "chunk_id": "a1e4ecb1bd1d65ff5a3a9739e76ddb46732320c73e41b16167640ac6b89795b3"
+      },
+      {
+        "chapter": "CHAPTER FOUR",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER FOUR",
+          "Transcendental Knowledge"
+        ],
+        "page": 232,
+        "chunk_id": "733d176f7c3b0bd588b4c5589bbd08deb90a73d476ca9a502af678854d60c74c"
+      },
+      {
+        "chapter": "CHAPTER FIVE",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER FIVE",
+          "Karma-yoga—Action in Kåñëa Consciousness"
+        ],
+        "page": 293,
+        "chunk_id": "e1af3e86ea9597beb2b6e3a2c661ff8d769311c819c3a64793e948430439f3ca"
+      },
+      {
+        "chapter": "CHAPTER SIX",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER SIX",
+          "Säìkhya-yoga"
+        ],
+        "page": 329,
+        "chunk_id": "19c15b3681e73d75339328f598b414599f96dde23998f8d23d0c9aa1750e75e4"
+      },
+      {
+        "chapter": "CHAPTER SEVEN",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER SEVEN",
+          "Knowledge of the Absolute"
+        ],
+        "page": 387,
+        "chunk_id": "42da25f2423d160b7589cfc348383e09ce63528af91454edde839cac44d86641"
+      },
+      {
+        "chapter": "CHAPTER EIGHT",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER EIGHT",
+          "Attaining the Supreme"
+        ],
+        "page": 437,
+        "chunk_id": "1b0e920818fc37136d1edc7af0dc5b4eac189b811608f6340c6e6261b10768aa"
+      },
+      {
+        "chapter": "CHAPTER NINE",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER NINE",
+          "The Most Confidential Knowledge"
+        ],
+        "page": 470,
+        "chunk_id": "23b8de84c3b04a199b0f86c7de314c200fb43382a689e8080acafccc0e95b80a"
+      },
+      {
+        "chapter": "CHAPTER TEN",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER TEN",
+          "The Opulence of the Absolute"
+        ],
+        "page": 525,
+        "chunk_id": "841e4efaf571fe5668d1f385f0a964fd4b41bf09a8fb44f18a3b7f1bc3228ce0"
+      },
+      {
+        "chapter": "CHAPTER ELEVEN",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER ELEVEN",
+          "The Universal Form"
+        ],
+        "page": 577,
+        "chunk_id": "7fc87050197b93358f83303f704bb821357d0f2b439d8ea8e59ceeafdbca461e"
+      },
+      {
+        "chapter": "CHAPTER TWELVE",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER TWELVE",
+          "Devotional Service"
+        ],
+        "page": 635,
+        "chunk_id": "e8385874fbe13d036f09519517622e7911d4ba497dd82a0f0d2197418af369aa"
+      },
+      {
+        "chapter": "CHAPTER THIRTEEN",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER THIRTEEN",
+          "Nature, the Enjoyer, and Consciousness"
+        ],
+        "page": 661,
+        "chunk_id": "48112b71f59578788c32512f108c05baa976a110c1353054daab66cf31c58fef"
+      },
+      {
+        "chapter": "CHAPTER FOURTEEN",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER FOURTEEN",
+          "The Three Modes of Material Nature"
+        ],
+        "page": 706,
+        "chunk_id": "0824c006d11fcb7fda66f230e5d962e0808d56d086ed365cdd307f132e7ad346"
+      },
+      {
+        "chapter": "CHAPTER FIFTEEN",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER FIFTEEN",
+          "The Yoga of the Supreme Person"
+        ],
+        "page": 738,
+        "chunk_id": "73ded0f0b05e9aa3115979ac5ecfc0601f845f09150f3ff827c1b90b7b353236"
+      },
+      {
+        "chapter": "CHAPTER SIXTEEN",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER SIXTEEN",
+          "The Divine and Demoniac Natures"
+        ],
+        "page": 768,
+        "chunk_id": "b33d05aeacc4e24bcbef42ddf23b573b2f30cbfd96d61d27aff12d8ccdc8eac3"
+      },
+      {
+        "chapter": "CHAPTER SEVENTEEN",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER SEVENTEEN",
+          "The Divisions of Faith"
+        ],
+        "page": 799,
+        "chunk_id": "e440479bfaaf92500b8926c00a8dc96af7d3696156c9249b9d7ad7da55584f83"
+      },
+      {
+        "chapter": "CHAPTER EIGHTEEN",
+        "heading_path": [
+          "Bhagavad-gita As It Is with pics!",
+          "CHAPTER EIGHTEEN",
+          "Conclusion—The Perfection of Renunciation"
+        ],
+        "page": 827,
+        "chunk_id": "5efa8831bb05a75f1857ad814d593ac4de77d268432346f95c1328120dfa3339"
+      }
+    ],
+    "deterministic_repeat": true,
+    "timings_seconds": {
+      "parse": 23.136756399999285,
+      "clean": 21.42111069999737,
+      "classify": 0.0005946999990555923,
+      "asset_persistence": 0.31650859999717795,
+      "canonicalization": 0.014172099999996135,
+      "chunking": 1.901147000000492,
+      "repeat_chunking": 1.538861100001668,
+      "ingestion_to_chunks": 46.79028949999338
+    },
+    "normalized_1000_page_chunking_seconds": 1.997003151261021,
+    "invalid_provenance": 0,
+    "invalid_source_text": 0,
+    "short_chunks": 0,
+    "oversized_chunks": 0,
+    "invalid_parent_relationships": 0,
+    "invalid_sibling_relationships": 0,
+    "chapter_boundary_violations": 0,
+    "environment": {
+      "mnemo_core": "0.20.1",
+      "python": "3.12.10",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+      "tokenizer": "mnemo/o200k_base;adapter=v1;engine=tiktoken-0.13.0;asset-sha256=446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d",
+      "target_tokens": 400,
+      "max_tokens": 500,
+      "effective_max_tokens": 500
+    }
+  },
+  "m5": {
+    "verdict": "PASS",
+    "timestamp_utc": "2026-08-14T18:29:51.470994+00:00",
+    "input_chunks": 1000,
+    "selection": "first 1000 chunks in deterministic source order",
+    "ollama_model": "nomic-embed-text",
+    "embedding_dimensions": 768,
+    "batch_size": 50,
+    "concurrency": 4,
+    "ollama_embedding_requests": 1000,
+    "ollama_startup_probe_requests": 1,
+    "cache_hits_first_run": 0,
+    "cache_misses_first_run": 1000,
+    "cache_rows": 1000,
+    "repeat_subset_chunks": 100,
+    "repeat_cache_hits": 100,
+    "repeat_cache_misses": 0,
+    "repeat_underlying_ollama_requests": 0,
+    "repeat_vectors_equivalent": true,
+    "embedding_seconds": 18.90586799999801,
+    "average_embedding_latency_seconds": 0.018905867999998008,
+    "throughput_chunks_per_second": 52.89363069709919,
+    "repeat_seconds": 0.2508832999992592,
+    "qdrant_seconds": 1.4184290999983205,
+    "qdrant_collection": "mnemo_m5_gita_20260814t182834880992z",
+    "qdrant_collection_dimensions": 768,
+    "qdrant_points_before": 0,
+    "qdrant_points_written": 1000,
+    "qdrant_points_read_back": 1000,
+    "qdrant_exact_count": 1000,
+    "payload_samples_validated": 10,
+    "payload_validation": true,
+    "dense_retrieval": {
+      "query": "What does the Bhagavad Gita teach about duty?",
+      "query_embedding_source": "nomic-embed-text",
+      "top_k": 5,
+      "filter": {
+        "notebook_id": "2d872bc0-780a-5f19-a928-5dd6cb5ba06c",
+        "source_ids": [
+          "cb34d62d-2d99-51ee-89f1-037a8ea02039"
+        ],
+        "doc_types": [
+          "book"
+        ]
+      },
+      "unfiltered_chunk_ids": [
+        "04f156543005258b6833d636f9bcda957ce61bd68f681392dc0c33763da0fd80",
+        "13af9334fd485712ae94056945657d2866322e07b431d011ef13867bf99faf57",
+        "fb0eff399442aea2b5729862eb1578751813f98e18041cfa28f8f1b3edc888a7",
+        "3c8dcb0bfba173029ff590e6a064178743aefe9ee0b73dbcd5821ad9efef53dd",
+        "c4e1656e44c90f0cd725ac281411af9604d11b7ef1143aecc6bf57a428347710"
+      ],
+      "filtered_chunk_ids": [
+        "04f156543005258b6833d636f9bcda957ce61bd68f681392dc0c33763da0fd80",
+        "13af9334fd485712ae94056945657d2866322e07b431d011ef13867bf99faf57",
+        "fb0eff399442aea2b5729862eb1578751813f98e18041cfa28f8f1b3edc888a7",
+        "3c8dcb0bfba173029ff590e6a064178743aefe9ee0b73dbcd5821ad9efef53dd",
+        "c4e1656e44c90f0cd725ac281411af9604d11b7ef1143aecc6bf57a428347710"
+      ],
+      "filtered_raw_scores": [
+        0.73382306,
+        0.7331376,
+        0.73038065,
+        0.71500844,
+        0.712392
+      ],
+      "filtered_version_ids": [
+        "ee50fc6e-cc8d-59cb-97c2-17dbd8d166e9",
+        "ee50fc6e-cc8d-59cb-97c2-17dbd8d166e9",
+        "ee50fc6e-cc8d-59cb-97c2-17dbd8d166e9",
+        "ee50fc6e-cc8d-59cb-97c2-17dbd8d166e9",
+        "ee50fc6e-cc8d-59cb-97c2-17dbd8d166e9"
+      ],
+      "empty_nonmatching_filter": true,
+      "version_projection_validated": true
+    },
+    "benchmark_10000": "not executed: the golden corpus was not duplicated or fabricated"
+  },
+  "environment": {
+    "python": "3.12.10",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "llm_provider": "ollama",
+    "llm_model": "gemma4:e4b",
+    "tokenizer": "mnemo/o200k_base;adapter=v1;engine=tiktoken-0.13.0;asset-sha256=446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d"
+  }
+}
