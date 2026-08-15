@@ -15,6 +15,7 @@ _SCHEMA = """
 PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;
 PRAGMA synchronous = NORMAL;
+PRAGMA busy_timeout = 30000;
 
 CREATE TABLE IF NOT EXISTS embedding_cache (
     key TEXT PRIMARY KEY,
@@ -35,12 +36,13 @@ class SQLiteEmbeddingCache(CacheInterfaceV1[str, tuple[float, ...]]):
     async def initialize(self) -> None:
         """Create schema if it does not exist."""
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        async with aiosqlite.connect(self._path) as db:
+        async with aiosqlite.connect(self._path, timeout=30.0) as db:
             await db.executescript(_SCHEMA)
 
     @asynccontextmanager
     async def _transaction(self) -> AsyncIterator[aiosqlite.Connection]:
-        async with aiosqlite.connect(self._path) as db:
+        async with aiosqlite.connect(self._path, timeout=30.0) as db:
+            await db.execute("PRAGMA busy_timeout = 30000")
             await db.execute("BEGIN IMMEDIATE")
             try:
                 yield db
@@ -64,7 +66,10 @@ class SQLiteEmbeddingCache(CacheInterfaceV1[str, tuple[float, ...]]):
         """Return the cached vector, or None if missing or expired."""
         now_iso = datetime.now(UTC).isoformat()
         query = "SELECT dimensions, vector, expires_at FROM embedding_cache WHERE key = ?"
-        async with aiosqlite.connect(self._path) as db, db.execute(query, (key,)) as cursor:
+        async with (
+            aiosqlite.connect(self._path, timeout=30.0) as db,
+            db.execute(query, (key,)) as cursor,
+        ):
             row = await cursor.fetchone()
             if not row:
                 return None
