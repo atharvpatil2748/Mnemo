@@ -1,0 +1,73 @@
+"""Server-level transport and process configuration for mnemo-server."""
+
+from __future__ import annotations
+
+import json
+import os
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+_VALID_LOG_LEVELS = frozenset({"critical", "error", "warning", "info", "debug", "trace"})
+
+
+class ServerConfig(BaseModel):
+    """Transport and runtime process configuration for mnemo-server."""
+
+    model_config = ConfigDict(frozen=True)
+
+    host: str = Field(default="127.0.0.1", min_length=1)
+    port: int = Field(default=8000, ge=1, le=65535)
+    cors_origins: tuple[str, ...] = Field(
+        default=("http://localhost:3000", "http://127.0.0.1:3000")
+    )
+    log_level: Literal["critical", "error", "warning", "info", "debug", "trace"] = Field(
+        default="info"
+    )
+
+    @classmethod
+    def from_env(cls) -> ServerConfig:
+        """Load server configuration from MNEMO_SERVER_* environment variables."""
+        host = os.environ.get("MNEMO_SERVER_HOST", "127.0.0.1")
+        port_raw = os.environ.get("MNEMO_SERVER_PORT", "8000")
+        try:
+            port = int(port_raw)
+        except ValueError as err:
+            raise ValueError(f"MNEMO_SERVER_PORT must be an integer, got: {port_raw!r}") from err
+
+        cors_raw = os.environ.get("MNEMO_SERVER_CORS_ORIGINS")
+        if cors_raw is None:
+            cors_origins: tuple[str, ...] = ("http://localhost:3000", "http://127.0.0.1:3000")
+        else:
+            stripped = cors_raw.strip()
+            if stripped.startswith("[") and stripped.endswith("]"):
+                try:
+                    parsed = json.loads(stripped)
+                    if isinstance(parsed, list):
+                        cors_origins = tuple(
+                            str(item).strip() for item in parsed if str(item).strip()
+                        )
+                    else:
+                        cors_origins = tuple(
+                            item.strip() for item in stripped.split(",") if item.strip()
+                        )
+                except json.JSONDecodeError:
+                    cors_origins = tuple(
+                        item.strip() for item in stripped.split(",") if item.strip()
+                    )
+            else:
+                cors_origins = tuple(item.strip() for item in stripped.split(",") if item.strip())
+
+        log_level_raw = os.environ.get("MNEMO_SERVER_LOG_LEVEL", "info").lower()
+        if log_level_raw not in _VALID_LOG_LEVELS:
+            valid_str = sorted(_VALID_LOG_LEVELS)
+            raise ValueError(
+                f"MNEMO_SERVER_LOG_LEVEL must be one of {valid_str}, got: {log_level_raw!r}"
+            )
+
+        return cls(
+            host=host,
+            port=port,
+            cors_origins=cors_origins,
+            log_level=log_level_raw,  # type: ignore[arg-type]
+        )

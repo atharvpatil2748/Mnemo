@@ -778,12 +778,20 @@ and integration-level complexity.
 
 **Module 7.1 — FastAPI Application Setup**
 
+> **Status:** COMPLETE. Accepted ADR-0049 is implemented and validated.
+> `mnemo-server` provides the FastAPI application factory (`create_app()`), ASGI
+> `lifespan` lifecycle management for `KnowledgeEngine`, separate `ServerConfig`,
+> typed `get_engine` dependency injection, off-thread tokenizer provisioning safety,
+> CORS middleware, and deterministic ADR-0049 JSON error envelope translation
+> (`StorageError -> 503`, `ContractValidationError -> 422`, etc.). Focused, cumulative,
+> full repository, and coverage quality gates passed (1,162 passed, 90.12% coverage).
+
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Initialize `mnemo-server` FastAPI app | `lifespan` context manager for startup/shutdown | Low | Phase 6 |
-| Wire `KnowledgeEngine` to app state | Singleton instance, initialized on startup | Medium | 7.1a |
-| Configure CORS | Allow UI origin in dev, configurable for prod | Low | 7.1a |
-| Configure error handling | Global exception handler → structured JSON errors | Medium | 7.1a |
+| ✅ Initialize `mnemo-server` FastAPI app | `lifespan` context manager for startup/shutdown | Low | Phase 6 |
+| ✅ Wire `KnowledgeEngine` to app state | Singleton instance, initialized on startup | Medium | 7.1a |
+| ✅ Configure CORS | Allow UI origin in dev, configurable for prod | Low | 7.1a |
+| ✅ Configure error handling | Global exception handler → structured JSON errors | Medium | 7.1a |
 
 **Module 7.2 — Notebook Endpoints**
 
