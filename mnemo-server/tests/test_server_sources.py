@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID, uuid4
 
 import pytest
@@ -766,3 +766,62 @@ async def test_ingest_storage_failure_returns_503(
     body = resp.json()
     assert body["error"]["code"] == "contract.storage"
     assert body["error"]["retryable"] is True
+
+
+@pytest.mark.anyio
+async def test_ingest_markdown_when_libmagic_returns_text_plain(
+    client: AsyncClient,
+    mock_engine: MagicMock,
+    test_notebook: Notebook,
+) -> None:
+    """Simulate Linux environment where libmagic detects Markdown as text/plain."""
+    mock_engine.storage.get_notebook.return_value = test_notebook
+    mock_engine.storage.get_document_by_content_hash.return_value = None
+    mock_engine.storage.put_asset.return_value = MagicMock()
+    mock_engine.storage.put_parsed_document = AsyncMock()
+    mock_engine.storage.upsert_document = AsyncMock()
+    mock_engine.storage.upsert_chunks = AsyncMock()
+    mock_engine.storage.upsert_source = AsyncMock()
+
+    md_content = b"# Document Title\n\nThis is a sample paragraph with valuable research data."
+    files = {"file": ("research.md", md_content, "text/markdown")}
+
+    with patch("mnemo.parsers.router._magic_from_buffer", return_value="text/plain"):
+        resp = await client.post(f"/v1/notebooks/{test_notebook.notebook_id}/sources", files=files)
+
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["notebook_id"] == str(test_notebook.notebook_id)
+    assert body["filename"] == "research.md"
+    assert body["doc_type"] == "markdown"
+    assert body["status"] == "indexed"
+    assert body["deduplicated"] is False
+
+
+@pytest.mark.anyio
+async def test_ingest_csv_when_libmagic_returns_text_plain(
+    client: AsyncClient,
+    mock_engine: MagicMock,
+    test_notebook: Notebook,
+) -> None:
+    """Simulate Linux environment where libmagic detects CSV as text/plain."""
+    mock_engine.storage.get_notebook.return_value = test_notebook
+    mock_engine.storage.get_document_by_content_hash.return_value = None
+    mock_engine.storage.put_asset.return_value = MagicMock()
+    mock_engine.storage.put_parsed_document = AsyncMock()
+    mock_engine.storage.upsert_document = AsyncMock()
+    mock_engine.storage.upsert_chunks = AsyncMock()
+    mock_engine.storage.upsert_source = AsyncMock()
+
+    csv_content = b"name,role,department\nAlice,Engineer,Platform\nBob,Designer,Product\n"
+    files = {"file": ("data.csv", csv_content, "text/csv")}
+
+    with patch("mnemo.parsers.router._magic_from_buffer", return_value="text/plain"):
+        resp = await client.post(f"/v1/notebooks/{test_notebook.notebook_id}/sources", files=files)
+
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["notebook_id"] == str(test_notebook.notebook_id)
+    assert body["filename"] == "data.csv"
+    assert body["status"] == "indexed"
+    assert body["deduplicated"] is False

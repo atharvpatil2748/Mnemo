@@ -2,7 +2,7 @@
 
 - Implemented transport-layer Pydantic V2 DTOs (`SourceResponse`, `SourceStatusResponse`, `PageResponse[SourceResponse]`) isolating HTTP concerns from frozen domain models.
 - Implemented `IngestionService` coordinating frozen pipeline components:
-  - `ParserRouter` with `PluginRegistry` for multi-format parser resolution (Markdown, PlainText, CSV, PDF, DOCX, HTML, JSON).
+  - `ServerParserRouter` with `PluginRegistry` providing format-specific extension precedence over generic `text/plain` libmagic MIME detection (Markdown, PlainText, CSV, PDF, DOCX, HTML, JSON).
   - `DocumentCleaner` for Unicode normalization and language detection.
   - `DocumentClassifier` for deterministic file-extension and heuristic document categorization.
   - `DocumentCanonicalizer` and `IngestionPipeline` for block normalization and asset extraction.
@@ -23,6 +23,6 @@
   - Failed pipeline runs clean up transient stored assets and transition document status to `FAILED` with retryable `503 Service Unavailable` on embedding/storage outages.
 - Implemented configurable upload limits via `MNEMO_MAX_UPLOAD_BYTES` (default 50MB).
 - Added `python-multipart` dependency for FastAPI multipart file upload support.
-- Added comprehensive unit and integration test suite (`test_server_sources.py`) covering all endpoints, deduplication cases, error mapping, pagination, and failure modes.
+- Added comprehensive unit and integration test suite (`test_server_sources.py`) covering all endpoints, deduplication cases, error mapping, pagination, cross-platform libmagic handling, and failure modes.
 
-Module 7.3 is complete and verified. Frozen phases 0–6 and ADRs 0001–0050 remain untouched.
+Module 7.3 is complete and verified. Frozen phases 0–6 and ADRs 0001–0051 remain untouched.

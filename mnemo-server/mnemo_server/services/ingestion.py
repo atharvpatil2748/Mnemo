@@ -6,6 +6,7 @@ import hashlib
 import mimetypes
 from dataclasses import replace
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
@@ -19,21 +20,73 @@ from mnemo.interfaces import (
     ChunkingContext,
     ChunkingOptions,
     ConflictError,
+    FileMetadata,
     MnemoInterfaceError,
     NotFoundError,
     TokenCounterInterfaceV1,
+    UnsupportedError,
 )
+from mnemo.interfaces.parser_models import ParseResult
 from mnemo.models import (
     Document,
     DocumentStatus,
     DocumentVersion,
     DocumentVersionStatus,
+    FrozenMetadata,
     Source,
 )
 from mnemo.parsers import ParserRouter
 
 from mnemo_server.schemas.common import PageResponse
 from mnemo_server.schemas.sources import SourceResponse, SourceStatusResponse
+
+
+class ServerParserRouter(ParserRouter):
+    """Parser router with extension-aware resolution precedence.
+
+    Ensures that structured text formats (such as .md, .csv, .json, .html)
+    with specific file extensions are not hijacked by generic text/plain
+    MIME detection from libmagic on Linux platforms.
+    """
+
+    async def route(self, data: bytes, filename: str) -> Document | ParseResult:
+        """Route the given bytes to the correct parser, or deduplicate."""
+        # 1. Compute SHA-256 for deduplication
+        sha256_hash = hashlib.sha256(data).hexdigest()
+
+        # 2. Duplicate check
+        existing_doc = await self.storage.get_document_by_content_hash(sha256_hash)
+        if existing_doc is not None:
+            return existing_doc
+
+        # 3. MIME/Extension Resolution
+        mime_type = self._detect_mime(data, filename)
+        extension = Path(filename).suffix.lower()
+
+        # 4. Parser Resolution: prioritize specific format extensions over generic text MIME types
+        parser = None
+        if extension and extension not in (".txt", ".log"):
+            parser = self.registry.resolve_parser(extension)
+        if not parser:
+            parser = self.registry.resolve_parser(mime_type)
+        if not parser and extension:
+            parser = self.registry.resolve_parser(extension)
+
+        if not parser:
+            raise UnsupportedError(
+                f"No parser found for MIME type '{mime_type}' or extension '{extension}'"
+            )
+
+        # 5. Dispatch
+        metadata = FileMetadata(
+            content_hash=sha256_hash,
+            size_bytes=len(data),
+            mime_type=mime_type,
+            modified_at=None,
+            metadata=FrozenMetadata(),
+        )
+
+        return parser.parse(data, filename, metadata)
 
 
 class IngestionService:
@@ -133,7 +186,7 @@ class IngestionService:
         version_id = uuid5(NAMESPACE_URL, f"mnemo-version:{content_hash}")
         now = datetime.now(UTC)
 
-        router = ParserRouter(self._engine.registry, self._engine.storage)
+        router = ServerParserRouter(self._engine.registry, self._engine.storage)
         cleaner = DocumentCleaner()
         classifier = DocumentClassifier()
         canonicalizer = DocumentCanonicalizer()
