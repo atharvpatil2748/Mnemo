@@ -6,16 +6,6 @@ import argparse
 import asyncio
 import os
 import sys
-import warnings
-
-# Suppress runtime warnings from leaking onto stdout in stdio mode
-warnings.filterwarnings("ignore")
-try:
-    import pymupdf
-
-    sys.modules.setdefault("fitz", pymupdf)
-except ImportError:
-    pass
 
 from mnemo import __version__
 
