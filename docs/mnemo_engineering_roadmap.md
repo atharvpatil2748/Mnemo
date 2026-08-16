@@ -814,12 +814,14 @@ and integration-level complexity.
 
 **Module 7.4 — Query and Search Endpoints**
 
+> **Status:** COMPLETE. `POST /v1/query` (full RAG with grounded answer synthesis and citation extraction) and `POST /v1/search` (multi-mode global and scoped search without LLM synthesis) are implemented in `mnemo-server` with Pydantic V2 DTO validation and tested across 19 dedicated endpoint tests.
+
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| `POST /v1/query` | Full query endpoint per architecture §5.1 | High | 7.1 |
-| `POST /v1/search` | Global full-text + vector search | Medium | 7.1 |
-| Request validation | Pydantic models for all request bodies | Low | 7.4a |
-| Response serialization | Pydantic models for all responses | Low | 7.4a |
+| ✅ `POST /v1/query` | Full query endpoint per architecture §5.1 | High | 7.1 |
+| ✅ `POST /v1/search` | Global full-text + vector search | Medium | 7.1 |
+| ✅ Request validation | Pydantic models for all request bodies | Low | 7.4a |
+| ✅ Response serialization | Pydantic models for all responses | Low | 7.4a |
 
 **Module 7.5 — Sessions, Notes, Insights Endpoints**
 
@@ -2189,7 +2191,7 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ KnowledgeEngine dependency injection (Module 7.1, ADR-0049)
 - ☑ Notebook CRUD & Graph endpoints (8 endpoints, Module 7.2, ADR-0050)
 - ☑ Sources/ingestion endpoints (5 endpoints, Module 7.3, ADR-0051)
-- □ Query endpoint + search endpoint
+- ☑ Query endpoint + search endpoint (2 endpoints, Module 7.4)
 - □ Session/memory endpoints (5 endpoints)
 - □ Notes CRUD endpoints (4 endpoints)
 - □ Insights endpoints (2 endpoints)
