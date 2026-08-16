@@ -2,7 +2,7 @@
 
 > One knowledge layer. Thousands of documents. Your hardware, your data.
 
-![Version](https://img.shields.io/badge/version-0.20.1-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-0.22.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
 
 ## Why Mnemo Exists
 
@@ -32,8 +32,6 @@ Mnemo provides a local-first, self-hosted, open-architecture alternative to clou
 
 Mnemo is architected to perform deep synthesis across disparate sources and organizational boundaries.
 
-*(Note: These examples represent the query experience Mnemo's architecture is designed to enable. The complete embedding, retrieval, reranking, and cross-document reasoning pipeline is being implemented incrementally according to the roadmap.)*
-
 ### Cross-Document Example
 Suppose you have a research paper, a textbook, lecture notes, a project report, and a technical specification in the same notebook. Mnemo is designed to answer conceptual queries like:
 
@@ -41,12 +39,10 @@ Suppose you have a research paper, a textbook, lecture notes, a project report, 
 
 > *"Across all my documents, what evidence supports or contradicts the claim that X?"*
 
-### Cross-Notebook Example (Planned Capability)
+### Cross-Notebook Example
 Knowledge doesn't live in silos. If you maintain multiple notebooks—like *Machine Learning Research*, *Course Notes*, *Research Papers*, and *Project Experiments*—Mnemo's global architecture is designed to synthesize insights across them:
 
 > *"Across all my notebooks, what have I learned about transformer-based models, and which conclusions are supported by experimental evidence?"*
-
-*(Note: While the core storage layers supporting this are built, the cross-notebook reasoning and query orchestration belong to a future roadmap phase.)*
 
 ## Designed to Scale
 
@@ -67,15 +63,16 @@ Mnemo strictly enforces a layered, provider-independent architecture where no la
 ```text
 User / Application
        │
-       ├── REST API (Planned)
-       ├── MCP (Planned)
-       └── UI (Planned)
+       ├── REST API (Layer 2 — Complete)
+       ├── WebSocket / SSE (Layer 2 — Complete)
+       ├── MCP (Layer 2/Layer 3 — Planned Phase 8)
+       └── Web UI (Layer 3 — Planned Phase 9)
             │
             ▼
-       Mnemo Server (Layer 2)
+       Mnemo Server (Layer 2 — FastAPI & Uvicorn)
             │
             ▼
-       Mnemo Core (Layer 1)
+       Mnemo Core (Layer 1 — Domain Engine)
             │
      ┌──────┼────────┐
      ▼      ▼        ▼
@@ -97,20 +94,16 @@ User / Application
 
 ## Built For
 
-Mnemo's component-based design allows it to eventually serve multiple roles:
+Mnemo's component-based design allows it to serve multiple roles:
 * **A standalone local knowledge engine** (via the planned Web UI)
 * **A grounding/retrieval layer for AI assistants** (via the core Python library)
 * **An MCP knowledge backend** (Planned Phase 8)
-* **A retrieval backend for custom applications** (via the planned REST API)
+* **A retrieval backend for custom applications** (via the REST API and WebSocket streaming)
 * **A persistent research/document memory system**
 
 ## Current Capabilities
 
 Mnemo is in active engineering development. Every module is rigorously tested before being marked complete.
-
-Here is the current implementation status. Phase 5 Modules 5.1–5.3 are
-implemented, locally validated, and CI validated in the corrective `v0.20.1`
-release. Live M5 verification remains open.
 
 | Capability | Status | Notes |
 |---|---|---|
@@ -121,9 +114,9 @@ release. Live M5 verification remains open.
 | Document Parsing | ✅ Implemented | PDF, DOCX, Markdown, HTML, TXT, JSON, CSV |
 | Ingestion Canonicalization | ✅ Complete | Phase 3.9 bridge produces canonical `ParsedDocument` values |
 | Chunking Engine | ✅ Complete | Modules 4.1–4.10: dispatcher plus all nine document-aware V2 strategies |
-| Embedding Pipeline | ✅ Released | Modules 5.1–5.3 released in v0.20.1; live M5 verification remains pending |
-| Hybrid Retrieval | 📋 Planned | Phase 6 |
-| REST API | 📋 Planned | Phase 7 |
+| Embedding Pipeline | ✅ Released | Modules 5.1–5.3 with caching and batch vector generation |
+| Hybrid Retrieval & Grounded QA | ✅ Released | Phase 6 (Milestone M6): planning, fusion, reranking, and citation engine |
+| REST API & WebSocket Streaming | ✅ Released | Phase 7 (Milestone M7): REST endpoints, WebSocket/SSE streaming, Auth middleware |
 | MCP Integration | 📋 Planned | Phase 8 |
 | Web UI | 📋 Planned | Phase 9 |
 | Cross-Doc Reasoning | 📋 Planned | Phase 11 |
@@ -146,7 +139,17 @@ The command downloads the frozen `o200k_base` asset directly from upstream,
 verifies its SHA-256, and installs it in user-local content-addressed storage.
 Mnemo does not bundle the asset, and chunking never accesses the network.
 
-### 2. Setup and Validation
+### 2. Start the Server
+
+```console
+# Start the HTTP/REST and WebSocket server (port 8000)
+mnemo serve
+
+# Check health probe
+curl -s http://127.0.0.1:8000/health
+```
+
+### 3. Setup and Validation
 Clone the repository and run the validation script to ensure your environment is clean:
 
 ```shell
@@ -155,7 +158,7 @@ validate.bat
 ```
 *(On other platforms, follow the development commands below).*
 
-### 3. Test the Python Baseline
+### 4. Test the Python Baseline
 Mnemo relies on strict linting, type checking, and testing:
 
 ```shell
@@ -166,14 +169,14 @@ uv run mypy mnemo-core/mnemo mnemo-server/mnemo_server
 uv run pytest
 ```
 
-### 4. Build the Packages
+### 5. Build the Packages
 ```shell
 uv build --package mnemo-core
 uv build --package mnemo-server
 ```
 
-### 5. Current Python API Usage
-While end-user UI and APIs are planned for later phases, the core engine can be initialized programmatically:
+### 6. Current Python API Usage
+While end-user UI and MCP are planned for later phases, the core engine can be initialized programmatically:
 
 ```python
 from mnemo import KnowledgeEngine, MnemoConfig

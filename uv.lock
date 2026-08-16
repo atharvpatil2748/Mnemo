@@ -1343,7 +1343,7 @@ wheels = [
 
 [[package]]
 name = "mnemo-core"
-version = "0.21.2"
+version = "0.22.0"
 source = { editable = "mnemo-core" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1411,7 +1411,7 @@ provides-extras = ["reranking"]
 
 [[package]]
 name = "mnemo-email-ingestion"
-version = "0.21.2"
+version = "0.22.0"
 source = { editable = "plugins/email-ingestion" }
 dependencies = [
     { name = "mnemo-core" },
@@ -1422,7 +1422,7 @@ requires-dist = [{ name = "mnemo-core", editable = "mnemo-core" }]
 
 [[package]]
 name = "mnemo-server"
-version = "0.21.2"
+version = "0.22.0"
 source = { editable = "mnemo-server" }
 dependencies = [
     { name = "fastapi" },
@@ -1441,7 +1441,7 @@ requires-dist = [
 
 [[package]]
 name = "mnemo-workspace"
-version = "0.21.2"
+version = "0.22.0"
 source = { virtual = "." }
 
 [package.dev-dependencies]

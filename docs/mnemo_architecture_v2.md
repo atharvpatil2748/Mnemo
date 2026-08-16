@@ -6,7 +6,7 @@
 **Project Type:** Standalone Open-Source Software  
 **License Target:** Apache 2.0  
 
-**Implementation baseline:** Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 (Milestones M0 through M6) are complete and validated. The parser boundary returns transient `ParseResult` values (ADR-0011), chunking enforces `BlockSpan` ordinal tracking and `sha256` IDs (ADR-0015), storage provides atomic composite rollback (ADR-0010), reranking implements relevance-aware diversity ordering (ADR-0048), and grounded generation implements constrained intent-aware prompt routing (ADR-0048). Accepted ADRs refine public schemas and contracts where this document previously used shorthand.
+**Implementation baseline:** Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 (Milestones M0 through M7) are complete and validated. The parser boundary returns transient `ParseResult` values (ADR-0011), chunking enforces `BlockSpan` ordinal tracking and `sha256` IDs (ADR-0015), storage provides atomic composite rollback (ADR-0010), reranking implements relevance-aware diversity ordering (ADR-0048), grounded generation implements constrained intent-aware prompt routing (ADR-0048), `mnemo-server` delivers Layer 2 REST, WebSocket/SSE streaming, and AuthMiddleware (ADR-0049, ADR-0050, ADR-0051). Accepted ADRs refine public schemas and contracts where this document previously used shorthand.
 
 > *"A knowledge engine. Not an agent. The difference is everything."*
 

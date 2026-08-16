@@ -12,7 +12,7 @@ class EmailIngestionPlugin:
     """Register the optional Email parser in approved V1 slots."""
 
     name: str = "email-ingestion"
-    version: str = "0.21.2"
+    version: str = "0.22.0"
     core_version_range: str = ">=0.18.0,<1"
 
     def capabilities(self) -> tuple[str, ...]:

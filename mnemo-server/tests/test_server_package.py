@@ -4,5 +4,5 @@ import mnemo_server
 
 
 def test_server_package_version() -> None:
-    """The server package exposes its scaffold version."""
-    assert mnemo_server.__version__ == "0.21.2"
+    """The server package exposes its package version."""
+    assert mnemo_server.__version__ == "0.22.0"
