@@ -1,0 +1,43 @@
+# Module 7.5 Sessions, Notes & Insights REST Endpoints
+
+- Implemented transport-layer Pydantic V2 DTOs with strict validation and extra field rejection:
+  - `mnemo-server/mnemo_server/schemas/sessions.py`: `CreateSessionRequest`, `SessionSummaryResponse`, `CreateTurnRequest`, `CitationItemResponse`, `TurnResponse`, `SessionDetailResponse`.
+  - `mnemo-server/mnemo_server/schemas/notes.py`: `CreateNoteRequest`, `UpdateNoteRequest`, `NoteResponse`.
+  - `mnemo-server/mnemo_server/schemas/insights.py`: `InsightResponse`.
+- Implemented `SessionService` in `mnemo-server/mnemo_server/services/sessions.py`:
+  - `list_sessions`: Keyset-paginated listing of notebook sessions.
+  - `create_session`: Session creation with metadata.
+  - `get_session`: Full session retrieval with ordered turns and citations.
+  - `append_turn`: Appends turn to session with sequence tracking and session timestamp update.
+  - `delete_session`: Deletes session and cascades to turns and citations.
+  - Strict notebook ownership validation (`404 Not Found` on cross-notebook mismatch or missing notebook).
+- Implemented `NoteService` in `mnemo-server/mnemo_server/services/notes.py`:
+  - `list_notes`: Keyset-paginated listing of notebook notes.
+  - `create_note`: Note creation with `USER` or `GENERATED` origin.
+  - `get_note`: Note retrieval with notebook ownership verification.
+  - `update_note`: PATCH note update with Last-Write-Wins semantics and empty PATCH rejection (`422 Unprocessable Entity`).
+  - `delete_note`: Note deletion.
+- Implemented `InsightService` in `mnemo-server/mnemo_server/services/insights.py`:
+  - `list_insights`: Keyset-paginated listing of persisted insights with optional `type` filter (`key_fact`, `claim`, `entity`, `summary`).
+  - `generate_insights`: Returns `501 Not Implemented` with formal documentation that automated insight extraction is scheduled for Phase 10 background worker infrastructure.
+- Implemented REST router endpoints under `/v1/notebooks/{notebook_id}/`:
+  - `GET /v1/notebooks/{notebook_id}/sessions`: List sessions.
+  - `POST /v1/notebooks/{notebook_id}/sessions`: Create session.
+  - `GET /v1/notebooks/{notebook_id}/sessions/{session_id}`: Get session history.
+  - `POST /v1/notebooks/{notebook_id}/sessions/{session_id}/turns`: Append turn.
+  - `DELETE /v1/notebooks/{notebook_id}/sessions/{session_id}`: Delete session.
+  - `GET /v1/notebooks/{notebook_id}/notes`: List notes.
+  - `POST /v1/notebooks/{notebook_id}/notes`: Create note.
+  - `GET /v1/notebooks/{notebook_id}/notes/{note_id}`: Get note.
+  - `PATCH /v1/notebooks/{notebook_id}/notes/{note_id}`: Update note.
+  - `DELETE /v1/notebooks/{notebook_id}/notes/{note_id}`: Delete note.
+  - `GET /v1/notebooks/{notebook_id}/insights`: List insights.
+  - `POST /v1/notebooks/{notebook_id}/insights/generate`: Trigger insight generation (`501 Not Implemented`).
+- Registered `sessions_router`, `notes_router`, and `insights_router` in `mnemo_server/app.py`.
+- Added comprehensive unit and integration test suites:
+  - `mnemo-server/tests/test_server_sessions.py` (12 tests)
+  - `mnemo-server/tests/test_server_notes.py` (12 tests)
+  - `mnemo-server/tests/test_server_insights.py` (7 tests)
+- Maintained 100% boundary isolation: `mnemo-core`, `plugins/`, and ADRs 0001–0051 remain completely frozen and untouched.
+
+Module 7.5 is complete and verified.

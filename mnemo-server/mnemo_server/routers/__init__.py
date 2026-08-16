@@ -2,9 +2,20 @@
 
 from __future__ import annotations
 
+from .insights import router as insights_router
 from .notebooks import router as notebooks_router
+from .notes import router as notes_router
 from .query import router as query_router
 from .search import router as search_router
+from .sessions import router as sessions_router
 from .sources import router as sources_router
 
-__all__ = ["notebooks_router", "query_router", "search_router", "sources_router"]
+__all__ = [
+    "insights_router",
+    "notebooks_router",
+    "notes_router",
+    "query_router",
+    "search_router",
+    "sessions_router",
+    "sources_router",
+]

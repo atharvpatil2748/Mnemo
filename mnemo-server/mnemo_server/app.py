@@ -18,7 +18,15 @@ from mnemo.tokenizers import O200KBaseTokenCounter
 
 from .config import ServerConfig
 from .errors import register_error_handlers
-from .routers import notebooks_router, query_router, search_router, sources_router
+from .routers import (
+    insights_router,
+    notebooks_router,
+    notes_router,
+    query_router,
+    search_router,
+    sessions_router,
+    sources_router,
+)
 from .tokenizer_provisioning import provision_tokenizer
 
 _LOGGER = logging.getLogger(__name__)
@@ -112,6 +120,9 @@ def create_app(
     # Register API routers
     app.include_router(notebooks_router, prefix="/v1")
     app.include_router(sources_router, prefix="/v1")
+    app.include_router(sessions_router, prefix="/v1")
+    app.include_router(notes_router, prefix="/v1")
+    app.include_router(insights_router, prefix="/v1")
     app.include_router(query_router, prefix="/v1")
     app.include_router(search_router, prefix="/v1")
 

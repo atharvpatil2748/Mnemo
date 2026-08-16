@@ -825,11 +825,13 @@ and integration-level complexity.
 
 **Module 7.5 — Sessions, Notes, Insights Endpoints**
 
+> **Status:** COMPLETE. 11 REST endpoints implemented for conversation session CRUD and turn appending, note CRUD with LWW updates, persisted insight listing, and 501 deferred automated insight generation.
+
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Session CRUD endpoints | 5 endpoints from architecture §5.1 | Medium | 7.1 |
-| Notes CRUD endpoints | 4 endpoints | Low | 7.1 |
-| Insights endpoints | List + generate | Medium | 7.1 |
+| ✅ Session CRUD endpoints | 5 endpoints from architecture §5.1 | Medium | 7.1 |
+| ✅ Notes CRUD endpoints | 4 endpoints | Low | 7.1 |
+| ✅ Insights endpoints | List + 501 generation deferral | Medium | 7.1 |
 
 **Module 7.6 — System Endpoints**
 
@@ -2192,9 +2194,9 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ Notebook CRUD & Graph endpoints (8 endpoints, Module 7.2, ADR-0050)
 - ☑ Sources/ingestion endpoints (5 endpoints, Module 7.3, ADR-0051)
 - ☑ Query endpoint + search endpoint (2 endpoints, Module 7.4)
-- □ Session/memory endpoints (5 endpoints)
-- □ Notes CRUD endpoints (4 endpoints)
-- □ Insights endpoints (2 endpoints)
+- ☑ Session/memory endpoints (5 endpoints, Module 7.5)
+- ☑ Notes CRUD endpoints (4 endpoints, Module 7.5)
+- ☑ Insights endpoints (2 endpoints, Module 7.5)
 - □ System endpoints (health, config, jobs)
 - □ All request Pydantic models
 - □ All response Pydantic models
