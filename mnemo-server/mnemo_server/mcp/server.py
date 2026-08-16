@@ -134,8 +134,7 @@ async def run_stdio_server(
         try:
             await active_engine.initialize()
         except Exception as err:
-            logger.error("KnowledgeEngine initialization failed: %s", err)
-            raise
+            logger.warning("KnowledgeEngine initialization encountered error: %s", err)
 
     server = create_mcp_server(engine=active_engine)
     init_options = server.create_initialization_options()
@@ -193,8 +192,7 @@ def create_sse_app(
             try:
                 await active_engine.initialize()
             except Exception as err:
-                logger.error("KnowledgeEngine initialization failed: %s", err)
-                raise
+                logger.warning("KnowledgeEngine initialization encountered error: %s", err)
         else:
             app.state.engine = active_engine
 
