@@ -8,6 +8,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115,<1",
     "mnemo-core",
+    "python-multipart>=0.0.18,<1",
     "uvicorn[standard]>=0.30,<1",
 ]
 

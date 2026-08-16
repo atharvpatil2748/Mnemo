@@ -807,9 +807,10 @@ and integration-level complexity.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| `POST /v1/notebooks/{id}/sources` | Multipart file upload, return job_id | High | 7.1 |
-| `GET /v1/notebooks/{id}/sources/{sid}/status` | Polling endpoint, return ingestion status | Medium | 7.1 |
-| `GET/DELETE /v1/notebooks/{id}/sources/{sid}` | CRUD | Low | 7.1 |
+| ✅ `POST /v1/notebooks/{id}/sources` | Synchronous multipart ingestion with deduplication & 50MB limit (ADR-0051) | High | 7.1 |
+| ✅ `GET /v1/notebooks/{id}/sources` | Keyset pagination listing (ADR-0051) | Low | 7.1 |
+| ✅ `GET/DELETE /v1/notebooks/{id}/sources/{sid}` | Source retrieval & disassociation with security validation (ADR-0051) | Low | 7.1 |
+| ✅ `GET /v1/notebooks/{id}/sources/{sid}/status` | Status polling endpoint returning document lifecycle state (ADR-0051) | Medium | 7.1 |
 
 **Module 7.4 — Query and Search Endpoints**
 
@@ -2187,7 +2188,7 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ FastAPI app + lifespan + CORS + error handling (Module 7.1, ADR-0049)
 - ☑ KnowledgeEngine dependency injection (Module 7.1, ADR-0049)
 - ☑ Notebook CRUD & Graph endpoints (8 endpoints, Module 7.2, ADR-0050)
-- □ Sources/ingestion endpoints (5 endpoints)
+- ☑ Sources/ingestion endpoints (5 endpoints, Module 7.3, ADR-0051)
 - □ Query endpoint + search endpoint
 - □ Session/memory endpoints (5 endpoints)
 - □ Notes CRUD endpoints (4 endpoints)

@@ -18,7 +18,7 @@ from mnemo.tokenizers import O200KBaseTokenCounter
 
 from .config import ServerConfig
 from .errors import register_error_handlers
-from .routers import notebooks_router
+from .routers import notebooks_router, sources_router
 from .tokenizer_provisioning import provision_tokenizer
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,10 +39,10 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         """Manage KnowledgeEngine lifecycle across application startup and shutdown."""
         active_engine = engine
+        resolved_components = final_qa_components
 
         if active_engine is None:
             resolved_mnemo_config = mnemo_config or MnemoConfig.from_env()
-            resolved_components = final_qa_components
 
             if resolved_components is None and provision_tokenizer_on_startup:
                 try:
@@ -76,6 +76,8 @@ def create_app(
         # Publish the ready engine and server configuration to app.state
         app.state.engine = active_engine
         app.state.server_config = resolved_server_config
+        if resolved_components is not None:
+            app.state.token_counter = resolved_components.token_counter
 
         yield
 
@@ -109,6 +111,7 @@ def create_app(
 
     # Register API routers
     app.include_router(notebooks_router, prefix="/v1")
+    app.include_router(sources_router, prefix="/v1")
 
     @app.get("/health", tags=["system"])
     @app.get("/v1/health", tags=["system"])

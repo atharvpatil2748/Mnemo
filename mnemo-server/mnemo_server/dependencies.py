@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from fastapi import Request
 from mnemo.engine import EngineState, KnowledgeEngine
-from mnemo.interfaces import DependencyUnavailableError
+from mnemo.interfaces import DependencyUnavailableError, TokenCounterInterfaceV1
+from mnemo.tokenizers import O200KBaseTokenCounter
+
+from mnemo_server.config import ServerConfig
+from mnemo_server.tokenizer_provisioning import provision_tokenizer
 
 
 def get_engine(request: Request) -> KnowledgeEngine:
@@ -17,3 +21,23 @@ def get_engine(request: Request) -> KnowledgeEngine:
     if engine is None or engine.state is not EngineState.READY:
         raise DependencyUnavailableError("KnowledgeEngine is not ready", retryable=True)
     return engine
+
+
+def get_token_counter(request: Request) -> TokenCounterInterfaceV1:
+    """Obtain or lazily provision the canonical token counter from application state."""
+    token_counter: TokenCounterInterfaceV1 | None = getattr(
+        request.app.state, "token_counter", None
+    )
+    if token_counter is None:
+        asset_path = provision_tokenizer()
+        token_counter = O200KBaseTokenCounter(asset_path)
+        request.app.state.token_counter = token_counter
+    return token_counter
+
+
+def get_server_config(request: Request) -> ServerConfig:
+    """Obtain the server configuration from application state."""
+    server_config: ServerConfig | None = getattr(request.app.state, "server_config", None)
+    if server_config is None:
+        return ServerConfig()
+    return server_config

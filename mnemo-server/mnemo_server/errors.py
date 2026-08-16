@@ -155,6 +155,10 @@ def _http_exception_handler(request: Request, exc: StarletteHTTPException) -> JS
 
 def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle all other unhandled exceptions with sanitization."""
+    if isinstance(exc, BaseExceptionGroup):
+        for sub_exc in exc.exceptions:
+            if isinstance(sub_exc, MnemoInterfaceError):
+                return _interface_error_handler(request, sub_exc)
     _LOGGER.exception("Unhandled server exception: %s", exc)
     return error_response(
         500,

@@ -24,6 +24,11 @@ class ServerConfig(BaseModel):
     log_level: Literal["critical", "error", "warning", "info", "debug", "trace"] = Field(
         default="info"
     )
+    max_upload_bytes: int = Field(
+        default=52_428_800,
+        ge=1,
+        description="Maximum allowed size in bytes for uploaded source files (default: 50MB).",
+    )
 
     @classmethod
     def from_env(cls) -> ServerConfig:
@@ -65,9 +70,20 @@ class ServerConfig(BaseModel):
                 f"MNEMO_SERVER_LOG_LEVEL must be one of {valid_str}, got: {log_level_raw!r}"
             )
 
+        max_upload_raw = os.environ.get("MNEMO_SERVER_MAX_UPLOAD_BYTES", "52428800")
+        try:
+            max_upload_bytes = int(max_upload_raw)
+            if max_upload_bytes < 1:
+                raise ValueError("must be positive")
+        except ValueError as err:
+            raise ValueError(
+                f"MNEMO_SERVER_MAX_UPLOAD_BYTES must be a positive integer, got: {max_upload_raw!r}"
+            ) from err
+
         return cls(
             host=host,
             port=port,
             cors_origins=cors_origins,
             log_level=log_level_raw,  # type: ignore[arg-type]
+            max_upload_bytes=max_upload_bytes,
         )
