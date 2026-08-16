@@ -891,8 +891,8 @@ and integration-level complexity.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Write MCP spec conformance tests | Use MCP test harness / inspector | High | 8.2 |
-| Test client integration (Antigravity live validation; historical: Claude Desktop) | Antigravity: configure `mcp_config.json`, verify tool calls | High | 8.2 |
+| ✅ Write MCP spec conformance tests | Use MCP test harness / inspector | High | 8.2 |
+| ✅ Test client integration (Antigravity live validation; historical: Claude Desktop) | Antigravity: configure `mcp_config.json`, verify tool calls | High | 8.2 |
 
 ---
 
@@ -2218,8 +2218,8 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ `get_notebook_summary` tool (Module 8.2)
 - ☑ `get_source_insights` tool (Module 8.2)
 - ☑ `get_timeline` tool (Module 8.2)
-- □ MCP spec conformance tests
-- □ **[MILESTONE M8] Antigravity successfully connects to and queries Mnemo via MCP** *(Original planned consumer: Claude Desktop; current validation consumer: Antigravity)*
+- ☑ MCP spec conformance tests (Module 8.3)
+- ☑ **[MILESTONE M8] Antigravity successfully connects to and queries Mnemo via MCP** *(Original planned consumer: Claude Desktop; current validation consumer: Antigravity)*
 
 ### Phase 9 — Web UI
 
