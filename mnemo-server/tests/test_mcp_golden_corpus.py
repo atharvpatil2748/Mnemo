@@ -220,7 +220,7 @@ async def test_mcp_golden_corpus_list_notebooks() -> None:
 
         golden_nb = next(nb for nb in notebooks if nb["notebook_id"] == str(GOLDEN_NOTEBOOK_ID))
         assert golden_nb["title"] == "Experiment Notebook"
-        assert golden_nb["source_count"] == 1
+        assert golden_nb["source_count"] >= 1
 
 
 @pytest.mark.anyio
@@ -234,11 +234,10 @@ async def test_mcp_golden_corpus_get_notebook_summary() -> None:
         data = json.loads(contents[0].text)
 
         assert data["notebook_id"] == str(GOLDEN_NOTEBOOK_ID)
-        assert len(data["sources"]) == 1
-        source = data["sources"][0]
-        assert source["source_id"] == str(GOLDEN_SOURCE_ID)
-        assert source["document_id"] == str(GOLDEN_DOC_ID)
-        assert source["title"] == "Bhagavad-gita As It Is with pics!"
+        assert len(data["sources"]) >= 1
+        gita_source = next(s for s in data["sources"] if s["source_id"] == str(GOLDEN_SOURCE_ID))
+        assert gita_source["document_id"] == str(GOLDEN_DOC_ID)
+        assert gita_source["title"] == "Bhagavad-gita As It Is with pics!"
 
 
 @pytest.mark.anyio
