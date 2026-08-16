@@ -37,6 +37,7 @@ data/*
 !data/manual-gita-qa/
 data/manual-gita-qa/*.db-shm
 data/manual-gita-qa/*.db-wal
+data/manual-gita-qa/embedding-cache.db
 qdrant_storage/
 surrealdb_data/
 scratch/
