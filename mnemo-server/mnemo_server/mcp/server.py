@@ -24,6 +24,8 @@ from mnemo_server.auth import AuthMiddleware
 from mnemo_server.config import ServerConfig
 from mnemo_server.tokenizer_provisioning import provision_tokenizer
 
+from .tools import execute_mcp_tool, get_mcp_tools
+
 logger = logging.getLogger("mnemo.mcp")
 
 
@@ -56,30 +58,24 @@ class MnemoServer(Server):
 def create_mcp_server(engine: KnowledgeEngine | None = None) -> Server:
     """Create and configure the canonical Mnemo MCP Server instance.
 
-    Module 8.1 registers the server identity, capability negotiation, and baseline
-    tool/prompt/resource handlers. Knowledge tool implementations are added in Module 8.2.
+    Module 8.1 registered the server identity, capability negotiation, and baseline
+    transport infrastructure. Module 8.2 delivers the six authoritative knowledge
+    retrieval tools.
     """
     server: MnemoServer = MnemoServer(name="mnemo-mcp", version=__version__)
     server._engine = engine
 
     @server.list_tools()  # type: ignore[no-untyped-call,untyped-decorator]
     async def list_tools() -> list[types.Tool]:
-        """List knowledge tools exposed by the Mnemo MCP server.
-
-        Module 8.1 returns an empty tool inventory. Module 8.2 delivers the six
-        authoritative knowledge retrieval tools.
-        """
-        return []
+        """List knowledge tools exposed by the Mnemo MCP server."""
+        return get_mcp_tools()
 
     @server.call_tool()  # type: ignore[untyped-decorator]
     async def call_tool(
         name: str, arguments: dict[str, Any] | None
     ) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
-        """Execute an MCP tool call.
-
-        Module 8.1 rejects tool execution until tools are registered in Module 8.2.
-        """
-        raise ValueError(f"Unknown or unimplemented MCP tool in Module 8.1: {name}")
+        """Execute an authorized Mnemo MCP knowledge tool call."""
+        return await execute_mcp_tool(server._engine, name, arguments)
 
     @server.list_prompts()  # type: ignore[no-untyped-call,untyped-decorator]
     async def list_prompts() -> list[types.Prompt]:

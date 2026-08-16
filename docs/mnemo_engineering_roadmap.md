@@ -880,12 +880,12 @@ and integration-level complexity.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Implement `query_notebook` tool | Calls `KnowledgeEngine.retrieve()` | Medium | 8.1 |
-| Implement `search_all_notebooks` tool | Global search, no synthesis | Medium | 8.1 |
-| Implement `list_notebooks` tool | Read-only listing | Low | 8.1 |
-| Implement `get_notebook_summary` tool | Calls summary generator | Medium | 8.1 |
-| Implement `get_source_insights` tool | Returns stored insights | Low | 8.1 |
-| Implement `get_timeline` tool | Returns timeline events | Low | 8.1 |
+| ✅ Implement `query_notebook` tool | Calls `KnowledgeEngine.retrieve()` with grounded citations | Medium | 8.1 |
+| ✅ Implement `search_all_notebooks` tool | Global/scoped multi-mode search, no synthesis | Medium | 8.1 |
+| ✅ Implement `list_notebooks` tool | Read-only listing with source counts | Low | 8.1 |
+| ✅ Implement `get_notebook_summary` tool | Calls summary generator / insights storage | Medium | 8.1 |
+| ✅ Implement `get_source_insights` tool | Returns stored insights with type filtering | Low | 8.1 |
+| ✅ Implement `get_timeline` tool | Returns chronological activity events | Low | 8.1 |
 
 **Module 8.3 — MCP Testing**
 
@@ -2212,12 +2212,12 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ MCP server (stdio mode) (Module 8.1)
 - ☑ MCP server (SSE mode) (Module 8.1)
 - ☑ `mnemo-mcp` CLI entrypoint (Module 8.1)
-- □ `query_notebook` tool
-- □ `search_all_notebooks` tool
-- □ `list_notebooks` tool
-- □ `get_notebook_summary` tool
-- □ `get_source_insights` tool
-- □ `get_timeline` tool
+- ☑ `query_notebook` tool (Module 8.2)
+- ☑ `search_all_notebooks` tool (Module 8.2)
+- ☑ `list_notebooks` tool (Module 8.2)
+- ☑ `get_notebook_summary` tool (Module 8.2)
+- ☑ `get_source_insights` tool (Module 8.2)
+- ☑ `get_timeline` tool (Module 8.2)
 - □ MCP spec conformance tests
 - □ **[MILESTONE M8] Antigravity successfully connects to and queries Mnemo via MCP** *(Original planned consumer: Claude Desktop; current validation consumer: Antigravity)*
 

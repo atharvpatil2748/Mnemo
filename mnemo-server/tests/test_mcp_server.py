@@ -52,9 +52,16 @@ async def test_mcp_server_protocol_handshake() -> None:
             assert init_res.serverInfo.name == "mnemo-mcp"
             assert init_res.serverInfo.version == __version__
 
-            # Module 8.1 lists empty tools
+            # Module 8.2 lists the 6 knowledge tools
             tools_res = await session.list_tools()
-            assert tools_res.tools == []
+            assert len(tools_res.tools) == 6
+            tool_names = [t.name for t in tools_res.tools]
+            assert "query_notebook" in tool_names
+            assert "search_all_notebooks" in tool_names
+            assert "list_notebooks" in tool_names
+            assert "get_notebook_summary" in tool_names
+            assert "get_source_insights" in tool_names
+            assert "get_timeline" in tool_names
 
             # Prompts and resources
             prompts_res = await session.list_prompts()
@@ -68,10 +75,10 @@ async def test_mcp_server_protocol_handshake() -> None:
 
 @pytest.mark.anyio
 async def test_mcp_server_call_unknown_tool_returns_error_result() -> None:
-    """Tool invocation returns isError=True CallToolResult in Module 8.1
-    prior to Module 8.2 registration.
-    """
-    server = create_mcp_server()
+    """Tool invocation returns isError=True CallToolResult for unknown tools."""
+    mock_engine = MagicMock(spec=KnowledgeEngine)
+    mock_engine.state = EngineState.READY
+    server = create_mcp_server(mock_engine)
     handler = server.request_handlers.get(types.CallToolRequest)
     assert handler is not None
 
@@ -84,7 +91,7 @@ async def test_mcp_server_call_unknown_tool_returns_error_result() -> None:
     assert isinstance(call_res, types.CallToolResult)
     assert call_res.isError is True
     assert len(call_res.content) == 1
-    assert "Unknown or unimplemented MCP tool" in call_res.content[0].text
+    assert "Unknown MCP tool" in call_res.content[0].text
 
 
 @pytest.mark.anyio
