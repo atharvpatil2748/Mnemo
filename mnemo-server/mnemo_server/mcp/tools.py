@@ -26,6 +26,9 @@ from mnemo_server.tokenizer_provisioning import provision_tokenizer
 
 _LOGGER = logging.getLogger("mnemo.mcp.tools")
 
+MCPContent = types.TextContent | types.ImageContent | types.EmbeddedResource
+
+
 _TOOL_DEFINITIONS: list[types.Tool] = [
     types.Tool(
         name="query_notebook",
@@ -164,6 +167,10 @@ _TOOL_DEFINITIONS: list[types.Tool] = [
                     "type": "string",
                     "description": "UUID of the notebook to get timeline events for",
                 },
+                "source_id": {
+                    "type": "string",
+                    "description": "Optional source UUID to constrain timeline extraction",
+                },
                 "limit": {
                     "type": "integer",
                     "description": (
@@ -213,9 +220,6 @@ def _parse_uuid(value: Any, param_name: str) -> UUID:
         raise ContractValidationError(
             f"Parameter '{param_name}' has invalid UUID format: '{value}'"
         ) from err
-
-
-MCPContent = types.TextContent | types.ImageContent | types.EmbeddedResource
 
 
 def _get_token_counter() -> TokenCounterInterfaceV1:

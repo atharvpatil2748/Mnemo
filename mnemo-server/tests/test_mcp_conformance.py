@@ -38,8 +38,12 @@ async def test_mcp_protocol_conformance_handshake() -> None:
 
         async with ClientSession(s2c_recv, c2s_send) as session:
             result = await session.initialize()
-            assert result.serverInfo.name == "mnemo-mcp"
-            assert result.protocolVersion is not None
+            info = getattr(result, "server_info", getattr(result, "serverInfo", None))
+            assert info.name == "mnemo-mcp"
+            proto_ver = getattr(
+                result, "protocol_version", getattr(result, "protocolVersion", None)
+            )
+            assert proto_ver is not None
             assert result.capabilities.tools is not None
 
             # Tool listing
@@ -67,15 +71,16 @@ async def test_mcp_tool_schemas_compliance() -> None:
     for tool in tools:
         assert isinstance(tool.name, str) and tool.name
         assert isinstance(tool.description, str) and tool.description
-        assert isinstance(tool.inputSchema, dict)
-        assert tool.inputSchema.get("type") == "object"
-        assert "properties" in tool.inputSchema
+        schema = getattr(tool, "input_schema", getattr(tool, "inputSchema", None))
+        assert isinstance(schema, dict)
+        assert schema.get("type") == "object"
+        assert "properties" in schema
 
         # Check required properties if specified
-        if "required" in tool.inputSchema:
-            assert isinstance(tool.inputSchema["required"], list)
-            for req_field in tool.inputSchema["required"]:
-                assert req_field in tool.inputSchema["properties"]
+        if "required" in schema:
+            assert isinstance(schema["required"], list)
+            for req_field in schema["required"]:
+                assert req_field in schema["properties"]
 
 
 @pytest.mark.anyio
@@ -100,7 +105,7 @@ async def test_mcp_invalid_tool_invocation_error_format() -> None:
 
             # 1. Unknown tool invocation
             res = await session.call_tool("unknown_tool", {})
-            assert res.isError is True
+            assert getattr(res, "is_error", getattr(res, "isError", False)) is True
             assert len(res.content) > 0
             first_content = res.content[0]
             assert isinstance(first_content, types.TextContent)
@@ -110,7 +115,7 @@ async def test_mcp_invalid_tool_invocation_error_format() -> None:
             res2 = await session.call_tool(
                 "query_notebook", {"notebook_id": "not-valid-uuid", "question": "test"}
             )
-            assert res2.isError is True
+            assert getattr(res2, "is_error", getattr(res2, "isError", False)) is True
             second_content = res2.content[0]
             assert isinstance(second_content, types.TextContent)
             assert "invalid UUID" in second_content.text
@@ -133,7 +138,8 @@ async def test_mcp_real_stdio_subprocess_handshake() -> None:
         ClientSession(read_stream, write_stream) as session,
     ):
         init_res = await session.initialize()
-        assert init_res.serverInfo.name == "mnemo-mcp"
+        info = getattr(init_res, "server_info", getattr(init_res, "serverInfo", None))
+        assert info.name == "mnemo-mcp"
         tools_res = await session.list_tools()
         assert len(tools_res.tools) == 6
         tool_names = {t.name for t in tools_res.tools}

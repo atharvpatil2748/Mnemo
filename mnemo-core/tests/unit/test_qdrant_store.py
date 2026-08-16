@@ -480,3 +480,92 @@ async def test_qdrant_unsupported_methods(qdrant_store: QdrantStore) -> None:
         await qdrant_store.search_sparse("q", MetadataFilter(), 10)
     with pytest.raises(NotImplementedError):
         await qdrant_store.delete_document_cascade(uid)
+
+
+@pytest.mark.anyio
+async def test_qdrant_disabled_behavior() -> None:
+    """Verify disabled QdrantStore operations are safe no-ops and return empty results."""
+    disabled_config = QdrantStorageConfig(
+        enabled=False,
+        url=HttpUrl("http://localhost:6333"),
+        collection_name="disabled_collection",
+        on_disk=False,
+    )
+    store = QdrantStore(config=disabled_config, vector_dimensions=3)
+
+    # open() should perform no network I/O and keep _client as None
+    await store.open()
+    assert store._client is None
+
+    # health_check() should report disabled
+    health = await store.health_check()
+    assert len(health) == 1
+    assert not health[0].healthy
+    assert "disabled" in (health[0].detail or "").lower()
+
+    # search_dense() should return empty tuple
+    results = await store.search_dense(
+        embedding=(0.1, 0.2, 0.3),
+        filters=MetadataFilter(),
+        top_k=5,
+    )
+    assert results == ()
+
+    # write and delete operations should be safe no-ops
+    doc_id = uuid4()
+    ver_id = uuid4()
+    chunk = Chunk(
+        id="c" * 64,
+        text="disabled test chunk",
+        document_id=doc_id,
+        version_id=ver_id,
+        chunk_type=ChunkType.PASSAGE,
+        position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
+        heading_path=(),
+        sibling_ids=(),
+        metadata=FrozenMetadata(),
+        embedding=(0.1, 0.2, 0.3),
+    )
+    await store.upsert_chunks((chunk,))
+    await store.delete_chunks_for_document(doc_id, ver_id)
+    assert await store._snapshot_chunks(("c" * 64,)) == ()
+    await store._restore_chunk_snapshot(("c" * 64,), ())
+    await store.close()
+
+
+@pytest.mark.anyio
+async def test_qdrant_enabled_unopened_raises() -> None:
+    """Verify enabled but unopened QdrantStore raises RuntimeError rather than masking failure."""
+    enabled_config = QdrantStorageConfig(
+        enabled=True,
+        url=HttpUrl("http://localhost:6333"),
+        collection_name="test_collection",
+        on_disk=False,
+    )
+    store = QdrantStore(config=enabled_config, vector_dimensions=3)
+
+    with pytest.raises(RuntimeError, match="QdrantStore is not open"):
+        await store.search_dense(
+            embedding=(0.1, 0.2, 0.3),
+            filters=MetadataFilter(),
+            top_k=5,
+        )
+
+    doc_id = uuid4()
+    ver_id = uuid4()
+    chunk = Chunk(
+        id="d" * 64,
+        text="unopened test chunk",
+        document_id=doc_id,
+        version_id=ver_id,
+        chunk_type=ChunkType.PASSAGE,
+        position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
+        heading_path=(),
+        sibling_ids=(),
+        metadata=FrozenMetadata(),
+        embedding=(0.1, 0.2, 0.3),
+    )
+    with pytest.raises(RuntimeError, match="QdrantStore is not open"):
+        await store.upsert_chunks((chunk,))

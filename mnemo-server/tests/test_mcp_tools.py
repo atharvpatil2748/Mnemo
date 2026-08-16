@@ -86,8 +86,9 @@ def test_mcp_tool_definitions() -> None:
     assert tool_names == expected_names
     for tool in tools:
         assert tool.description
-        assert tool.inputSchema
-        assert tool.inputSchema.get("type") == "object"
+        schema = getattr(tool, "input_schema", getattr(tool, "inputSchema", None))
+        assert schema
+        assert schema.get("type") == "object"
 
 
 @pytest.mark.anyio
@@ -563,15 +564,15 @@ async def test_mcp_server_tool_listing_and_dispatch() -> None:
     server = create_mcp_server(engine)
 
     # 1. Test tool discovery
-    list_tools_handler = server.request_handlers.get(types.ListToolsRequest)
+    list_tools_handler = server.request_handlers[types.ListToolsRequest]
     assert list_tools_handler is not None
 
-    req = types.ListToolsRequest(method="tools/list")
-    tools_result = await list_tools_handler(req)
-    assert len(tools_result.root.tools) == 6
+    tools_res = await list_tools_handler(types.ListToolsRequest(method="tools/list"))
+    tools_result = getattr(tools_res, "root", tools_res)
+    assert len(tools_result.tools) == 6
 
     # 2. Test call_tool dispatch
-    call_tool_handler = server.request_handlers.get(types.CallToolRequest)
+    call_tool_handler = server.request_handlers[types.CallToolRequest]
     assert call_tool_handler is not None
 
     engine.storage.list_notebooks = AsyncMock(return_value=Page(items=(), next_cursor=None))
@@ -581,7 +582,10 @@ async def test_mcp_server_tool_listing_and_dispatch() -> None:
         params=types.CallToolRequestParams(name="list_notebooks", arguments={"limit": 10}),
     )
 
-    call_result = await call_tool_handler(call_req)
-    assert len(call_result.root.content) == 1
-    data = json.loads(call_result.root.content[0].text)
+    call_res = await call_tool_handler(call_req)
+    call_result = getattr(call_res, "root", call_res)
+    assert len(call_result.content) == 1
+    first_content = call_result.content[0]
+    assert isinstance(first_content, types.TextContent)
+    data = json.loads(first_content.text)
     assert data["total"] == 0

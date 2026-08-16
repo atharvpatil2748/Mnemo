@@ -26,7 +26,14 @@ def test_create_mcp_server_metadata() -> None:
 
     options = server.create_initialization_options()
     assert options.capabilities.tools is not None
-    assert options.capabilities.tools.listChanged is False
+    assert (
+        getattr(
+            options.capabilities.tools,
+            "list_changed",
+            getattr(options.capabilities.tools, "listChanged", None),
+        )
+        is False
+    )
     assert options.server_name == "mnemo-mcp"
     assert options.server_version == __version__
 
@@ -49,8 +56,9 @@ async def test_mcp_server_protocol_handshake() -> None:
 
         async with ClientSession(server_to_client_recv, client_to_server_send) as session:
             init_res = await session.initialize()
-            assert init_res.serverInfo.name == "mnemo-mcp"
-            assert init_res.serverInfo.version == __version__
+            info = getattr(init_res, "server_info", getattr(init_res, "serverInfo", None))
+            assert info.name == "mnemo-mcp"
+            assert info.version == __version__
 
             # Module 8.2 lists the 6 knowledge tools
             tools_res = await session.list_tools()
@@ -79,19 +87,20 @@ async def test_mcp_server_call_unknown_tool_returns_error_result() -> None:
     mock_engine = MagicMock(spec=KnowledgeEngine)
     mock_engine.state = EngineState.READY
     server = create_mcp_server(mock_engine)
-    handler = server.request_handlers.get(types.CallToolRequest)
+    handler = server.request_handlers[types.CallToolRequest]
     assert handler is not None
 
     req = types.CallToolRequest(
-        params=types.CallToolRequestParams(name="non_existent_tool", arguments={})
+        method="tools/call",
+        params=types.CallToolRequestParams(name="non_existent_tool", arguments={}),
     )
-    result = await handler(req)
-    assert isinstance(result, types.ServerResult)
-    call_res = result.root
-    assert isinstance(call_res, types.CallToolResult)
-    assert call_res.isError is True
-    assert len(call_res.content) == 1
-    assert "Unknown MCP tool" in call_res.content[0].text
+    call_res = await handler(req)
+    result = getattr(call_res, "root", call_res)
+    assert isinstance(result, types.CallToolResult)
+    is_err = getattr(result, "isError", getattr(result, "is_error", False))
+    assert is_err is True
+    assert len(result.content) == 1
+    assert "Unknown MCP tool" in result.content[0].text
 
 
 @pytest.mark.anyio

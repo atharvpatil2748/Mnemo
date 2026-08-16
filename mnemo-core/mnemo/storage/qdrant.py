@@ -67,6 +67,8 @@ class QdrantStore:
 
     async def open(self) -> None:
         """Open owned storage resources idempotently."""
+        if not self._config.enabled:
+            return
         if self._client is not None:
             return
 
@@ -159,6 +161,8 @@ class QdrantStore:
 
     async def upsert_chunks(self, chunks: tuple[Chunk, ...]) -> None:
         """Atomically persist chunks to every configured index."""
+        if not self._config.enabled:
+            return
         await self._upsert_chunks(chunks, projection=None)
 
     async def _upsert_chunks_with_projection(
@@ -167,6 +171,8 @@ class QdrantStore:
         projection: RetrievalMetadataProjection,
     ) -> None:
         """Persist chunks with version-aware derived retrieval metadata."""
+        if not self._config.enabled:
+            return
         await self._upsert_chunks(chunks, projection=projection)
 
     async def _upsert_chunks(
@@ -175,6 +181,8 @@ class QdrantStore:
         *,
         projection: RetrievalMetadataProjection | None,
     ) -> None:
+        if not self._config.enabled:
+            return
         client = self._require_open()
         if not chunks:
             return
@@ -224,6 +232,8 @@ class QdrantStore:
         notebook_ids: tuple[UUID, ...],
     ) -> None:
         """Refresh mutable document-level membership on all indexed versions."""
+        if not self._config.enabled:
+            return
         await self._require_open().set_payload(
             collection_name=self._config.collection_name,
             payload={
@@ -243,7 +253,7 @@ class QdrantStore:
 
     async def _snapshot_chunks(self, chunk_ids: tuple[str, ...]) -> tuple[Chunk, ...]:
         """Capture affected Qdrant points, including their vectors."""
-        if not chunk_ids:
+        if not self._config.enabled or not chunk_ids:
             return ()
         records = await self._require_open().retrieve(
             collection_name=self._config.collection_name,
@@ -265,7 +275,7 @@ class QdrantStore:
         previous_chunks: tuple[Chunk, ...],
     ) -> None:
         """Restore affected points and delete only identities introduced by an attempt."""
-        if not attempted_ids:
+        if not self._config.enabled or not attempted_ids:
             return
         if previous_chunks:
             await self.upsert_chunks(previous_chunks)
@@ -284,7 +294,7 @@ class QdrantStore:
         self, chunk_ids: tuple[str, ...]
     ) -> tuple[_ProjectedChunkSnapshot, ...]:
         """Capture chunks and their derived retrieval payload for exact rollback."""
-        if not chunk_ids:
+        if not self._config.enabled or not chunk_ids:
             return ()
         records = await self._require_open().retrieve(
             collection_name=self._config.collection_name,
@@ -309,6 +319,8 @@ class QdrantStore:
         snapshots: tuple[_ProjectedChunkSnapshot, ...],
     ) -> None:
         """Restore projected points exactly and remove newly introduced identities."""
+        if not self._config.enabled:
+            return
         for snapshot in snapshots:
             await self._upsert_chunks((snapshot.chunk,), projection=snapshot.projection)
         previous_ids = frozenset(snapshot.chunk.id for snapshot in snapshots)
@@ -329,6 +341,9 @@ class QdrantStore:
         top_k: int,
     ) -> tuple[ScoredChunk, ...]:
         """Run bounded dense retrieval through the atomic facade."""
+        if not self._config.enabled:
+            return ()
+
         client = self._require_open()
 
         qdrant_filters: list[models.Condition] = []
@@ -421,6 +436,8 @@ class QdrantStore:
         version_id: UUID | None,
     ) -> None:
         """Delete all matching chunks from every configured index."""
+        if not self._config.enabled:
+            return
         client = self._require_open()
 
         must_filters: list[models.Condition] = [

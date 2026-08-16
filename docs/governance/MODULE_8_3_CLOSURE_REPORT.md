@@ -61,7 +61,19 @@ The complete end-to-end MCP pipeline has been tested and certified using:
 
 ---
 
-## 4. Milestone M8 Achievement Declaration
+## 4. Offline Storage Lifecycle Defect & Corrective Resolution
+
+During initial native MCP validation over the live Bhagavad Gita Golden Corpus with vector indexing disabled (`storage.qdrant.enabled = false`):
+1. **Defect:** `sq-1:dense` raised `RuntimeError("QdrantStore is not open")` during search, which under `MultiSourceRetriever._run_fail_fast` cancelled `sq-2:sparse` and caused `search_all_notebooks` and `query_notebook` to fail with `retriever invocation failed: sq-1:dense`. Additionally, `server.py` had an ephemeral test patch workaround during startup.
+2. **Corrective Resolution:**
+   - **`mnemo-core/mnemo/storage/qdrant.py` & `surrealdb.py`:** Updated `open()`, `search_dense()`, write, snapshot, and restore methods to cleanly treat `enabled = false` as an unavailable/empty capability (returning `()` without network I/O or exceptions). Enabled-but-unopened backend failures continue to raise `RuntimeError`, preserving fail-fast invariants.
+   - **`mnemo-server/mnemo_server/mcp/server.py`:** Removed all test mocking (`patch.object`) from production startup. The server now runs purely on native storage classes.
+   - **Regression Testing:** Added dedicated unit tests for both disabled and enabled-unopened storage states (`test_qdrant_disabled_behavior`, `test_qdrant_enabled_unopened_raises`, `test_surreal_disabled_behavior`, `test_surreal_enabled_unopened_raises`).
+3. **Native Verification:** 100% of all 6 native MCP tools validated successfully against the live Golden Corpus via Antigravity.
+
+---
+
+## 5. Milestone M8 Achievement Declaration
 
 With the completion of Module 8.3, **Phase 8 is 100% complete** and **Milestone M8 is achieved**:
 - Standard MCP protocol server runtime implemented (Module 8.1).

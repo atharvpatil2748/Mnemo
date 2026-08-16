@@ -50,6 +50,8 @@ class SurrealDBStore(StorageInterfaceV1):
 
     async def open(self) -> None:
         """Open the SurrealDB connection."""
+        if not self._config.enabled:
+            return
         if self._connected:
             return
         # surrealdb 2.x exposes separate blocking and asynchronous factories.
@@ -125,6 +127,8 @@ class SurrealDBStore(StorageInterfaceV1):
 
     async def upsert_entity(self, entity: Entity) -> None:
         """Insert or replace a graph entity."""
+        if not self._config.enabled:
+            return
         client = self._require_open()
         await client.query(
             "UPSERT type::thing('entity', $id) CONTENT $content;",
@@ -142,6 +146,8 @@ class SurrealDBStore(StorageInterfaceV1):
 
     async def upsert_edge(self, edge: GraphEdge) -> None:
         """Insert or replace a graph edge."""
+        if not self._config.enabled:
+            return
         client = self._require_open()
 
         edge_id = f"{edge.source_id}_{edge.relation}_{edge.target_id}"
@@ -166,6 +172,8 @@ class SurrealDBStore(StorageInterfaceV1):
 
     async def get_entity(self, entity_id: UUID) -> Entity | None:
         """Return a graph entity when present."""
+        if not self._config.enabled:
+            return None
         client = self._require_open()
         result = await client.query(
             "SELECT * FROM type::thing('entity', $id);",
@@ -196,6 +204,8 @@ class SurrealDBStore(StorageInterfaceV1):
         limit: int,
     ) -> tuple[Entity, ...]:
         """Find bounded entities by canonical name and optional constraints."""
+        if not self._config.enabled:
+            return ()
         client = self._require_open()
 
         where_clauses = ["canonical_name = $name"]
@@ -239,6 +249,8 @@ class SurrealDBStore(StorageInterfaceV1):
         limit: int,
     ) -> tuple[Entity, ...]:
         """Traverse a bounded number of graph hops."""
+        if not self._config.enabled:
+            return ()
         client = self._require_open()
 
         if hops < 1:
@@ -300,6 +312,8 @@ class SurrealDBStore(StorageInterfaceV1):
 
     async def delete_graph_for_document(self, document_id: UUID) -> None:
         """Delete graph records derived from one document."""
+        if not self._config.enabled:
+            return
         client = self._require_open()
         await client.query(
             "DELETE entity WHERE document_id = $doc_id;", {"doc_id": str(document_id)}

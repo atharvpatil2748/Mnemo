@@ -1,0 +1,53 @@
+[storage.filesystem]
+enabled = true
+root = "./data/files"
+
+[storage.sqlite]
+enabled = true
+path = "./data/manual-gita-qa/mnemo.db"
+
+[storage.qdrant]
+enabled = false
+url = "http://localhost:6333"
+collection_name = "mnemo_chunks"
+on_disk = false
+
+[storage.surrealdb]
+enabled = false
+url = "http://localhost:8001"
+username = "root"
+password = "root"
+namespace = "mnemo"
+database = "knowledge"
+
+[plugins]
+directory = "./plugins"
+
+[llm.planner]
+provider = "ollama"
+model = "gemma4:e4b"
+max_context_tokens = 8192
+
+[llm.synthesizer]
+provider = "ollama"
+model = "gemma4:e4b"
+max_context_tokens = 16384
+
+[llm.extractor]
+provider = "ollama"
+model = "gemma4:e4b"
+max_context_tokens = 8192
+
+[llm.classifier]
+provider = "ollama"
+model = "gemma4:e4b"
+max_context_tokens = 4096
+
+[embedding]
+provider = "ollama"
+model = "nomic-embed-text"
+dimensions = 768
+
+[reranker]
+provider = "sentence-transformers"
+model = "cross-encoder/ms-marco-MiniLM-L6-v2"

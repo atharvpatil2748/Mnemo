@@ -24,7 +24,12 @@ Module 8.3 completes Phase 8 by rigorously testing, verifying, and certifying th
    - Verified initialization handshake, server capabilities, tool JSON schemas, and deterministic error responses.
    - Tested real child process execution via `mcp.client.stdio.stdio_client` and `mnemo-mcp stdio`.
 
-3. **Governance & Certification Documentation:**
+3. **Offline Storage Lifecycle Fix (`mnemo-core` & `mnemo-server`):**
+   - Corrected `QdrantStore` and `SurrealDBStore` to treat `enabled = false` as an empty/unavailable capability without network calls or runtime errors, allowing SQLite FTS5 sparse retrieval to execute cleanly in multi-retriever fusion.
+   - Removed temporary startup mocking patches from `server.py`, ensuring 100% native server execution.
+   - Added unit tests for disabled storage handling and enabled-unopened fail-fast semantics.
+
+4. **Governance & Certification Documentation:**
    - Authored `docs/governance/MODULE_8_3_ARCHITECTURAL_AUDIT.md`.
    - Authored `docs/governance/MODULE_8_3_IMPLEMENTATION_READINESS_AUDIT.md`.
    - Authored `docs/governance/MODULE_8_3_CLOSURE_REPORT.md`.
@@ -35,6 +40,6 @@ Module 8.3 completes Phase 8 by rigorously testing, verifying, and certifying th
 
 - **Ruff Format & Linter:** 100% clean across all 246 files.
 - **Mypy Strict:** 100% clean across all 139 source files.
-- **Pytest:** 1,350 passed, 90.35% total coverage.
+- **Pytest:** 1,354 passed, 1 skipped, 90.34% total coverage.
 - **Builds:** `uv build --all` succeeded for `mnemo-core`, `mnemo-email-ingestion`, and `mnemo-server`.
-- **Frozen Core:** 0 diffs against `mnemo-core/`, `plugins/`, and historical ADRs.
+- **Native MCP Validation:** 100% pass across all 6 tools against the Golden Corpus.

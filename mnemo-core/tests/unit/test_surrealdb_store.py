@@ -320,3 +320,61 @@ async def test_surreal_unsupported_methods(surreal_store: SurrealDBStore) -> Non
         await surreal_store.upsert_document(None)  # type: ignore
     with pytest.raises(NotImplementedError):
         await surreal_store.search_dense(None, None, 10)  # type: ignore
+
+
+@pytest.mark.anyio
+async def test_surreal_disabled_behavior() -> None:
+    """Verify disabled SurrealDBStore operations are safe no-ops and return empty results."""
+    disabled_config = SurrealDBStorageConfig(
+        enabled=False,
+        url=HttpUrl("http://localhost:8001"),
+        username="root",
+        password="root",
+        namespace="test",
+        database="test",
+    )
+    store = SurrealDBStore(config=disabled_config)
+
+    # open() should perform no network I/O and remain unconnected
+    await store.open()
+    assert not store._connected
+
+    # health_check() should return empty tuple for disabled component
+    health = await store.health_check()
+    assert health == ()
+
+    # graph methods should return empty/none without error
+    ent_id = uuid4()
+    assert await store.get_entity(ent_id) is None
+    assert await store.find_entities("name", None, (), 10) == ()
+    assert await store.get_related_entities(ent_id, 1, (), 10) == ()
+
+    # write methods should be safe no-ops
+    entity = Entity(
+        entity_id=ent_id,
+        canonical_name="Test",
+        type="TEST",
+        confidence=1.0,
+        document_id=uuid4(),
+    )
+    await store.upsert_entity(entity)
+    await store.delete_graph_for_document(entity.document_id)
+    await store.close()
+
+
+@pytest.mark.anyio
+async def test_surreal_enabled_unopened_raises() -> None:
+    """Verify enabled but unopened SurrealDBStore raises RuntimeError."""
+    enabled_config = SurrealDBStorageConfig(
+        enabled=True,
+        url=HttpUrl("http://localhost:8001"),
+        username="root",
+        password="root",
+        namespace="test",
+        database="test",
+    )
+    store = SurrealDBStore(config=enabled_config)
+
+    ent_id = uuid4()
+    with pytest.raises(RuntimeError, match="SurrealDBStore is not open"):
+        await store.get_entity(ent_id)

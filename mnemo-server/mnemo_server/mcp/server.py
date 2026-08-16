@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -47,6 +48,11 @@ def configure_stderr_logging(level: str = "INFO") -> None:
     root_logger.setLevel(numeric_level)
     # Remove existing stdout/stderr handlers to prevent duplication
     root_logger.handlers = [handler]
+
+    # Silence stdout leaks from ML libraries in stdio transport mode
+    os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+    os.environ["TQDM_DISABLE"] = "1"
+    os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 
 
 class MnemoServer(Server):
@@ -109,9 +115,15 @@ async def run_stdio_server(
     active_engine = engine
     if active_engine is None:
         try:
-            active_engine = KnowledgeEngine(config=mnemo_config or MnemoConfig.from_env())
+            if mnemo_config is not None:
+                resolved_cfg = mnemo_config
+            elif os.path.exists("mnemo.toml"):
+                resolved_cfg = MnemoConfig.from_file("mnemo.toml")
+            else:
+                resolved_cfg = MnemoConfig.from_env()
+            active_engine = KnowledgeEngine(config=resolved_cfg)
         except Exception as err:
-            logger.warning("KnowledgeEngine could not be loaded from environment: %s", err)
+            logger.warning("KnowledgeEngine could not be loaded: %s", err)
 
     if active_engine is not None and active_engine.state != EngineState.READY:
         if owns_engine:
@@ -119,7 +131,11 @@ async def run_stdio_server(
                 await asyncio.to_thread(provision_tokenizer)
             except Exception as err:
                 logger.warning("Tokenizer provisioning check skipped or failed: %s", err)
-        await active_engine.initialize()
+        try:
+            await active_engine.initialize()
+        except Exception as err:
+            logger.error("KnowledgeEngine initialization failed: %s", err)
+            raise
 
     server = create_mcp_server(engine=active_engine)
     init_options = server.create_initialization_options()
@@ -155,10 +171,15 @@ def create_sse_app(
         nonlocal active_engine
         if active_engine is None:
             try:
-                resolved_config = mnemo_config or MnemoConfig.from_env()
+                if mnemo_config is not None:
+                    resolved_config = mnemo_config
+                elif os.path.exists("mnemo.toml"):
+                    resolved_config = MnemoConfig.from_file("mnemo.toml")
+                else:
+                    resolved_config = MnemoConfig.from_env()
                 active_engine = KnowledgeEngine(config=resolved_config)
             except Exception as err:
-                logger.warning("KnowledgeEngine could not be loaded from environment: %s", err)
+                logger.warning("KnowledgeEngine could not be loaded: %s", err)
             app.state.engine = active_engine
             if isinstance(active_server, MnemoServer):
                 active_server._engine = active_engine
@@ -169,7 +190,11 @@ def create_sse_app(
                     await asyncio.to_thread(provision_tokenizer)
                 except Exception as err:
                     logger.warning("Tokenizer provisioning check skipped or failed: %s", err)
-            await active_engine.initialize()
+            try:
+                await active_engine.initialize()
+            except Exception as err:
+                logger.error("KnowledgeEngine initialization failed: %s", err)
+                raise
         else:
             app.state.engine = active_engine
 
