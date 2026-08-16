@@ -7,6 +7,7 @@ license = "Apache-2.0"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115,<1",
+    "mcp>=1.9.4,<2",
     "mnemo-core",
     "python-multipart>=0.0.18,<1",
     "uvicorn[standard]>=0.30,<1",
@@ -14,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 mnemo = "mnemo_server.cli:main"
+mnemo-mcp = "mnemo_server.mcp.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/atharvpatil2748/Mnemo"

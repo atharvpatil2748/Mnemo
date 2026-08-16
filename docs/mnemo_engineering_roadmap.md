@@ -871,10 +871,10 @@ and integration-level complexity.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Implement MCP server using `mcp` Python SDK | `pip install mcp` | High | Phase 7 |
-| Implement stdio mode | Subprocess communication, newline-delimited JSON | High | 8.1a |
-| Implement SSE mode | HTTP-based MCP for remote clients | High | 8.1a |
-| Create `mnemo-mcp` CLI entrypoint | `mnemo-mcp --host --port` | Low | 8.1a |
+| ✅ Implement MCP server using `mcp` Python SDK | `mcp>=1.9.4,<2` in `mnemo-server` | High | Phase 7 |
+| ✅ Implement stdio mode | Subprocess communication, newline-delimited JSON-RPC, stderr logging | High | 8.1a |
+| ✅ Implement SSE mode | HTTP-based MCP for remote clients (`/sse` + `/messages`) | High | 8.1a |
+| ✅ Create `mnemo-mcp` CLI entrypoint | `mnemo-mcp stdio` / `mnemo-mcp sse --host --port` | Low | 8.1a |
 
 **Module 8.2 — MCP Tool Implementations**
 
@@ -892,7 +892,7 @@ and integration-level complexity.
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
 | Write MCP spec conformance tests | Use MCP test harness / inspector | High | 8.2 |
-| Test Claude Desktop integration | Manual: add to `config.json`, verify tool calls | High | 8.2 |
+| Test client integration (Antigravity live validation; historical: Claude Desktop) | Antigravity: configure `mcp_config.json`, verify tool calls | High | 8.2 |
 
 ---
 
@@ -2209,9 +2209,9 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 
 ### Phase 8 — MCP Server
 
-- □ MCP server (stdio mode)
-- □ MCP server (SSE mode)
-- □ `mnemo-mcp` CLI entrypoint
+- ☑ MCP server (stdio mode) (Module 8.1)
+- ☑ MCP server (SSE mode) (Module 8.1)
+- ☑ `mnemo-mcp` CLI entrypoint (Module 8.1)
 - □ `query_notebook` tool
 - □ `search_all_notebooks` tool
 - □ `list_notebooks` tool
@@ -2219,7 +2219,7 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - □ `get_source_insights` tool
 - □ `get_timeline` tool
 - □ MCP spec conformance tests
-- □ **[MILESTONE M8] Claude Desktop successfully queries notebooks via MCP**
+- □ **[MILESTONE M8] Antigravity successfully connects to and queries Mnemo via MCP** *(Original planned consumer: Claude Desktop; current validation consumer: Antigravity)*
 
 ### Phase 9 — Web UI
 
