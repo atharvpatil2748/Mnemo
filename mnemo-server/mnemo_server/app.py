@@ -25,6 +25,7 @@ from .routers import (
     search_router,
     sessions_router,
     sources_router,
+    streaming_router,
     system_router,
 )
 from .services import JobService
@@ -121,6 +122,7 @@ def create_app(
 
     # Register API routers
     app.include_router(system_router)
+    app.include_router(streaming_router)
     app.include_router(notebooks_router, prefix="/v1")
     app.include_router(sources_router, prefix="/v1")
     app.include_router(sessions_router, prefix="/v1")

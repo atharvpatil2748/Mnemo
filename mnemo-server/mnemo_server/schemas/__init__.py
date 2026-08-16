@@ -26,6 +26,15 @@ from .sessions import (
     TurnResponse,
 )
 from .sources import SourceResponse, SourceStatusResponse
+from .streaming import (
+    ChunkRetrievedData,
+    CitationsReadyData,
+    DoneData,
+    StreamErrorData,
+    StreamEvent,
+    StreamEventType,
+    SynthesisTokenData,
+)
 from .summary import NotebookSummaryResponse, SummaryItemResponse
 from .system import (
     ComponentHealthResponse,
@@ -52,8 +61,10 @@ from .system import (
 from .timeline import TimelineEventResponse, TimelineResponse
 
 __all__ = [
+    "ChunkRetrievedData",
     "CitationItemResponse",
     "CitationResponse",
+    "CitationsReadyData",
     "ComponentHealthResponse",
     "ConfigResponse",
     "CreateJobRequest",
@@ -61,6 +72,7 @@ __all__ = [
     "CreateNotebookRequest",
     "CreateSessionRequest",
     "CreateTurnRequest",
+    "DoneData",
     "EmbeddingConfigResponse",
     "EntityGraphResponse",
     "FilesystemStorageConfigResponse",
@@ -96,9 +108,13 @@ __all__ = [
     "SourceResponse",
     "SourceStatusResponse",
     "StorageConfigResponse",
+    "StreamErrorData",
+    "StreamEvent",
+    "StreamEventType",
     "SummaryItemResponse",
     "SurrealDBStorageConfigResponse",
     "SynthesisConfig",
+    "SynthesisTokenData",
     "TimelineEventResponse",
     "TimelineResponse",
     "TurnResponse",

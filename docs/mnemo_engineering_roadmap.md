@@ -848,10 +848,10 @@ and integration-level complexity.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Implement `/ws/query` WebSocket endpoint | Architecture §5.3 5-event protocol | High | 7.4 |
-| Implement event serialization | JSON events per architecture schema | Low | 7.7a |
-| Implement streaming token forwarding | `LLMInterface.stream()` → WebSocket send | High | 7.7a |
-| Implement connection lifecycle | Auth check, heartbeat, cleanup on disconnect | Medium | 7.7a |
+| ✅ Implement `/ws/query` WebSocket endpoint | Architecture §5.3 5-event protocol | High | 7.4 |
+| ✅ Implement event serialization | JSON events per architecture schema | Low | 7.7a |
+| ✅ Implement streaming token forwarding | `LLMInterface.stream()` → WebSocket send | High | 7.7a |
+| ✅ Implement connection lifecycle | Auth check, heartbeat, cleanup on disconnect | Medium | 7.7a |
 
 **Module 7.8 — Authentication Middleware**
 
@@ -2203,7 +2203,7 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ System endpoints (health, config, jobs, Module 7.6)
 - □ All request Pydantic models
 - □ All response Pydantic models
-- □ WebSocket `/ws/query` + 5-event protocol
+- ☑ WebSocket `/ws/query` + 5-event protocol (Module 7.7)
 - □ Auth middleware (none / api-key / JWT)
 - □ **[MILESTONE M7] All REST endpoints pass, WebSocket streaming works**
 

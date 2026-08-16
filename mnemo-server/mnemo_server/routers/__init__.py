@@ -9,6 +9,7 @@ from .query import router as query_router
 from .search import router as search_router
 from .sessions import router as sessions_router
 from .sources import router as sources_router
+from .streaming import router as streaming_router
 from .system import system_router
 
 __all__ = [
@@ -19,5 +20,6 @@ __all__ = [
     "search_router",
     "sessions_router",
     "sources_router",
+    "streaming_router",
     "system_router",
 ]

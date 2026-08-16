@@ -8,6 +8,7 @@ from .notes import NoteService
 from .query import QueryService
 from .search import SearchService
 from .sessions import SessionService
+from .streaming import StreamingQueryService
 from .system import JobService, SystemService
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     "QueryService",
     "SearchService",
     "SessionService",
+    "StreamingQueryService",
     "SystemService",
 ]

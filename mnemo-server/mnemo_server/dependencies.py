@@ -8,6 +8,7 @@ from mnemo.interfaces import DependencyUnavailableError, TokenCounterInterfaceV1
 from mnemo.tokenizers import O200KBaseTokenCounter
 
 from mnemo_server.config import ServerConfig
+from mnemo_server.services.streaming import StreamingQueryService
 from mnemo_server.services.system import JobService, SystemService
 from mnemo_server.tokenizer_provisioning import provision_tokenizer
 
@@ -62,3 +63,10 @@ def get_job_service(request: Request) -> JobService:
         job_service = JobService()
         request.app.state.job_service = job_service
     return job_service
+
+
+def get_streaming_query_service(request: Request) -> StreamingQueryService:
+    """Obtain StreamingQueryService from ready KnowledgeEngine and TokenCounter."""
+    engine = get_engine(request)
+    token_counter = get_token_counter(request)
+    return StreamingQueryService(engine=engine, token_counter=token_counter)
