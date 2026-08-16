@@ -835,11 +835,14 @@ and integration-level complexity.
 
 **Module 7.6 — System Endpoints**
 
+> **Status:** COMPLETE. Delivered `GET /v1/health` (and `/health` alias) probing storage, embedding, LLM, and token counter subsystems; `GET /v1/config` and `GET /v1/config/models` with secret redaction; `PATCH /v1/config` for runtime hot reload; and `GET /v1/jobs` & `GET /v1/jobs/{job_id}` for keyset-paginated background job tracking.
+
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| `GET /v1/health` | Returns backend connectivity | Low | 7.1 |
-| `GET/PATCH /v1/config` | Config read + hot reload | High | 7.1 |
-| `GET /v1/jobs`, `GET /v1/jobs/{id}` | Background job status | Medium | 7.1 |
+| ✅ `GET /v1/health` | Returns subsystem and storage connectivity with `/health` alias | Low | 7.1 |
+| ✅ `GET/PATCH /v1/config` | Config read with secret redaction + hot reload | High | 7.1 |
+| ✅ `GET /v1/config/models` | Active model inventory breakdown | Low | 7.1 |
+| ✅ `GET /v1/jobs`, `GET /v1/jobs/{id}` | Keyset-paginated background job status tracking | Medium | 7.1 |
 
 **Module 7.7 — WebSocket Streaming**
 
@@ -2197,7 +2200,7 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ Session/memory endpoints (5 endpoints, Module 7.5)
 - ☑ Notes CRUD endpoints (4 endpoints, Module 7.5)
 - ☑ Insights endpoints (2 endpoints, Module 7.5)
-- □ System endpoints (health, config, jobs)
+- ☑ System endpoints (health, config, jobs, Module 7.6)
 - □ All request Pydantic models
 - □ All response Pydantic models
 - □ WebSocket `/ws/query` + 5-event protocol

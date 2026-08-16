@@ -8,12 +8,15 @@ from .notes import NoteService
 from .query import QueryService
 from .search import SearchService
 from .sessions import SessionService
+from .system import JobService, SystemService
 
 __all__ = [
     "IngestionService",
     "InsightService",
+    "JobService",
     "NoteService",
     "QueryService",
     "SearchService",
     "SessionService",
+    "SystemService",
 ]

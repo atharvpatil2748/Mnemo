@@ -7,7 +7,6 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,7 +25,9 @@ from .routers import (
     search_router,
     sessions_router,
     sources_router,
+    system_router,
 )
+from .services import JobService
 from .tokenizer_provisioning import provision_tokenizer
 
 _LOGGER = logging.getLogger(__name__)
@@ -84,6 +85,7 @@ def create_app(
         # Publish the ready engine and server configuration to app.state
         app.state.engine = active_engine
         app.state.server_config = resolved_server_config
+        app.state.job_service = JobService()
         if resolved_components is not None:
             app.state.token_counter = resolved_components.token_counter
 
@@ -118,6 +120,7 @@ def create_app(
     register_error_handlers(app)
 
     # Register API routers
+    app.include_router(system_router)
     app.include_router(notebooks_router, prefix="/v1")
     app.include_router(sources_router, prefix="/v1")
     app.include_router(sessions_router, prefix="/v1")
@@ -125,17 +128,5 @@ def create_app(
     app.include_router(insights_router, prefix="/v1")
     app.include_router(query_router, prefix="/v1")
     app.include_router(search_router, prefix="/v1")
-
-    @app.get("/health", tags=["system"])
-    @app.get("/v1/health", tags=["system"])
-    async def health_check() -> dict[str, Any]:
-        """Basic health check endpoint returning server status and engine readiness."""
-        eng = getattr(app.state, "engine", None)
-        is_ready = eng is not None and eng.state is EngineState.READY
-        return {
-            "status": "ok" if is_ready else "degraded",
-            "version": __version__,
-            "engine_state": eng.state.value if eng is not None else "unavailable",
-        }
 
     return app

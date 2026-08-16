@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -18,6 +19,27 @@ async def test_tokenizer_provisioning_runs_off_event_loop(tmp_path: Path) -> Non
     """Verify that provision_tokenizer is called in a separate thread via asyncio.to_thread."""
     mock_engine = MagicMock(spec=KnowledgeEngine)
     mock_engine.state = EngineState.UNINITIALIZED
+    mock_engine.version = "0.21.2"
+
+    storage_mock = MagicMock()
+    storage_mock.health_check = AsyncMock(return_value=())
+    mock_engine.storage = storage_mock
+
+    emb_mock = MagicMock()
+    emb_mock.health_check = AsyncMock(
+        return_value=MagicMock(
+            component="emb", healthy=True, checked_at=datetime.now(UTC), detail=None
+        )
+    )
+    mock_engine.embedding_provider = emb_mock
+
+    llm_mock = MagicMock()
+    llm_mock.health_check = AsyncMock(
+        return_value=MagicMock(
+            component="llm", healthy=True, checked_at=datetime.now(UTC), detail=None
+        )
+    )
+    mock_engine.llm = MagicMock(return_value=llm_mock)
 
     async def mock_initialize() -> None:
         mock_engine.state = EngineState.READY

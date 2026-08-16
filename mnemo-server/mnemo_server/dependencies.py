@@ -8,6 +8,7 @@ from mnemo.interfaces import DependencyUnavailableError, TokenCounterInterfaceV1
 from mnemo.tokenizers import O200KBaseTokenCounter
 
 from mnemo_server.config import ServerConfig
+from mnemo_server.services.system import JobService, SystemService
 from mnemo_server.tokenizer_provisioning import provision_tokenizer
 
 
@@ -41,3 +42,23 @@ def get_server_config(request: Request) -> ServerConfig:
     if server_config is None:
         return ServerConfig()
     return server_config
+
+
+def get_system_service(request: Request) -> SystemService:
+    """Obtain SystemService with engine and token counter from application state."""
+    engine: KnowledgeEngine | None = getattr(request.app.state, "engine", None)
+    if engine is None:
+        raise DependencyUnavailableError("KnowledgeEngine is not ready", retryable=True)
+    token_counter: TokenCounterInterfaceV1 | None = getattr(
+        request.app.state, "token_counter", None
+    )
+    return SystemService(engine=engine, token_counter=token_counter)
+
+
+def get_job_service(request: Request) -> JobService:
+    """Obtain the singleton JobService from application state."""
+    job_service: JobService | None = getattr(request.app.state, "job_service", None)
+    if job_service is None:
+        job_service = JobService()
+        request.app.state.job_service = job_service
+    return job_service

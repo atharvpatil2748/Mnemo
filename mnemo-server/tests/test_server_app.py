@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -19,6 +20,27 @@ def _make_mock_engine(
 ) -> MagicMock:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.UNINITIALIZED
+    engine.version = __version__
+
+    storage_mock = MagicMock()
+    storage_mock.health_check = AsyncMock(return_value=())
+    engine.storage = storage_mock
+
+    emb_mock = MagicMock()
+    emb_mock.health_check = AsyncMock(
+        return_value=MagicMock(
+            component="emb", healthy=True, checked_at=datetime.now(UTC), detail=None
+        )
+    )
+    engine.embedding_provider = emb_mock
+
+    llm_mock = MagicMock()
+    llm_mock.health_check = AsyncMock(
+        return_value=MagicMock(
+            component="llm", healthy=True, checked_at=datetime.now(UTC), detail=None
+        )
+    )
+    engine.llm = MagicMock(return_value=llm_mock)
 
     async def mock_initialize() -> None:
         if initialize_side_effect:
@@ -59,11 +81,10 @@ async def test_app_lifespan_success() -> None:
         # Test /health and /v1/health
         resp1 = await client.get("/health")
         assert resp1.status_code == 200
-        assert resp1.json() == {
-            "status": "ok",
-            "version": __version__,
-            "engine_state": "ready",
-        }
+        data1 = resp1.json()
+        assert data1["status"] == "ok"
+        assert data1["version"] == __version__
+        assert data1["engine_state"] == "ready"
 
         resp2 = await client.get("/v1/health")
         assert resp2.status_code == 200
@@ -98,7 +119,10 @@ async def test_app_cors_headers() -> None:
         provision_tokenizer_on_startup=False,
     )
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client,
+    ):
         # Request with Origin header
         resp = await client.get(
             "/health",
