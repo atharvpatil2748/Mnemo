@@ -120,11 +120,20 @@ def _interface_error_handler(request: Request, exc: MnemoInterfaceError) -> JSON
 
 def _validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     """Handle FastAPI request validation errors."""
+    cleaned_errors: list[dict[str, Any]] = []
+    for err in exc.errors():
+        clean_err = dict(err)
+        if "ctx" in clean_err and isinstance(clean_err["ctx"], dict):
+            clean_err["ctx"] = {
+                k: str(v) if isinstance(v, Exception) else v for k, v in clean_err["ctx"].items()
+            }
+        cleaned_errors.append(clean_err)
+
     return error_response(
         422,
         "http.validation",
         "Request validation failed",
-        details={"validation_errors": exc.errors()},
+        details={"validation_errors": cleaned_errors},
         retryable=False,
     )
 

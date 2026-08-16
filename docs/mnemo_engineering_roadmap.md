@@ -797,11 +797,11 @@ and integration-level complexity.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| `GET/POST /v1/notebooks` | List + create | Low | 7.1 |
-| `GET/PATCH/DELETE /v1/notebooks/{id}` | CRUD | Low | 7.1 |
-| `GET /v1/notebooks/{id}/summary` | Trigger summary generation if stale | Medium | 7.1 |
-| `GET /v1/notebooks/{id}/timeline` | Return timeline events | Low | 7.1 |
-| `GET /v1/notebooks/{id}/graph` | Return entity graph nodes + edges | Medium | 7.1 |
+| ✅ `GET/POST /v1/notebooks` | List + create | Low | 7.1 |
+| ✅ `GET/PATCH/DELETE /v1/notebooks/{id}` | CRUD | Low | 7.1 |
+| ✅ `GET /v1/notebooks/{id}/summary` | Read-only persisted summary insights (ADR-0050) | Medium | 7.1 |
+| ✅ `GET /v1/notebooks/{id}/timeline` | Return activity timeline events (ADR-0050) | Low | 7.1 |
+| ✅ `GET /v1/notebooks/{id}/graph` | Return entity graph nodes (ADR-0050) | Medium | 7.1 |
 
 **Module 7.3 — Sources and Ingestion Endpoints**
 
@@ -2184,9 +2184,9 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 
 ### Phase 7 — REST API
 
-- □ FastAPI app + lifespan + CORS + error handling
-- □ KnowledgeEngine dependency injection
-- □ Notebook CRUD endpoints (7 endpoints)
+- ☑ FastAPI app + lifespan + CORS + error handling (Module 7.1, ADR-0049)
+- ☑ KnowledgeEngine dependency injection (Module 7.1, ADR-0049)
+- ☑ Notebook CRUD & Graph endpoints (8 endpoints, Module 7.2, ADR-0050)
 - □ Sources/ingestion endpoints (5 endpoints)
 - □ Query endpoint + search endpoint
 - □ Session/memory endpoints (5 endpoints)

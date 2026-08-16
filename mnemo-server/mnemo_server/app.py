@@ -18,6 +18,7 @@ from mnemo.tokenizers import O200KBaseTokenCounter
 
 from .config import ServerConfig
 from .errors import register_error_handlers
+from .routers import notebooks_router
 from .tokenizer_provisioning import provision_tokenizer
 
 _LOGGER = logging.getLogger(__name__)
@@ -105,6 +106,9 @@ def create_app(
 
     # Register ADR-0049 standardized error handlers
     register_error_handlers(app)
+
+    # Register API routers
+    app.include_router(notebooks_router, prefix="/v1")
 
     @app.get("/health", tags=["system"])
     @app.get("/v1/health", tags=["system"])
