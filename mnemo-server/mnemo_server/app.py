@@ -15,6 +15,7 @@ from mnemo.config import MnemoConfig
 from mnemo.engine import EngineState, FinalQAComponents, KnowledgeEngine
 from mnemo.tokenizers import O200KBaseTokenCounter
 
+from .auth import AuthMiddleware
 from .config import ServerConfig
 from .errors import register_error_handlers
 from .routers import (
@@ -115,6 +116,12 @@ def create_app(
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+
+    # Attach Authentication middleware
+    app.add_middleware(
+        AuthMiddleware,
+        config=resolved_server_config,
     )
 
     # Register ADR-0049 standardized error handlers

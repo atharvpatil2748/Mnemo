@@ -853,14 +853,15 @@ and integration-level complexity.
 | ✅ Implement streaming token forwarding | `LLMInterface.stream()` → WebSocket send | High | 7.7a |
 | ✅ Implement connection lifecycle | Auth check, heartbeat, cleanup on disconnect | Medium | 7.7a |
 
-**Module 7.8 — Authentication Middleware**
+**Module 7.8 — Authentication Middleware, CLI & Server Packaging**
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Implement `AuthMiddleware` | Three modes: none, api-key, JWT | Medium | 7.1 |
-| Implement none mode | Pass-through, single-user default | Low | 7.8a |
-| Implement API key mode | `Authorization: Bearer {key}` header check | Low | 7.8a |
-| Implement JWT mode | `python-jose` JWT validation | High | 7.8a |
+| ✅ Implement `AuthMiddleware` | Three modes: none, api-key, JWT | Medium | 7.1 |
+| ✅ Implement none mode | Pass-through, single-user default | Low | 7.8a |
+| ✅ Implement API key mode | `Authorization: Bearer {key}` header check | Low | 7.8a |
+| ✅ Implement JWT mode | Cryptographic HMAC-SHA JWT validation | High | 7.8a |
+| ✅ CLI & Packaging | `mnemo serve`, `mnemo check`, Docker entrypoints | Medium | 7.8a |
 
 ---
 
@@ -2200,12 +2201,11 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ☑ Session/memory endpoints (5 endpoints, Module 7.5)
 - ☑ Notes CRUD endpoints (4 endpoints, Module 7.5)
 - ☑ Insights endpoints (2 endpoints, Module 7.5)
-- ☑ System endpoints (health, config, jobs, Module 7.6)
-- □ All request Pydantic models
-- □ All response Pydantic models
+- ☑ All request Pydantic models (Modules 7.1–7.8)
+- ☑ All response Pydantic models (Modules 7.1–7.8)
 - ☑ WebSocket `/ws/query` + 5-event protocol (Module 7.7)
-- □ Auth middleware (none / api-key / JWT)
-- □ **[MILESTONE M7] All REST endpoints pass, WebSocket streaming works**
+- ☑ Auth middleware (none / api-key / JWT) (Module 7.8)
+- ☑ **[MILESTONE M7] All REST endpoints pass, WebSocket streaming works, Auth middleware verified**
 
 ### Phase 8 — MCP Server
 

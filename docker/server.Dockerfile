@@ -13,8 +13,8 @@ COPY mnemo-server/mnemo_server mnemo-server/mnemo_server
 
 RUN uv sync --frozen --no-dev --package mnemo-server
 
-# Phase 7 handoff: replace this scaffold process with the FastAPI ASGI entrypoint.
-CMD [".venv/bin/python", "-c", "import time; print('Mnemo server Phase 0 scaffold ready', flush=True); time.sleep(2147483647)"]
+# Start the production Mnemo FastAPI ASGI server
+CMD [".venv/bin/mnemo", "serve", "--host", "0.0.0.0", "--port", "8000"]
 
 HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
-  CMD .venv/bin/python -c "import mnemo_server" || exit 1
+  CMD .venv/bin/python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')" || exit 1
