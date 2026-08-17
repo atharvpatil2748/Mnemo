@@ -5,6 +5,7 @@ from .json_parser import JSONParser
 from .markdown import MarkdownParser
 from .pdf import PDFParser
 from .plain_text import PlainTextParser
+from .pptx import PPTXParser
 from .router import ParserRouter
 
 __all__ = [
@@ -14,6 +15,7 @@ __all__ = [
     "JSONParser",
     "MarkdownParser",
     "PDFParser",
+    "PPTXParser",
     "ParserRouter",
     "PlainTextParser",
 ]

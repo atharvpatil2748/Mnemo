@@ -480,7 +480,7 @@ class CodeChunker:
             if actual.type in spec.import_types:
                 continue
             if actual.type in spec.declaration_types:
-                if self._is_local_value_declaration(actual.type, parent_index, result):
+                if self._is_local_value_declaration(actual, parent_index, result):
                     self._collect_declarations(actual, source, spec, parent_index, scope, result)
                     continue
                 symbol = self._symbol(actual, source)
@@ -505,12 +505,10 @@ class CodeChunker:
 
     @staticmethod
     def _is_local_value_declaration(
-        node_type: str,
+        node: Node,
         parent_index: int | None,
         declarations: list[_Declaration],
     ) -> bool:
-        if parent_index is None:
-            return False
         value_types = {
             "assignment",
             "const_declaration",
@@ -519,7 +517,9 @@ class CodeChunker:
             "var_declaration",
             "variable_declaration",
         }
-        function_types = {
+        if node.type not in value_types:
+            return False
+        if parent_index is not None and declarations[parent_index].kind in {
             "constructor_declaration",
             "function_declaration",
             "function_definition",
@@ -527,8 +527,27 @@ class CodeChunker:
             "generator_function_declaration",
             "method_declaration",
             "method_definition",
-        }
-        return node_type in value_types and declarations[parent_index].kind in function_types
+        }:
+            return True
+        curr = node.parent
+        while curr is not None:
+            if curr.type in {
+                "arrow_function",
+                "closure_expression",
+                "constructor_declaration",
+                "func_literal",
+                "function_declaration",
+                "function_definition",
+                "function_expression",
+                "function_item",
+                "generator_function_declaration",
+                "lambda_expression",
+                "method_declaration",
+                "method_definition",
+            }:
+                return True
+            curr = curr.parent
+        return False
 
     @staticmethod
     def _python_module_docstring(root: Node) -> Node | None:

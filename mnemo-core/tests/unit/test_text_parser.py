@@ -1,8 +1,9 @@
 """Unit tests for the PlainTextParser (Module 3.6)."""
 
 import pytest
+from mnemo.cleaner.cleaner import DocumentCleaner
 from mnemo.interfaces.errors import ContractValidationError
-from mnemo.interfaces.parser_models import ParseResult, RawTextBlock
+from mnemo.interfaces.parser_models import ParseResult, RawCodeBlock, RawTextBlock
 from mnemo.interfaces.types import FileMetadata
 from mnemo.parsers.plain_text import PlainTextParser
 
@@ -80,3 +81,82 @@ def test_metadata_extraction(parser: PlainTextParser, metadata: FileMetadata) ->
     result = parser.parse(b"Hello", "hello.txt", metadata)
     assert result.metadata.title == "hello.txt"
     assert result.metadata.content_hash == _SHA256
+
+
+def test_js_source_emits_raw_code_block_and_preserves_newlines_through_cleaner(
+    parser: PlainTextParser, metadata: FileMetadata
+) -> None:
+    code_bytes = b"const a = 1;\n// comment\nfunction later() {\n    return 2;\n}"
+    result = parser.parse(code_bytes, "app.js", metadata)
+
+    assert len(result.blocks) == 1
+    assert isinstance(result.blocks[0], RawCodeBlock)
+    assert result.blocks[0].code_language == "javascript"
+
+    cleaner = DocumentCleaner()
+    cleaned = cleaner.clean(result)
+
+    assert len(cleaned.blocks) == 1
+    cleaned_block = cleaned.blocks[0]
+    assert isinstance(cleaned_block, RawCodeBlock)
+    assert cleaned_block.code == "const a = 1;\n// comment\nfunction later() {\n    return 2;\n}"
+    assert "\n" in cleaned_block.code
+    assert "function later" in cleaned_block.code
+
+
+def test_js_warmall_comment_preserves_following_statements_after_cleaning(
+    parser: PlainTextParser, metadata: FileMetadata
+) -> None:
+    code_bytes = b"warmAll(); // DO NOT await\n\nconst chatHistory = [];\n"
+    result = parser.parse(code_bytes, "server.js", metadata)
+
+    assert len(result.blocks) == 1
+    assert isinstance(result.blocks[0], RawCodeBlock)
+
+    cleaner = DocumentCleaner()
+    cleaned = cleaner.clean(result)
+
+    assert len(cleaned.blocks) == 1
+    cleaned_block = cleaned.blocks[0]
+    assert isinstance(cleaned_block, RawCodeBlock)
+    assert "const chatHistory = [];" in cleaned_block.code
+    assert "// DO NOT await\n" in cleaned_block.code or "// DO NOT await" in cleaned_block.code
+
+
+def test_py_source_emits_raw_code_block_and_preserves_indentation(
+    parser: PlainTextParser, metadata: FileMetadata
+) -> None:
+    code_bytes = b"def handler():\n    # process item\n    return 42\n"
+    result = parser.parse(code_bytes, "handler.py", metadata)
+
+    assert len(result.blocks) == 1
+    assert isinstance(result.blocks[0], RawCodeBlock)
+    assert result.blocks[0].code_language == "python"
+
+    cleaner = DocumentCleaner()
+    cleaned = cleaner.clean(result)
+
+    assert len(cleaned.blocks) == 1
+    cleaned_block = cleaned.blocks[0]
+    assert isinstance(cleaned_block, RawCodeBlock)
+    assert cleaned_block.code == "def handler():\n    # process item\n    return 42\n"
+
+
+def test_plain_prose_still_normalizes_whitespace(
+    parser: PlainTextParser, metadata: FileMetadata
+) -> None:
+    prose_bytes = b"hello      world\n\nthis is   another   paragraph"
+    result = parser.parse(prose_bytes, "notes.txt", metadata)
+
+    assert len(result.blocks) == 2
+    assert isinstance(result.blocks[0], RawTextBlock)
+    assert isinstance(result.blocks[1], RawTextBlock)
+
+    cleaner = DocumentCleaner()
+    cleaned = cleaner.clean(result)
+
+    assert len(cleaned.blocks) == 2
+    assert isinstance(cleaned.blocks[0], RawTextBlock)
+    assert isinstance(cleaned.blocks[1], RawTextBlock)
+    assert cleaned.blocks[0].text == "hello world"
+    assert cleaned.blocks[1].text == "this is another paragraph"

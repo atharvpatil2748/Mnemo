@@ -455,6 +455,7 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
                 MarkdownParser,
                 PDFParser,
                 PlainTextParser,
+                PPTXParser,
             )
 
             parsers = (
@@ -464,6 +465,13 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
                     (
                         ".docx",
                         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    ),
+                ),
+                (
+                    PPTXParser(),
+                    (
+                        ".pptx",
+                        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
                     ),
                 ),
                 (MarkdownParser(), (".md", ".markdown", "text/markdown", "text/x-markdown")),

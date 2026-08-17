@@ -98,13 +98,60 @@ class CSVParser(ParserInterfaceV1):
             for r in rows:
                 padded.append(r + ("",) * (max_w - len(r)))
 
-            blocks.append(
-                RawTableBlock(
-                    ordinal=0,
-                    rows=tuple(padded),
-                    header_row_count=1,  # Assume 1 header row for standard CSVs
+            header = padded[0]
+            data_rows = padded[1:]
+
+            if not data_rows:
+                blocks.append(
+                    RawTableBlock(
+                        ordinal=0,
+                        rows=(header,),
+                        header_row_count=1,
+                    )
                 )
-            )
+            else:
+                # Estimate token budget: target ~400 tokens per partition (max limit 1024)
+                # Tab-separated text approximation: ~3.5 chars per token + column delimiters
+                def estimate_row_tokens(row: tuple[str, ...]) -> int:
+                    chars = sum(len(cell) for cell in row) + len(row)
+                    return max(1, (chars + 3) // 4)
+
+                header_tokens = estimate_row_tokens(header)
+                max_partition_tokens = 400
+                max_rows_per_block = 50
+
+                ordinal = 0
+                current_batch: list[tuple[str, ...]] = []
+                current_tokens = header_tokens
+
+                for r in data_rows:
+                    r_tokens = estimate_row_tokens(r)
+                    if current_batch and (
+                        current_tokens + r_tokens > max_partition_tokens
+                        or len(current_batch) >= max_rows_per_block
+                    ):
+                        blocks.append(
+                            RawTableBlock(
+                                ordinal=ordinal,
+                                rows=(header, *current_batch),
+                                header_row_count=1,
+                            )
+                        )
+                        ordinal += 1
+                        current_batch = [r]
+                        current_tokens = header_tokens + r_tokens
+                    else:
+                        current_batch.append(r)
+                        current_tokens += r_tokens
+
+                if current_batch:
+                    blocks.append(
+                        RawTableBlock(
+                            ordinal=ordinal,
+                            rows=(header, *current_batch),
+                            header_row_count=1,
+                        )
+                    )
 
         return ParseResult(
             blocks=tuple(blocks),

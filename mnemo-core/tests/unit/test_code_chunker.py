@@ -349,3 +349,49 @@ def test_dispatcher_materializes_parent_and_stable_chunks() -> None:
     assert first[1].parent_chunk_id == first[0].id
     assert first[0].source_span == BlockSpan(start_ordinal=0, end_ordinal=0)
     assert first[0].chunk_type is ChunkType.CODE
+
+
+def test_javascript_arrow_function_callback_locals_not_emitted_as_root_declarations() -> None:
+    source = """
+app.post('/x', async (req, res) => {
+    const x = 1;
+});
+"""
+    document = _document(
+        CodeBlock(ordinal=0, code=source, code_language="javascript"), title="server.js"
+    )
+    drafts = CodeChunker().chunk(document, _context(document), WordCounter())
+    assert drafts == ()
+
+
+def test_javascript_function_expression_locals_not_emitted_as_root_declarations() -> None:
+    source = """
+const handler = function(req, res) {
+    const localInExpr = 4;
+};
+"""
+    document = _document(
+        CodeBlock(ordinal=0, code=source, code_language="javascript"), title="server.js"
+    )
+    drafts = CodeChunker().chunk(document, _context(document), WordCounter())
+    assert len(drafts) == 1
+    assert "const handler =" in drafts[0].text
+
+
+def test_repeated_identical_declarations_in_separate_arrow_functions_do_not_collide() -> None:
+    source = """
+app.post('/first', async (req, res) => {
+    const { executeTool } = require('@tools/toolRegistry');
+    const result = await executeTool(1);
+});
+
+app.post('/second', async (req, res) => {
+    const { executeTool } = require('@tools/toolRegistry');
+    const result = await executeTool(2);
+});
+"""
+    document = _document(
+        CodeBlock(ordinal=0, code=source, code_language="javascript"), title="server.js"
+    )
+    drafts = CodeChunker().chunk(document, _context(document), WordCounter())
+    assert drafts == ()
