@@ -1,8 +1,8 @@
 # mnemo-server
 
-> Layer 2 Transport Adapter & API Server for the Mnemo Local Knowledge Engine.
+> Layer 2 Transport Adapter, REST API & Model Context Protocol (MCP) Server for the Mnemo Local Knowledge Engine.
 
-`mnemo-server` provides the HTTP/REST, WebSocket, and SSE streaming transport adapters for `mnemo-core`. Built with **FastAPI** and hosted on **Uvicorn**, it exposes typed, authenticated endpoints for notebook management, multi-format source ingestion, hybrid query/search retrieval, conversation memory, notes, and system introspection.
+`mnemo-server` provides the HTTP/REST, WebSocket, SSE streaming, and **Model Context Protocol (MCP)** transport adapters for `mnemo-core`. Built with **FastAPI**, **Uvicorn**, and the standard **Model Context Protocol SDK**, it exposes typed, authenticated endpoints and native AI assistant tools for notebook management, multi-format source ingestion, hybrid query/search retrieval, conversation memory, notes, and system introspection.
 
 ---
 
@@ -17,10 +17,20 @@
 - **Streaming Protocols:**
   - **WebSocket (`/ws/query`):** Real-time 5-event streaming query protocol (`retrieval_start`, `chunk_retrieved`, `synthesis_token`, `citations_ready`, `done`) with ping/pong heartbeat.
   - **Server-Sent Events (`POST /v1/query/stream`):** Standard HTTP SSE event streaming.
+- **Model Context Protocol (MCP) Server:**
+  - Exposes 6 native knowledge retrieval tools for AI assistants (Antigravity, Claude Desktop, Cursor):
+    - `query_notebook`: Grounded question-answering with citations and optional evidence-only retrieval (`synthesize=false`).
+    - `search_all_notebooks`: Ranked semantic/keyword search across all notebooks.
+    - `list_notebooks`: Discovers accessible notebooks with source counts.
+    - `get_notebook_summary`: Retrieves persisted notebook summaries and source inventories.
+    - `get_source_insights`: Extracts structured insights for a specific source.
+    - `get_timeline`: Retrieves chronologically sorted notebook activity events.
+  - Dual-transport support: standard input/output (`stdio`) and Server-Sent Events (`sse`).
 - **Authentication Middleware:**
   - Three configurable modes: `none` (local single-user default), `api-key` (constant-time header validation), and `jwt` (RFC 7519 HMAC-SHA verification).
 - **CLI Utilities:**
-  - `mnemo serve`: Start the Uvicorn ASGI server.
+  - `mnemo serve`: Start the HTTP/REST and WebSocket ASGI server.
+  - `mnemo-mcp`: Run the Model Context Protocol (MCP) server (`--transport stdio` or `--transport sse`).
   - `mnemo check`: Validate server configuration and inspect active settings.
   - `mnemo provision-tokenizer`: Install the canonical BPE tokenizer asset.
   - `mnemo --version`: Display package version.
@@ -36,7 +46,7 @@
 mnemo provision-tokenizer
 ```
 
-### 2. Start the Server
+### 2. Start the HTTP/REST Server
 
 ```console
 # Start with default local configuration (port 8000)
@@ -46,7 +56,17 @@ mnemo serve
 mnemo serve --host 0.0.0.0 --port 8000 --auth-mode api-key --api-key my-secret-key
 ```
 
-### 3. Check Server Health
+### 3. Run the Native MCP Server
+
+```console
+# Run over stdio (for Antigravity, Claude Desktop, Cursor)
+mnemo-mcp --transport stdio
+
+# Run over SSE (port 8001)
+mnemo-mcp --transport sse --host 127.0.0.1 --port 8001
+```
+
+### 4. Check Server Health
 
 ```console
 curl -s http://127.0.0.1:8000/health
@@ -69,3 +89,6 @@ curl -s http://127.0.0.1:8000/health
 | `MNEMO_SERVER_API_KEY` | `None` | Static key for `api-key` auth mode. |
 | `MNEMO_SERVER_JWT_SECRET` | `None` | Shared HMAC secret for `jwt` auth mode. |
 | `MNEMO_SERVER_JWT_ALGORITHMS` | `HS256` | Allowed JWT signing algorithms. |
+| `MNEMO_MCP_TRANSPORT` | `stdio` | Default transport for MCP server (`stdio`, `sse`). |
+| `MNEMO_MCP_HOST` | `127.0.0.1` | Host address for MCP SSE transport. |
+| `MNEMO_MCP_PORT` | `8001` | Port for MCP SSE transport. |

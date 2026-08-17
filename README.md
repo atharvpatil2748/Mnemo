@@ -2,7 +2,7 @@
 
 > One knowledge layer. Thousands of documents. Your hardware, your data.
 
-![Version](https://img.shields.io/badge/version-0.22.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-0.23.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
 
 ## Why Mnemo Exists
 
@@ -61,15 +61,15 @@ Mnemo's **architectural target** is to support **100,000 documents and 20 millio
 Mnemo strictly enforces a layered, provider-independent architecture where no layer may call upward.
 
 ```text
-User / Application
+User / AI Assistant / Antigravity / Client
        │
        ├── REST API (Layer 2 — Complete)
        ├── WebSocket / SSE (Layer 2 — Complete)
-       ├── MCP (Layer 2/Layer 3 — Planned Phase 8)
+       ├── Native Model Context Protocol (MCP) (Layer 2 — Complete)
        └── Web UI (Layer 3 — Planned Phase 9)
             │
             ▼
-       Mnemo Server (Layer 2 — FastAPI & Uvicorn)
+       Mnemo Server (Layer 2 — FastAPI, Uvicorn & MCP)
             │
             ▼
        Mnemo Core (Layer 1 — Domain Engine)
@@ -90,14 +90,14 @@ User / Application
 * **Interface-driven:** Core logic relies on `Protocol` interfaces, not concrete implementations.
 * **Knowledge engine, not agent:** It retrieves evidence; it does not plan actions.
 * **Retrieval before reasoning:** Facts are gathered deterministically before any synthesis occurs.
-* **Graceful degradation:** If a non-essential plugin fails, only that capability is disabled.
+* **Graceful degradation:** If a non-essential backend (e.g. Qdrant) is disabled, retrieval continues gracefully over available sparse streams.
 
 ## Built For
 
 Mnemo's component-based design allows it to serve multiple roles:
-* **A standalone local knowledge engine** (via the planned Web UI)
-* **A grounding/retrieval layer for AI assistants** (via the core Python library)
-* **An MCP knowledge backend** (Planned Phase 8)
+* **A standalone local knowledge engine** (via REST, CLI, and the planned Web UI)
+* **A grounding/retrieval layer for AI assistants** (via native Model Context Protocol)
+* **An MCP knowledge backend** (Validated natively with Antigravity and MCP clients)
 * **A retrieval backend for custom applications** (via the REST API and WebSocket streaming)
 * **A persistent research/document memory system**
 
@@ -107,17 +107,17 @@ Mnemo is in active engineering development. Every module is rigorously tested be
 
 | Capability | Status | Notes |
 |---|---|---|
-| Typed Domain Model | 🧊 Frozen | Core schemas and contracts |
-| Configuration System | ✅ Implemented | Immutable configuration authority |
-| Plugin Registry | ✅ Implemented | Discovers and injects providers |
-| Local Storage Layer | ✅ Implemented | Qdrant, SQLite FTS5, SurrealDB, FS |
-| Document Parsing | ✅ Implemented | PDF, DOCX, Markdown, HTML, TXT, JSON, CSV |
-| Ingestion Canonicalization | ✅ Complete | Phase 3.9 bridge produces canonical `ParsedDocument` values |
-| Chunking Engine | ✅ Complete | Modules 4.1–4.10: dispatcher plus all nine document-aware V2 strategies |
-| Embedding Pipeline | ✅ Released | Modules 5.1–5.3 with caching and batch vector generation |
-| Hybrid Retrieval & Grounded QA | ✅ Released | Phase 6 (Milestone M6): planning, fusion, reranking, and citation engine |
-| REST API & WebSocket Streaming | ✅ Released | Phase 7 (Milestone M7): REST endpoints, WebSocket/SSE streaming, Auth middleware |
-| MCP Integration | 📋 Planned | Phase 8 |
+| Typed Domain Model | 🧊 Frozen | Core schemas and contracts (Phases 0–1) |
+| Configuration System | ✅ Implemented | Immutable configuration authority (Phase 1) |
+| Plugin Registry | ✅ Implemented | Discovers and injects providers (Phase 1) |
+| Local Storage Layer | ✅ Implemented | Qdrant, SQLite FTS5, SurrealDB, FS with atomic composite transactions (Phase 2) |
+| Document Parsing | ✅ Implemented | PDF, DOCX, Markdown, HTML, TXT, JSON, CSV (Phase 3) |
+| Ingestion Canonicalization | ✅ Complete | Canonical `ParsedDocument` bridge (Phase 3.9) |
+| Chunking Engine | ✅ Complete | Modules 4.1–4.10: dispatcher plus all nine document-aware V2 strategies (Phase 4) |
+| Embedding Pipeline | ✅ Released | Content-addressed embedding cache and batch vector generation (Phase 5) |
+| Hybrid Retrieval & Grounded QA | ✅ Released | Milestone M6: dense/sparse fusion, cross-encoder diversity reranking, dynamic prompt routing, citations (Phase 6) |
+| REST API & WebSocket Streaming | ✅ Released | Milestone M7: REST endpoints, WebSocket/SSE streaming, Auth middleware (Phase 7) |
+| Native MCP Integration | ✅ Released | Milestone M8: 6 native knowledge retrieval tools, stdio/SSE transports, Antigravity verified (Phase 8) |
 | Web UI | 📋 Planned | Phase 9 |
 | Cross-Doc Reasoning | 📋 Planned | Phase 11 |
 
@@ -129,7 +129,7 @@ Mnemo is in active engineering development. Every module is rigorously tested be
 * **Node.js 22** and **pnpm 11.16** (for UI scaffold)
 * **Docker** with Compose (for integration checks)
 
-Phase 4 token counting requires an explicit user-initiated provisioning step:
+Token counting requires an explicit user-initiated provisioning step:
 
 ```console
 mnemo provision-tokenizer
@@ -139,7 +139,7 @@ The command downloads the frozen `o200k_base` asset directly from upstream,
 verifies its SHA-256, and installs it in user-local content-addressed storage.
 Mnemo does not bundle the asset, and chunking never accesses the network.
 
-### 2. Start the Server
+### 2. Start the REST & Streaming Server
 
 ```console
 # Start the HTTP/REST and WebSocket server (port 8000)
@@ -149,7 +149,27 @@ mnemo serve
 curl -s http://127.0.0.1:8000/health
 ```
 
-### 3. Setup and Validation
+### 3. Run the Native MCP Server
+
+Mnemo provides a full Model Context Protocol (MCP) server exposing 6 native knowledge retrieval tools:
+
+```console
+# Run MCP server over stdio (for Antigravity, Claude Desktop, Cursor)
+mnemo-mcp --transport stdio
+
+# Run MCP server over SSE (port 8001)
+mnemo-mcp --transport sse --host 127.0.0.1 --port 8001
+```
+
+**Exposed MCP Tools:**
+- `mnemo/list_notebooks`: Discover accessible notebooks and source counts.
+- `mnemo/query_notebook`: Execute grounded question answering with citations or evidence-only retrieval (`synthesize=false`).
+- `mnemo/search_all_notebooks`: Hybrid semantic/keyword search across all notebooks.
+- `mnemo/get_notebook_summary`: Retrieve notebook-level overview and source inventory.
+- `mnemo/get_source_insights`: Retrieve extracted source-level insights.
+- `mnemo/get_timeline`: Retrieve chronologically ordered notebook activity events.
+
+### 4. Setup and Validation
 Clone the repository and run the validation script to ensure your environment is clean:
 
 ```shell
@@ -158,7 +178,7 @@ validate.bat
 ```
 *(On other platforms, follow the development commands below).*
 
-### 4. Test the Python Baseline
+### 5. Test the Python Baseline
 Mnemo relies on strict linting, type checking, and testing:
 
 ```shell
@@ -169,14 +189,13 @@ uv run mypy mnemo-core/mnemo mnemo-server/mnemo_server
 uv run pytest
 ```
 
-### 5. Build the Packages
+### 6. Build the Packages
 ```shell
-uv build --package mnemo-core
-uv build --package mnemo-server
+uv build --all
 ```
 
-### 6. Current Python API Usage
-While end-user UI and MCP are planned for later phases, the core engine can be initialized programmatically:
+### 7. Python API Usage
+The core knowledge engine can be initialized programmatically:
 
 ```python
 from mnemo import KnowledgeEngine, MnemoConfig
@@ -187,7 +206,6 @@ await engine.initialize()
 # Ready for interactions...
 await engine.shutdown()
 ```
-*(Note: Full initialization requires plugins that provide embedding and LLM roles, which are scheduled for later phases).*
 
 ## Development
 
@@ -208,23 +226,13 @@ To understand the system in depth, consult the authoritative documentation in th
 * [Contributing Guide](CONTRIBUTING.md) - How to contribute to the project.
 * [Engineering Changelog](docs/changelog/) - Detailed historical module releases.
 
-## Why This Is an Interesting Engineering Project
-
-Mnemo represents a serious systems and AI infrastructure challenge. It is not a wrapper around a single API. Building a robust local-first knowledge engine requires solving deep architectural problems:
-
-* **Heterogeneous Ingestion:** Parsing wildly different file formats into a unified `RawBlock` schema.
-* **Semantic Chunking:** Context-aware, adaptive chunking that preserves heading hierarchies and semantic boundaries.
-* **Hybrid Retrieval:** Orchestrating dense vector search (Qdrant), sparse keyword search (SQLite), and relational metadata filtering (SurrealDB).
-* **Provenance & Citations:** Guaranteeing that every generated claim maps exactly to a file, page, and chunk.
-* **Deterministic Boundaries:** Enforcing a strict separation between core knowledge retrieval (Layer 1) and external HTTP/MCP transports (Layer 2).
-
 ## Roadmap
 
 Mnemo's roadmap is structured to ensure every phase produces a runnable, testable artifact.
 
-* **CURRENT (Phases 0–4):** Core scaffolding, storage, canonical ingestion, and deterministic V2 chunking are complete.
-* **NEXT:** Phase 5 embedding pipeline.
-* **FUTURE (Phases 6–13):** Hybrid retrieval, REST/WebSocket APIs, MCP Server, Web UI, cross-document reasoning, and production hardening.
+* **COMPLETED (Phases 0–8):** Core scaffolding, storage, canonical ingestion, deterministic V2 chunking, embedding pipeline, hybrid retrieval & grounded QA (Milestone M6), REST/WebSocket APIs & Auth (Milestone M7), and Native MCP Server (Milestone M8) are complete and certified.
+* **NEXT (Phase 9):** Web UI React frontend (Milestone M9).
+* **FUTURE (Phases 10–13):** Notebook features, cross-document reasoning, plugin ecosystem, and production hardening.
 
 See the complete execution plan in the [Engineering Roadmap](docs/mnemo_engineering_roadmap.md).
 
@@ -235,3 +243,4 @@ Interested in working on Mnemo?
 Whether you're interested in building a new parser, optimizing vector storage, or shaping the retrieval algorithms, we welcome your help!
 
 Please read our [Contributing Guide](CONTRIBUTING.md) to understand our architectural rules, local setup, and PR expectations before opening a pull request.
+

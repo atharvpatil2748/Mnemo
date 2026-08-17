@@ -127,7 +127,8 @@ and integration-level complexity.
 
 ### Phase 8 — MCP Server
 **Duration:** Weeks 28–30  
-**Goal:** MCP server is operational in both stdio and SSE modes. All six defined tools (`query_notebook`, `search_all_notebooks`, `list_notebooks`, `get_notebook_summary`, `get_source_insights`, `get_timeline`) pass the MCP specification test suite. Claude Desktop can query notebooks.
+**Status:** Complete and certified at v0.23.0 (Milestone M8); verified through native Antigravity MCP integration and full Golden Corpus test suite  
+**Goal:** MCP server is operational in both stdio and SSE modes. All six defined tools (`query_notebook`, `search_all_notebooks`, `list_notebooks`, `get_notebook_summary`, `get_source_insights`, `get_timeline`) pass the MCP specification test suite and native Antigravity tool discovery/execution.
 
 ---
 
