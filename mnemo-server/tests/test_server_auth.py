@@ -42,7 +42,7 @@ def create_test_jwt(
 def _make_ready_engine() -> MagicMock:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
-    engine.version = "0.22.0"
+    engine.version = "0.23.0"
     engine.initialize = AsyncMock()
     engine.shutdown = AsyncMock()
     now = datetime.now(UTC)

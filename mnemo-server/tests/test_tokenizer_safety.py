@@ -19,7 +19,7 @@ async def test_tokenizer_provisioning_runs_off_event_loop(tmp_path: Path) -> Non
     """Verify that provision_tokenizer is called in a separate thread via asyncio.to_thread."""
     mock_engine = MagicMock(spec=KnowledgeEngine)
     mock_engine.state = EngineState.UNINITIALIZED
-    mock_engine.version = "0.22.0"
+    mock_engine.version = "0.23.0"
 
     storage_mock = MagicMock()
     storage_mock.health_check = AsyncMock(return_value=())
