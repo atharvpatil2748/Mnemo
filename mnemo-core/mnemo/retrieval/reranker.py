@@ -183,10 +183,14 @@ class CrossEncoderReranker:
         }
         if len(by_id) != len(chunks):
             raise IntegrityError("cross-encoder input contains duplicate chunk identities")
-        ordered = _apply_diversity_ordering(
-            normalized,
+        ordered = sorted(
             fusion_result.results,
-            {item.chunk.id: by_id[item.chunk.id].relevance_score for item in fusion_result.results},
+            key=lambda item: (
+                -int(bool(item.chunk.metadata.get("retrieval_title_match", False))),
+                -by_id[item.chunk.id].relevance_score,
+                item.global_rank,
+                item.chunk.id,
+            ),
         )
         return RetrievalRerankResult(
             query=normalized,
@@ -251,7 +255,7 @@ class CrossEncoderReranker:
                 executor,
                 runtime.predict_logits,
                 query,
-                tuple(chunk.text for chunk in chunks),
+                tuple(_reranker_document_representation(chunk) for chunk in chunks),
             )
         if not isinstance(logits, tuple):
             raise IntegrityError("cross-encoder returned a non-tuple score sequence")
@@ -383,6 +387,14 @@ class _CrossEncoderRuntime:
         return tuple(values)
 
 
+def _reranker_document_representation(chunk: Chunk) -> str:
+    """Expose derived version-title evidence without changing canonical chunk text."""
+    title = chunk.metadata.get("document_title")
+    if isinstance(title, str) and title.strip():
+        return f"Document title: {title}\n\n{chunk.text}"
+    return chunk.text
+
+
 def _normalize_query(query: str) -> str:
     if not isinstance(query, str):
         raise TypeError("query must be a string")
@@ -483,108 +495,16 @@ def _detect_query_relevant_sources(
     fused_items: tuple[FusedChunkResult, ...] | list[FusedChunkResult],
     scores_by_id: dict[str, float],
 ) -> list[str]:
-    """Detect distinct source documents genuinely relevant to the query."""
-    q_lower = query.lower()
+    """Detect sources whose retained candidates meet the relevance threshold.
 
-    doc_signatures = {
-        "Atharv_Patil_RESUME_SDE.pdf": [
-            "resume",
-            "atharv",
-            "skills",
-            "experience",
-            "education",
-            "scholastic",
-            "award",
-            "arvsal",
-            "spi",
-            "cpi",
-        ],
-        "Bhagavad-gita-As-It-Is.pdf": [
-            "gita",
-            "bhagavad",
-            "verse",
-            "chapter",
-            "text",
-            "krishna",
-            "krsna",
-            "arjuna",
-            "karma",
-            "duty",
-            "surrender",
-            "sarva-dharman",
-        ],
-        "Coordinator Application 2026\u201327.pptx": [
-            "coordinator",
-            "application",
-            "fine arts",
-            "budget",
-            "art fest",
-            "kintsugi",
-            "secretar",
-            "club",
-        ],
-        "ME333 - Exp2-LabReport_To_Submit.docx": [
-            "me333",
-            "lab report",
-            "vibration",
-            "sdof",
-            "accelerometer",
-            "frequency",
-            "mass",
-            "damper",
-            "resonance",
-            "transmissibility",
-            "b6",
-        ],
-        "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1).pptx": [
-            "me361",
-            "manufacturing",
-            "iphone",
-            "chassis",
-            "tolerance",
-            "milling",
-            "stripping",
-            "mmw",
-            "sulawesi",
-            "roughness",
-        ],
-        "server.js": [
-            "server.js",
-            "endpoint",
-            "route",
-            "express",
-            "whisper",
-            "tts",
-            "validatewhisperoutput",
-            "pcmtowav",
-            "buffer",
-            "speech",
-            "intent",
-            "/command",
-            "/speak",
-            "/stream",
-        ],
-        "Y24_CPI.csv": [
-            "cpi",
-            "rank",
-            "roll",
-            "y24",
-            "csv",
-            "240740",
-            "inesh",
-            "student",
-            "dataset",
-        ],
-    }
-
+    Relevance is determined only by the cross-encoder score supplied for the
+    candidate.  It intentionally does not depend on source names or corpus-
+    specific keyword lists, which would make the ordering non-general.
+    """
+    del query
     matched_sources: set[str] = set()
     for item in fused_items:
         source_name = _get_item_source(item)
-
-        for doc_key, keywords in doc_signatures.items():
-            if doc_key.lower() in source_name.lower() and any(kw in q_lower for kw in keywords):
-                matched_sources.add(source_name)
-
         score = scores_by_id.get(item.chunk.id, 0.0)
         if score >= 0.50 and source_name:
             matched_sources.add(source_name)
@@ -606,6 +526,7 @@ def _apply_diversity_ordering(
     sorted_by_score = sorted(
         items_list,
         key=lambda item: (
+            -int(bool(item.chunk.metadata.get("retrieval_title_match", False))),
             -scores_by_id.get(item.chunk.id, 0.0),
             item.global_rank,
             item.chunk.id,
@@ -624,7 +545,22 @@ def _apply_diversity_ordering(
         s_cands = [item for item in sorted_by_score if _get_item_source(item) == s]
         source_best_score[s] = scores_by_id.get(s_cands[0].chunk.id, 0.0) if s_cands else -999.0
 
-    sorted_sources = sorted(relevant_sources, key=lambda s: source_best_score[s], reverse=True)
+    source_has_title_match = {
+        source: any(
+            bool(item.chunk.metadata.get("retrieval_title_match", False))
+            for item in sorted_by_score
+            if _get_item_source(item) == source
+        )
+        for source in relevant_sources
+    }
+    sorted_sources = sorted(
+        relevant_sources,
+        key=lambda source: (
+            -int(source_has_title_match[source]),
+            -source_best_score[source],
+            source,
+        ),
+    )
 
     num_to_take = 2 if len(sorted_sources) <= 2 else 1
     for round_idx in range(num_to_take):

@@ -34,6 +34,10 @@ from mnemo.models import (
     DocumentVersion,
     DocumentVersionStatus,
     Entity,
+    FinalQAExecution,
+    FinalQAExecutionSnapshot,
+    FinalQAExecutionSnapshotPhase,
+    FinalQAExecutionState,
     FrozenMetadata,
     Insight,
     InsightType,
@@ -68,6 +72,57 @@ def open_store(store: SQLiteStore) -> Iterator[SQLiteStore]:
     asyncio.run(store.open())
     yield store
     asyncio.run(store.close())
+
+
+def test_final_qa_execution_store_is_immutable_and_conditional(open_store: SQLiteStore) -> None:
+    """ADR-0056 execution claim, write-once snapshot, and CAS transition."""
+    now = datetime.now(UTC)
+    execution = FinalQAExecution(
+        execution_id=uuid4(),
+        assistant_turn_id=uuid4(),
+        request_fingerprint="a" * 64,
+        notebook_id=uuid4(),
+        session_id=uuid4(),
+        user_turn_id=uuid4(),
+        contract_version="adr-0056/v1",
+        payload_schema_version=1,
+        provider="test",
+        model="test",
+        model_configuration="{}",
+        state=FinalQAExecutionState.RUNNING,
+        retry_count=0,
+        failure_classification=None,
+        created_at=now,
+        updated_at=now,
+    )
+    assert asyncio.run(open_store.create_final_qa_execution(execution)) is True
+    assert asyncio.run(open_store.create_final_qa_execution(execution)) is False
+    stored = asyncio.run(open_store.get_final_qa_execution(execution.assistant_turn_id))
+    assert stored == execution
+    snapshot = FinalQAExecutionSnapshot(
+        execution_id=execution.execution_id,
+        phase=FinalQAExecutionSnapshotPhase.VALIDATED,
+        payload_schema_version=1,
+        payload='{"schema_version":1}',
+        created_at=now,
+    )
+    asyncio.run(open_store.put_final_qa_execution_snapshot(snapshot))
+    with pytest.raises(ConflictError):
+        asyncio.run(open_store.put_final_qa_execution_snapshot(snapshot))
+    assert asyncio.run(
+        open_store.transition_final_qa_execution(
+            execution.execution_id,
+            FinalQAExecutionState.RUNNING,
+            FinalQAExecutionState.VALIDATED,
+        )
+    )
+    assert not asyncio.run(
+        open_store.transition_final_qa_execution(
+            execution.execution_id,
+            FinalQAExecutionState.RUNNING,
+            FinalQAExecutionState.PUBLISHED,
+        )
+    )
 
 
 @pytest.fixture
@@ -139,6 +194,47 @@ def test_capabilities(store: SQLiteStore) -> None:
     assert caps.supports_blobs is False
     assert caps.supports_sparse_search is True
     assert caps.supports_graph is False
+
+
+def test_sparse_title_projection_is_generic_version_aware_and_idempotent(
+    open_store: SQLiteStore, dt: datetime
+) -> None:
+    document_id, version_id = uuid4(), uuid4()
+    version = DocumentVersion(
+        version_id=version_id,
+        document_id=document_id,
+        content_hash="c" * 64,
+        metadata=DocumentMetadata(content_hash="c" * 64, title="Candidate Resume"),
+        status=DocumentVersionStatus.CURRENT,
+        created_at=dt,
+    )
+    _run(
+        open_store.upsert_document(
+            Document(
+                document_id=document_id,
+                versions=(version,),
+                current_version_id=version_id,
+                current_hash="c" * 64,
+                status=DocumentStatus.INDEXED,
+                created_at=dt,
+                updated_at=dt,
+            )
+        )
+    )
+    chunk = _search_chunk(document_id, version_id, 7001, "Python and systems work")
+    _run(open_store.upsert_chunks((chunk,)))
+    assert _run(open_store.search_sparse("resume", MetadataFilter(), 5))[0].chunk is not None
+    assert _run(open_store.search_sparse("resume", MetadataFilter(), 5))[0].chunk.id == chunk.id
+    db = open_store._require_open()
+    assert _run(_count_title_rows(db)) == 1
+    _run(open_store.upsert_chunks((chunk,)))
+    assert _run(_count_title_rows(db)) == 1
+
+
+async def _count_title_rows(db: aiosqlite.Connection) -> int:
+    async with db.execute("SELECT COUNT(*) FROM fts_chunk_titles") as cursor:
+        row = await cursor.fetchone()
+    return int(row[0])
 
 
 def test_sparse_projection_is_version_aware_and_filters_before_top_k(
@@ -330,7 +426,7 @@ def test_lifecycle(store: SQLiteStore) -> None:
     assert statuses[0].healthy is False
 
 
-def test_schema_migration_4_upgrades_v3_idempotently(tmp_path: Path) -> None:
+def test_schema_migration_5_upgrades_v3_idempotently(tmp_path: Path) -> None:
     path = tmp_path / "v3.db"
     with sqlite3.connect(path) as db:
         db.execute("CREATE TABLE schema_versions (version INTEGER PRIMARY KEY, applied_at TEXT)")
@@ -346,8 +442,12 @@ def test_schema_migration_4_upgrades_v3_idempotently(tmp_path: Path) -> None:
             "SELECT name FROM sqlite_master "
             "WHERE type='table' AND name='retrieval_version_metadata'"
         ).fetchone()
-    assert version == (4,)
+        execution_table = db.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='final_qa_executions'"
+        ).fetchone()
+    assert version == (6,)
     assert table == ("retrieval_version_metadata",)
+    assert execution_table == ("final_qa_executions",)
 
 
 def test_multiple_open_close(store: SQLiteStore) -> None:

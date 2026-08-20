@@ -18,6 +18,7 @@ from .errors import (
     UnsupportedError,
 )
 from .final_qa import FinalQAInterface, FinalQAInterfaceV1
+from .final_qa_execution import FinalQAExecutionStoreV1
 from .fusion_reranker import FusionRerankingInterface, FusionRerankingInterfaceV1
 from .llm import LLMInterface, LLMInterfaceV1
 from .multi_source_retrieval import (
@@ -93,6 +94,7 @@ __all__ = [
     "EmbeddingProviderV1",
     "EmbeddingVector",
     "FileMetadata",
+    "FinalQAExecutionStoreV1",
     "FinalQAInterface",
     "FinalQAInterfaceV1",
     "FusionRerankerCapabilities",

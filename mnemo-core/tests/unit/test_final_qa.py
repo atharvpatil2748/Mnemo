@@ -13,6 +13,7 @@ from mnemo.interfaces import (
     ConflictError,
     ContractValidationError,
     FinalQAInterfaceV1,
+    IntegrityError,
     StorageInterfaceV1,
     UnsupportedError,
 )
@@ -29,8 +30,17 @@ from mnemo.models import (
     Session,
     Turn,
     TurnRole,
+    final_qa_request_fingerprint,
+)
+from mnemo.models.final_qa_execution import (
+    FINAL_QA_EXECUTION_CONTRACT_VERSION,
+    FinalQAExecution,
+    FinalQAExecutionSnapshot,
+    FinalQAExecutionSnapshotPhase,
+    FinalQAExecutionState,
 )
 from mnemo.retrieval import FinalQAOrchestrator
+from mnemo.retrieval.final_qa_snapshot import SNAPSHOT_SCHEMA_VERSION
 from test_citation_engine import _answer, _chunks, _context, _no_context
 
 pytestmark = pytest.mark.anyio
@@ -74,6 +84,89 @@ class _Stage:
         self.calls.append(self.name)
         self.arguments = args, kwargs
         return self.result
+
+
+class _PersistedAnswerStage(_Stage):
+    def __init__(
+        self, result: object, calls: list[str], *, retry_result: object | None = None
+    ) -> None:
+        super().__init__("answer", result, calls)
+        self.retry_result = retry_result if retry_result is not None else result
+
+    def final_qa_execution_descriptor(self) -> tuple[str, str, dict[str, int | str], str]:
+        return "test-provider", "test-model", {"temperature": "fixed"}, "test/tokenizer"
+
+    async def regenerate_for_citation(self, *args: object, **kwargs: object) -> object:
+        self.calls.append("retry")
+        self.arguments = args, kwargs
+        return self.retry_result
+
+
+class _ExecutionStore:
+    def __init__(self) -> None:
+        self.executions: dict[UUID, FinalQAExecution] = {}
+        self.snapshots: dict[
+            tuple[UUID, FinalQAExecutionSnapshotPhase], FinalQAExecutionSnapshot
+        ] = {}
+        self.events: list[str] = []
+
+    async def create_final_qa_execution(self, execution: FinalQAExecution) -> bool:
+        self.events.append("claim")
+        if execution.assistant_turn_id in self.executions:
+            return False
+        self.executions[execution.assistant_turn_id] = execution
+        return True
+
+    async def get_final_qa_execution(self, assistant_turn_id: UUID) -> FinalQAExecution | None:
+        self.events.append("lookup")
+        return self.executions.get(assistant_turn_id)
+
+    async def put_final_qa_execution_snapshot(self, snapshot: FinalQAExecutionSnapshot) -> None:
+        self.events.append(f"snapshot:{snapshot.phase}")
+        key = snapshot.execution_id, snapshot.phase
+        if key in self.snapshots:
+            raise ConflictError("immutable execution snapshot already exists")
+        self.snapshots[key] = snapshot
+
+    async def get_final_qa_execution_snapshot(
+        self, execution_id: UUID, phase: FinalQAExecutionSnapshotPhase
+    ) -> FinalQAExecutionSnapshot | None:
+        self.events.append(f"get_snapshot:{phase}")
+        return self.snapshots.get((execution_id, phase))
+
+    async def transition_final_qa_execution(
+        self,
+        execution_id: UUID,
+        expected: FinalQAExecutionState,
+        target: FinalQAExecutionState,
+        *,
+        retry_count: int | None = None,
+        failure_classification: str | None = None,
+    ) -> bool:
+        self.events.append(f"transition:{expected}:{target}")
+        assistant_id = next(
+            key for key, value in self.executions.items() if value.execution_id == execution_id
+        )
+        current = self.executions[assistant_id]
+        if current.state is not expected:
+            return False
+        self.executions[assistant_id] = FinalQAExecution(
+            **{
+                **{field: getattr(current, field) for field in current.__dataclass_fields__},
+                "state": target,
+                "retry_count": current.retry_count if retry_count is None else retry_count,
+                "failure_classification": failure_classification,
+                "updated_at": _NOW,
+                "completed_at": _NOW
+                if target
+                in (
+                    FinalQAExecutionState.PUBLISHED,
+                    FinalQAExecutionState.REJECTED_CITATION_COMPLIANCE,
+                )
+                else None,
+            }
+        )
+        return True
 
 
 class _Citation:
@@ -176,6 +269,37 @@ def _orchestrator(
     return orchestrator, calls, active_storage, active_clock, citation
 
 
+def _persisted_orchestrator(
+    *,
+    first: str = "Grounded [source:1]",
+    retry: str | None = None,
+    storage: Mock | None = None,
+    execution_store: _ExecutionStore | None = None,
+) -> tuple[FinalQAOrchestrator, list[str], Mock, _ExecutionStore, _Citation]:
+    calls: list[str] = []
+    context = _context(_chunks(1))
+    plan = context.rerank_result.fusion_result.plan
+    active_storage = storage or _storage(_session())
+    store = execution_store or _ExecutionStore()
+    citation = _Citation(CitationResolutionStatus.UNMARKED, calls)
+    orchestrator = FinalQAOrchestrator(
+        _Stage("planner", plan, calls),
+        _Stage("fusion", context.rerank_result.fusion_result, calls),
+        _Stage("reranker", context.rerank_result, calls),
+        _Stage("context", context, calls),
+        _PersistedAnswerStage(
+            _answer(first, context=context),
+            calls,
+            retry_result=_answer(retry or first, context=context),
+        ),
+        citation,
+        active_storage,
+        _Clock(),
+        execution_store=store,
+    )
+    return orchestrator, calls, active_storage, store, citation
+
+
 def test_request_is_normalized_validated_and_immutable() -> None:
     request = _request()
     assert request.query == "What is duty?"
@@ -253,7 +377,7 @@ async def test_multi_hop_rejects_before_downstream_side_effects() -> None:
     assert clock.calls == 0
 
 
-async def test_assistant_retry_reuses_exact_turn_and_conflicts_on_changed_answer() -> None:
+async def test_legacy_assistant_turn_cannot_be_replayed_without_snapshot() -> None:
     assistant = Turn(
         turn_id=_ASSISTANT,
         session_id=_SESSION,
@@ -263,15 +387,11 @@ async def test_assistant_retry_reuses_exact_turn_and_conflicts_on_changed_answer
         created_at=_NOW + timedelta(seconds=1),
     )
     storage = _storage(_session(assistant=assistant))
-    orchestrator, _, _, clock, citation = _orchestrator(storage=storage)
-    await orchestrator.execute(_request())
+    orchestrator, calls, _, clock, citation = _orchestrator(storage=storage)
+    with pytest.raises(ConflictError, match=r"final_qa\.replay_unavailable"):
+        await orchestrator.execute(_request())
     storage.append_turn.assert_not_awaited()
-    assert clock.calls == 0 and citation.arguments is not None
-    assert citation.arguments[0] is assistant
-
-    changed, *_ = _orchestrator(answer_text="Changed", storage=storage)
-    with pytest.raises(ConflictError):
-        await changed.execute(_request())
+    assert clock.calls == 0 and citation.arguments is None and calls == []
 
 
 async def test_filter_projection_intersects_hard_constraints() -> None:
@@ -354,3 +474,215 @@ async def test_user_turn_precondition_and_cancellation_propagate() -> None:
     cancelled._planner.plan = AsyncMock(side_effect=asyncio.CancelledError())
     with pytest.raises(asyncio.CancelledError):
         await cancelled.execute(_request())
+
+
+async def test_persisted_execution_publishes_then_replays_without_stage_or_write_calls() -> None:
+    orchestrator, calls, storage, store, citation = _persisted_orchestrator()
+    first = await orchestrator.execute(_request())
+    first_calls = tuple(calls)
+    assert first.status is FinalQAStatus.UNMARKED
+    assert store.executions[_ASSISTANT].state is FinalQAExecutionState.PUBLISHED
+    assert storage.append_turn.await_count == 1 and citation.arguments is not None
+
+    replay = await orchestrator.execute(_request())
+    assert replay == first
+    assert tuple(calls) == first_calls
+    assert storage.append_turn.await_count == 1
+    assert store.events.count("claim") == 1
+
+
+async def test_persisted_execution_retries_once_before_any_publication() -> None:
+    orchestrator, calls, storage, store, _ = _persisted_orchestrator(
+        first="Wrong [Source:1]", retry="Correct [source:1]"
+    )
+    result = await orchestrator.execute(_request())
+    assert result.answer == "Correct [source:1]"
+    assert calls == ["planner", "fusion", "reranker", "context", "answer", "retry", "citation"]
+    assert store.executions[_ASSISTANT].retry_count == 1
+    assert storage.append_turn.await_count == 1
+
+
+@pytest.mark.parametrize("text", ("No source", "Wrong [Source:1]", "Bad [source:99]"))
+async def test_persisted_execution_rejection_never_publishes(text: str) -> None:
+    orchestrator, calls, storage, store, citation = _persisted_orchestrator(first=text, retry=text)
+    with pytest.raises(IntegrityError, match="citation_compliance"):
+        await orchestrator.execute(_request())
+    assert calls == ["planner", "fusion", "reranker", "context", "answer", "retry"]
+    assert store.executions[_ASSISTANT].state is FinalQAExecutionState.REJECTED_CITATION_COMPLIANCE
+    storage.append_turn.assert_not_awaited()
+    assert citation.arguments is None
+    with pytest.raises(IntegrityError, match="citation_compliance"):
+        await orchestrator.execute(_request())
+    assert calls == ["planner", "fusion", "reranker", "context", "answer", "retry"]
+
+
+async def test_persisted_execution_conflict_and_running_slot_do_not_generate() -> None:
+    orchestrator, calls, _, _, _ = _persisted_orchestrator()
+    await orchestrator.execute(_request())
+    with pytest.raises(ConflictError):
+        await orchestrator.execute(_request(global_limit=11))
+    assert calls.count("answer") == 1
+
+    running, running_calls, _, running_store, _ = _persisted_orchestrator()
+    request = _request()
+    now = _NOW
+    await running_store.create_final_qa_execution(
+        FinalQAExecution(
+            execution_id=UUID("40000000-0000-4000-8000-000000000099"),
+            assistant_turn_id=request.assistant_turn_id,
+            request_fingerprint="will-not-match",
+            notebook_id=_session().notebook_id,
+            session_id=request.session_id,
+            user_turn_id=request.user_turn_id,
+            contract_version=FINAL_QA_EXECUTION_CONTRACT_VERSION,
+            payload_schema_version=SNAPSHOT_SCHEMA_VERSION,
+            provider="test-provider",
+            model="test-model",
+            model_configuration='{"temperature":"fixed"}',
+            state=FinalQAExecutionState.RUNNING,
+            retry_count=0,
+            failure_classification=None,
+            created_at=now,
+            updated_at=now,
+        )
+    )
+    with pytest.raises(ConflictError):
+        await running.execute(request)
+    assert running_calls == []
+
+
+async def test_matching_running_execution_is_retryable_without_competing_generation() -> None:
+    """ADR-0056 fails closed while another caller owns the generation slot."""
+    orchestrator, calls, _, store, _ = _persisted_orchestrator()
+    request = _request()
+    descriptor = orchestrator._answer.final_qa_execution_descriptor()
+    fingerprint = final_qa_request_fingerprint(
+        request,
+        notebook_id=_session().notebook_id,
+        user_turn=_session().turns[0],
+        provider=descriptor[0],
+        model=descriptor[1],
+        model_configuration=descriptor[2],
+        tokenizer_id=descriptor[3],
+    )
+    await store.create_final_qa_execution(
+        FinalQAExecution(
+            execution_id=UUID("40000000-0000-4000-8000-000000000098"),
+            assistant_turn_id=request.assistant_turn_id,
+            request_fingerprint=fingerprint,
+            notebook_id=_session().notebook_id,
+            session_id=request.session_id,
+            user_turn_id=request.user_turn_id,
+            contract_version=FINAL_QA_EXECUTION_CONTRACT_VERSION,
+            payload_schema_version=SNAPSHOT_SCHEMA_VERSION,
+            provider=descriptor[0],
+            model=descriptor[1],
+            model_configuration='{"temperature":"fixed"}',
+            state=FinalQAExecutionState.RUNNING,
+            retry_count=0,
+            failure_classification=None,
+            created_at=_NOW,
+            updated_at=_NOW,
+        )
+    )
+    with pytest.raises(ConflictError, match="execution_in_progress") as error:
+        await orchestrator.execute(request)
+    assert error.value.retryable is True
+    assert calls == []
+
+
+async def test_validated_and_assistant_published_resume_without_generation() -> None:
+    original, _, storage, store, _ = _persisted_orchestrator()
+    await original.execute(_request())
+    execution = store.executions[_ASSISTANT]
+    storage.get_session.return_value = _session(assistant=storage.append_turn.await_args.args[1])
+    published = store.snapshots[(execution.execution_id, FinalQAExecutionSnapshotPhase.PUBLISHED)]
+    validated = store.snapshots[(execution.execution_id, FinalQAExecutionSnapshotPhase.VALIDATED)]
+    del store.snapshots[(execution.execution_id, FinalQAExecutionSnapshotPhase.PUBLISHED)]
+    store.executions[_ASSISTANT] = FinalQAExecution(
+        **{
+            **{field: getattr(execution, field) for field in execution.__dataclass_fields__},
+            "state": FinalQAExecutionState.VALIDATED,
+        }
+    )
+    resume, calls, _, _, _ = _persisted_orchestrator(storage=storage, execution_store=store)
+    result = await resume.execute(_request())
+    assert result.answer == "Grounded [source:1]"
+    assert calls == ["citation"]
+    assert (execution.execution_id, FinalQAExecutionSnapshotPhase.PUBLISHED) in store.snapshots
+
+    del store.snapshots[(execution.execution_id, FinalQAExecutionSnapshotPhase.PUBLISHED)]
+    store.executions[_ASSISTANT] = FinalQAExecution(
+        **{
+            **{
+                field: getattr(store.executions[_ASSISTANT], field)
+                for field in execution.__dataclass_fields__
+            },
+            "state": FinalQAExecutionState.ASSISTANT_PUBLISHED,
+        }
+    )
+    resumed_again, again_calls, _, _, _ = _persisted_orchestrator(
+        storage=storage, execution_store=store
+    )
+    assert (await resumed_again.execute(_request())).answer == "Grounded [source:1]"
+    assert again_calls == ["citation"]
+    assert validated.phase is FinalQAExecutionSnapshotPhase.VALIDATED
+    assert published.phase is FinalQAExecutionSnapshotPhase.PUBLISHED
+
+
+async def test_assistant_published_with_durable_result_snapshot_finishes_without_citation() -> None:
+    original, _, storage, store, _ = _persisted_orchestrator()
+    first = await original.execute(_request())
+    execution = store.executions[_ASSISTANT]
+    store.executions[_ASSISTANT] = FinalQAExecution(
+        **{
+            **{field: getattr(execution, field) for field in execution.__dataclass_fields__},
+            "state": FinalQAExecutionState.ASSISTANT_PUBLISHED,
+        }
+    )
+    resumed, calls, _, _, _ = _persisted_orchestrator(storage=storage, execution_store=store)
+    assert await resumed.execute(_request()) == first
+    assert calls == []
+    assert store.executions[_ASSISTANT].state is FinalQAExecutionState.PUBLISHED
+
+
+async def test_concurrent_matching_claim_allows_only_one_generation() -> None:
+    orchestrator, calls, storage, store, citation = _persisted_orchestrator()
+    entered = asyncio.Event()
+    release = asyncio.Event()
+    original_generate = orchestrator._answer.generate
+
+    async def slow_generate(*args: object, **kwargs: object) -> object:
+        entered.set()
+        await release.wait()
+        return await original_generate(*args, **kwargs)
+
+    orchestrator._answer.generate = slow_generate
+    owner = asyncio.create_task(orchestrator.execute(_request()))
+    await entered.wait()
+    with pytest.raises(ConflictError, match="execution_in_progress") as competing:
+        await orchestrator.execute(_request())
+    assert competing.value.retryable is True
+    release.set()
+    result = await owner
+
+    assert result.answer == "Grounded [source:1]"
+    assert calls.count("answer") == 1
+    assert storage.append_turn.await_count == 1
+    assert citation.arguments is not None
+    assert store.events.count("claim") == 1
+
+
+async def test_cancelled_persisted_generation_fails_closed_in_running_state() -> None:
+    orchestrator, calls, storage, store, citation = _persisted_orchestrator()
+    orchestrator._answer.generate = AsyncMock(side_effect=asyncio.CancelledError())
+
+    with pytest.raises(asyncio.CancelledError):
+        await orchestrator.execute(_request())
+
+    execution = store.executions[_ASSISTANT]
+    assert execution.state is FinalQAExecutionState.RUNNING
+    assert store.snapshots == {}
+    storage.append_turn.assert_not_awaited()
+    assert citation.arguments is None
+    assert calls == ["planner", "fusion", "reranker", "context"]

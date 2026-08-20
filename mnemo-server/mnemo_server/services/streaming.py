@@ -50,6 +50,7 @@ from mnemo_server.schemas.streaming import (
     StreamEventType,
     SynthesisTokenData,
 )
+from mnemo_server.services.query import _runtime_document_title
 
 _LOGGER = logging.getLogger(__name__)
 _MARKER = re.compile(r"\[source:([1-9][0-9]*)\]", flags=re.ASCII)
@@ -253,21 +254,15 @@ class StreamingQueryService:
             item = items_by_source.get(num)
             if item is not None:
                 chunk = item.reranked_result.fused_result.chunk
-                doc_title = str(chunk.document_id)
-                try:
+                doc_title = _runtime_document_title(chunk)
+                if doc_title == str(chunk.document_id):
                     doc = await self._engine.storage.get_document(chunk.document_id)
                     if doc is not None:
-                        for v in doc.versions:
-                            if v.version_id == chunk.version_id and v.metadata.title:
-                                doc_title = v.metadata.title
-                                break
-                        else:
-                            for v in doc.versions:
-                                if v.version_id == doc.current_version_id and v.metadata.title:
-                                    doc_title = v.metadata.title
-                                    break
-                except Exception:
-                    pass
+                        exact = next(
+                            (v for v in doc.versions if v.version_id == chunk.version_id), None
+                        )
+                        if exact is not None and exact.metadata.title:
+                            doc_title = exact.metadata.title
 
                 citations_response.append(
                     CitationResponse(
@@ -299,7 +294,7 @@ class StreamingQueryService:
                 CitationResponse(
                     id=uuid5(NAMESPACE_URL, f"mnemo-evidence:{chunk.id}"),
                     chunk_id=chunk.id,
-                    document_title=str(chunk.document_id),
+                    document_title=_runtime_document_title(chunk),
                     page=chunk.position.page_number,
                     heading_path=list(chunk.heading_path),
                     quote=item.content,

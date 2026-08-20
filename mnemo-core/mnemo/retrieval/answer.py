@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import re
+
 from mnemo.interfaces import (
     CompletionResult,
     ContractValidationError,
     DependencyUnavailableError,
     IntegrityError,
+    LLMInterfaceV1,
     Message,
     MessageRole,
 )
@@ -19,6 +22,8 @@ from mnemo.models.answer import (
 )
 from mnemo.models.context import ContextBuildResult
 from mnemo.registry import PluginRegistry, RegistryState
+
+from .citation_compliance import CITATION_COMPLIANCE_CORRECTION
 
 SYNTHESIZER_SLOT = "synthesizer"
 
@@ -83,66 +88,38 @@ def classify_prompt_template(
         "contrast",
         "across",
         "between",
-        "both resume and",
-        "connect with the server",
-        "connect with server",
+        "connect with",
         "connects with",
-        "resume and coordinator",
-        "resume with the y24",
-        "resume with y24",
-        "academic record of atharv in his resume",
-        "resume with coordinator",
     ]
     if any(sig in q_lower for sig in cross_doc_signals):
         return CROSS_DOCUMENT_SYNTHESIS_SYSTEM_PROMPT
 
     # 2. Exact structural extraction (verses, tolerances, equations)
-    exact_signals = [
-        "exact verse",
-        "exact text",
-        "exact tolerance",
-        "exact estimated",
-        "exact cnc",
-        "tolerances specified",
-        "gita 2.47",
-        "gita 18.66",
-        "gita 2.48",
-        "gita 2.13",
-        "gita 4.9",
-        "chapter 2 text 47",
-        "chapter 18 text 66",
-        "chapter 2 text 48",
-        "chapter 2 text 13",
-        "chapter 4 text 9",
-        "2.47",
-        "18.66",
-        "2.48",
-        "2.13",
-        "4.9",
-        "roughness spec",
-        "chassis bulk strip",
-    ]
-    if any(sig in q_lower for sig in exact_signals):
+    exact_request = re.search(
+        r"\b(?:exact|verbatim|precise)\b.*\b(?:text|verse|formula|equation|value|"
+        r"measurement|estimate|tolerance|specification)\w*\b",
+        q_lower,
+    )
+    cited_passage = re.search(r"\b(?:verse|chapter|section)\s+\d+(?:[.:]\d+)+\b", q_lower)
+    if exact_request is not None or cited_passage is not None:
         return STRUCTURED_EXTRACTION_SYSTEM_PROMPT
 
     # 3. Code functions, routes, and tabular CSV lookups
     code_table_signals = [
-        "server.js",
         "endpoint",
         "route",
-        "routes",
         "function",
-        "validatewhisperoutput",
-        "pcmtowav",
-        "sse header",
-        "y24 cpi",
-        "csv table",
-        "csv dataset",
-        "roll number",
-        "roll 240",
-        "cpi and rank",
-        "rank of roll",
-        "which student has rank",
+        "method",
+        "class",
+        "source code",
+        "parameter",
+        "http header",
+        "csv",
+        "table",
+        "dataset",
+        "row",
+        "column",
+        "record",
     ]
     if any(sig in q_lower for sig in code_table_signals):
         return CODE_TABLE_EXTRACTION_SYSTEM_PROMPT
@@ -175,6 +152,7 @@ class GroundedAnswerGenerator:
         context_result: ContextBuildResult,
         *,
         max_output_tokens: int,
+        strict_final_qa: bool = False,
     ) -> GroundedAnswerResult:
         """Generate an answer using the exact ADR-0044 prompt and validation rules."""
         if not isinstance(context_result, ContextBuildResult):
@@ -200,17 +178,87 @@ class GroundedAnswerGenerator:
         if synthesizer is None:
             raise DependencyUnavailableError("llm/synthesizer capability is unavailable")
 
-        system_prompt = classify_prompt_template(query, context_result)
+        system_prompt = (
+            GROUNDED_ANSWER_SYSTEM_PROMPT
+            if strict_final_qa
+            else classify_prompt_template(query, context_result)
+        )
         user_content = _user_message(query, context_result.rendered_context)
-        prompt_token_count = self._token_counter.count(system_prompt) + self._token_counter.count(
-            user_content
+        return await self._complete(
+            context_result,
+            synthesizer,
+            system_prompt,
+            (Message(role=MessageRole.USER, content=user_content),),
+            max_output_tokens,
+        )
+
+    async def regenerate_for_citation(
+        self,
+        context_result: ContextBuildResult,
+        *,
+        max_output_tokens: int,
+    ) -> GroundedAnswerResult:
+        """Perform ADR-0054's sole corrective provider-neutral retry."""
+        if not isinstance(context_result, ContextBuildResult):
+            raise TypeError("context_result must be ContextBuildResult")
+        try:
+            _validate_output_bound(max_output_tokens)
+        except (TypeError, ValueError) as error:
+            raise ContractValidationError(str(error)) from error
+        if self._token_counter.tokenizer_id != context_result.tokenizer_id:
+            raise ContractValidationError("token counter identity does not match context result")
+        if not context_result.items:
+            return await self.generate(
+                context_result,
+                max_output_tokens=max_output_tokens,
+                strict_final_qa=True,
+            )
+        synthesizer = self._registry.resolve_llm(SYNTHESIZER_SLOT)
+        if synthesizer is None:
+            raise DependencyUnavailableError("llm/synthesizer capability is unavailable")
+        user_content = _user_message(
+            context_result.rerank_result.query,
+            context_result.rendered_context,
+        )
+        return await self._complete(
+            context_result,
+            synthesizer,
+            GROUNDED_ANSWER_SYSTEM_PROMPT,
+            (
+                Message(role=MessageRole.USER, content=user_content),
+                Message(role=MessageRole.USER, content=CITATION_COMPLIANCE_CORRECTION),
+            ),
+            max_output_tokens,
+        )
+
+    def final_qa_execution_descriptor(self) -> tuple[str, str, dict[str, int | str], str]:
+        """Expose non-secret provider inputs required by ADR-0056 fingerprinting."""
+        synthesizer = self._registry.resolve_llm(SYNTHESIZER_SLOT)
+        if synthesizer is None:
+            raise DependencyUnavailableError("llm/synthesizer capability is unavailable")
+        return (
+            synthesizer.provider,
+            synthesizer.model,
+            {"max_context_tokens": synthesizer.max_context_tokens},
+            self._token_counter.tokenizer_id,
+        )
+
+    async def _complete(
+        self,
+        context_result: ContextBuildResult,
+        synthesizer: LLMInterfaceV1,
+        system_prompt: str,
+        messages: tuple[Message, ...],
+        max_output_tokens: int,
+    ) -> GroundedAnswerResult:
+        prompt_token_count = self._token_counter.count(system_prompt) + sum(
+            self._token_counter.count(message.content) for message in messages
         )
         if prompt_token_count + max_output_tokens > synthesizer.max_context_tokens:
             raise ContractValidationError("answer prompt and output bound exceed model context")
-
         completion = await synthesizer.complete(
             system_prompt,
-            (Message(role=MessageRole.USER, content=user_content),),
+            messages,
             max_tokens=max_output_tokens,
         )
         if not isinstance(completion, CompletionResult):
@@ -230,7 +278,7 @@ class GroundedAnswerGenerator:
 
         return GroundedAnswerResult(
             context_result=context_result,
-            query=query,
+            query=context_result.rerank_result.query,
             status=GroundedAnswerStatus.GENERATED,
             answer=answer,
             generation_evidence=GenerationEvidence(

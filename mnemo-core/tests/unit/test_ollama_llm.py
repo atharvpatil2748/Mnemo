@@ -56,6 +56,7 @@ async def test_text_and_structured_completion_use_exact_ollama_contract() -> Non
         {"role": "user", "content": "Question"},
     ]
     assert requests[0]["options"] == {"num_predict": 50, "num_ctx": 8192}
+    assert requests[0]["think"] is False
     assert requests[1]["format"] == {"required": ["answer"], "type": "object"}
     await provider.close()
 

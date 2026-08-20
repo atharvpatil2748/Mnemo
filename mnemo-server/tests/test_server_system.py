@@ -24,7 +24,7 @@ from mnemo_server.services import JobService
 def _make_mock_engine(*, config: MnemoConfig | None = None) -> MagicMock:
     mock_engine = MagicMock(spec=KnowledgeEngine)
     mock_engine.state = EngineState.READY
-    mock_engine.version = "0.23.0"
+    mock_engine.version = "0.24.0"
     mock_engine.initialize = AsyncMock()
     mock_engine.shutdown = AsyncMock()
 
@@ -121,7 +121,7 @@ async def test_health_check_all_healthy(app: Any, mock_engine: MagicMock) -> Non
     data = resp.json()
     assert data["status"] == "ok"
     assert data["healthy"] is True
-    assert data["version"] == "0.23.0"
+    assert data["version"] == "0.24.0"
     assert data["engine_state"] == "ready"
     assert len(data["components"]) >= 3
     components_map = {c["component"]: c["healthy"] for c in data["components"]}

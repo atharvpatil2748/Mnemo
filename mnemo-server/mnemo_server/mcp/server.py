@@ -201,20 +201,22 @@ def create_sse_app(
         if owns_engine and active_engine is not None and active_engine.state == EngineState.READY:
             await active_engine.shutdown()
 
-    async def handle_sse(request: Request) -> Response:
-        """Handle incoming SSE connection stream."""
-        init_options = active_server.create_initialization_options()
-        async with sse_transport.connect_sse(request.scope, request.receive, request._send) as (
-            read_stream,
-            write_stream,
-        ):
-            await active_server.run(read_stream, write_stream, init_options)
-        return Response(status_code=200)
+    class _SseEndpoint:
+        """Raw ASGI endpoint because the MCP transport owns the HTTP response."""
 
-    async def handle_messages(request: Request) -> Response:
-        """Handle client JSON-RPC messages sent over HTTP POST."""
-        await sse_transport.handle_post_message(request.scope, request.receive, request._send)
-        return Response(status_code=202)
+        async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+            init_options = active_server.create_initialization_options()
+            async with sse_transport.connect_sse(scope, receive, send) as (
+                read_stream,
+                write_stream,
+            ):
+                await active_server.run(read_stream, write_stream, init_options)
+
+    class _MessageEndpoint:
+        """Raw ASGI endpoint preventing a second Starlette response write."""
+
+        async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+            await sse_transport.handle_post_message(scope, receive, send)
 
     async def handle_health(request: Request) -> Response:
         """Health check endpoint for MCP SSE service."""
@@ -232,8 +234,8 @@ def create_sse_app(
         )
 
     routes = [
-        Route("/sse", endpoint=handle_sse, methods=["GET"]),
-        Route("/messages", endpoint=handle_messages, methods=["POST"]),
+        Route("/sse", endpoint=_SseEndpoint(), methods=["GET"]),
+        Route("/messages", endpoint=_MessageEndpoint(), methods=["POST"]),
         Route("/health", endpoint=handle_health, methods=["GET"]),
     ]
 

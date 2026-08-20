@@ -31,6 +31,12 @@ from mnemo.models import (
     Source,
     Turn,
 )
+from mnemo.models.final_qa_execution import (
+    FinalQAExecution,
+    FinalQAExecutionSnapshot,
+    FinalQAExecutionSnapshotPhase,
+    FinalQAExecutionState,
+)
 
 from .filesystem import FilesystemBlobStore
 from .qdrant import QdrantStore
@@ -329,6 +335,38 @@ class CompositeStorage:
     async def delete_session(self, session_id: UUID) -> bool:
         return await self._sql.delete_session(session_id)
 
+    # ADR-0056 additive execution persistence remains SQLite-owned.
+    async def create_final_qa_execution(self, execution: FinalQAExecution) -> bool:
+        return await self._sql.create_final_qa_execution(execution)
+
+    async def get_final_qa_execution(self, assistant_turn_id: UUID) -> FinalQAExecution | None:
+        return await self._sql.get_final_qa_execution(assistant_turn_id)
+
+    async def put_final_qa_execution_snapshot(self, snapshot: FinalQAExecutionSnapshot) -> None:
+        return await self._sql.put_final_qa_execution_snapshot(snapshot)
+
+    async def get_final_qa_execution_snapshot(
+        self, execution_id: UUID, phase: FinalQAExecutionSnapshotPhase
+    ) -> FinalQAExecutionSnapshot | None:
+        return await self._sql.get_final_qa_execution_snapshot(execution_id, phase)
+
+    async def transition_final_qa_execution(
+        self,
+        execution_id: UUID,
+        expected: FinalQAExecutionState,
+        target: FinalQAExecutionState,
+        *,
+        retry_count: int | None = None,
+        failure_classification: str | None = None,
+    ) -> bool:
+        return await self._sql.transition_final_qa_execution(
+            execution_id,
+            expected,
+            target,
+            retry_count=retry_count,
+            failure_classification=failure_classification,
+        )
+
     # -------------------------------------------------------------------------
     # SurrealDB operations
     # -------------------------------------------------------------------------
@@ -464,6 +502,7 @@ class CompositeStorage:
         return RetrievalMetadataProjection(
             doc_type=parsed.doc_type,
             publication_date=version.metadata.publication_date,
+            title=version.metadata.title,
             source_ids=tuple(sorted({source.source_id for source in sources}, key=str)),
             notebook_ids=tuple(sorted({source.notebook_id for source in sources}, key=str)),
         )

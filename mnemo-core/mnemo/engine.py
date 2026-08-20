@@ -21,6 +21,7 @@ from mnemo.interfaces import (
     DependencyUnavailableError,
     EmbeddingCapabilities,
     EmbeddingProviderV1,
+    FinalQAExecutionStoreV1,
     FinalQAInterfaceV1,
     LifecycleError,
     LLMCapabilities,
@@ -299,6 +300,7 @@ class KnowledgeEngine:
             citation,
             providers.storage,
             components.clock,
+            (providers.storage if isinstance(providers.storage, FinalQAExecutionStoreV1) else None),
         )
 
     def _resolve_providers(self) -> _ResolvedProviders:
@@ -458,6 +460,7 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
                 PPTXParser,
             )
 
+            plain_text_parser = PlainTextParser()
             parsers = (
                 (PDFParser(), (".pdf", "application/pdf")),
                 (
@@ -476,7 +479,37 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
                 ),
                 (MarkdownParser(), (".md", ".markdown", "text/markdown", "text/x-markdown")),
                 (HTMLParser(), (".html", ".htm", "text/html")),
-                (PlainTextParser(), (".txt", ".log", "text/plain")),
+                (
+                    plain_text_parser,
+                    (
+                        ".txt",
+                        ".log",
+                        "text/plain",
+                        # Code file extensions — parsed as RawCodeBlock by PlainTextParser
+                        ".c",
+                        ".cc",
+                        ".cpp",
+                        ".cxx",
+                        ".go",
+                        ".h",
+                        ".hpp",
+                        ".java",
+                        ".js",
+                        ".jsx",
+                        ".py",
+                        ".rs",
+                        ".ts",
+                        ".tsx",
+                        # MIME types that mimetypes / libmagic detect for code files
+                        "text/javascript",
+                        "text/x-python",
+                        "text/x-c",
+                        "text/x-c++",
+                        "text/x-java",
+                        "text/x-go",
+                        "text/x-rust",
+                    ),
+                ),
                 (JSONParser(), (".json", "application/json")),
                 (CSVParser(), (".csv", ".tsv", "text/csv", "text/tab-separated-values")),
             )

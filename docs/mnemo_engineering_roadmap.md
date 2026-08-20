@@ -9,8 +9,10 @@
 Phase 4 Modules 4.1–4.10 and Phase 5 Modules 5.1–5.3 are implemented. Phase 4
 is frozen and released at v0.19.0. Phase 5 Modules 5.1–5.3 are released in the
 corrective v0.20.1 patch after local and CI validation. The historical v0.20.0
-tag remains immutable. The live M5 Ollama-to-Qdrant milestone has not been
-executed. Phase 6 has not started.
+tag remains immutable. Phases 6 (retrieval and grounded QA), 7 (REST API), and
+8 (MCP) are implemented; their historical milestone evidence is retained under
+`docs/milestone-evidence/`. This roadmap remains a living implementation
+tracker rather than a release certification.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
 
@@ -104,14 +106,17 @@ Chunking quality is the single biggest lever on retrieval quality. More implemen
 
 ### Phase 5 — Embedding Pipeline
 **Duration:** Weeks 16–17
-**Status:** Complete and released at v0.20.1; local and CI validation passed;
-live M5 verification pending
+**Status:** Complete and released at v0.20.1. The current local profile
+validates the Ollama embedding provider/cache while Qdrant is intentionally
+disabled; vector-backed deployment remains configuration-dependent.
 **Goal:** Ollama embedding provider is implemented behind `EmbeddingProvider`. Content-addressable embedding cache is operational. Batch embedding works. Dimension mismatch detection works.
 
 ---
 
 ### Phase 6 — Retrieval Pipeline
 **Duration:** Weeks 18–23  
+**Status:** Complete; strict persisted Final QA and generic title-aware sparse
+retrieval are implemented and locally live-validated (ADRs 0052–0057).
 **Goal:** Complete retrieval pipeline operational — dense retrieval (Qdrant), sparse retrieval (SQLite FTS5), HyDE query expansion, parent retrieval, cross-encoder reranking, RRF fusion, context assembly, citation engine. A full end-to-end query against a locally ingested document returns cited results.
 
 This is the most complex phase. It has ten interdependent modules (6.1–6.10)
@@ -121,6 +126,8 @@ and integration-level complexity.
 
 ### Phase 7 — REST API and WebSocket Streaming
 **Duration:** Weeks 24–27  
+**Status:** Complete; the transient query APIs and persisted Final-QA adapter
+have distinct, tested contracts.
 **Goal:** All REST endpoints defined in the architecture are implemented in mnemo-server. WebSocket streaming is operational. No business logic in the server layer — pure adapter code.
 
 ---
@@ -725,7 +732,7 @@ and integration-level complexity.
 > `GroundedAnswerResult` containing marker-bearing answer text and generation
 > evidence. Focused, cumulative, full repository, and real golden-handoff
 > acceptance gates passed. It performs no citation resolution, persistence, or
-> storage access; Module 6.9 is complete and M6 remains not verified.
+> storage access; Module 6.9 is complete and covered by current M6 validation.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
@@ -742,7 +749,7 @@ and integration-level complexity.
 > exact-version labels, and persists retry-convergent citations through
 > `StorageInterfaceV1` and `CompositeStorage` to SQLite. Focused, cumulative,
 > full repository, real SQLite, and golden-pipeline acceptance gates passed.
-> Module 6.10 is complete and M6 remains not verified.
+> Module 6.10 is complete and covered by current M6 validation.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
@@ -764,7 +771,27 @@ and integration-level complexity.
 > retrieval registration, and post-startup construction of the final graph.
 > The orchestrator, typed results, engine lifecycle, session sequencing, and
 > provenance-preserving handoffs are implemented and locally validated. M6
-> remains not verified; the comprehensive Phase 6 audit has not run.
+> Current re-certification evidence is maintained in
+> `docs/audit_report_phase0-8-final.md`.
+
+> **Certification addendum (2026-08-20):** ADR-0052 and ADR-0053 resolved two
+> post-implementation Gate-1 findings: final publication requires explicit
+> citation-compliance validation, and sparse retrieval needs generic
+> exact-version title recall. These successor decisions do not revise the
+> historical Module 6 completion evidence. Both are implemented and locally
+> live-validated.
+
+> **Contract addendum (2026-08-20):** ADR-0054 and ADR-0055 define the one
+> corrective citation retry and persisted `/v1/notebooks/{notebook_id}/final-qa`
+> adapter executable. Both are implemented and validated; `/v1/query` remains
+> a non-persistent preview/search endpoint.
+
+> **Replay addendum (2026-08-20):** ADR-0056 resolves the persisted
+> Final-QA idempotency gap with a versioned immutable execution snapshot and
+> logical-request fingerprint. A matching completed assistant UUID replays the
+> stored provenance without model generation; a mismatched fingerprint is a
+> conflict. The execution store, recovery paths, and replay behavior are
+> implemented and validated without changing Golden Corpus identities.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|

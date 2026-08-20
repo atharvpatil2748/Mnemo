@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -19,6 +20,7 @@ from .auth import AuthMiddleware
 from .config import ServerConfig
 from .errors import register_error_handlers
 from .routers import (
+    final_qa_router,
     insights_router,
     notebooks_router,
     notes_router,
@@ -53,7 +55,12 @@ def create_app(
         resolved_components = final_qa_components
 
         if active_engine is None:
-            resolved_mnemo_config = mnemo_config or MnemoConfig.from_env()
+            if mnemo_config is not None:
+                resolved_mnemo_config = mnemo_config
+            elif os.path.exists("mnemo.toml"):
+                resolved_mnemo_config = MnemoConfig.from_file("mnemo.toml")
+            else:
+                resolved_mnemo_config = MnemoConfig.from_env()
 
             if resolved_components is None and provision_tokenizer_on_startup:
                 try:
@@ -135,6 +142,7 @@ def create_app(
     app.include_router(sessions_router, prefix="/v1")
     app.include_router(notes_router, prefix="/v1")
     app.include_router(insights_router, prefix="/v1")
+    app.include_router(final_qa_router, prefix="/v1")
     app.include_router(query_router, prefix="/v1")
     app.include_router(search_router, prefix="/v1")
 

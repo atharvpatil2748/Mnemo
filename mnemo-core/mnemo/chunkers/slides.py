@@ -130,6 +130,7 @@ class SlidesChunker:
                 "chunker.slides.slide_number": slide_number,
                 "chunker.slides.is_title_slide": is_title_slide,
                 "chunker.slides.roles": tuple(roles),
+                "chunker.preserve_short": True,
             }
             if asset_ids:
                 metadata["chunker.slides.asset_ids"] = tuple(asset_ids)

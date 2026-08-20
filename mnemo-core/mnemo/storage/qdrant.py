@@ -667,6 +667,7 @@ def _projection_from_payload(
             if publication_date_raw is not None
             else None
         ),
+        title=(str(payload["document_title"]) if payload.get("document_title") else None),
         source_ids=tuple(sorted((UUID(str(value)) for value in source_values), key=str)),
         notebook_ids=tuple(sorted((UUID(str(value)) for value in notebook_values), key=str)),
     )

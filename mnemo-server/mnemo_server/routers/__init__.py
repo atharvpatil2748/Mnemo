@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .final_qa import router as final_qa_router
 from .insights import router as insights_router
 from .notebooks import router as notebooks_router
 from .notes import router as notes_router
@@ -13,6 +14,7 @@ from .streaming import router as streaming_router
 from .system import system_router
 
 __all__ = [
+    "final_qa_router",
     "insights_router",
     "notebooks_router",
     "notes_router",

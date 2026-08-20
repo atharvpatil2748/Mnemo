@@ -147,10 +147,34 @@ async def test_sole_child_promotes_at_one_of_one() -> None:
 
     result = await ParentRetriever(storage).promote(_stream(children, scores=(0.931,)))
 
-    assert result[0].chunk is parent
+    assert result[0].chunk.id == parent.id
     assert result[0].score == 0.931
     assert result[0].source == "dense"
     assert result[0].rank == 1
+
+
+@pytest.mark.anyio
+async def test_parent_promotion_preserves_runtime_retrieval_provenance() -> None:
+    parent, children = _family(100, (1,))
+    titled_child = replace(
+        children[0],
+        metadata=FrozenMetadata(
+            {
+                **dict(children[0].metadata),
+                "document_title": "Project Portfolio",
+                "retrieval_title_match": True,
+            }
+        ),
+    )
+    storage, _ = _storage((parent, titled_child))
+    result = await ParentRetriever(storage).promote(_stream((titled_child,), scores=(0.91,)))
+    promoted = result[0]
+    assert promoted.chunk.id == parent.id
+    assert promoted.chunk.document_id == titled_child.document_id
+    assert promoted.chunk.version_id == titled_child.version_id
+    assert promoted.score == 0.91 and promoted.source == "dense"
+    assert promoted.chunk.metadata["document_title"] == "Project Portfolio"
+    assert promoted.chunk.metadata["retrieval_title_match"] is True
 
 
 @pytest.mark.anyio

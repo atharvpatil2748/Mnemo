@@ -256,6 +256,71 @@ _EXTENSIONS = {
 }
 
 
+def _split_oversized(
+    text: str,
+    max_tokens: int,
+    token_counter: "TokenCounterInterfaceV1",
+) -> tuple[str, ...]:
+    """Split an oversized declaration into consecutive line-based parts.
+
+    Each part contains as many complete lines as fit within *max_tokens*.
+    Preserves line boundaries exactly — no characters are omitted or duplicated.
+    Returns at least one part even if a single line exceeds max_tokens (the line
+    is included as-is so the caller can at least embed something meaningful).
+    """
+    lines = text.splitlines(keepends=True)
+    parts: list[str] = []
+    current_lines: list[str] = []
+    current_tokens = 0
+
+    for line in lines:
+        for segment in _bounded_line_parts(line, max_tokens, token_counter):
+            line_tokens = token_counter.count(segment)
+            if current_lines and current_tokens + line_tokens > max_tokens:
+                parts.append("".join(current_lines))
+                current_lines = [segment]
+                current_tokens = line_tokens
+            else:
+                current_lines.append(segment)
+                current_tokens += line_tokens
+
+    if current_lines:
+        parts.append("".join(current_lines))
+
+    return tuple(parts) if parts else (text,)
+
+
+def _bounded_line_parts(
+    line: str,
+    max_tokens: int,
+    token_counter: "TokenCounterInterfaceV1",
+) -> tuple[str, ...]:
+    """Return exact consecutive fragments, each within the hard token limit."""
+    remaining = line
+    result: list[str] = []
+    while token_counter.count(remaining) > max_tokens:
+        low, high = 1, len(remaining)
+        best = 0
+        while low <= high:
+            middle = (low + high) // 2
+            if token_counter.count(remaining[:middle]) <= max_tokens:
+                best = middle
+                low = middle + 1
+            else:
+                high = middle - 1
+        if best == 0:
+            raise UnsupportedError("a single code character exceeds the token budget")
+        whitespace = max(
+            remaining.rfind(" ", 0, best + 1),
+            remaining.rfind("\t", 0, best + 1),
+        )
+        cut = whitespace + 1 if whitespace >= 0 else best
+        result.append(remaining[:cut])
+        remaining = remaining[cut:]
+    result.append(remaining)
+    return tuple(result)
+
+
 class CodeChunker:
     """Extract source declarations as immutable, provenance-bearing drafts."""
 
@@ -301,11 +366,6 @@ class CodeChunker:
             declarations, imports = self._parse(source)
             local_to_global: dict[int, int] = {}
             for local_index, declaration in enumerate(declarations):
-                if token_counter.count(declaration.text) > context.effective_max_tokens:
-                    raise UnsupportedError(
-                        f"atomic code declaration {declaration.qualified_symbol!r} exceeds "
-                        "the effective token maximum"
-                    )
                 identity_input = (source.span, declaration.text)
                 if identity_input in identity_inputs:
                     raise UnsupportedError(
@@ -324,6 +384,58 @@ class CodeChunker:
                     for candidate in declarations
                     if declaration.symbol in candidate.calls
                 )
+
+                token_count = token_counter.count(declaration.text)
+                if token_count > context.effective_max_tokens:
+                    # Oversized declaration: split by lines into consecutive token-budget
+                    # windows.  Each part carries a part_index in its metadata so
+                    # retrieval can reconstruct the original order.  This is the
+                    # only place where a CodeChunker chunk may exceed the declared
+                    # target; the limit is the effective_max_tokens hard cap per part.
+                    parts = _split_oversized(
+                        declaration.text,
+                        context.effective_max_tokens,
+                        token_counter,
+                    )
+                    global_start = len(drafts)
+                    # Map local_index → the *first* part so parent links from
+                    # nested declarations resolve correctly.
+                    local_to_global[local_index] = global_start
+                    for part_i, part_text in enumerate(parts):
+                        drafts.append(
+                            ChunkDraft(
+                                text=part_text,
+                                chunk_type=(
+                                    ChunkType.SUMMARY if declaration.is_summary else ChunkType.CODE
+                                ),
+                                position=ChunkPosition(
+                                    section_index=source.section_index,
+                                    chunk_index_in_section=local_index,
+                                    page_number=source.page_number,
+                                ),
+                                heading_path=(
+                                    *source.heading_path,
+                                    declaration.qualified_symbol,
+                                ),
+                                source_span=source.span,
+                                parent_index=parent_index,
+                                metadata=FrozenMetadata(
+                                    {
+                                        "chunker.code.called_by": called_by,
+                                        "chunker.code.calls": calls,
+                                        "chunker.code.declaration_kind": declaration.kind,
+                                        "chunker.code.imports": imports,
+                                        "chunker.code.language": source.language_name,
+                                        "chunker.code.strategy": "tree-sitter-v1",
+                                        "chunker.code.symbol": declaration.qualified_symbol,
+                                        "chunker.code.part_index": part_i,
+                                        "chunker.code.part_count": len(parts),
+                                    }
+                                ),
+                            )
+                        )
+                    continue
+
                 global_index = len(drafts)
                 local_to_global[local_index] = global_index
                 drafts.append(
@@ -462,7 +574,51 @@ class CodeChunker:
                     )
                 )
         self._collect_declarations(root, encoded, spec, None, (), result)
+        # Declaration extraction alone omits executable module-level statements,
+        # comments, control flow, and imports.  Those nodes are first-class source
+        # evidence too: retaining them prevents a valid source file from being
+        # catastrophically reduced to only its declarations.
+        result.extend(
+            self._module_level_statements(
+                root,
+                encoded,
+                spec,
+                {declaration.text for declaration in result},
+            )
+        )
         return tuple(result), imports
+
+    def _module_level_statements(
+        self,
+        root: Node,
+        source: bytes,
+        spec: _LanguageSpec,
+        existing_texts: set[str],
+    ) -> tuple[_Declaration, ...]:
+        result: list[_Declaration] = []
+        for index, node in enumerate(root.named_children):
+            if node.type in spec.import_types or node.type in spec.declaration_types:
+                continue
+            if (
+                node.type == "decorated_definition"
+                and node.named_children
+                and node.named_children[-1].type in spec.declaration_types
+            ):
+                continue
+            text = self._node_text(node, source)
+            if not text.strip() or text in existing_texts:
+                continue
+            result.append(
+                _Declaration(
+                    text=text,
+                    kind=f"module_{node.type}",
+                    symbol=f"<module-{index}>",
+                    qualified_symbol=f"<module-{index}>",
+                    parent_local_index=None,
+                    calls=self._calls(node, source, spec),
+                )
+            )
+        return tuple(result)
 
     def _collect_declarations(
         self,

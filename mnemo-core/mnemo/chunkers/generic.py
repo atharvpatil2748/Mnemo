@@ -146,11 +146,8 @@ class GenericChunker:
     ) -> tuple[_Unit, ...]:
         span = BlockSpan(start_ordinal=block.ordinal, end_ordinal=block.ordinal)
         if isinstance(block, TableBlock):
-            text = "\n".join("\t".join(row) for row in block.rows).strip()
-            if not text:
-                return ()
-            return self._atomic_unit(
-                text, ChunkType.PASSAGE, span, heading_path, section_index, block, hard_max, counter
+            return self._table_units(
+                block, span, heading_path, section_index, target, hard_max, counter
             )
         if isinstance(block, EquationBlock):
             return self._atomic_unit(
@@ -196,6 +193,81 @@ class GenericChunker:
             hard_max,
             counter,
         )
+
+    @staticmethod
+    def _table_units(
+        block: TableBlock,
+        span: BlockSpan,
+        heading_path: tuple[str, ...],
+        section_index: int,
+        target: int,
+        hard_max: int,
+        counter: TokenCounterInterfaceV1,
+    ) -> tuple[_Unit, ...]:
+        """Partition oversized tables by complete rows, repeating header rows."""
+
+        def render(rows: tuple[tuple[str, ...], ...]) -> str:
+            return "\n".join("\t".join(row) for row in rows).strip()
+
+        full_text = render(block.rows)
+        if not full_text:
+            return ()
+        if counter.count(full_text) <= hard_max:
+            return GenericChunker._atomic_unit(
+                full_text,
+                ChunkType.PASSAGE,
+                span,
+                heading_path,
+                section_index,
+                block,
+                hard_max,
+                counter,
+            )
+
+        headers = block.rows[: block.header_row_count]
+        data_rows = block.rows[block.header_row_count :]
+        if not data_rows:
+            raise UnsupportedError("atomic TableBlock exceeds the effective token maximum")
+
+        result: list[_Unit] = []
+        batch: list[tuple[str, ...]] = []
+        for row in data_rows:
+            candidate = (*headers, *batch, row)
+            candidate_text = render(candidate)
+            if batch and counter.count(candidate_text) > target:
+                emitted = render((*headers, *batch))
+                result.append(
+                    _Unit(
+                        text=emitted,
+                        chunk_type=ChunkType.PASSAGE,
+                        source_span=span,
+                        heading_path=heading_path,
+                        section_index=section_index,
+                        page_number=block.page_number,
+                        separator="\n\n",
+                        mergeable=False,
+                    )
+                )
+                batch = []
+                candidate_text = render((*headers, row))
+            if counter.count(candidate_text) > hard_max:
+                raise UnsupportedError("atomic table row exceeds the effective token maximum")
+            batch.append(row)
+
+        if batch:
+            result.append(
+                _Unit(
+                    text=render((*headers, *batch)),
+                    chunk_type=ChunkType.PASSAGE,
+                    source_span=span,
+                    heading_path=heading_path,
+                    section_index=section_index,
+                    page_number=block.page_number,
+                    separator="\n\n",
+                    mergeable=False,
+                )
+            )
+        return tuple(result)
 
     @staticmethod
     def _atomic_unit(

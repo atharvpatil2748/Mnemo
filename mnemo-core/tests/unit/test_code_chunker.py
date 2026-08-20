@@ -286,11 +286,30 @@ def test_wrong_document_type_is_rejected() -> None:
         CodeChunker().chunk(document, _context(document), WordCounter())
 
 
-def test_atomic_oversized_declaration_fails_without_partial_success() -> None:
+def test_oversized_declaration_is_split_without_content_loss() -> None:
     source = "def huge():\n    return '" + " ".join(f"word{i}" for i in range(50)) + "'"
     document = _document(CodeBlock(ordinal=0, code=source, code_language="python"))
-    with pytest.raises(UnsupportedError, match="atomic code declaration"):
-        CodeChunker().chunk(document, _context(document, target=15, maximum=20), WordCounter())
+    drafts = CodeChunker().chunk(document, _context(document, target=15, maximum=20), WordCounter())
+
+    assert len(drafts) > 1
+    assert "".join(draft.text for draft in drafts) == source
+    assert all(WordCounter().count(draft.text) <= 20 for draft in drafts)
+    assert tuple(draft.metadata["chunker.code.part_index"] for draft in drafts) == tuple(
+        range(len(drafts))
+    )
+    assert {draft.metadata["chunker.code.part_count"] for draft in drafts} == {len(drafts)}
+
+
+def test_module_level_statements_are_retained_with_declarations() -> None:
+    source = "// startup\nconst enabled = true;\nconsole.log(enabled);\nif (enabled) boot();"
+    document = _document(CodeBlock(ordinal=0, code=source, code_language="javascript"))
+
+    drafts = CodeChunker().chunk(document, _context(document), WordCounter())
+
+    text = "\n".join(draft.text for draft in drafts)
+    assert "console.log(enabled);" in text
+    assert "if (enabled) boot();" in text
+    assert "// startup" in text
 
 
 def test_duplicate_canonical_identity_input_fails_closed() -> None:
@@ -361,7 +380,9 @@ app.post('/x', async (req, res) => {
         CodeBlock(ordinal=0, code=source, code_language="javascript"), title="server.js"
     )
     drafts = CodeChunker().chunk(document, _context(document), WordCounter())
-    assert drafts == ()
+    assert len(drafts) == 1
+    assert drafts[0].text == source.strip()
+    assert drafts[0].metadata["chunker.code.symbol"] == "<module-0>"
 
 
 def test_javascript_function_expression_locals_not_emitted_as_root_declarations() -> None:
@@ -394,4 +415,5 @@ app.post('/second', async (req, res) => {
         CodeBlock(ordinal=0, code=source, code_language="javascript"), title="server.js"
     )
     drafts = CodeChunker().chunk(document, _context(document), WordCounter())
-    assert drafts == ()
+    assert len(drafts) == 2
+    assert all("executeTool" in draft.text for draft in drafts)

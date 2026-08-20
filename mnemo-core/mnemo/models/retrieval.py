@@ -429,6 +429,9 @@ class RetrievalRerankResult:
             sorted(
                 self.results,
                 key=lambda item: (
+                    -int(
+                        bool(item.fused_result.chunk.metadata.get("retrieval_title_match", False))
+                    ),
                     -_evidence(item).relevance_score,
                     item.fused_result.global_rank,
                     item.fused_result.chunk.id,

@@ -64,7 +64,7 @@ def _make_mock_chunk(doc_id: UUID, index: int = 0) -> Chunk:
 def _make_mock_engine(*, config: MnemoConfig | None = None) -> tuple[MagicMock, UUID, Chunk]:
     mock_engine = MagicMock(spec=KnowledgeEngine)
     mock_engine.state = EngineState.READY
-    mock_engine.version = "0.23.0"
+    mock_engine.version = "0.24.0"
     mock_engine.initialize = AsyncMock()
     mock_engine.shutdown = AsyncMock()
 

@@ -192,8 +192,24 @@ def test_builtin_parser_plugin_registers_all_frozen_phase3_formats(tmp_path: Pat
         ".txt",
         ".json",
         ".csv",
+        # Code file extensions — regression: previously unregistered, causing
+        # server.js and similar files to fail with UnsupportedError in production.
+        ".js",
+        ".ts",
+        ".py",
+        ".java",
+        ".go",
+        ".rs",
+        ".c",
+        ".cpp",
+        # MIME types detected by mimetypes/libmagic for code files
+        "text/javascript",
+        "text/x-python",
     ):
-        assert registry.resolve_parser(slot) is not None
+        assert registry.resolve_parser(slot) is not None, (
+            f"No parser registered for slot {slot!r} "
+            "— did you forget to add it to CoreParserPlugin in engine.py?"
+        )
     from mnemo.models import DocType
 
     assert registry.resolve_chunker_v2(DocType.GENERIC) is not None
@@ -206,6 +222,33 @@ def test_builtin_parser_plugin_registers_all_frozen_phase3_formats(tmp_path: Pat
     assert registry.resolve_chunker_v2(DocType.DOCUMENTATION) is not None
     for doc_type in DocType:
         assert registry.resolve_chunker(doc_type) is None
+
+
+def test_builtin_parser_plugin_code_extensions_route_to_plain_text_parser(
+    tmp_path: Path,
+) -> None:
+    """Regression: all code extensions in PlainTextParser._CODE_EXTENSIONS must be
+    registered in the builtin plugin system so that source files (e.g. server.js)
+    do not raise UnsupportedError in production.
+
+    Previously .js (and other code extensions) were missing from engine.py
+    CoreParserPlugin registration, causing golden-corpus ingestion to fail.
+    """
+    from mnemo.parsers.plain_text import _CODE_EXTENSIONS, PlainTextParser
+
+    registry = PluginRegistry(core_version=__version__)
+    registry.load_plugins(_builtin_plugins(make_config(tmp_path)))
+
+    for ext in _CODE_EXTENSIONS:
+        parser = registry.resolve_parser(ext)
+        assert parser is not None, (
+            f"Extension {ext!r} is in PlainTextParser._CODE_EXTENSIONS but not "
+            f"registered in CoreParserPlugin — source files with this extension "
+            f"will fail with UnsupportedError"
+        )
+        assert isinstance(parser, PlainTextParser), (
+            f"Extension {ext!r} should resolve to PlainTextParser, got {type(parser).__name__}"
+        )
 
 
 def test_initialize_resolves_freezes_and_exposes_runtime(

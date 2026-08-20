@@ -90,7 +90,11 @@ class ChunkerDispatcher:
         drafts: tuple[ChunkDraft, ...], counts: tuple[int, ...]
     ) -> tuple[ChunkDraft, ...]:
         parent_indexes = {draft.parent_index for draft in drafts if draft.parent_index is not None}
-        short = {index for index, count in enumerate(counts) if count < 15}
+        short = {
+            index
+            for index, (draft, count) in enumerate(zip(drafts, counts, strict=True))
+            if count < 15 and draft.metadata.get("chunker.preserve_short") is not True
+        }
         if short & parent_indexes:
             raise IntegrityError("a short parent draft cannot be removed while it has children")
         survivors = tuple(index for index in range(len(drafts)) if index not in short)

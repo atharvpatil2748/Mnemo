@@ -33,6 +33,13 @@ from .documents import (
     ParsedDocument,
 )
 from .final_qa import FinalQARequest, FinalQAResult, FinalQAStatus
+from .final_qa_execution import (
+    FinalQAExecution,
+    FinalQAExecutionSnapshot,
+    FinalQAExecutionSnapshotPhase,
+    FinalQAExecutionState,
+    final_qa_request_fingerprint,
+)
 from .graph import Entity, GraphEdge
 from .notebook import (
     Citation,
@@ -98,6 +105,10 @@ __all__ = [
     "DocumentVersionStatus",
     "Entity",
     "EquationBlock",
+    "FinalQAExecution",
+    "FinalQAExecutionSnapshot",
+    "FinalQAExecutionSnapshotPhase",
+    "FinalQAExecutionState",
     "FinalQARequest",
     "FinalQAResult",
     "FinalQAStatus",
@@ -136,5 +147,6 @@ __all__ = [
     "TextBlock",
     "Turn",
     "TurnRole",
+    "final_qa_request_fingerprint",
     "stable_sigmoid",
 ]

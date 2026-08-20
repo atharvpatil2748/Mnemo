@@ -30,7 +30,7 @@ def test_semantic_question_routes_to_s1_default():
 def test_exact_verse_and_numbers_route_to_s2():
     """Explicit exact verse and numerical tolerance questions route to S2."""
     assert (
-        classify_prompt_template("Tell me Bhagavad Gita 2.47.")
+        classify_prompt_template("Tell me verse 2.47 from the referenced scripture.")
         == STRUCTURED_EXTRACTION_SYSTEM_PROMPT
     )
     assert (
@@ -43,6 +43,10 @@ def test_exact_verse_and_numbers_route_to_s2():
     )
     assert (
         classify_prompt_template("What is the exact estimated original mass calculated in ME333?")
+        == STRUCTURED_EXTRACTION_SYSTEM_PROMPT
+    )
+    assert (
+        classify_prompt_template("Quote chapter 18.66 from the referenced book.")
         == STRUCTURED_EXTRACTION_SYSTEM_PROMPT
     )
 
@@ -65,6 +69,10 @@ def test_code_and_tabular_queries_route_to_s3():
     )
     assert (
         classify_prompt_template("Which student has rank 1 in the Y24 CPI csv table?")
+        == CODE_TABLE_EXTRACTION_SYSTEM_PROMPT
+    )
+    assert (
+        classify_prompt_template("Which row in the employee dataset has rank 1?")
         == CODE_TABLE_EXTRACTION_SYSTEM_PROMPT
     )
 

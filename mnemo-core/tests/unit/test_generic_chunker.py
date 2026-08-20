@@ -200,6 +200,33 @@ def test_oversized_word_and_atomic_blocks_fail_without_partial_output() -> None:
         )
 
 
+def test_oversized_table_partitions_complete_rows_and_repeats_header() -> None:
+    document = _document(
+        TableBlock(
+            ordinal=0,
+            rows=(
+                ("Name", "Value"),
+                ("one", "alpha beta gamma delta"),
+                ("two", "alpha beta gamma delta"),
+                ("three", "alpha beta gamma delta"),
+                ("four", "alpha beta gamma delta"),
+            ),
+            header_row_count=1,
+        )
+    )
+    drafts = GenericChunker().chunk(
+        document, _context(document, target=15, maximum=20), WordCounter()
+    )
+
+    assert len(drafts) == 2
+    assert all(draft.text.startswith("Name\tValue\n") for draft in drafts)
+    assert [draft.text.splitlines()[-1] for draft in drafts] == [
+        "two\talpha beta gamma delta",
+        "four\talpha beta gamma delta",
+    ]
+    assert all(WordCounter().count(draft.text) <= 20 for draft in drafts)
+
+
 def test_canonical_block_text_types_are_preserved() -> None:
     document = _document(
         TableBlock(ordinal=0, rows=(("Name", "Value"), ("alpha", "one"))),

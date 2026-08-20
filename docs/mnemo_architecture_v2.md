@@ -532,7 +532,7 @@ exact selected and omitted candidate records, rendered context, tokenizer
 identity, and complete budget accounting. Module 6.8 consumes that typed result
 without parsing text to reconstruct provenance. The contract is implemented
 and validated with focused, repository-wide, and real Bhagavad Gita handoff
-acceptance. Module 6.8 is complete and M6 remains not verified.
+acceptance. Module 6.8 is complete and covered by current M6 validation.
 
 **GroundedAnswerGenerator**
 ADR-0044 is the normative Module 6.8 contract. It consumes the exact
@@ -543,7 +543,7 @@ provider/model/token evidence. All ADR-0043 empty outcomes return typed
 `NO_CONTEXT` without provider work. Module 6.8 has no storage dependency and
 does not parse, resolve, or persist citations. The contract is implemented and
 validated with focused, repository-wide, and real Bhagavad Gita context-handoff
-acceptance. Module 6.9 is complete and M6 remains not verified.
+acceptance. Module 6.9 is complete and covered by current M6 validation.
 
 **CitationEngine**  
 ADR-0045 is the normative Module 6.9 contract. The additive `CitationEngine`
@@ -552,6 +552,27 @@ consumes the exact `GroundedAnswerResult`, an already-persisted assistant
 validates canonical `[source:N]` markers against retained `ContextItem`
 provenance, maps each first-occurring unique source to one deterministic
 versioned `Citation`, and persists citations through `StorageInterfaceV1`.
+
+**Citation-compliant publication and source-aware sparse recall**
+ADR-0052 adds a strict final-publication validation boundary: generated
+evidence-backed final answers must use canonical `[source:N]` markers, with at
+most one explicit corrective regeneration; marker text is never normalized.
+ADR-0053 adds an exact-version title projection to SQLite sparse retrieval.
+Titles are derived metadata, not canonical chunk text or corpus-specific
+rules. A disabled Qdrant backend means sparse-only retrieval is available, not
+that vector-backed hybrid retrieval is healthy.
+ADR-0054 fixes the exact one-retry citation-compliance invocation for strict
+persisted Final QA. ADR-0055 defines the thin
+`/v1/notebooks/{notebook_id}/final-qa` `FinalQAInterfaceV1` adapter. Existing
+`/v1/query` and streaming routes are non-persistent preview/search paths, not
+ADR-0045 persisted Final QA. ADR-0056 adds the missing immutable execution
+snapshot and request-fingerprint record required to replay a completed
+assistant publication without regenerating or reconstructing provenance.
+ADR-0057 extends ADR-0042/0053 at the reranker boundary: the exact-version
+title is included in the transient cross-encoder document representation and
+canonical title-match provenance is the first deterministic ordering tier.
+Canonical chunk text and raw sparse/fusion/model evidence remain unchanged.
+These successor decisions are implemented and locally live-validated.
 Canonical `Chunk.text` is the verbatim quote even for compressed context.
 Repeated markers deduplicate; malformed or unknown markers fail; unmarked and
 no-context answers are typed empty outcomes.
@@ -563,7 +584,7 @@ but the frozen facade provides no atomic batch or rollback. A later failure can
 leave an idempotently retryable persisted prefix and never returns a partial
 result. The contract is implemented and validated with focused,
 repository-wide, real SQLite/CompositeStorage, and real Bhagavad Gita pipeline
-acceptance. Module 6.10 is complete and M6 remains not verified.
+acceptance. Module 6.10 and the current M6 successor contracts are verified.
 
 **Final QA Integration**
 Module 6.10 composes the completed Phase 6 stages, defines the final typed QA
@@ -2080,7 +2101,11 @@ services:
       # supplied through mnemo.toml or their canonical MNEMO_ variables.
 ```
 
-Tradeoffs: brute-force vector search instead of HNSW. Acceptable for <100K chunks.
+Tradeoffs: with Qdrant disabled, the current implementation uses SQLite FTS5
+sparse retrieval only; it does not claim vector-backed hybrid retrieval.
+Enable the standard Qdrant deployment for persisted dense retrieval. A
+brute-force vector fallback remains an architectural target, not a current
+minimal-stack capability.
 
 ---
 
@@ -2370,7 +2395,8 @@ As the plugin ecosystem grows, users will face incompatibility between plugin ve
 │  2. Every interface is a typed contract. Every impl is replaceable.      │
 │  3. Ingest fast. Enrich lazily.                                          │
 │  4. Chunking is semantic compression, not text splitting.                │
-│  5. Retrieval is always dense + sparse + (graph if available).           │
+│  5. Retrieval fuses enabled typed streams; production hybrid uses dense  │
+│     + sparse (+ graph when available).                                   │
 │  6. Every statement is cited. Every fact is traceable.                   │
 │  7. Core has no HTTP. Server has no business logic.                      │
 │  8. Plugins are opt-in. Minimal install is fully functional.             │

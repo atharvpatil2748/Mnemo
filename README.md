@@ -2,7 +2,7 @@
 
 > One knowledge layer. Thousands of documents. Your hardware, your data.
 
-![Version](https://img.shields.io/badge/version-0.23.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-0.24.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
 
 ## Why Mnemo Exists
 
@@ -85,7 +85,11 @@ User / AI Assistant / Antigravity / Client
 
 ### Core Architectural Principles
 * **Local-first:** The system operates entirely offline by default.
-* **Citation-grounded:** Every retrieved statement is traceable to a source, page, and chunk.
+* **Citation-grounded:** Persisted Final QA (`POST
+  /v1/notebooks/{notebook_id}/final-qa`) validates exact `[source:N]` markers,
+  stores immutable execution provenance, and replays idempotently without a
+  second model call. `/v1/query` remains a non-persistent evidence/search
+  preview.
 * **Provider-independent:** Parsers, chunkers, and embedders are replaceable plugins behind typed contracts.
 * **Interface-driven:** Core logic relies on `Protocol` interfaces, not concrete implementations.
 * **Knowledge engine, not agent:** It retrieves evidence; it does not plan actions.
@@ -111,11 +115,11 @@ Mnemo is in active engineering development. Every module is rigorously tested be
 | Configuration System | ✅ Implemented | Immutable configuration authority (Phase 1) |
 | Plugin Registry | ✅ Implemented | Discovers and injects providers (Phase 1) |
 | Local Storage Layer | ✅ Implemented | Qdrant, SQLite FTS5, SurrealDB, FS with atomic composite transactions (Phase 2) |
-| Document Parsing | ✅ Implemented | PDF, DOCX, Markdown, HTML, TXT, JSON, CSV (Phase 3) |
+| Document Parsing | ✅ Implemented | PDF, DOCX, PPTX, Markdown, HTML, plain text/source code, JSON, CSV (Phase 3) |
 | Ingestion Canonicalization | ✅ Complete | Canonical `ParsedDocument` bridge (Phase 3.9) |
 | Chunking Engine | ✅ Complete | Modules 4.1–4.10: dispatcher plus all nine document-aware V2 strategies (Phase 4) |
 | Embedding Pipeline | ✅ Released | Content-addressed embedding cache and batch vector generation (Phase 5) |
-| Hybrid Retrieval & Grounded QA | ✅ Released | Milestone M6: dense/sparse fusion, cross-encoder diversity reranking, dynamic prompt routing, citations (Phase 6) |
+| Hybrid Retrieval & Grounded QA | ✅ Implemented and validated | Title-aware sparse retrieval, optional dense retrieval, fusion/reranking, strict persisted Final QA, citation correction, immutable replay (ADRs 0052–0057). |
 | REST API & WebSocket Streaming | ✅ Released | Milestone M7: REST endpoints, WebSocket/SSE streaming, Auth middleware (Phase 7) |
 | Native MCP Integration | ✅ Released | Milestone M8: 6 native knowledge retrieval tools, stdio/SSE transports, Antigravity verified (Phase 8) |
 | Web UI | 📋 Planned | Phase 9 |
@@ -243,4 +247,3 @@ Interested in working on Mnemo?
 Whether you're interested in building a new parser, optimizing vector storage, or shaping the retrieval algorithms, we welcome your help!
 
 Please read our [Contributing Guide](CONTRIBUTING.md) to understand our architectural rules, local setup, and PR expectations before opening a pull request.
-

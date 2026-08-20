@@ -40,10 +40,16 @@ from mnemo.models import (
 )
 from mnemo.models.chunks import ChunkPosition, ChunkType
 from mnemo.models.documents import DocumentMetadata, DocumentVersion, DocumentVersionStatus
+from mnemo.models.final_qa_execution import (
+    FinalQAExecution,
+    FinalQAExecutionSnapshot,
+    FinalQAExecutionSnapshotPhase,
+    FinalQAExecutionState,
+)
 from mnemo.models.notebook import InsightType, NoteOrigin, TurnRole
 from mnemo.storage.retrieval_projection import RetrievalMetadataProjection
 
-_SCHEMA_VERSION = 4
+_SCHEMA_VERSION = 6
 
 _SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -101,6 +107,38 @@ CREATE TABLE IF NOT EXISTS retrieval_version_metadata (
     doc_type TEXT NOT NULL,
     publication_date TEXT,
     PRIMARY KEY (document_id, version_id)
+);
+
+CREATE TABLE IF NOT EXISTS final_qa_executions (
+    execution_id TEXT PRIMARY KEY,
+    assistant_turn_id TEXT NOT NULL UNIQUE,
+    request_fingerprint TEXT NOT NULL,
+    notebook_id TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    user_turn_id TEXT NOT NULL,
+    contract_version TEXT NOT NULL,
+    payload_schema_version INTEGER NOT NULL,
+    provider TEXT NOT NULL,
+    model TEXT NOT NULL,
+    model_configuration TEXT NOT NULL,
+    state TEXT NOT NULL,
+    retry_count INTEGER NOT NULL,
+    failure_classification TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    completed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_final_qa_executions_state_updated
+ON final_qa_executions(state, updated_at);
+CREATE INDEX IF NOT EXISTS idx_final_qa_executions_session_user
+ON final_qa_executions(session_id, user_turn_id);
+CREATE TABLE IF NOT EXISTS final_qa_execution_snapshots (
+    execution_id TEXT NOT NULL REFERENCES final_qa_executions(execution_id) ON DELETE CASCADE,
+    phase TEXT NOT NULL,
+    payload_schema_version INTEGER NOT NULL,
+    payload TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY(execution_id, phase)
 );
 
 -- Notebook Tables
@@ -186,6 +224,15 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_chunks USING fts5(
     content_rowid='rowid'
 );
 
+-- Non-authoritative exact-version title projection. Canonical titles remain
+-- in document_versions.metadata and canonical chunk text is never modified.
+CREATE VIRTUAL TABLE IF NOT EXISTS fts_chunk_titles USING fts5(
+    title,
+    chunk_id UNINDEXED,
+    document_id UNINDEXED,
+    version_id UNINDEXED
+);
+
 CREATE VIRTUAL TABLE IF NOT EXISTS fts_notes USING fts5(
     title,
     content,
@@ -269,6 +316,28 @@ async def _transaction(db: aiosqlite.Connection) -> AsyncIterator[None]:
 
 def _iso_to_dt(iso_str: str) -> datetime:
     return datetime.fromisoformat(iso_str)
+
+
+def _final_qa_execution_from_row(row: Sequence[Any]) -> FinalQAExecution:
+    return FinalQAExecution(
+        execution_id=UUID(row[0]),
+        assistant_turn_id=UUID(row[1]),
+        request_fingerprint=row[2],
+        notebook_id=UUID(row[3]),
+        session_id=UUID(row[4]),
+        user_turn_id=UUID(row[5]),
+        contract_version=row[6],
+        payload_schema_version=int(row[7]),
+        provider=row[8],
+        model=row[9],
+        model_configuration=row[10],
+        state=FinalQAExecutionState(row[11]),
+        retry_count=int(row[12]),
+        failure_classification=row[13],
+        created_at=_iso_to_dt(row[14]),
+        updated_at=_iso_to_dt(row[15]),
+        completed_at=None if row[16] is None else _iso_to_dt(row[16]),
+    )
 
 
 def _fts_terms(query: str) -> tuple[str, ...]:
@@ -392,6 +461,77 @@ class SQLiteStore:
                 (4, datetime.now().isoformat()),
             )
             await db.commit()
+        if current_version < 5:
+            async with _transaction(db):
+                await db.execute(
+                    """CREATE TABLE IF NOT EXISTS final_qa_executions (
+                        execution_id TEXT PRIMARY KEY,
+                        assistant_turn_id TEXT NOT NULL UNIQUE,
+                        request_fingerprint TEXT NOT NULL,
+                        notebook_id TEXT NOT NULL,
+                        session_id TEXT NOT NULL,
+                        user_turn_id TEXT NOT NULL,
+                        contract_version TEXT NOT NULL,
+                        payload_schema_version INTEGER NOT NULL,
+                        provider TEXT NOT NULL,
+                        model TEXT NOT NULL,
+                        model_configuration TEXT NOT NULL,
+                        state TEXT NOT NULL,
+                        retry_count INTEGER NOT NULL,
+                        failure_classification TEXT,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        completed_at TEXT
+                    )"""
+                )
+                await db.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_final_qa_executions_state_updated "
+                    "ON final_qa_executions(state, updated_at)"
+                )
+                await db.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_final_qa_executions_session_user "
+                    "ON final_qa_executions(session_id, user_turn_id)"
+                )
+                await db.execute(
+                    """CREATE TABLE IF NOT EXISTS final_qa_execution_snapshots (
+                        execution_id TEXT NOT NULL
+                            REFERENCES final_qa_executions(execution_id) ON DELETE CASCADE,
+                        phase TEXT NOT NULL,
+                        payload_schema_version INTEGER NOT NULL,
+                        payload TEXT NOT NULL,
+                        created_at TEXT NOT NULL,
+                        PRIMARY KEY(execution_id, phase)
+                    )"""
+                )
+                await db.execute(
+                    "INSERT INTO schema_versions (version, applied_at) VALUES (?, ?)",
+                    (5, datetime.now(UTC).isoformat()),
+                )
+        if current_version < 6:
+            async with _transaction(db):
+                await db.execute(
+                    "CREATE VIRTUAL TABLE IF NOT EXISTS fts_chunk_titles USING fts5("
+                    "title, chunk_id UNINDEXED, document_id UNINDEXED, version_id UNINDEXED)"
+                )
+                async with db.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'chunks'"
+                ) as cursor:
+                    chunks_present = await cursor.fetchone()
+                if chunks_present is not None:
+                    await db.execute(
+                        """
+                        INSERT INTO fts_chunk_titles(title, chunk_id, document_id, version_id)
+                        SELECT json_extract(v.metadata, '$.title'), c.id,
+                               c.document_id, c.version_id
+                        FROM chunks c JOIN document_versions v ON v.version_id = c.version_id
+                        WHERE json_extract(v.metadata, '$.title') IS NOT NULL
+                          AND trim(json_extract(v.metadata, '$.title')) <> ''
+                        """
+                    )
+                await db.execute(
+                    "INSERT INTO schema_versions (version, applied_at) VALUES (?, ?)",
+                    (6, datetime.now(UTC).isoformat()),
+                )
 
     async def close(self) -> None:
         """Close the database connection idempotently."""
@@ -516,6 +656,19 @@ class SQLiteStore:
                         _dt_to_iso(version.created_at),
                     ),
                 )
+                await db.execute(
+                    "DELETE FROM fts_chunk_titles WHERE document_id = ? AND version_id = ?",
+                    (str(version.document_id), str(version.version_id)),
+                )
+                if version.metadata.title:
+                    await db.execute(
+                        """
+                        INSERT INTO fts_chunk_titles(title, chunk_id, document_id, version_id)
+                        SELECT ?, id, document_id, version_id FROM chunks
+                        WHERE document_id = ? AND version_id = ?
+                        """,
+                        (version.metadata.title, str(version.document_id), str(version.version_id)),
+                    )
 
     async def get_document(self, document_id: UUID) -> Document | None:
         """Return a document registry snapshot when present."""
@@ -1376,6 +1529,158 @@ class SQLiteStore:
         )
         await db.commit()
 
+    # -------------------------------------------------------------------------
+    # ADR-0056 Final-QA immutable execution snapshots
+    # -------------------------------------------------------------------------
+
+    async def create_final_qa_execution(self, execution: FinalQAExecution) -> bool:
+        """Atomically claim the caller-owned assistant publication slot."""
+        db = self._require_open()
+        try:
+            async with _transaction(db):
+                cursor = await db.execute(
+                    """
+                    INSERT INTO final_qa_executions (
+                        execution_id, assistant_turn_id, request_fingerprint,
+                        notebook_id, session_id, user_turn_id, contract_version,
+                        payload_schema_version, provider, model, model_configuration,
+                        state, retry_count, failure_classification, created_at,
+                        updated_at, completed_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(assistant_turn_id) DO NOTHING
+                    """,
+                    (
+                        str(execution.execution_id),
+                        str(execution.assistant_turn_id),
+                        execution.request_fingerprint,
+                        str(execution.notebook_id),
+                        str(execution.session_id),
+                        str(execution.user_turn_id),
+                        execution.contract_version,
+                        execution.payload_schema_version,
+                        execution.provider,
+                        execution.model,
+                        execution.model_configuration,
+                        execution.state.value,
+                        execution.retry_count,
+                        execution.failure_classification,
+                        _dt_to_iso(execution.created_at),
+                        _dt_to_iso(execution.updated_at),
+                        None
+                        if execution.completed_at is None
+                        else _dt_to_iso(execution.completed_at),
+                    ),
+                )
+                return cursor.rowcount == 1
+        except aiosqlite.Error as error:
+            raise StorageError("could not create final-QA execution") from error
+
+    async def get_final_qa_execution(self, assistant_turn_id: UUID) -> FinalQAExecution | None:
+        db = self._require_open()
+        async with db.execute(
+            """
+            SELECT execution_id, assistant_turn_id, request_fingerprint, notebook_id,
+                   session_id, user_turn_id, contract_version, payload_schema_version,
+                   provider, model, model_configuration, state, retry_count,
+                   failure_classification, created_at, updated_at, completed_at
+            FROM final_qa_executions WHERE assistant_turn_id = ?
+            """,
+            (str(assistant_turn_id),),
+        ) as cursor:
+            row = await cursor.fetchone()
+        return None if row is None else _final_qa_execution_from_row(row)
+
+    async def put_final_qa_execution_snapshot(self, snapshot: FinalQAExecutionSnapshot) -> None:
+        """Store an immutable phase snapshot; conflicting rewrites are rejected."""
+        db = self._require_open()
+        try:
+            async with _transaction(db):
+                await db.execute(
+                    """
+                    INSERT INTO final_qa_execution_snapshots (
+                        execution_id, phase, payload_schema_version, payload, created_at
+                    ) VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(snapshot.execution_id),
+                        snapshot.phase.value,
+                        snapshot.payload_schema_version,
+                        snapshot.payload,
+                        _dt_to_iso(snapshot.created_at),
+                    ),
+                )
+        except aiosqlite.IntegrityError as error:
+            raise ConflictError("final-QA execution snapshot is immutable") from error
+        except aiosqlite.Error as error:
+            raise StorageError("could not persist final-QA execution snapshot") from error
+
+    async def get_final_qa_execution_snapshot(
+        self, execution_id: UUID, phase: FinalQAExecutionSnapshotPhase
+    ) -> FinalQAExecutionSnapshot | None:
+        db = self._require_open()
+        async with db.execute(
+            """
+            SELECT execution_id, phase, payload_schema_version, payload, created_at
+            FROM final_qa_execution_snapshots WHERE execution_id = ? AND phase = ?
+            """,
+            (str(execution_id), phase.value),
+        ) as cursor:
+            row = await cursor.fetchone()
+        if row is None:
+            return None
+        return FinalQAExecutionSnapshot(
+            execution_id=UUID(row[0]),
+            phase=FinalQAExecutionSnapshotPhase(row[1]),
+            payload_schema_version=int(row[2]),
+            payload=row[3],
+            created_at=_iso_to_dt(row[4]),
+        )
+
+    async def transition_final_qa_execution(
+        self,
+        execution_id: UUID,
+        expected: FinalQAExecutionState,
+        target: FinalQAExecutionState,
+        *,
+        retry_count: int | None = None,
+        failure_classification: str | None = None,
+    ) -> bool:
+        """Compare-and-swap an execution state without mutating snapshots."""
+        db = self._require_open()
+        now = datetime.now(UTC)
+        completed_at = (
+            _dt_to_iso(now)
+            if target
+            in {
+                FinalQAExecutionState.PUBLISHED,
+                FinalQAExecutionState.REJECTED_CITATION_COMPLIANCE,
+            }
+            else None
+        )
+        try:
+            async with _transaction(db):
+                cursor = await db.execute(
+                    """
+                    UPDATE final_qa_executions
+                    SET state = ?, retry_count = COALESCE(?, retry_count),
+                        failure_classification = COALESCE(?, failure_classification),
+                        updated_at = ?, completed_at = COALESCE(?, completed_at)
+                    WHERE execution_id = ? AND state = ?
+                    """,
+                    (
+                        target.value,
+                        retry_count,
+                        failure_classification,
+                        _dt_to_iso(now),
+                        completed_at,
+                        str(execution_id),
+                        expected.value,
+                    ),
+                )
+                return cursor.rowcount == 1
+        except aiosqlite.Error as error:
+            raise StorageError("could not transition final-QA execution") from error
+
     async def list_turns(
         self,
         session_id: UUID,
@@ -1432,6 +1737,7 @@ class SQLiteStore:
 
         async with _transaction(db):
             await self._upsert_chunk_rows(db, chunks)
+            await self._upsert_title_projection(db, chunks)
 
     async def _upsert_chunks_with_projection(
         self,
@@ -1468,6 +1774,31 @@ class SQLiteStore:
                 ),
             )
             await self._upsert_chunk_rows(db, chunks)
+            await self._upsert_title_projection(db, chunks, projection.title)
+
+    async def _upsert_title_projection(
+        self, db: aiosqlite.Connection, chunks: tuple[Chunk, ...], title: str | None = None
+    ) -> None:
+        """Refresh derived title rows for an exact canonical document version."""
+        if not chunks:
+            return
+        document_id, version_id = chunks[0].document_id, chunks[0].version_id
+        if title is None:
+            async with db.execute(
+                "SELECT metadata FROM document_versions WHERE version_id = ?", (str(version_id),)
+            ) as cursor:
+                row = await cursor.fetchone()
+            title = None if row is None else json.loads(row[0]).get("title")
+        await db.execute(
+            "DELETE FROM fts_chunk_titles WHERE document_id = ? AND version_id = ?",
+            (str(document_id), str(version_id)),
+        )
+        if isinstance(title, str) and title.strip():
+            await db.executemany(
+                "INSERT INTO fts_chunk_titles(title, chunk_id, document_id, version_id) "
+                "VALUES (?, ?, ?, ?)",
+                [(title, chunk.id, str(document_id), str(version_id)) for chunk in chunks],
+            )
 
     async def _snapshot_retrieval_projection(
         self, document_id: UUID, version_id: UUID
@@ -1694,14 +2025,27 @@ class SQLiteStore:
         fts_query = " OR ".join(f'"{term.replace(chr(34), chr(34) * 2)}"' for term in terms)
 
         sql = """
-        SELECT c.id, -bm25(fts_chunks) AS score
-        FROM fts_chunks
-        JOIN chunks c ON fts_chunks.rowid = c.rowid
+        WITH sparse_candidates AS (
+            SELECT c.id AS chunk_id, -bm25(fts_chunks) AS score, 0 AS title_match
+            FROM fts_chunks JOIN chunks c ON fts_chunks.rowid = c.rowid
+            WHERE fts_chunks MATCH ?
+            UNION ALL
+            SELECT t.chunk_id AS chunk_id, -bm25(fts_chunk_titles, 3.0) AS score, 1 AS title_match
+            FROM fts_chunk_titles t
+            WHERE fts_chunk_titles MATCH ?
+        )
+        SELECT c.id, MAX(sparse_candidates.score) AS score,
+               MAX(sparse_candidates.title_match) AS title_match,
+               json_extract(dv.metadata, '$.title') AS document_title
+        FROM sparse_candidates
+        JOIN chunks c ON c.id = sparse_candidates.chunk_id
+        JOIN document_versions dv
+          ON dv.document_id = c.document_id AND dv.version_id = c.version_id
         LEFT JOIN retrieval_version_metadata rvm
           ON rvm.document_id = c.document_id AND rvm.version_id = c.version_id
-        WHERE fts_chunks MATCH ?
+        WHERE 1 = 1
         """
-        params: list[Any] = [fts_query]
+        params: list[Any] = [fts_query, fts_query]
 
         if filters.notebook_id is not None or filters.source_ids:
             sql += " AND EXISTS (SELECT 1 FROM sources s WHERE s.document_id = c.document_id"
@@ -1727,17 +2071,30 @@ class SQLiteStore:
             sql += " AND rvm.publication_date IS NOT NULL AND rvm.publication_date <= ?"
             params.append(filters.date_before.isoformat())
 
-        sql += " ORDER BY score DESC, c.id ASC LIMIT ?"
+        sql += " GROUP BY c.id ORDER BY score DESC, c.id ASC LIMIT ?"
         params.append(top_k)
 
         async with db.execute(sql, params) as cursor:
             rows = list(await cursor.fetchall())
 
         results: list[ScoredChunk] = []
-        for chunk_id, score in rows:
+        for chunk_id, score, title_match, document_title in rows:
             chunk = await self.get_chunk(chunk_id)
             if chunk is None:
                 raise IntegrityError("FTS result does not have a canonical chunk row")
+            if isinstance(document_title, str) and document_title:
+                from dataclasses import replace
+
+                chunk = replace(
+                    chunk,
+                    metadata=FrozenMetadata(
+                        {
+                            **dict(chunk.metadata),
+                            "document_title": document_title,
+                            "retrieval_title_match": bool(title_match),
+                        }
+                    ),
+                )
             results.append(
                 ScoredChunk(
                     chunk=chunk,

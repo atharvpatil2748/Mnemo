@@ -63,7 +63,7 @@ def _make_mock_chunk(
         source_span=BlockSpan(start_ordinal=0, end_ordinal=1),
         text=text,
         heading_path=("Section 1", "Monetary Policy"),
-        metadata=FrozenMetadata({"author": "Keynes"}),
+        metadata=FrozenMetadata({"author": "Keynes", "document_title": "Monetary Policy Evidence"}),
     )
 
 
@@ -272,6 +272,7 @@ async def test_query_evidence_only_success_without_synthesis(
     assert body["answer"] is None
     assert len(body["citations"]) >= 1
     assert body["citations"][0]["chunk_id"] == "a" * 64
+    assert body["citations"][0]["document_title"] == "Monetary Policy Evidence"
     assert body["retrieval_metadata"]["chunks_used"] >= 1
 
 

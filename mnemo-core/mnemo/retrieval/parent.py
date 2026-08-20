@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from mnemo.interfaces import (
     IntegrityError,
     ParentPromotionCapabilities,
     StorageInterfaceV1,
 )
-from mnemo.models import Chunk, ScoredChunk
+from mnemo.models import Chunk, FrozenMetadata, ScoredChunk
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,7 +70,12 @@ class ParentRetriever:
                     continue
                 emitted_families.add(family_key)
                 output = ScoredChunk(
-                    chunk=family.parent,
+                    chunk=replace(
+                        family.parent,
+                        metadata=FrozenMetadata(
+                            {**dict(family.parent.metadata), **dict(candidate.chunk.metadata)}
+                        ),
+                    ),
                     score=candidate.score,
                     source=candidate.source,
                     rank=1,

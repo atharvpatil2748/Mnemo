@@ -15,6 +15,7 @@ class RetrievalMetadataProjection:
 
     doc_type: DocType
     publication_date: date | None
+    title: str | None = None
     source_ids: tuple[UUID, ...] = ()
     notebook_ids: tuple[UUID, ...] = ()
 
@@ -23,6 +24,8 @@ class RetrievalMetadataProjection:
             raise TypeError("doc_type must be DocType")
         if self.publication_date is not None and not isinstance(self.publication_date, date):
             raise TypeError("publication_date must be date or None")
+        if self.title is not None and (not isinstance(self.title, str) or not self.title.strip()):
+            raise TypeError("title must be a non-empty string or None")
         if any(not isinstance(value, UUID) for value in self.source_ids):
             raise TypeError("source_ids must contain UUID values")
         if any(not isinstance(value, UUID) for value in self.notebook_ids):
@@ -42,4 +45,6 @@ class RetrievalMetadataProjection:
         if self.publication_date is not None:
             payload["publication_date"] = self.publication_date.isoformat()
             payload["publication_date_ordinal"] = self.publication_date.toordinal()
+        if self.title is not None:
+            payload["document_title"] = self.title
         return payload

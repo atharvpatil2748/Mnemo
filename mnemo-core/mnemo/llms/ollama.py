@@ -197,6 +197,10 @@ def _payload(
         "model": model,
         "messages": wire_messages,
         "stream": stream,
+        # Request final answer text from reasoning-capable Ollama models.
+        # Without this, some models return only an internal reasoning field and
+        # an empty message.content, which violates the LLM V1 text contract.
+        "think": False,
         "options": options,
     }
     if structured_output is not None:

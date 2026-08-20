@@ -15,6 +15,7 @@ from mnemo.interfaces import (
     UnsupportedError,
 )
 from mnemo.models import (
+    Chunk,
     DocType,
     MetadataFilter,
     RetrievalIntent,
@@ -141,24 +142,7 @@ class QueryService:
                     item = items_by_source.get(num)
                     if item is not None:
                         chunk = item.reranked_result.fused_result.chunk
-                        doc_title = str(chunk.document_id)
-                        try:
-                            doc = await self._engine.storage.get_document(chunk.document_id)
-                            if doc is not None:
-                                for v in doc.versions:
-                                    if v.version_id == chunk.version_id and v.metadata.title:
-                                        doc_title = v.metadata.title
-                                        break
-                                else:
-                                    for v in doc.versions:
-                                        if (
-                                            v.version_id == doc.current_version_id
-                                            and v.metadata.title
-                                        ):
-                                            doc_title = v.metadata.title
-                                            break
-                        except Exception:
-                            pass
+                        doc_title = _runtime_document_title(chunk)
 
                         citations_response.append(
                             CitationResponse(
@@ -184,7 +168,7 @@ class QueryService:
                     CitationResponse(
                         id=uuid5(NAMESPACE_URL, f"mnemo-evidence:{chunk.id}"),
                         chunk_id=chunk.id,
-                        document_title=str(chunk.document_id),
+                        document_title=_runtime_document_title(chunk),
                         page=chunk.position.page_number,
                         heading_path=list(chunk.heading_path),
                         quote=item.content,
@@ -229,3 +213,9 @@ class QueryService:
             date_before=filters.date_before,
             source_ids=tuple(filters.source_ids or ()),
         )
+
+
+def _runtime_document_title(chunk: Chunk) -> str:
+    """Return exact-version retrieval title without another storage lookup."""
+    title = chunk.metadata.get("document_title")
+    return title if isinstance(title, str) and title.strip() else str(chunk.document_id)

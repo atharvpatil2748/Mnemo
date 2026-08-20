@@ -170,6 +170,20 @@ def test_short_leaf_filtering_remaps_multilevel_forest() -> None:
     assert result[3].parent_chunk_id is None
 
 
+def test_explicitly_semantic_short_leaf_is_retained() -> None:
+    document = _document()
+    draft = replace(
+        _draft("Slide 4"),
+        metadata=FrozenMetadata({"chunker.preserve_short": True}),
+    )
+    result = ChunkerDispatcher(
+        _registry(document.doc_type, DraftChunker(document.doc_type, (draft,))), WordCounter()
+    ).dispatch(document, _context(document))
+
+    assert len(result) == 1
+    assert result[0].text == "Slide 4"
+
+
 @pytest.mark.parametrize("count", [39, 40])
 def test_effective_maximum_boundary_is_accepted(count: int) -> None:
     document = _document()

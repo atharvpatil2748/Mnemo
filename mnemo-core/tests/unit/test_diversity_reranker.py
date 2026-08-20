@@ -84,37 +84,36 @@ def test_diversity_single_document_query():
 
 def test_diversity_multi_document_preserves_top_from_each_relevant_source():
     """On multi-document query, ensures top chunk from each relevant source is guaranteed."""
-    c_resume1 = _make_chunk(1, "Atharv_Patil_RESUME_SDE.pdf", "Education CPI: 8.9", doc_id=_DOC_A)
-    c_csv1 = _make_chunk(2, "Y24_CPI.csv", "Roll 240740 CPI: 9.0", doc_id=_DOC_B)
-    c_csv2 = _make_chunk(3, "Y24_CPI.csv", "Roll 240741 CPI: 8.5", doc_id=_DOC_B)
-    c_csv3 = _make_chunk(4, "Y24_CPI.csv", "Roll 240742 CPI: 7.9", doc_id=_DOC_B)
+    c_report1 = _make_chunk(1, "report.pdf", "Measured result: 8.9", doc_id=_DOC_A)
+    c_table1 = _make_chunk(2, "measurements.csv", "Run 1: 9.0", doc_id=_DOC_B)
+    c_table2 = _make_chunk(3, "measurements.csv", "Run 2: 8.5", doc_id=_DOC_B)
+    c_table3 = _make_chunk(4, "measurements.csv", "Run 3: 7.9", doc_id=_DOC_B)
 
     fused_items = [
-        _make_fused_result(c_csv1, 1),
-        _make_fused_result(c_csv2, 2),
-        _make_fused_result(c_csv3, 3),
-        _make_fused_result(c_resume1, 4),
+        _make_fused_result(c_table1, 1),
+        _make_fused_result(c_table2, 2),
+        _make_fused_result(c_table3, 3),
+        _make_fused_result(c_report1, 4),
     ]
-    # Suppose CrossEncoder scored CSV chunks higher than Resume
+    # The cross encoder scores both sources as relevant.
     scores_by_id = {
-        c_csv1.id: 0.95,
-        c_csv2.id: 0.90,
-        c_csv3.id: 0.85,
-        c_resume1.id: 0.75,
+        c_table1.id: 0.95,
+        c_table2.id: 0.90,
+        c_table3.id: 0.85,
+        c_report1.id: 0.75,
     }
 
-    query = "Compare Atharv's CPI in his resume with Y24 CPI dataset for roll 240740"
     ordered = _apply_diversity_ordering(
-        query=query,
+        query="Compare the report with the measurements.",
         fused_items=fused_items,
         scores_by_id=scores_by_id,
     )
 
     top_2_sources = [item.chunk.metadata["source_name"] for item in ordered[:2]]
-    assert "Y24_CPI.csv" in top_2_sources
-    assert "Atharv_Patil_RESUME_SDE.pdf" in top_2_sources
-    assert ordered[0].chunk.id == c_csv1.id
-    assert ordered[1].chunk.id == c_resume1.id
+    assert "measurements.csv" in top_2_sources
+    assert "report.pdf" in top_2_sources
+    assert ordered[0].chunk.id == c_table1.id
+    assert ordered[1].chunk.id == c_report1.id
 
 
 def test_diversity_does_not_force_irrelevant_documents():

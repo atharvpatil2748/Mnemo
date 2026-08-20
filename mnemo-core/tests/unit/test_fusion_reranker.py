@@ -29,6 +29,7 @@ from mnemo.models import (
     ChunkPosition,
     ChunkType,
     CrossEncoderEvidence,
+    FrozenMetadata,
     FusedChunkResult,
     FusionEvidence,
     MetadataFilter,
@@ -56,6 +57,7 @@ from mnemo.retrieval.reranker import (
     CrossEncoderRerankerPlugin,
     RerankingModule,
     _CrossEncoderRuntime,
+    _reranker_document_representation,
     _validate_snapshot,
 )
 
@@ -76,6 +78,18 @@ def _chunk(index: int, *, text: str | None = None) -> Chunk:
         source_span=BlockSpan(start_ordinal=index, end_ordinal=index),
         heading_path=("Chapter",),
     )
+
+
+def test_cross_encoder_representation_preserves_derived_title_without_mutating_text() -> None:
+    chunk = replace(
+        _chunk(1, text="Python and TypeScript"),
+        metadata=FrozenMetadata({"document_title": "Candidate Resume"}),
+    )
+    assert _reranker_document_representation(chunk) == (
+        "Document title: Candidate Resume\n\nPython and TypeScript"
+    )
+    assert chunk.text == "Python and TypeScript"
+    assert _reranker_document_representation(_chunk(2, text="content only")) == "content only"
 
 
 def _fusion(count: int = 3) -> RetrievalFusionResult:
@@ -187,6 +201,7 @@ def _result(
     ]
     records.sort(
         key=lambda item: (
+            -int(bool(item.fused_result.chunk.metadata.get("retrieval_title_match", False))),
             -cast(CrossEncoderEvidence, item.rerank_evidence).relevance_score,
             item.fused_result.global_rank,
             item.fused_result.chunk.id,
@@ -199,6 +214,35 @@ def _result(
         policy=RerankPolicy.CROSS_ENCODER,
         results=tuple(records),
     )
+
+
+def test_cross_encoder_result_preserves_exact_title_evidence_tier() -> None:
+    fusion = _fusion(2)
+    titled = replace(
+        fusion.results[0].chunk,
+        metadata=FrozenMetadata(
+            {"document_title": "Project Portfolio", "retrieval_title_match": True}
+        ),
+    )
+    unrelated = replace(
+        fusion.results[1].chunk,
+        metadata=FrozenMetadata(
+            {"document_title": "Robotics Lecture", "retrieval_title_match": False}
+        ),
+    )
+    results = (
+        replace(fusion.results[0], chunk=titled),
+        replace(fusion.results[1], chunk=unrelated),
+    )
+    titled_fusion = replace(fusion, results=results)
+
+    reranked = _result("skills in the project portfolio", titled_fusion, (-4.0, 4.0))
+
+    assert tuple(item.fused_result.chunk.id for item in reranked.results) == (
+        titled.id,
+        unrelated.id,
+    )
+    assert reranked.results[0].fused_result.chunk.text == fusion.results[0].chunk.text
 
 
 class _Provider:
