@@ -62,7 +62,7 @@ def _make_mock_chunk(
         source_span=BlockSpan(start_ordinal=0, end_ordinal=1),
         text=text,
         heading_path=("Chapter 1", "Macroeconomics"),
-        metadata=FrozenMetadata({"topic": "economics"}),
+        metadata=FrozenMetadata({"topic": "economics", "nested": {"items": ["one", "two"]}}),
     )
 
 
@@ -228,6 +228,7 @@ async def test_search_global_success(
     assert item["page_number"] == 15
     assert item["heading_path"] == ["Chapter 1", "Macroeconomics"]
     assert item["metadata"]["topic"] == "economics"
+    assert item["metadata"]["nested"] == {"items": ["one", "two"]}
 
     # Verify that LLM complete was NOT called (pure search, no synthesis)
     mock_engine.llm().complete.assert_not_called()

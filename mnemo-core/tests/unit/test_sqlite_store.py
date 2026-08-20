@@ -231,6 +231,57 @@ def test_sparse_title_projection_is_generic_version_aware_and_idempotent(
     assert _run(_count_title_rows(db)) == 1
 
 
+def test_sparse_title_evidence_survives_bounded_candidate_selection(
+    open_store: SQLiteStore, dt: datetime
+) -> None:
+    title_document_id, title_version_id = uuid4(), uuid4()
+    body_document_id, body_version_id = uuid4(), uuid4()
+    for document_id, version_id, title, content_hash in (
+        (title_document_id, title_version_id, "Project Portfolio", "d" * 64),
+        (body_document_id, body_version_id, "Robotics Lecture", "e" * 64),
+    ):
+        version = DocumentVersion(
+            version_id=version_id,
+            document_id=document_id,
+            content_hash=content_hash,
+            metadata=DocumentMetadata(content_hash=content_hash, title=title),
+            status=DocumentVersionStatus.CURRENT,
+            created_at=dt,
+        )
+        _run(
+            open_store.upsert_document(
+                Document(
+                    document_id=document_id,
+                    versions=(version,),
+                    current_version_id=version_id,
+                    current_hash=content_hash,
+                    status=DocumentStatus.INDEXED,
+                    created_at=dt,
+                    updated_at=dt,
+                )
+            )
+        )
+    title_chunk = _search_chunk(
+        title_document_id, title_version_id, 7100, "Selected engineering work"
+    )
+    body_chunks = tuple(
+        _search_chunk(
+            body_document_id,
+            body_version_id,
+            7101 + index,
+            "portfolio portfolio portfolio project project robotics",
+        )
+        for index in range(3)
+    )
+    _run(open_store.upsert_chunks((title_chunk, *body_chunks)))
+
+    result = _run(open_store.search_sparse("project portfolio", MetadataFilter(), top_k=1))
+
+    assert result[0].chunk.id == title_chunk.id
+    assert result[0].chunk.metadata["document_title"] == "Project Portfolio"
+    assert result[0].chunk.metadata["retrieval_title_match"] is True
+
+
 async def _count_title_rows(db: aiosqlite.Connection) -> int:
     async with db.execute("SELECT COUNT(*) FROM fts_chunk_titles") as cursor:
         row = await cursor.fetchone()
@@ -753,6 +804,7 @@ def test_chunk_crud_and_search(
 
     _run(open_store.delete_chunks_for_document(doc_id, ver_id))
     assert _run(open_store.get_chunk(c_id)) is None
+    assert _run(_count_title_rows(open_store._require_open())) == 0
 
 
 def test_chunk_snapshot_restore_preserves_replaced_rows(
@@ -785,6 +837,36 @@ def test_chunk_snapshot_restore_preserves_replaced_rows(
     assert restored.source_span == original.source_span
     assert dict(restored.metadata) == dict(original.metadata)
     assert _run(open_store.get_chunk(introduced.id)) is None
+
+
+def test_chunk_round_trip_preserves_nested_metadata(
+    open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: datetime
+) -> None:
+    """Nested parser provenance is serialized without losing immutability."""
+    _run(open_store.upsert_document(make_doc(doc_id, ver_id, dt)))
+    metadata = FrozenMetadata(
+        {
+            "parser.markdown.links": ({"target": "notes.md", "label": "Notes"},),
+            "parser.markdown.list": {"items": ({"depth": 0, "text": "Item"},)},
+        }
+    )
+    chunk = Chunk(
+        id="c" * 64,
+        text="Nested metadata",
+        document_id=doc_id,
+        version_id=ver_id,
+        chunk_type=ChunkType.PASSAGE,
+        position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=0),
+        heading_path=(),
+        metadata=metadata,
+    )
+
+    _run(open_store.upsert_chunks((chunk,)))
+    restored = _run(open_store.get_chunk(chunk.id))
+
+    assert restored is not None
+    assert restored.metadata == metadata
 
 
 def test_chunk_batch_failure_rolls_back_replacement(
@@ -852,6 +934,7 @@ def test_cascade_delete(
     assert _run(open_store.get_document(doc_id)) is None
     assert _run(open_store.get_chunk(c_id)) is None
     assert _run(open_store.get_source(src_id)) is None
+    assert _run(_count_title_rows(open_store._require_open())) == 0
 
 
 # ---------------------------------------------------------------------------

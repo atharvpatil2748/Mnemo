@@ -161,13 +161,14 @@ class PDFParser(ParserInterfaceV1):
         for block in page_dict.get("blocks", []):
             bbox = fitz.Rect(block["bbox"])
 
-            # Skip if this block is heavily overlapping a table
-            if self._overlaps_any(bbox, table_bboxes):
-                continue
-
             # Text block
             if block["type"] == 0:
-                text, is_heading, is_list = self._analyze_text_block(block, median_size)
+                # PyMuPDF may group adjacent table and non-table spans into one
+                # text block.  Filtering the whole block by its bounding box can
+                # therefore discard unique text outside the table.  Remove only
+                # spans substantially covered by a table projection.
+                filtered_block = self._without_table_spans(block, table_bboxes)
+                text, is_heading, is_list = self._analyze_text_block(filtered_block, median_size)
                 if not text.strip():
                     continue
 
@@ -234,16 +235,40 @@ class PDFParser(ParserInterfaceV1):
 
         return ordinal
 
+    def _without_table_spans(
+        self,
+        block: dict[str, Any],
+        table_bboxes: list[fitz.Rect],
+    ) -> dict[str, Any]:
+        """Return a text block with table-covered spans removed."""
+        filtered_lines: list[dict[str, Any]] = []
+        for line in block.get("lines", []):
+            retained_spans = [
+                span
+                for span in line.get("spans", [])
+                if "bbox" not in span
+                or not self._overlaps_any(fitz.Rect(span["bbox"]), table_bboxes)
+            ]
+            if retained_spans:
+                filtered_lines.append({**line, "spans": retained_spans})
+        return {**block, "lines": filtered_lines}
+
     def _to_bbox(self, rect: fitz.Rect | tuple[float, float, float, float]) -> BoundingBox:
         if isinstance(rect, fitz.Rect):
             return (rect.x0, rect.y0, rect.x1, rect.y1)
         return (rect[0], rect[1], rect[2], rect[3])
 
     def _overlaps_any(self, rect: fitz.Rect, table_bboxes: list[fitz.Rect]) -> bool:
+        rect_area = rect.get_area()
+        if rect_area <= 0:
+            return False
         for t_rect in table_bboxes:
             if rect.intersects(t_rect):
-                intersect = rect.intersect(t_rect)
-                if intersect.get_area() > 0.5 * rect.get_area():
+                # ``Rect.intersect`` mutates its receiver.  Intersect a copy so
+                # both the denominator and subsequent comparisons continue to
+                # use the canonical text-block rectangle.
+                intersect = fitz.Rect(rect).intersect(t_rect)
+                if intersect.get_area() > 0.5 * rect_area:
                     return True
         return False
 
@@ -263,19 +288,25 @@ class PDFParser(ParserInterfaceV1):
         self, block: dict[str, Any], median_size: float
     ) -> tuple[str, bool, bool]:
         text_parts = []
-        max_size = 0.0
+        nonempty_span_sizes: list[float] = []
 
         for line in block.get("lines", []):
             for span in line.get("spans", []):
-                text_parts.append(span.get("text", ""))
-                size = span.get("size", 0.0)
-                if size > max_size:
-                    max_size = size
+                span_text = span.get("text", "")
+                text_parts.append(span_text)
+                if span_text.strip():
+                    nonempty_span_sizes.append(float(span.get("size", 0.0)))
             text_parts.append("\n")
 
         text = "".join(text_parts).strip()
-        # Check if heading (considerably larger font)
-        is_heading = max_size > median_size * 1.2
+        # A text block is a heading only when all of its meaningful spans use
+        # heading-sized type.  Using the maximum alone misclassifies mixed
+        # blocks (for example, body bullets followed by a larger section label)
+        # and can make the body text disappear into heading-path metadata.
+        heading_threshold = median_size * 1.2
+        is_heading = bool(nonempty_span_sizes) and all(
+            size > heading_threshold for size in nonempty_span_sizes
+        )
 
         # Check if list (starts with bullet)
         bullets = {"•", "-", "1.", "*"}

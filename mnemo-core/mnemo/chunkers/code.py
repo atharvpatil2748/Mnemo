@@ -426,6 +426,7 @@ class CodeChunker:
                                         "chunker.code.declaration_kind": declaration.kind,
                                         "chunker.code.imports": imports,
                                         "chunker.code.language": source.language_name,
+                                        "chunker.preserve_short": self._preserve_short(declaration),
                                         "chunker.code.strategy": "tree-sitter-v1",
                                         "chunker.code.symbol": declaration.qualified_symbol,
                                         "chunker.code.part_index": part_i,
@@ -459,6 +460,7 @@ class CodeChunker:
                                 "chunker.code.declaration_kind": declaration.kind,
                                 "chunker.code.imports": imports,
                                 "chunker.code.language": source.language_name,
+                                "chunker.preserve_short": self._preserve_short(declaration),
                                 "chunker.code.strategy": "tree-sitter-v1",
                                 "chunker.code.symbol": declaration.qualified_symbol,
                             }
@@ -466,6 +468,23 @@ class CodeChunker:
                     )
                 )
         return tuple(drafts)
+
+    @staticmethod
+    def _preserve_short(declaration: _Declaration) -> bool:
+        """Retain meaningful root-level provenance despite leaf-size filtering."""
+        value_declarations = {
+            "assignment",
+            "const_declaration",
+            "declaration",
+            "lexical_declaration",
+            "type_alias_declaration",
+            "variable_declaration",
+        }
+        return declaration.parent_local_index is None and (
+            declaration.is_summary
+            or declaration.kind.startswith("module_")
+            or declaration.kind in value_declarations
+        )
 
     def _sources(self, document: ParsedDocument) -> tuple[_Source, ...]:
         result: list[_Source] = []

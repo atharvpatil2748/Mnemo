@@ -41,6 +41,8 @@ from mnemo.models import (
 from mnemo.registry import PluginRegistry
 from mnemo.retrieval import DenseRetriever, ParentRetriever, SparseRetriever
 from mnemo_server.app import create_app
+from mnemo_server.routers.streaming import query_stream_sse
+from mnemo_server.schemas.query import QueryRequest
 from mnemo_server.schemas.streaming import StreamEventType
 from starlette.testclient import TestClient
 
@@ -64,7 +66,7 @@ def _make_mock_chunk(doc_id: UUID, index: int = 0) -> Chunk:
 def _make_mock_engine(*, config: MnemoConfig | None = None) -> tuple[MagicMock, UUID, Chunk]:
     mock_engine = MagicMock(spec=KnowledgeEngine)
     mock_engine.state = EngineState.READY
-    mock_engine.version = "0.24.0"
+    mock_engine.version = "0.25.0"
     mock_engine.initialize = AsyncMock()
     mock_engine.shutdown = AsyncMock()
 
@@ -558,3 +560,25 @@ async def test_streaming_service_invalid_mode(streaming_setup: tuple[Any, UUID, 
         resp = await client.post("/v1/query/stream", json=query_payload)
 
     assert resp.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_sse_unexpected_error_does_not_leak_exception_details() -> None:
+    class FailingService:
+        async def stream_query(self, request: QueryRequest) -> Any:
+            if False:
+                yield request
+            raise RuntimeError("secret backend connection string")
+
+    response = await query_stream_sse(
+        QueryRequest(question="safe public error"),
+        FailingService(),  # type: ignore[arg-type]
+    )
+    chunks = [chunk async for chunk in response.body_iterator]
+    body = b"".join(
+        chunk.encode("utf-8") if isinstance(chunk, str) else chunk for chunk in chunks
+    ).decode("utf-8")
+
+    assert '"code":"internal_error"' in body
+    assert "An internal streaming error occurred" in body
+    assert "secret backend connection string" not in body

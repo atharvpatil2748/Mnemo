@@ -30,8 +30,16 @@ def test_cli_parser_subcommands() -> None:
 
     args_sse = parser.parse_args(["sse", "--host", "0.0.0.0", "--port", "9090"])
     assert args_sse.command == "sse"
-    assert args_sse.host == "0.0.0.0"
-    assert args_sse.port == 9090
+    assert args_sse.sse_host == "0.0.0.0"
+    assert args_sse.sse_port == 9090
+
+
+def test_cli_main_preserves_top_level_sse_host_and_port() -> None:
+    """Top-level transport options are not overwritten by subparser defaults."""
+    with patch("mnemo_server.mcp.cli.run_sse_server") as mock_sse:
+        assert main(["--host", "127.0.0.2", "--port", "8032", "sse"]) == 0
+    assert mock_sse.call_args.kwargs["host"] == "127.0.0.2"
+    assert mock_sse.call_args.kwargs["port"] == 8032
 
 
 def test_cli_version_flag(capsys: pytest.CaptureFixture[str]) -> None:

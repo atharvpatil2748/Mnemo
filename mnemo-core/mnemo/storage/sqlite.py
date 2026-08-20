@@ -38,6 +38,7 @@ from mnemo.models import (
     Source,
     Turn,
 )
+from mnemo.models._shared import thaw_json
 from mnemo.models.chunks import ChunkPosition, ChunkType
 from mnemo.models.documents import DocumentMetadata, DocumentVersion, DocumentVersionStatus
 from mnemo.models.final_qa_execution import (
@@ -634,7 +635,7 @@ class SQLiteStore:
                     "doi": version.metadata.doi,
                     "isbn": version.metadata.isbn,
                     "page_count": version.metadata.page_count,
-                    "metadata": dict(version.metadata.metadata),
+                    "metadata": thaw_json(version.metadata.metadata),
                 }
 
                 await db.execute(
@@ -803,6 +804,14 @@ class SQLiteStore:
                     if row[0] != str(expected_version_id):
                         raise ConflictError("Document version mismatch during deletion.")
 
+            # The title index is a contentless FTS5 projection and therefore
+            # cannot participate in SQLite foreign-key cascades. Remove its
+            # exact document rows in the same transaction as canonical data.
+            await db.execute(
+                "DELETE FROM fts_chunk_titles WHERE document_id = ?",
+                (str(document_id),),
+            )
+
             async with db.execute(
                 "DELETE FROM documents WHERE document_id = ?", (str(document_id),)
             ) as cursor:
@@ -810,7 +819,8 @@ class SQLiteStore:
 
     async def delete_document_cascade(self, document_id: UUID) -> None:
         """Atomically delete a document and all facade-owned derived records."""
-        # Due to ON DELETE CASCADE, deleting the document removes versions, chunks, sources, citations.  # noqa: E501
+        # Canonical dependents use ON DELETE CASCADE; delete_document also
+        # removes the contentless title projection transactionally.
         await self.delete_document(document_id, expected_version_id=None)
 
     # -------------------------------------------------------------------------
@@ -838,7 +848,7 @@ class SQLiteStore:
                 notebook.description,
                 _dt_to_iso(notebook.created_at),
                 _dt_to_iso(notebook.updated_at),
-                json.dumps(dict(notebook.metadata)),
+                json.dumps(thaw_json(notebook.metadata)),
             ),
         ):
             await db.commit()
@@ -1072,7 +1082,7 @@ class SQLiteStore:
                 note.origin.value,
                 _dt_to_iso(note.created_at),
                 _dt_to_iso(note.updated_at),
-                json.dumps(dict(note.metadata)),
+                json.dumps(thaw_json(note.metadata)),
             ),
         ):
             await db.commit()
@@ -1174,7 +1184,7 @@ class SQLiteStore:
                 insight.content,
                 insight.confidence,
                 _dt_to_iso(insight.created_at),
-                json.dumps(dict(insight.metadata)),
+                json.dumps(thaw_json(insight.metadata)),
             ),
         ):
             await db.commit()
@@ -1279,7 +1289,7 @@ class SQLiteStore:
                     session.title,
                     _dt_to_iso(session.created_at),
                     _dt_to_iso(session.updated_at),
-                    json.dumps(dict(session.metadata)),
+                    json.dumps(thaw_json(session.metadata)),
                 ),
             )
 
@@ -1303,7 +1313,7 @@ class SQLiteStore:
                         turn.role.value,
                         turn.content,
                         _dt_to_iso(turn.created_at),
-                        json.dumps(dict(turn.metadata)),
+                        json.dumps(thaw_json(turn.metadata)),
                     ),
                 )
 
@@ -1524,7 +1534,7 @@ class SQLiteStore:
                 turn.role.value,
                 turn.content,
                 _dt_to_iso(turn.created_at),
-                json.dumps(dict(turn.metadata)),
+                json.dumps(thaw_json(turn.metadata)),
             ),
         )
         await db.commit()
@@ -1952,7 +1962,7 @@ class SQLiteStore:
                     json.dumps(list(chunk.heading_path)),
                     chunk.parent_chunk_id,
                     json.dumps(list(chunk.sibling_ids)),
-                    json.dumps(dict(chunk.metadata)),
+                    json.dumps(thaw_json(chunk.metadata)),
                 ),
             )
 
@@ -1987,14 +1997,17 @@ class SQLiteStore:
         db = self._require_open()
 
         query = "DELETE FROM chunks WHERE document_id = ?"
+        title_query = "DELETE FROM fts_chunk_titles WHERE document_id = ?"
         params: list[Any] = [str(document_id)]
 
         if version_id is not None:
             query += " AND version_id = ?"
+            title_query += " AND version_id = ?"
             params.append(str(version_id))
 
-        async with db.execute(query, params):
-            await db.commit()
+        async with _transaction(db):
+            await db.execute(title_query, params)
+            await db.execute(query, params)
 
     # -------------------------------------------------------------------------
     # Retrieval Methods
@@ -2034,7 +2047,8 @@ class SQLiteStore:
             FROM fts_chunk_titles t
             WHERE fts_chunk_titles MATCH ?
         )
-        SELECT c.id, MAX(sparse_candidates.score) AS score,
+        , ranked_candidates AS (
+        SELECT c.id AS chunk_id, MAX(sparse_candidates.score) AS score,
                MAX(sparse_candidates.title_match) AS title_match,
                json_extract(dv.metadata, '$.title') AS document_title
         FROM sparse_candidates
@@ -2071,7 +2085,14 @@ class SQLiteStore:
             sql += " AND rvm.publication_date IS NOT NULL AND rvm.publication_date <= ?"
             params.append(filters.date_before.isoformat())
 
-        sql += " GROUP BY c.id ORDER BY score DESC, c.id ASC LIMIT ?"
+        # ADR-0053 title evidence is applied while selecting the bounded candidate
+        # set.  The outer ordering restores the ScoredChunk raw-score contract;
+        # ADR-0057 then applies the retained title-evidence tier during reranking.
+        sql += (
+            " GROUP BY c.id ORDER BY title_match DESC, score DESC, c.id ASC LIMIT ?) "
+            "SELECT chunk_id, score, title_match, document_title FROM ranked_candidates "
+            "ORDER BY score DESC, chunk_id ASC"
+        )
         params.append(top_k)
 
         async with db.execute(sql, params) as cursor:

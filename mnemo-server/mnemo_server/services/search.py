@@ -19,6 +19,7 @@ from mnemo.models import (
     RetrievalMode,
     RetrievalPlan,
     SubQuery,
+    thaw_metadata,
 )
 from mnemo.retrieval import MultiSourceRetriever, RerankingModule
 
@@ -107,7 +108,7 @@ class SearchService:
                         retrieval_mode=source_mode,
                         heading_path=list(chunk.heading_path),
                         page_number=chunk.position.page_number,
-                        metadata=dict(chunk.metadata),
+                        metadata=thaw_metadata(chunk.metadata),
                     )
                 )
         else:
@@ -127,7 +128,7 @@ class SearchService:
                         retrieval_mode=source_mode,
                         heading_path=list(chunk.heading_path),
                         page_number=chunk.position.page_number,
-                        metadata=dict(chunk.metadata),
+                        metadata=thaw_metadata(chunk.metadata),
                     )
                 )
 

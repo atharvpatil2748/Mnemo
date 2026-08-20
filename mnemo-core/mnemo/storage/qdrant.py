@@ -37,6 +37,7 @@ from mnemo.models import (
     Source,
     Turn,
 )
+from mnemo.models._shared import thaw_json
 
 from .retrieval_projection import RetrievalMetadataProjection
 
@@ -643,7 +644,7 @@ def _chunk_payload(
         "heading_path": list(chunk.heading_path),
         "parent_chunk_id": chunk.parent_chunk_id,
         "sibling_ids": list(chunk.sibling_ids),
-        "metadata": dict(chunk.metadata),
+        "metadata": thaw_json(chunk.metadata),
     }
     if projection is not None:
         payload.update(projection.payload())

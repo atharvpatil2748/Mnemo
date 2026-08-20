@@ -105,6 +105,7 @@ def test_single_paragraph(parser: MarkdownParser, metadata: FileMetadata) -> Non
     assert len(result.blocks) == 1
     assert isinstance(result.blocks[0], RawTextBlock)
     assert result.blocks[0].text == "Hello world."
+    assert result.metadata.title == "test.md"
 
 
 def test_multiple_paragraphs(parser: MarkdownParser, metadata: FileMetadata) -> None:

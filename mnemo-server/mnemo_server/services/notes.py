@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 
 from mnemo.engine import KnowledgeEngine
 from mnemo.interfaces import ContractValidationError, NotFoundError
-from mnemo.models._shared import FrozenMetadata
+from mnemo.models import FrozenMetadata, thaw_metadata
 from mnemo.models.notebook import Note
 
 from ..schemas.common import PageResponse
@@ -48,7 +48,7 @@ class NoteService:
                 origin=n.origin,
                 created_at=n.created_at,
                 updated_at=n.updated_at,
-                metadata=dict(n.metadata),
+                metadata=thaw_metadata(n.metadata),
             )
             for n in page.items
         ]
@@ -85,7 +85,7 @@ class NoteService:
             origin=note.origin,
             created_at=note.created_at,
             updated_at=note.updated_at,
-            metadata=dict(note.metadata),
+            metadata=thaw_metadata(note.metadata),
         )
 
     async def get_note(
@@ -110,7 +110,7 @@ class NoteService:
             origin=note.origin,
             created_at=note.created_at,
             updated_at=note.updated_at,
-            metadata=dict(note.metadata),
+            metadata=thaw_metadata(note.metadata),
         )
 
     async def update_note(
@@ -154,7 +154,7 @@ class NoteService:
             origin=updated_note.origin,
             created_at=updated_note.created_at,
             updated_at=updated_note.updated_at,
-            metadata=dict(updated_note.metadata),
+            metadata=thaw_metadata(updated_note.metadata),
         )
 
     async def delete_note(

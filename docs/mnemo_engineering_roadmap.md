@@ -134,8 +134,9 @@ have distinct, tested contracts.
 
 ### Phase 8 — MCP Server
 **Duration:** Weeks 28–30  
-**Status:** Complete and certified at v0.23.0 (Milestone M8); verified through native Antigravity MCP integration and full Golden Corpus test suite  
-**Goal:** MCP server is operational in both stdio and SSE modes. All six defined tools (`query_notebook`, `search_all_notebooks`, `list_notebooks`, `get_notebook_summary`, `get_source_insights`, `get_timeline`) pass the MCP specification test suite and native Antigravity tool discovery/execution.
+**Status:** Complete and certified at v0.25.0 (Milestone M8); verified through native MCP stdio/SSE integration and the 15-document Golden Corpus test suite
+
+**Goal:** MCP server is operational in both stdio and SSE modes. All six defined tools (`query_notebook`, `search_all_notebooks`, `list_notebooks`, `get_notebook_summary`, `get_source_insights`, `get_timeline`) pass the MCP specification suite and live client discovery/execution.
 
 ---
 
@@ -395,6 +396,8 @@ have distinct, tested contracts.
 | ✅ Implement `PlainTextParser` | Line-based splitting, paragraph detection | — | Low | 3.1 |
 | ✅ Implement `JSONParser` | Flatten JSON to text with key context | — | Low | 3.1 |
 | ✅ Implement `CSVParser` | Treat each row as a TextBlock with header context | — | Low | 3.1 |
+| ✅ Implement `PPTXParser` | Preserve physical slide boundaries and slide metadata | — | Medium | 3.1 |
+| ✅ Implement `XLSXParser` | Read-only sheet parsing with row-safe table partitions | — | Medium | 3.1 |
 
 **Module 3.7 — Cleaner**
 
@@ -2160,7 +2163,7 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - ✅ `DOCXParser`
 - ✅ `MarkdownParser` (AST-based)
 - ✅ `HTMLParser` + boilerplate removal
-- ✅ `PlainTextParser`, `JSONParser`, `CSVParser`
+- ✅ `PlainTextParser`, `JSONParser`, `CSVParser`, `PPTXParser`, `XLSXParser`
 - ✅ `DocumentCleaner` (unicode, whitespace, hyphenation, language detection)
 - ✅ Rule-based `DocType` classifier
 - ⏩ LLM-assisted classifier (optional future orchestration enhancement)

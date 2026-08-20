@@ -41,8 +41,24 @@ from mnemo_server.mcp.tools import execute_mcp_tool, get_mcp_tools
 GOLDEN_DB_PATH = Path("data/manual-gita-qa/mnemo.db").resolve()
 GOLDEN_FILES_PATH = Path("data/manual-gita-qa/files").resolve()
 GOLDEN_NOTEBOOK_ID = UUID("d83b0c9e-5813-56ed-a03e-c7adc2f2241e")
-GOLDEN_SOURCE_ID = UUID("682c406a-1f83-5187-a5ae-84878a5fb7c5")
-GOLDEN_DOC_ID = UUID("d8ef0c53-8596-5b6d-b250-da5d91d3a20c")
+GITA_TITLE = "Bhagavad-gita As It Is with pics!"
+
+
+async def _gita_identity(engine: KnowledgeEngine) -> tuple[UUID, UUID]:
+    """Resolve the current production identities instead of pinning runtime UUIDs."""
+    sources = await engine.storage.list_sources(GOLDEN_NOTEBOOK_ID, 100, None)
+    for source in sources.items:
+        document = await engine.storage.get_document(source.document_id)
+        if document is None:
+            continue
+        current = next(
+            version
+            for version in document.versions
+            if version.version_id == document.current_version_id
+        )
+        if current.metadata.title == GITA_TITLE:
+            return source.source_id, document.document_id
+    raise AssertionError(f"Golden Corpus source titled {GITA_TITLE!r} was not found")
 
 
 class _GoldenRetrievalPlugin:
@@ -227,6 +243,7 @@ async def test_mcp_golden_corpus_list_notebooks() -> None:
 async def test_mcp_golden_corpus_get_notebook_summary() -> None:
     """Verify get_notebook_summary returns source inventory with correct Golden document title."""
     async with open_golden_engine() as golden_engine:
+        source_id, document_id = await _gita_identity(golden_engine)
         contents = await execute_mcp_tool(
             golden_engine, "get_notebook_summary", {"notebook_id": str(GOLDEN_NOTEBOOK_ID)}
         )
@@ -235,24 +252,25 @@ async def test_mcp_golden_corpus_get_notebook_summary() -> None:
 
         assert data["notebook_id"] == str(GOLDEN_NOTEBOOK_ID)
         assert len(data["sources"]) >= 1
-        gita_source = next(s for s in data["sources"] if s["source_id"] == str(GOLDEN_SOURCE_ID))
-        assert gita_source["document_id"] == str(GOLDEN_DOC_ID)
-        assert gita_source["title"] == "Bhagavad-gita As It Is with pics!"
+        gita_source = next(s for s in data["sources"] if s["source_id"] == str(source_id))
+        assert gita_source["document_id"] == str(document_id)
+        assert gita_source["title"] == GITA_TITLE
 
 
 @pytest.mark.anyio
 async def test_mcp_golden_corpus_get_source_insights() -> None:
     """Verify get_source_insights for the Golden Corpus source."""
     async with open_golden_engine() as golden_engine:
+        source_id, _ = await _gita_identity(golden_engine)
         contents = await execute_mcp_tool(
             golden_engine,
             "get_source_insights",
-            {"source_id": str(GOLDEN_SOURCE_ID), "limit": 10},
+            {"source_id": str(source_id), "limit": 10},
         )
         assert len(contents) == 1
         data = json.loads(contents[0].text)
 
-        assert data["source_id"] == str(GOLDEN_SOURCE_ID)
+        assert data["source_id"] == str(source_id)
         assert data["notebook_id"] == str(GOLDEN_NOTEBOOK_ID)
         assert isinstance(data["insights"], list)
 
@@ -277,6 +295,7 @@ async def test_mcp_golden_corpus_get_timeline() -> None:
 async def test_mcp_golden_corpus_search_factual() -> None:
     """Verify search_all_notebooks finds exact Bhagavad Gita passages on Karma-yoga."""
     async with open_golden_engine() as golden_engine:
+        _, document_id = await _gita_identity(golden_engine)
         contents = await execute_mcp_tool(
             golden_engine,
             "search_all_notebooks",
@@ -291,7 +310,7 @@ async def test_mcp_golden_corpus_search_factual() -> None:
 
         assert len(data["results"]) > 0
         top_result = data["results"][0]
-        assert top_result["document_id"] == str(GOLDEN_DOC_ID)
+        assert top_result["document_id"] == str(document_id)
         assert (
             "CHAPTER THREE" in top_result["heading_path"]
             or "CHAPTER TWO" in top_result["heading_path"]

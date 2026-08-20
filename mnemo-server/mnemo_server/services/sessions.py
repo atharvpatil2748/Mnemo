@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 
 from mnemo.engine import KnowledgeEngine
 from mnemo.interfaces import ContractValidationError, NotFoundError
-from mnemo.models._shared import FrozenMetadata
+from mnemo.models import FrozenMetadata, thaw_metadata
 from mnemo.models.notebook import Session, Turn
 
 from ..schemas.common import PageResponse
@@ -53,7 +53,7 @@ class SessionService:
                 title=s.title,
                 created_at=s.created_at,
                 updated_at=s.updated_at,
-                metadata=dict(s.metadata),
+                metadata=thaw_metadata(s.metadata),
             )
             for s in page.items
         ]
@@ -87,7 +87,7 @@ class SessionService:
             title=session.title,
             created_at=session.created_at,
             updated_at=session.updated_at,
-            metadata=dict(session.metadata),
+            metadata=thaw_metadata(session.metadata),
         )
 
     async def get_session(
@@ -131,7 +131,7 @@ class SessionService:
                     role=turn.role,
                     content=turn.content,
                     created_at=turn.created_at,
-                    metadata=dict(turn.metadata),
+                    metadata=thaw_metadata(turn.metadata),
                     citations=citations_dto,
                 )
             )
@@ -142,7 +142,7 @@ class SessionService:
             title=session.title,
             created_at=session.created_at,
             updated_at=session.updated_at,
-            metadata=dict(session.metadata),
+            metadata=thaw_metadata(session.metadata),
             turns=turns_response,
         )
 
@@ -189,7 +189,7 @@ class SessionService:
             role=turn.role,
             content=turn.content,
             created_at=turn.created_at,
-            metadata=dict(turn.metadata),
+            metadata=thaw_metadata(turn.metadata),
             citations=[],
         )
 

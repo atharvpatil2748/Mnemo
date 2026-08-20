@@ -312,6 +312,29 @@ def test_module_level_statements_are_retained_with_declarations() -> None:
     assert "// startup" in text
 
 
+def test_dispatcher_preserves_short_root_provenance_but_not_import_chunks() -> None:
+    source = (
+        '"""Module API."""\n'
+        "import os\n"
+        "# configured logger\n"
+        "LOGGER = os.getenv('LOGGER')\n\n"
+        "def execute(first, second, third, fourth, fifth):\n"
+        "    return first + second + third + fourth + fifth\n"
+    )
+    document = _document(CodeBlock(ordinal=0, code=source, code_language="python"))
+
+    chunks = ChunkerDispatcher(_registry(CodeChunker()), WordCounter()).dispatch(
+        document, _context(document, target=100, maximum=200)
+    )
+
+    text = "\n".join(chunk.text for chunk in chunks)
+    assert '"""Module API."""' in text
+    assert "# configured logger" in text
+    assert "LOGGER = os.getenv('LOGGER')" in text
+    assert "import os" not in {chunk.text for chunk in chunks}
+    assert all(chunk.metadata["chunker.code.imports"] == ("import os",) for chunk in chunks)
+
+
 def test_duplicate_canonical_identity_input_fails_closed() -> None:
     source = "def same():\n    return 1\n\ndef same():\n    return 1"
     document = _document(CodeBlock(ordinal=0, code=source, code_language="python"))

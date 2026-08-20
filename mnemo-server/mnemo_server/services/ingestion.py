@@ -34,6 +34,7 @@ from mnemo.models import (
     DocumentVersionStatus,
     FrozenMetadata,
     Source,
+    thaw_metadata,
 )
 from mnemo.parsers import ParserRouter
 
@@ -163,7 +164,7 @@ class IngestionService:
             guessed_mime, _ = mimetypes.guess_type(filename)
             mime_type = guessed_mime or "application/octet-stream"
             metadata: dict[str, Any] = (
-                dict(parsed_doc.metadata.metadata) if parsed_doc is not None else {}
+                thaw_metadata(parsed_doc.metadata.metadata) if parsed_doc is not None else {}
             )
 
             return SourceResponse(
@@ -250,7 +251,7 @@ class IngestionService:
             )
             await self._engine.storage.upsert_source(source)
 
-            metadata = dict(parsed_doc.metadata.metadata)
+            metadata = thaw_metadata(parsed_doc.metadata.metadata)
             guessed_mime, _ = mimetypes.guess_type(filename)
             mime_type = guessed_mime or "application/octet-stream"
 
@@ -321,7 +322,9 @@ class IngestionService:
 
             content_hash = doc.current_hash if doc else ""
             doc_type = parsed_doc.doc_type.value if parsed_doc else "generic"
-            metadata: dict[str, Any] = dict(parsed_doc.metadata.metadata) if parsed_doc else {}
+            metadata: dict[str, Any] = (
+                thaw_metadata(parsed_doc.metadata.metadata) if parsed_doc else {}
+            )
             filename = str(metadata.get("filename", "source_file"))
             guessed_mime, _ = mimetypes.guess_type(filename)
             mime_type = guessed_mime or "application/octet-stream"
@@ -374,7 +377,7 @@ class IngestionService:
         content_hash = doc.current_hash
         doc_type = parsed_doc.doc_type.value if parsed_doc else "generic"
         status = doc.status.value
-        metadata: dict[str, Any] = dict(parsed_doc.metadata.metadata) if parsed_doc else {}
+        metadata: dict[str, Any] = thaw_metadata(parsed_doc.metadata.metadata) if parsed_doc else {}
         filename = str(metadata.get("filename", "source_file"))
         guessed_mime, _ = mimetypes.guess_type(filename)
         mime_type = guessed_mime or "application/octet-stream"

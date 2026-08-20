@@ -458,6 +458,7 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
                 PDFParser,
                 PlainTextParser,
                 PPTXParser,
+                XLSXParser,
             )
 
             plain_text_parser = PlainTextParser()
@@ -512,6 +513,13 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
                 ),
                 (JSONParser(), (".json", "application/json")),
                 (CSVParser(), (".csv", ".tsv", "text/csv", "text/tab-separated-values")),
+                (
+                    XLSXParser(),
+                    (
+                        ".xlsx",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    ),
+                ),
             )
             for parser, slots in parsers:
                 for slot in slots:
@@ -558,10 +566,15 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
             return ("embedding",)
 
         def register(self, registry: PluginRegistry) -> None:
+            from mnemo.embeddings.cached import CachedEmbeddingProvider
             from mnemo.embeddings.ollama import OllamaEmbedder
+            from mnemo.storage.cache import SQLiteEmbeddingCache
 
             ollama = OllamaEmbedder(config.embedding)
-            registry.register_embedding_provider("primary", ollama, priority=0)
+            cache = SQLiteEmbeddingCache(config.storage.sqlite.path.parent / "embedding-cache.db")
+            cached = CachedEmbeddingProvider(ollama, cache)
+            registry.register_embedding_provider("primary", cached, priority=0)
+            registry.register_startup_hook(cache.initialize)
             registry.register_startup_hook(ollama.initialize)
 
     class CoreLLMPlugin:

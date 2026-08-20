@@ -415,6 +415,34 @@ def test_put_get_parsed_document_round_trip(
     assert len(result.blocks) == len(minimal_parsed_document.blocks)
 
 
+def test_put_get_parsed_document_round_trips_nested_metadata(
+    open_store: FilesystemBlobStore,
+    version_id: UUID,
+    content_hash: str,
+) -> None:
+    """Recursively frozen parser provenance remains JSON-safe and exact."""
+    metadata = FrozenMetadata(
+        {
+            "parser.markdown.links": ({"target": "chapter.md", "label": "Chapter"},),
+            "parser.markdown.list": {
+                "ordered": False,
+                "items": ({"depth": 0, "text": "Item"},),
+            },
+        }
+    )
+    document = ParsedDocument(
+        blocks=(TextBlock(ordinal=0, text="Item", metadata=metadata),),
+        metadata=DocumentMetadata(content_hash=content_hash, metadata=metadata),
+        language="en",
+        doc_type=DocType.MARKDOWN,
+    )
+
+    _run(open_store.put_parsed_document(version_id, document))
+    restored = _run(open_store.get_parsed_document(version_id))
+
+    assert restored == document
+
+
 def test_get_parsed_document_returns_none_for_unknown(
     open_store: FilesystemBlobStore, version_id: UUID
 ) -> None:

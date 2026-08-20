@@ -127,7 +127,9 @@ async def _handle_websocket_connection(websocket: WebSocket) -> None:
             await websocket.send_text(
                 StreamEvent(
                     event=StreamEventType.ERROR,
-                    data=StreamErrorData(code="internal_error", message=str(err)),
+                    data=StreamErrorData(
+                        code="internal_error", message="An internal streaming error occurred"
+                    ),
                 ).model_dump_json()
             )
 
@@ -165,9 +167,12 @@ async def query_stream_sse(
             )
             yield f"event: {StreamEventType.ERROR.value}\ndata: {err_event.model_dump_json()}\n\n"
         except Exception as err:
+            _LOGGER.exception("SSE query execution failed: %s", err)
             err_event = StreamEvent(
                 event=StreamEventType.ERROR,
-                data=StreamErrorData(code="internal_error", message=str(err)),
+                data=StreamErrorData(
+                    code="internal_error", message="An internal streaming error occurred"
+                ),
             )
             yield f"event: {StreamEventType.ERROR.value}\ndata: {err_event.model_dump_json()}\n\n"
 

@@ -206,6 +206,48 @@ def test_parse_tables(parser: PDFParser, base_metadata: FileMetadata) -> None:
         assert "Col1" in table.rows[0][0] or "Col2" in table.rows[0][1]
 
 
+def test_table_overlap_uses_original_text_block_area(parser: PDFParser) -> None:
+    """A slight table intersection must not suppress adjacent PDF text."""
+    text_rect = fitz.Rect(0, 0, 100, 100)
+    original = fitz.Rect(text_rect)
+
+    assert parser._overlaps_any(text_rect, [fitz.Rect(90, 0, 110, 100)]) is False
+    assert text_rect == original
+    assert parser._overlaps_any(text_rect, [fitz.Rect(40, 0, 110, 100)]) is True
+    assert text_rect == original
+
+
+def test_mixed_font_text_block_is_not_collapsed_into_heading(parser: PDFParser) -> None:
+    block = {
+        "lines": [
+            {"spans": [{"text": "Technical skills", "size": 10.0}]},
+            {"spans": [{"text": "Relevant courses", "size": 18.0}]},
+        ]
+    }
+
+    text, is_heading, _ = parser._analyze_text_block(block, median_size=10.0)
+
+    assert text == "Technical skills\nRelevant courses"
+    assert is_heading is False
+
+
+def test_table_filter_preserves_adjacent_non_table_spans(parser: PDFParser) -> None:
+    block = {
+        "lines": [
+            {
+                "spans": [
+                    {"text": "Unique introduction", "size": 10.0, "bbox": (0, 0, 80, 10)},
+                    {"text": "Duplicated table cell", "size": 10.0, "bbox": (0, 20, 80, 30)},
+                ]
+            }
+        ]
+    }
+
+    filtered = parser._without_table_spans(block, [fitz.Rect(0, 15, 100, 35)])
+
+    assert [span["text"] for span in filtered["lines"][0]["spans"]] == ["Unique introduction"]
+
+
 def test_pdf_parser_extra_metadata() -> None:
     parser = PDFParser()
     import fitz

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import math
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 
 from mnemo.interfaces import (
     DependencyUnavailableError,
@@ -19,6 +19,7 @@ from mnemo.interfaces import (
 )
 from mnemo.models import (
     Chunk,
+    FrozenMetadata,
     FusedChunkResult,
     FusionEvidence,
     RetrievalFusionResult,
@@ -34,6 +35,7 @@ RRF_K = 60
 DEFAULT_MAX_CONCURRENCY = 4
 MAX_RETRIEVAL_CONCURRENCY = 32
 MAX_GLOBAL_RESULTS = 100
+_RUNTIME_RETRIEVAL_METADATA = frozenset({"document_title", "retrieval_title_match"})
 _EFFECTIVE_MODE_ORDER = {
     RetrievalMode.DENSE: 0,
     RetrievalMode.SPARSE: 1,
@@ -322,7 +324,11 @@ def _fuse(
             existing = chunks.get(result.chunk.id)
             if existing is not None and not _same_chunk_snapshot(existing, result.chunk):
                 raise IntegrityError("equal chunk IDs contain conflicting canonical snapshots")
-            chunks[result.chunk.id] = result.chunk
+            chunks[result.chunk.id] = (
+                result.chunk
+                if existing is None
+                else _merge_runtime_retrieval_metadata(existing, result.chunk)
+            )
             evidence_by_chunk.setdefault(result.chunk.id, []).append(
                 FusionEvidence(
                     invocation_id=trace.invocation_id,
@@ -355,4 +361,37 @@ def _fuse(
 
 
 def _same_chunk_snapshot(left: Chunk, right: Chunk) -> bool:
-    return all(getattr(left, field.name) == getattr(right, field.name) for field in fields(Chunk))
+    if any(
+        getattr(left, field.name) != getattr(right, field.name)
+        for field in fields(Chunk)
+        if field.name != "metadata"
+    ):
+        return False
+    left_metadata = {
+        key: value for key, value in left.metadata.items() if key not in _RUNTIME_RETRIEVAL_METADATA
+    }
+    right_metadata = {
+        key: value
+        for key, value in right.metadata.items()
+        if key not in _RUNTIME_RETRIEVAL_METADATA
+    }
+    if left_metadata != right_metadata:
+        return False
+    left_title = left.metadata.get("document_title")
+    right_title = right.metadata.get("document_title")
+    return left_title is None or right_title is None or left_title == right_title
+
+
+def _merge_runtime_retrieval_metadata(left: Chunk, right: Chunk) -> Chunk:
+    """Merge transient retrieval evidence without mutating the canonical snapshot."""
+    metadata = dict(left.metadata)
+    right_title = right.metadata.get("document_title")
+    if "document_title" not in metadata and right_title is not None:
+        metadata["document_title"] = right_title
+    if bool(left.metadata.get("retrieval_title_match", False)) or bool(
+        right.metadata.get("retrieval_title_match", False)
+    ):
+        metadata["retrieval_title_match"] = True
+    elif "retrieval_title_match" in left.metadata or "retrieval_title_match" in right.metadata:
+        metadata["retrieval_title_match"] = False
+    return replace(left, metadata=FrozenMetadata(metadata))

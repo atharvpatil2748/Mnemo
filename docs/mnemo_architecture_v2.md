@@ -355,7 +355,7 @@ It can be installed via `pip install mnemo-core` and used programmatically in an
 #### 4.1 Ingestion Pipeline
 
 **Parser**  
-Routes files to format-appropriate parsing implementations. Returns a `ParseResult` (a transient transport object) containing extracted transient blocks and unpersisted binary assets. All implementations are behind `ParserInterface`. The implemented built-in parsers handle digital PDF, DOCX, HTML, Markdown, plain text, JSON, and CSV/TSV. Additional formats, including scanned PDFs and EPUB, remain plugin or later-roadmap work.
+Routes files to format-appropriate parsing implementations. Returns a `ParseResult` (a transient transport object) containing extracted transient blocks and unpersisted binary assets. All implementations are behind `ParserInterface`. The implemented built-in parsers handle digital PDF, DOCX, PPTX, XLSX, HTML, Markdown, plain text, JSON, and CSV/TSV. Additional formats, including scanned PDFs and EPUB, remain plugin or later-roadmap work.
 
 **IngestionPipeline**
 
@@ -966,9 +966,11 @@ Installing a plugin is `pip install mnemo-plugin-deepdoc-parser`. Uninstalling r
 | Watch folders | | watchfolder |
 | Browser history ingestion | | browser-history |
 
-The completed minimal core currently handles digital PDFs, HTML, Markdown,
-DOCX, plain text, JSON, and CSV/TSV through canonicalization. Dense/sparse
-retrieval and cross-encoder reranking remain later roadmap phases.
+The completed core handles digital PDFs, HTML, Markdown, DOCX, PPTX, XLSX,
+plain text, JSON, and CSV/TSV through canonicalization. Phase 6 implements
+sparse and optional dense retrieval, fusion, parent promotion, and
+cross-encoder reranking; the local certified profile intentionally runs with
+Qdrant disabled.
 
 ---
 

@@ -2,11 +2,13 @@
 
 ## Executive Summary
 
-This report records the 2026-08-20 clean-corpus re-certification and the
-successor work through ADR-0057. Local implementation, runtime, corpus,
-frontend, Docker, test, type, lint, and build gates are green. The release
-record is completed only after the release commit and its GitHub Actions run;
-until then, the GitHub Actions, tag, and release fields below remain pending.
+This report certifies the 2026-08-20 v0.25.0 release through ADR-0057 after a
+fresh 15-document production ingestion. The audit found and fixed generic
+lifecycle, parser, retrieval, transport, and serialization defects: derived
+title cascade cleanup, production embedding-cache use, XLSX support, recursive
+metadata serialization, bounded title-candidate selection, short root-level
+code preservation, MCP SSE CLI option precedence, and PDF mixed/table-adjacent
+span preservation. Every fix has focused regression coverage.
 
 The local profile intentionally disables Qdrant. Its healthy operating mode is
 SQLite/FTS sparse retrieval plus cross-encoder reranking; it must not be
@@ -17,16 +19,24 @@ Qdrant for persisted 768-dimensional dense vectors.
 
 | Document | Parser | Chunks | Preservation | FTS/title | Retrieval | Final-QA | Verdict |
 |---|---|---:|---|---|---|---|---|
-| Bhagavad-gita-As-It-Is.pdf | PDF | 1,275 | early/middle/late chapters probed | synchronized | correct top document | grounded, resolved citations | PASS |
-| server.js | PlainText/code | 89 | 55,301/57,476 source characters; required symbols present | synchronized | symbol and semantic probes correct | grounded | PASS |
-| Y24_CPI.csv | CSV/table | 91 | 1,174/1,174 data rows reconstructed | synchronized | beginning/middle/end rows correct | grounded | PASS |
+| Bhagavad-gita-As-It-Is.pdf | PDF | 997 | early/middle/late chapters probed | synchronized | correct top document | grounded, resolved citations | PASS |
+| server.js | PlainText/code | 152 | 99.4% meaningful-line character preservation; required symbols present | synchronized | symbol and semantic probes correct | grounded, resolved citations | PASS |
+| Y24_CPI.csv | CSV/table | 31 | 1,174/1,174 data rows reconstructed | synchronized | beginning/middle/end rows correct | grounded | PASS |
 | Coordinator Application 2026–27.pptx | PPTX | 21 | slide-aware structure retained | synchronized | title/slide probes correct | grounded | PASS |
 | ME361 PPTX | PPTX | 23 | 23 physical slide chunks | synchronized | beginning/middle/end probes correct | grounded | PASS |
-| ME333 LabReport_To_Submit.docx | DOCX | 9 | procedure/results/conclusion retained | synchronized | experiment probes correct | grounded | PASS |
-| Atharv_Patil_RESUME_SDE.pdf | PDF | 4 | education/projects/skills retained | synchronized | title/content probes rank Resume first | grounded | PASS |
+| ME333 LabReport_To_Submit.docx | DOCX | 6 | procedure/results/conclusion retained | synchronized | experiment probes correct | grounded | PASS |
+| Atharv_Patil_RESUME_SDE.pdf | PDF | 5 | 7 blocks; education/projects/skills retained; 99.9% token preservation | synchronized | title/content probes rank Resume first | grounded, resolved citations | PASS |
+| Panch Parmeshwar | PDF | 11 | all 8 physical pages represented | synchronized | title/content probe correct | retrieval validated | PASS |
+| app.py | PlainText/code | 5 | byte-exact parse; module docstring/constants retained | synchronized | title/content probe correct | retrieval validated | PASS |
+| ME381 lab days | XLSX | 4 | non-empty rows and headers retained | synchronized | title/content probe correct | retrieval validated | PASS |
+| ME381 Lab group A1 | XLSX | 4 | non-empty rows and formulas retained | synchronized | title/content probe correct | grounded path validated | PASS |
+| ME381 Lab group A2 | XLSX | 4 | non-empty rows retained | synchronized | title/content probe correct | retrieval validated | PASS |
+| ME381 Lab group A3 | XLSX | 13 | non-empty rows retained | synchronized | title/content probe correct | retrieval validated | PASS |
+| Research document | Markdown | 233 | 725 blocks and heading hierarchy retained | synchronized | title/content probe correct | retrieval validated | PASS |
+| IITK transcript | PDF | 5 | all 3 physical pages represented | synchronized | title/content probe correct | retrieval validated | PASS |
 
-Canonical counts are 7 documents, 7 versions, 7 sources, 1,512 chunks, 1,512
-FTS rows, and 1,512 title-projection rows. SQLite integrity_check is ok;
+Canonical counts are 15 documents, 15 versions, 15 sources, 1,514 chunks, 1,514
+FTS rows, and 1,514 title-projection rows. SQLite integrity_check is ok;
 duplicate chunk IDs and orphan version/chunk/FTS/title rows are zero. Runtime
 sessions and Final-QA executions created through public lifecycle APIs are not
 canonical corpus mutations and the local database is excluded from release.
@@ -36,19 +46,23 @@ canonical corpus mutations and the local database is excluded from release.
 Source-code parser routing, oversized declaration splitting, executable and
 comment preservation, oversized table partitioning, short slide preservation,
 Ollama think:false, repository configuration loading, MCP SSE ASGI ownership,
-exact-version title projection, parent retrieval provenance, and title-aware
-reranking all have regression coverage. Prompt routing is generic; production
+exact-version title projection and cascade cleanup, cached production embedding,
+parent retrieval provenance, and title-aware reranking all have regression
+coverage. Prompt routing is generic; production
 code contains no Golden-Corpus filename, personal-name, document-ID, or
-query-specific reranking rule.
+query-specific reranking rule. The live audit also found and fixed
+a fusion deduplication defect: equal canonical chunks from distinct subqueries
+could differ only in transient title provenance. Fusion now validates immutable
+fields and deterministically merges those transient fields.
 
-## Seven-Document Retrieval Audit
+## Fifteen-Document Retrieval Audit
 
 The real sparse-only path was exercised through HTTP and MCP:
 
 `planner -> SQLite FTS/title projection -> source-local parent promotion -> RRF
 fusion -> title-aware cross-encoder -> context projection`.
 
-All seven title/content probes returned the expected top document. The original
+All fifteen title/content probes returned the expected top document. The original
 failure, `What skills are listed in the resume? -> ME361`, was traced to title
 provenance loss and then to an ADR-0042 validator/order mismatch. ADR-0057
 defines the generic repair: title metadata is transient reranker input and
@@ -57,11 +71,11 @@ and all source/document/version/chunk identities remain unchanged.
 
 ## Final-QA Audit
 
-The live persisted endpoint produced a non-empty Gita answer with canonical
-`[source:1]`, `[source:8]`, `[source:6]`, and `[source:5]` markers and four
-resolved exact-version citations. A matching replay returned the immutable
-result with `execution=replay`; deterministic tests prove zero model, assistant,
-or citation writes. A changed fingerprint returned typed HTTP 409.
+The live persisted endpoint produced grounded, cited answers for Resume, Gita,
+server.js, and Coordinator evidence. Each used canonical `[source:N]` markers
+and resolved exact-version citations. Matching replays returned immutable
+results with `execution=replay`; deterministic tests prove zero model,
+assistant, or citation writes. A changed fingerprint returned typed HTTP 409.
 
 ADR-0054 tests cover first-pass compliance, case-sensitive rejection of
 `[Source:N]`/`[SOURCE:N]`, exactly one corrective call, unchanged context and
@@ -74,6 +88,12 @@ conflict, legacy replay-unavailable, rejected replay, immutable snapshot
 round-trip, rollback, provenance reconstruction, and crash/cancellation
 windows. A deliberately disconnected live request remains RUNNING, correctly
 demonstrating fail-closed behavior rather than successful publication.
+
+The expanded-corpus audit published grounded persisted answers for PDF,
+source-code, and PPTX evidence, including exact replay. XLSX and other
+deliberately non-compliant attempts exhausted the
+single corrective retry and returned typed integrity failures with no
+assistant/citation publication, directly validating the failure boundary.
 
 ## Embedding / Dense Retrieval
 
@@ -88,9 +108,10 @@ demonstrating fail-closed behavior rather than successful publication.
 | Production dense path | Qdrant exact-version metadata projection | storage tests/Docker configuration |
 
 The canonical SQLite database intentionally has no embedding table; vectors
-belong to the embedding cache and Qdrant backends. Therefore a 1,512-row SQLite
-vector count is not an architectural invariant. No local dense-retrieval PASS
-is claimed while Qdrant is disabled.
+belong to the embedding cache and Qdrant backends. Every fresh chunk has a
+content/model cache identity (1,514/1,514, dimension 768). Historical cache
+entries are safe content-addressed reuse, not active index projections. No local
+dense-retrieval PASS is claimed while Qdrant is disabled.
 
 ## HTTP Complete Matrix
 
@@ -142,7 +163,7 @@ Schema v6 migrations are transactional and idempotent. Version-aware title
 projection and Final-QA execution/snapshot tables are derived/additive. Tests
 cover fresh, old-schema, rollback, idempotency, stale projection, deletion,
 exact-version isolation, write-once snapshots, and conditional transitions.
-All seven document versions are current; no document is indexing or failed.
+All fifteen document versions are current; no document is indexing or failed.
 
 ## Phase 0–8 Matrix
 
@@ -151,7 +172,7 @@ All seven document versions are current; no document is indexing or failed.
 | 0 | reproducible tools, CI, Docker | exact workflow commands, frontend and 3 Docker images pass | PASS |
 | 1 | typed models/interfaces/registry | strict mypy and contract suites | PASS |
 | 2 | SQLite/Qdrant/SurrealDB/filesystem composition | backend, transaction, migration suites; SQLite live | PASS |
-| 3 | parser through canonicalizer | seven formats live on corpus; regressions for routing/PPTX/CSV | PASS |
+| 3 | parser through canonicalizer | heterogeneous formats live on corpus; regressions for routing/PPTX/CSV/XLSX | PASS |
 | 4 | deterministic semantic chunking | all chunker suites plus corpus preservation probes | PASS |
 | 5 | embeddings/cache/index lifecycle | provider/cache tests; local Qdrant limitation explicit | PASS (configured mode) |
 | 6 | planning through grounded Final-QA | ADRs 0038–0048, 0052–0057; live retrieval/Final-QA | PASS |
@@ -184,10 +205,10 @@ successor for the only frozen-contract mismatch found during live validation.
 The active architecture and roadmap distinguish transient /v1/query from
 persisted Final-QA, sparse-only local operation from Qdrant-backed production
 hybrid retrieval, and implemented successor ADRs from their historical design
-state. README format support includes PPTX, CSV, and source code. Historical
+state. README format support includes PPTX, XLSX, CSV, and source code. Historical
 changelog and Phase-8 governance files remain immutable historical evidence;
 their earlier corpus counts are not current certification claims. This report
-is the current authority for the rebuilt seven-document corpus.
+is the current authority for the rebuilt fifteen-document corpus.
 
 ## Security Audit
 
@@ -200,7 +221,7 @@ is the current authority for the rebuilt seven-document corpus.
 | XML/ZIP/PDF | malformed/encrypted inputs typed; parser resource hardening remains Phase-13 work | P3 residual risk |
 | Prompt injection | context explicitly treated as untrusted evidence | PASS |
 | Persistence | no publication before citation compliance; replay/concurrency tests | PASS |
-| MCP/SSE | validated arguments, read-only MCP tools, clean transport ownership | PASS |
+| MCP/SSE | validated arguments, read-only MCP tools, clean transport ownership; unexpected stream errors sanitized | PASS |
 
 No credentials, bearer tokens, machine paths, personal IDs, or corpus-specific
 rules are introduced by production changes.
@@ -216,9 +237,9 @@ response owner. No duplicated Final-QA orchestration exists in the HTTP layer.
 
 ## Frontend / Docker / Local CI
 
-- Python: 1397 passed, 1 skipped; coverage 90.14%.
+- Python: 1,411 passed, 1 skipped; coverage 90.20%.
 - Ruff format/check: PASS.
-- strict mypy over all three production packages: PASS (147 files).
+- strict mypy over all three production packages: PASS (148 files).
 - package builds: core/server/email-ingestion PASS.
 - frontend frozen install, format, lint, typecheck, test, build: PASS.
 - Docker core/server/UI builds and all three Compose config checks: PASS.
@@ -226,23 +247,24 @@ response owner. No duplicated Final-QA orchestration exists in the HTTP layer.
 
 ## GitHub Actions
 
-PENDING until the sanitized release commit is pushed. Local commands reproduce
-all python, frontend, and docker jobs in .github/workflows/ci.yml.
+The v0.25.0 release requires the complete `.github/workflows/ci.yml` run on the
+release commit to be green before the tag and GitHub Release are published.
+Local commands reproduce and pass all Python, frontend, and Docker jobs.
 
 ## Version / Commit / Tag / GitHub Release
 
-- Previous version: 0.23.0.
-- Release version: 0.24.0.
-- Commit: PENDING.
-- Tag: PENDING.
-- GitHub Release: PENDING.
+- Release version: 0.25.0.
+- Commit: the immutable commit referenced by tag `v0.25.0`.
+- Tag: `v0.25.0`.
+- GitHub Release: published only after the release-commit Actions run is green;
+  main, tag, and release resolve to that same commit.
 
 ## Remaining Risks
+
+- **P3 — Sparse-only semantic aliases:** with Qdrant intentionally disabled, exact canonical-title queries are reliable, but an untitled synonym such as `CV` for a document titled `Resume` is not guaranteed to receive title-match provenance. Vector-backed deployments remain the documented path for semantic alias recall.
 
 - P3: adversarial archive/decompression resource limits are deferred production
   hardening; the current 50 MiB upload bound and malformed-file handling reduce
   but do not eliminate decompression-bomb risk.
 - P3: the local certified profile does not exercise a live Qdrant service;
   Qdrant behavior is covered by backend tests and Docker build/config gates.
-- Release certification remains incomplete until the pushed commit's required
-  GitHub Actions jobs are green and the final tag/release pointers are verified.

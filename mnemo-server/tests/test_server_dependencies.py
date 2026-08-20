@@ -16,7 +16,7 @@ from mnemo_server.errors import register_error_handlers
 def _make_mock_engine(state: EngineState) -> MagicMock:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = state
-    engine.version = "0.24.0"
+    engine.version = "0.25.0"
     return engine
 
 
@@ -29,7 +29,7 @@ def dep_app() -> FastAPI:
     async def get_version(
         engine: Annotated[KnowledgeEngine, Depends(get_engine)],
     ) -> dict[str, str]:
-        return {"version": getattr(engine, "version", "0.24.0")}
+        return {"version": getattr(engine, "version", "0.25.0")}
 
     return app
 
@@ -42,7 +42,7 @@ async def test_get_engine_ready(dep_app: FastAPI) -> None:
     async with AsyncClient(transport=ASGITransport(app=dep_app), base_url="http://test") as client:
         resp = await client.get("/engine/version")
         assert resp.status_code == 200
-        assert resp.json() == {"version": "0.24.0"}
+        assert resp.json() == {"version": "0.25.0"}
 
 
 @pytest.mark.anyio

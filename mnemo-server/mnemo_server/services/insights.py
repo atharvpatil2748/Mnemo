@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from mnemo.engine import KnowledgeEngine
 from mnemo.interfaces import ContractValidationError, NotFoundError
+from mnemo.models import thaw_metadata
 from mnemo.models.notebook import InsightType
 
 from ..schemas.common import PageResponse
@@ -47,7 +48,7 @@ class InsightService:
                 content=ins.content,
                 created_at=ins.created_at,
                 confidence=ins.confidence,
-                metadata=dict(ins.metadata),
+                metadata=thaw_metadata(ins.metadata),
             )
             for ins in page.items
             if insight_type is None or ins.type is insight_type

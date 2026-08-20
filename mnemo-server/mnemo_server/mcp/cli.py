@@ -89,12 +89,14 @@ def create_parser() -> argparse.ArgumentParser:
     )
     sse_parser.add_argument(
         "--host",
+        dest="sse_host",
         type=str,
         default=None,
         help="Host address to bind (default: 127.0.0.1).",
     )
     sse_parser.add_argument(
         "--port",
+        dest="sse_port",
         type=int,
         default=None,
         help="Port to listen on (default: 8001).",
@@ -118,9 +120,9 @@ def main(argv: list[str] | None = None) -> int:
     elif command == "stdio" or transport == "stdio":
         selected_transport = "stdio"
 
-    raw_host = getattr(args, "host", None)
+    raw_host = getattr(args, "sse_host", None) or getattr(args, "host", None)
     host: str = str(raw_host if raw_host is not None else os.getenv("MNEMO_MCP_HOST", "127.0.0.1"))
-    raw_port = getattr(args, "port", None)
+    raw_port = getattr(args, "sse_port", None) or getattr(args, "port", None)
     port: int = int(raw_port if raw_port is not None else os.getenv("MNEMO_MCP_PORT", "8001"))
 
     config = ServerConfig(

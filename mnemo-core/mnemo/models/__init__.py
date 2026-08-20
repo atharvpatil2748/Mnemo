@@ -1,6 +1,13 @@
 """Public Module 1.1 domain model exports."""
 
-from ._shared import BoundingBox, FrozenMetadata, JSONPrimitive, JSONValue
+from ._shared import (
+    BoundingBox,
+    FrozenMetadata,
+    JSONPrimitive,
+    JSONValue,
+    thaw_json,
+    thaw_metadata,
+)
 from .answer import GenerationEvidence, GroundedAnswerResult, GroundedAnswerStatus
 from .assets import Asset
 from .blocks import (
@@ -149,4 +156,6 @@ __all__ = [
     "TurnRole",
     "final_qa_request_fingerprint",
     "stable_sigmoid",
+    "thaw_json",
+    "thaw_metadata",
 ]

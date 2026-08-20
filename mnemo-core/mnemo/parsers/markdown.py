@@ -77,7 +77,7 @@ class MarkdownParser(ParserInterfaceV1):
         except UnicodeDecodeError as exc:
             raise ContractValidationError(f"Markdown file is not valid UTF-8: {filename}") from exc
 
-        doc_meta = self._build_doc_meta(metadata)
+        doc_meta = self._build_doc_meta(metadata, filename)
 
         if not content.strip():
             return ParseResult(
@@ -316,10 +316,11 @@ class MarkdownParser(ParserInterfaceV1):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _build_doc_meta(metadata: FileMetadata) -> DocumentMetadata:
+    def _build_doc_meta(metadata: FileMetadata, filename: str) -> DocumentMetadata:
         """Construct a minimal DocumentMetadata from FileMetadata."""
         return DocumentMetadata(
             content_hash=metadata.content_hash,
+            title=filename or "Untitled",
             metadata=FrozenMetadata(dict(metadata.metadata)),
         )
 

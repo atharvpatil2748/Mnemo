@@ -7,6 +7,7 @@ from .pdf import PDFParser
 from .plain_text import PlainTextParser
 from .pptx import PPTXParser
 from .router import ParserRouter
+from .xlsx import XLSXParser
 
 __all__ = [
     "CSVParser",
@@ -18,4 +19,5 @@ __all__ = [
     "PPTXParser",
     "ParserRouter",
     "PlainTextParser",
+    "XLSXParser",
 ]

@@ -54,6 +54,7 @@ from mnemo.models import (
     TableBlock,
     TextBlock,
 )
+from mnemo.models._shared import thaw_json
 from mnemo.models.blocks import Block
 
 # ------------------------------------------------------------------
@@ -66,6 +67,7 @@ _ASSET_INDEX_SCHEMA_VERSION: int = 1
 # UUID namespace for deterministic asset_id derivation from content_hash.
 # Stable; must never change once data is on disk.
 _BLOB_NAMESPACE = uuid.UUID("7f000001-0000-4d6d-b000-000000000001")
+
 
 # MIME → file extension mapping (non-exhaustive, extensible).
 _MIME_EXTENSIONS: dict[str, str] = {
@@ -167,7 +169,7 @@ def _serialize_block(block: Block) -> dict[str, Any]:
         "ordinal": block.ordinal,
         "page_number": block.page_number,
         "language": block.language,
-        "metadata": dict(block.metadata),
+        "metadata": thaw_json(block.metadata),
     }
     if block.bounding_box is not None:
         common["bounding_box"] = list(block.bounding_box)
@@ -270,7 +272,7 @@ def _serialize_document_metadata(meta: DocumentMetadata) -> dict[str, Any]:
         "doi": meta.doi,
         "isbn": meta.isbn,
         "page_count": meta.page_count,
-        "metadata": dict(meta.metadata),
+        "metadata": thaw_json(meta.metadata),
     }
 
 

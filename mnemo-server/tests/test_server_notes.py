@@ -167,7 +167,7 @@ async def test_create_note_success(app: Any, mock_engine: MagicMock) -> None:
                 "title": "My Note",
                 "content": "Key takeaways from chapter 1",
                 "origin": "user",
-                "metadata": {"importance": "high"},
+                "metadata": {"importance": "high", "nested": {"labels": ["one", "two"]}},
             },
         )
 
@@ -177,6 +177,7 @@ async def test_create_note_success(app: Any, mock_engine: MagicMock) -> None:
     assert data["content"] == "Key takeaways from chapter 1"
     assert data["origin"] == "user"
     assert data["metadata"]["importance"] == "high"
+    assert data["metadata"]["nested"] == {"labels": ["one", "two"]}
     assert "note_id" in data
     mock_engine.storage.upsert_note.assert_awaited_once()
 

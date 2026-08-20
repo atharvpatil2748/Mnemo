@@ -192,6 +192,8 @@ def test_builtin_parser_plugin_registers_all_frozen_phase3_formats(tmp_path: Pat
         ".txt",
         ".json",
         ".csv",
+        ".xlsx",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         # Code file extensions — regression: previously unregistered, causing
         # server.js and similar files to fail with UnsupportedError in production.
         ".js",
@@ -222,6 +224,10 @@ def test_builtin_parser_plugin_registers_all_frozen_phase3_formats(tmp_path: Pat
     assert registry.resolve_chunker_v2(DocType.DOCUMENTATION) is not None
     for doc_type in DocType:
         assert registry.resolve_chunker(doc_type) is None
+
+    from mnemo.embeddings.cached import CachedEmbeddingProvider
+
+    assert isinstance(registry.resolve_embedding_provider("primary"), CachedEmbeddingProvider)
 
 
 def test_builtin_parser_plugin_code_extensions_route_to_plain_text_parser(

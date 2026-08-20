@@ -162,7 +162,10 @@ async def test_create_session_success(app: Any, mock_engine: MagicMock) -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             f"/v1/notebooks/{notebook_id}/sessions",
-            json={"title": "My New Session", "metadata": {"origin": "web"}},
+            json={
+                "title": "My New Session",
+                "metadata": {"origin": "web", "nested": {"labels": ["one", "two"]}},
+            },
         )
 
     assert response.status_code == 201
@@ -170,6 +173,7 @@ async def test_create_session_success(app: Any, mock_engine: MagicMock) -> None:
     assert data["title"] == "My New Session"
     assert data["notebook_id"] == str(notebook_id)
     assert data["metadata"]["origin"] == "web"
+    assert data["metadata"]["nested"] == {"labels": ["one", "two"]}
     assert "session_id" in data
     mock_engine.storage.upsert_session.assert_awaited_once()
 

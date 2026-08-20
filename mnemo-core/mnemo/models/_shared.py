@@ -10,6 +10,7 @@ from uuid import UUID
 
 type JSONPrimitive = str | int | float | bool | None
 type JSONValue = JSONPrimitive | tuple[JSONValue, ...] | FrozenMetadata
+type MutableJSONValue = JSONPrimitive | list[MutableJSONValue] | dict[str, MutableJSONValue]
 type BoundingBox = tuple[float, float, float, float]
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -76,6 +77,20 @@ def _freeze_json(value: object) -> JSONValue:
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
         return tuple(_freeze_json(item) for item in value)
     raise TypeError(f"unsupported metadata value type: {type(value).__name__}")
+
+
+def thaw_json(value: JSONValue) -> MutableJSONValue:
+    """Recursively convert immutable metadata into JSON-native containers."""
+    if isinstance(value, FrozenMetadata):
+        return thaw_metadata(value)
+    if isinstance(value, tuple):
+        return [thaw_json(nested) for nested in value]
+    return value
+
+
+def thaw_metadata(value: FrozenMetadata) -> dict[str, MutableJSONValue]:
+    """Recursively convert an immutable metadata object to a JSON-native object."""
+    return {key: thaw_json(nested) for key, nested in value.items()}
 
 
 def _validate_metadata_key(key: str) -> None:

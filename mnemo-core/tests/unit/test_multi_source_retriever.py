@@ -35,6 +35,7 @@ from mnemo.models import (
     Chunk,
     ChunkPosition,
     ChunkType,
+    FrozenMetadata,
     FusedChunkResult,
     FusionEvidence,
     MetadataFilter,
@@ -434,6 +435,41 @@ async def test_rrf_dedup_preserves_raw_evidence_and_exact_global_order() -> None
         (1000000.0, "sparse"),
     ]
     assert [item.global_rank for item in result.results] == [1, 2, 3]
+
+
+async def test_rrf_merges_transient_title_evidence_for_equal_canonical_chunk() -> None:
+    orchestrator, _, dense, sparse, _ = _orchestrator()
+    canonical = _chunk(1)
+    without_match = replace(
+        canonical,
+        metadata=FrozenMetadata(
+            {"document_title": "Project Portfolio", "retrieval_title_match": False}
+        ),
+    )
+    with_match = replace(
+        canonical,
+        metadata=FrozenMetadata(
+            {"document_title": "Project Portfolio", "retrieval_title_match": True}
+        ),
+    )
+    dense.results["semantic"] = (
+        ScoredChunk(chunk=without_match, score=0.9, source="dense", rank=1),
+    )
+    sparse.results["title"] = (ScoredChunk(chunk=with_match, score=9.0, source="sparse", rank=1),)
+
+    result = await orchestrator.execute(
+        _plan(
+            _subquery("semantic", RetrievalMode.DENSE),
+            _subquery("title", RetrievalMode.SPARSE),
+        ),
+        global_limit=5,
+    )
+
+    fused = result.results[0]
+    assert fused.chunk.text == canonical.text
+    assert fused.chunk.metadata["document_title"] == "Project Portfolio"
+    assert fused.chunk.metadata["retrieval_title_match"] is True
+    assert len(fused.evidence) == 2
 
 
 async def test_rrf_tie_uses_chunk_id_and_limit_applies_after_complete_fusion() -> None:
