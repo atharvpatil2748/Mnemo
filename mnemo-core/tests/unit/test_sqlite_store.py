@@ -16,11 +16,12 @@ from dataclasses import replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, TypeVar
+from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import aiosqlite
 import pytest
-from mnemo.interfaces.errors import ConflictError
+from mnemo.interfaces.errors import ConflictError, StorageError
 from mnemo.models import (
     BlockSpan,
     Chunk,
@@ -39,6 +40,7 @@ from mnemo.models import (
     FinalQAExecutionSnapshotPhase,
     FinalQAExecutionState,
     FrozenMetadata,
+    GraphEdge,
     Insight,
     InsightType,
     MetadataFilter,
@@ -477,7 +479,7 @@ def test_lifecycle(store: SQLiteStore) -> None:
     assert statuses[0].healthy is False
 
 
-def test_schema_migration_5_upgrades_v3_idempotently(tmp_path: Path) -> None:
+def test_schema_migration_15_upgrades_v3_idempotently(tmp_path: Path) -> None:
     path = tmp_path / "v3.db"
     with sqlite3.connect(path) as db:
         db.execute("CREATE TABLE schema_versions (version INTEGER PRIMARY KEY, applied_at TEXT)")
@@ -496,9 +498,44 @@ def test_schema_migration_5_upgrades_v3_idempotently(tmp_path: Path) -> None:
         execution_table = db.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='final_qa_executions'"
         ).fetchone()
-    assert version == (6,)
+    assert version == (16,)
     assert table == ("retrieval_version_metadata",)
     assert execution_table == ("final_qa_executions",)
+
+
+def test_schema_migration_7_rolls_back_completely_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import mnemo.storage.sqlite as sqlite_module
+
+    path = tmp_path / "v6.db"
+    with sqlite3.connect(path) as db:
+        db.execute("CREATE TABLE schema_versions (version INTEGER PRIMARY KEY, applied_at TEXT)")
+        db.execute("INSERT INTO schema_versions VALUES (6, '2026-08-23T00:00:00+00:00')")
+    original_statements = sqlite_module._ASSET_CATALOG_SCHEMA_STATEMENTS
+    monkeypatch.setattr(
+        sqlite_module,
+        "_ASSET_CATALOG_SCHEMA_STATEMENTS",
+        (
+            "CREATE TABLE migration_probe (value INTEGER)",
+            "THIS IS NOT VALID SQL",
+        ),
+    )
+    store = SQLiteStore(path)
+    with pytest.raises(aiosqlite.OperationalError):
+        _run(store.open())
+    with sqlite3.connect(path) as db:
+        version = db.execute("SELECT MAX(version) FROM schema_versions").fetchone()
+        probe = db.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='migration_probe'"
+        ).fetchone()
+    assert version == (6,)
+    assert probe is None
+    monkeypatch.setattr(sqlite_module, "_ASSET_CATALOG_SCHEMA_STATEMENTS", original_statements)
+    _run(store.open())
+    _run(store.close())
+    with sqlite3.connect(path) as db:
+        assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (16,)
 
 
 def test_multiple_open_close(store: SQLiteStore) -> None:
@@ -807,6 +844,61 @@ def test_chunk_crud_and_search(
     assert _run(_count_title_rows(open_store._require_open())) == 0
 
 
+def test_exact_document_chunk_reader_uses_physical_order_and_version_scope(
+    open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: datetime
+) -> None:
+    _run(open_store.upsert_document(make_doc(doc_id, ver_id, dt)))
+    later = Chunk(
+        id="b" * 64,
+        text="later",
+        document_id=doc_id,
+        version_id=ver_id,
+        chunk_type=ChunkType.PASSAGE,
+        position=ChunkPosition(section_index=1, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=2, end_ordinal=3),
+        heading_path=(),
+    )
+    earlier = replace(
+        later,
+        id="a" * 64,
+        text="earlier",
+        position=ChunkPosition(section_index=0, chunk_index_in_section=0),
+        source_span=BlockSpan(start_ordinal=0, end_ordinal=1),
+    )
+    _run(open_store.upsert_chunks((later, earlier)))
+
+    exact = _run(open_store.list_exact_document_chunks(document_id=doc_id, version_id=ver_id))
+    assert exact == (earlier, later)
+    assert _run(open_store.list_exact_document_chunks(document_id=doc_id, version_id=uuid4())) == ()
+
+
+def test_chunk_readers_support_immutable_artifacts_without_page_range_columns(
+    tmp_path: Path, doc_id: UUID, ver_id: UUID, dt: datetime
+) -> None:
+    """Legacy immutable corpus schemas remain readable without data migration."""
+    path = tmp_path / "legacy-corpus.db"
+    store = SQLiteStore(path)
+    _run(store.open())
+    _run(store.upsert_document(make_doc(doc_id, ver_id, dt)))
+    chunk = _search_chunk(doc_id, ver_id, 0, "legacy artifact")
+    _run(store.upsert_chunks((chunk,)))
+    _run(store.close())
+
+    with sqlite3.connect(path) as db:
+        db.execute("ALTER TABLE chunks DROP COLUMN position_page_start")
+        db.execute("ALTER TABLE chunks DROP COLUMN position_page_end")
+        db.commit()
+
+    legacy = SQLiteStore(path)
+    _run(legacy.open())
+    restored = _run(legacy.get_chunk(chunk.id))
+    listed = _run(legacy.list_exact_document_chunks(document_id=doc_id, version_id=ver_id))
+    _run(legacy.close())
+
+    assert restored == chunk
+    assert listed == (chunk,)
+
+
 def test_chunk_snapshot_restore_preserves_replaced_rows(
     open_store: SQLiteStore, doc_id: UUID, ver_id: UUID, dt: datetime
 ) -> None:
@@ -957,3 +1049,385 @@ def test_graph_unsupported(open_store: SQLiteStore, doc_id: UUID) -> None:
         )
     with pytest.raises(NotImplementedError):
         _run(open_store.search_dense((0.1, 0.2), MetadataFilter(), 5))
+
+    edge = GraphEdge(
+        source_id=uuid4(),
+        target_id=uuid4(),
+        relation="RELATED_TO",
+        weight=0.9,
+    )
+    with pytest.raises(NotImplementedError, match="does not store graph edges"):
+        _run(open_store.upsert_edge(edge))
+    with pytest.raises(NotImplementedError, match="does not store graph entities"):
+        _run(open_store.get_entity(uuid4()))
+    with pytest.raises(NotImplementedError, match="does not store graph entities"):
+        _run(open_store.find_entities("name", None, (doc_id,), 10))
+    with pytest.raises(NotImplementedError, match="does not store graph entities"):
+        _run(open_store.get_related_entities(uuid4(), 1, ("rel",), 10))
+    _run(open_store.delete_graph_for_document(doc_id))
+
+
+def test_sqlite_unsupported_blob_operations(open_store: SQLiteStore) -> None:
+    with pytest.raises(NotImplementedError, match="does not store assets"):
+        _run(open_store.put_asset(b"test", "text/plain", FrozenMetadata({})))
+    with pytest.raises(NotImplementedError, match="does not store assets"):
+        _run(open_store.get_asset(uuid4()))
+    with pytest.raises(NotImplementedError, match="does not store assets"):
+        _run(open_store.delete_asset(uuid4()))
+    with pytest.raises(NotImplementedError, match="does not store parsed documents"):
+        _run(open_store.put_parsed_document(uuid4(), Mock()))  # type: ignore[arg-type]
+    with pytest.raises(NotImplementedError, match="does not store parsed documents"):
+        _run(open_store.get_parsed_document(uuid4()))
+    with pytest.raises(NotImplementedError, match="does not store blob content hashes"):
+        _run(open_store.contains_hash("test-hash"))
+
+
+def test_sqlite_sparse_search_input_validation(open_store: SQLiteStore) -> None:
+    with pytest.raises(TypeError, match="query must be a string"):
+        _run(open_store.search_sparse(123, MetadataFilter(), 5))  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="query must contain searchable text"):
+        _run(open_store.search_sparse("   ", MetadataFilter(), 5))
+    with pytest.raises(TypeError, match="filters must be MetadataFilter"):
+        _run(open_store.search_sparse("text", None, 5))  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="top_k must be an integer"):
+        _run(open_store.search_sparse("text", MetadataFilter(), True))  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="top_k must be positive"):
+        _run(open_store.search_sparse("text", MetadataFilter(), 0))
+
+
+def test_sqlite_citation_and_snapshot_lifecycle(
+    open_store: SQLiteStore, dt: datetime, doc_id: UUID, ver_id: UUID
+) -> None:
+    assert _run(open_store.get_citation(uuid4())) is None
+
+    nb_id = uuid4()
+    notebook = Notebook(
+        notebook_id=nb_id,
+        title="Test Notebook",
+        created_at=dt,
+        updated_at=dt,
+    )
+    _run(open_store.upsert_notebook(notebook))
+    _run(open_store.upsert_document(make_doc(doc_id, ver_id, dt)))
+
+    session_id = uuid4()
+    turn_id = uuid4()
+    turn = Turn(
+        turn_id=turn_id,
+        session_id=session_id,
+        sequence=0,
+        role=TurnRole.USER,
+        content="Hello world",
+        created_at=dt,
+    )
+    session = Session(
+        session_id=session_id,
+        notebook_id=nb_id,
+        title="Session Title",
+        turns=(turn,),
+        created_at=dt,
+        updated_at=dt,
+    )
+    _run(open_store.upsert_session(session))
+
+    retrieved_session = _run(open_store.get_session(session_id))
+    assert retrieved_session is not None
+    assert len(retrieved_session.turns) == 1
+
+    session_page = _run(open_store.list_sessions(nb_id, limit=10, cursor=None))
+    assert len(session_page.items) == 1
+
+    turn2_id = uuid4()
+    turn2 = Turn(
+        turn_id=turn2_id,
+        session_id=session_id,
+        sequence=1,
+        role=TurnRole.ASSISTANT,
+        content="Answer",
+        created_at=dt,
+    )
+    _run(open_store.append_turn(session_id, turn2))
+
+    citation = Citation(
+        citation_id=uuid4(),
+        turn_id=turn2_id,
+        source_number=1,
+        chunk_id="a" * 64,
+        document_id=doc_id,
+        version_id=ver_id,
+        document_title="Title",
+        verbatim_quote="quote",
+        page_number=1,
+        heading_path=("Heading",),
+        created_at=dt,
+    )
+    _run(open_store.upsert_citation(citation))
+    retrieved = _run(open_store.get_citation(citation.citation_id))
+    assert retrieved is not None
+    assert retrieved.citation_id == citation.citation_id
+    assert retrieved.document_title == "Title"
+    turn_citations = _run(open_store.list_citations(citation.turn_id))
+    assert len(turn_citations) == 1
+    assert turn_citations[0].citation_id == citation.citation_id
+
+    assert _run(open_store.get_final_qa_execution(uuid4())) is None
+    assert (
+        _run(
+            open_store.get_final_qa_execution_snapshot(
+                uuid4(), FinalQAExecutionSnapshotPhase.VALIDATED
+            )
+        )
+        is None
+    )
+
+    exec_id = uuid4()
+    execution = FinalQAExecution(
+        execution_id=exec_id,
+        assistant_turn_id=turn2_id,
+        request_fingerprint="fp1",
+        notebook_id=nb_id,
+        session_id=session_id,
+        user_turn_id=turn_id,
+        contract_version="adr-0056/v1",
+        payload_schema_version=1,
+        provider="test",
+        model="test",
+        model_configuration="{}",
+        state=FinalQAExecutionState.RUNNING,
+        retry_count=0,
+        failure_classification=None,
+        created_at=dt,
+        updated_at=dt,
+    )
+    assert _run(open_store.create_final_qa_execution(execution)) is True
+    assert _run(open_store.get_final_qa_execution(turn2_id)) == execution
+
+    snapshot = FinalQAExecutionSnapshot(
+        execution_id=exec_id,
+        phase=FinalQAExecutionSnapshotPhase.VALIDATED,
+        payload_schema_version=1,
+        payload='{"status": "ok"}',
+        created_at=dt,
+    )
+    _run(open_store.put_final_qa_execution_snapshot(snapshot))
+    stored_snap = _run(
+        open_store.get_final_qa_execution_snapshot(snapshot.execution_id, snapshot.phase)
+    )
+    assert stored_snap is not None
+    assert stored_snap.execution_id == snapshot.execution_id
+
+    with pytest.raises(ConflictError, match="immutable"):
+        _run(open_store.put_final_qa_execution_snapshot(snapshot))
+
+    assert _run(open_store.delete_session(session_id)) is True
+    assert _run(open_store.get_session(session_id)) is None
+    assert _run(open_store.get_citation(citation.citation_id)) is None
+
+
+def test_sqlite_chunk_position_heading_and_section_filters(
+    open_store: SQLiteStore,
+) -> None:
+    from mnemo.models.advanced_retrieval import PositionalScopeV2, RetrievalScopeV2
+
+    nb_id = uuid4()
+    scope = RetrievalScopeV2(notebook_id=nb_id)
+    pos = PositionalScopeV2(section_indexes=(3,), heading_prefix=("Main", "Sub"))
+    sql, params = open_store._advanced_canonical_query(
+        scope=scope,
+        position=pos,
+        query="test",
+        offset=0,
+        limit=10,
+        chunk_ids=(),
+        snapshot_only=False,
+    )
+    assert "c.position_section_index IN (?)" in sql
+    assert "json_extract(c.heading_path,'$[0]')=?" in sql
+    assert "json_extract(c.heading_path,'$[1]')=?" in sql
+    assert 3 in params
+    assert "Main" in params
+    assert "Sub" in params
+
+
+def test_sqlite_unopened_store_and_health_check(tmp_path: Path) -> None:
+    store = SQLiteStore(tmp_path / "closed.db")
+    with pytest.raises(RuntimeError, match="Storage is not open"):
+        store._require_open()
+
+    health = _run(store.health_check())
+    assert len(health) == 1
+    assert health[0].healthy is False
+    assert health[0].component == "sqlite"
+
+
+def test_sqlite_migration_v3_duplicate_sources_rejected(tmp_path: Path) -> None:
+    db_path = tmp_path / "v2_dups.db"
+
+    conn = sqlite3.connect(db_path)
+    conn.executescript(
+        """
+        CREATE TABLE schema_versions (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);
+        INSERT INTO schema_versions VALUES (1, '2026-01-01');
+        INSERT INTO schema_versions VALUES (2, '2026-01-01');
+        CREATE TABLE documents (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            doc_type TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE notebooks (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE sources (
+            id TEXT PRIMARY KEY,
+            notebook_id TEXT NOT NULL,
+            document_id TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        INSERT INTO documents VALUES ('d1', 'Doc', 'BOOK', '2026-01-01', '2026-01-01');
+        INSERT INTO notebooks VALUES ('nb1', 'NB', 'Desc', '2026-01-01', '2026-01-01');
+        INSERT INTO sources VALUES ('s1', 'nb1', 'd1', '2026-01-01');
+        INSERT INTO sources VALUES ('s2', 'nb1', 'd1', '2026-01-01');
+        """
+    )
+    conn.commit()
+    conn.close()
+
+    store = SQLiteStore(db_path)
+    with pytest.raises(StorageError, match="cannot enforce unique Source membership"):
+        _run(store.open())
+
+
+def test_sqlite_notebook_source_note_insight_crud_and_pagination(
+    open_store: SQLiteStore, dt: datetime
+) -> None:
+    # 1. Notebooks with cursor
+    nb1 = Notebook(notebook_id=UUID(int=1), title="NB 1", created_at=dt, updated_at=dt)
+    nb2 = Notebook(notebook_id=UUID(int=2), title="NB 2", created_at=dt, updated_at=dt)
+    _run(open_store.upsert_notebook(nb1))
+    _run(open_store.upsert_notebook(nb2))
+
+    page_nb = _run(open_store.list_notebooks(limit=1, cursor=None))
+    assert len(page_nb.items) == 1
+    assert page_nb.next_cursor is not None
+    page_nb2 = _run(open_store.list_notebooks(limit=1, cursor=page_nb.next_cursor))
+    assert len(page_nb2.items) == 1
+
+    # 2. Document & Sources
+    doc_id, ver_id = UUID(int=10), UUID(int=11)
+    _run(open_store.upsert_document(make_doc(doc_id, ver_id, dt)))
+
+    src1 = Source(
+        source_id=UUID(int=101),
+        notebook_id=nb1.notebook_id,
+        document_id=doc_id,
+        created_at=dt,
+    )
+    src2 = Source(
+        source_id=UUID(int=102),
+        notebook_id=nb2.notebook_id,
+        document_id=doc_id,
+        created_at=dt,
+    )
+    _run(open_store.upsert_source(src1))
+    _run(open_store.upsert_source(src2))
+
+    assert _run(open_store.get_source(UUID(int=999))) is None
+    retrieved_src = _run(open_store.get_source(src1.source_id))
+    assert retrieved_src is not None
+    assert retrieved_src.source_id == src1.source_id
+
+    doc_sources = _run(open_store._list_sources_for_document(doc_id))
+    assert len(doc_sources) == 2
+    pub_doc_sources = _run(open_store.list_sources_for_document(doc_id))
+    assert len(pub_doc_sources) == 2
+    nb1_sources = _run(open_store._list_sources_for_notebook(nb1.notebook_id))
+    assert len(nb1_sources) == 1
+
+    src_page = _run(open_store.list_sources(nb1.notebook_id, limit=10, cursor=str(UUID(int=50))))
+    assert len(src_page.items) == 1
+
+    # 3. Notes
+    note1 = Note(
+        note_id=UUID(int=201),
+        notebook_id=nb1.notebook_id,
+        title="Note 1",
+        content="Content 1",
+        origin=NoteOrigin.USER,
+        created_at=dt,
+        updated_at=dt,
+    )
+    note2 = Note(
+        note_id=UUID(int=202),
+        notebook_id=nb1.notebook_id,
+        title="Note 2",
+        content="Content 2",
+        origin=NoteOrigin.GENERATED,
+        created_at=dt,
+        updated_at=dt,
+    )
+    _run(open_store.upsert_note(note1))
+    _run(open_store.upsert_note(note2))
+
+    assert _run(open_store.get_note(UUID(int=999))) is None
+    ret_note = _run(open_store.get_note(note1.note_id))
+    assert ret_note is not None
+    assert ret_note.note_id == note1.note_id
+
+    note_page = _run(open_store.list_notes(nb1.notebook_id, limit=1, cursor=None))
+    assert len(note_page.items) == 1
+    assert note_page.next_cursor is not None
+    note_page2 = _run(open_store.list_notes(nb1.notebook_id, limit=1, cursor=note_page.next_cursor))
+    assert len(note_page2.items) == 1
+
+    assert _run(open_store.delete_note(note1.note_id)) is True
+    assert _run(open_store.delete_note(note1.note_id)) is False
+
+    # 4. Insights
+    ins1 = Insight(
+        insight_id=UUID(int=301),
+        notebook_id=nb1.notebook_id,
+        source_id=src1.source_id,
+        type=InsightType.KEY_FACT,
+        content="Insight 1",
+        confidence=0.95,
+        created_at=dt,
+    )
+    ins2 = Insight(
+        insight_id=UUID(int=302),
+        notebook_id=nb1.notebook_id,
+        source_id=src1.source_id,
+        type=InsightType.CLAIM,
+        content="Insight 2",
+        confidence=0.85,
+        created_at=dt,
+    )
+    _run(open_store.upsert_insight(ins1))
+    _run(open_store.upsert_insight(ins2))
+
+    assert _run(open_store.get_insight(UUID(int=999))) is None
+    ret_ins = _run(open_store.get_insight(ins1.insight_id))
+    assert ret_ins is not None
+    assert ret_ins.insight_id == ins1.insight_id
+
+    ins_page = _run(open_store.list_insights(nb1.notebook_id, limit=1, cursor=None))
+    assert len(ins_page.items) == 1
+    assert ins_page.next_cursor is not None
+    ins_page2 = _run(
+        open_store.list_insights(nb1.notebook_id, limit=1, cursor=ins_page.next_cursor)
+    )
+    assert len(ins_page2.items) == 1
+
+    assert _run(open_store.delete_insight(ins1.insight_id)) is True
+    assert _run(open_store.delete_insight(ins1.insight_id)) is False
+
+    # 5. Delete source and notebook
+    assert _run(open_store.delete_source(src1.source_id)) is True
+    assert _run(open_store.delete_source(src1.source_id)) is False
+    assert _run(open_store.delete_notebook(nb1.notebook_id)) is True
+    assert _run(open_store.delete_notebook(nb1.notebook_id)) is False

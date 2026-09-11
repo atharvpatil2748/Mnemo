@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/governance/proposals/full-multilingual-v2/V2_ACTIVATION_READINESS_CONTRACT.proposed.json",
+  "title": "PROPOSED — Full Multilingual V2 derived readiness snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "snapshot_identity", "capability_id", "profile_fingerprint",
+    "provider_dependencies_ready", "detector_dependencies_ready",
+    "representation_dependencies_ready", "transformation_dependencies_ready",
+    "embedding_generation_ready", "sparse_generation_ready", "vector_generation_ready",
+    "vector_space_compatible", "coverage_complete", "checksums_valid",
+    "provenance_complete", "authorization_compatible", "rollback_metadata_valid",
+    "active_alias_set_atomic", "active_alias_matches_ready_set", "transport_contract_complete",
+    "transport_parity_verified", "shared_application_path_verified",
+    "pre_exposure_security_gate_passed", "generation_set", "rollback_target",
+    "transport_evidence", "v2_ready", "v2_active", "v2_exposed", "reason_codes"
+  ],
+  "properties": {
+    "schema_version": {"const": "mnemo.full-multilingual-v2-readiness/1"},
+    "snapshot_identity": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "capability_id": {"const": "multilingual_retrieval_v2"},
+    "profile_fingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "provider_dependencies_ready": {"type": "boolean"},
+    "detector_dependencies_ready": {"type": "boolean"},
+    "representation_dependencies_ready": {"type": "boolean"},
+    "transformation_dependencies_ready": {"type": "boolean"},
+    "embedding_generation_ready": {"type": "boolean"},
+    "sparse_generation_ready": {"type": "boolean"},
+    "vector_generation_ready": {"type": "boolean"},
+    "vector_space_compatible": {"type": "boolean"},
+    "coverage_complete": {"type": "boolean"},
+    "checksums_valid": {"type": "boolean"},
+    "provenance_complete": {"type": "boolean"},
+    "authorization_compatible": {"type": "boolean"},
+    "rollback_metadata_valid": {"type": "boolean"},
+    "active_alias_set_atomic": {"type": "boolean"},
+    "active_alias_matches_ready_set": {"type": "boolean"},
+    "transport_contract_complete": {"type": "boolean"},
+    "transport_parity_verified": {"type": "boolean"},
+    "shared_application_path_verified": {"type": "boolean"},
+    "pre_exposure_security_gate_passed": {"type": "boolean"},
+    "generation_set": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "capability", "generation_id", "profile_id", "provider_identity",
+          "model_identity", "configuration_digest", "vector_space_identity",
+          "state", "coverage_completeness", "item_count", "coverage_count",
+          "checksum", "coverage_checksum", "source_generation_ids",
+          "language_coverage_digest", "script_coverage_digest",
+          "representation_coverage_digest", "provenance_digest"
+        ],
+        "properties": {
+          "capability": {"enum": ["representation_derivation_v2", "language_text_v2", "multilingual_embedding_v2", "multilingual_vector_v2"]},
+          "generation_id": {"type": "string", "format": "uuid"},
+          "profile_id": {"type": "string", "minLength": 1},
+          "provider_identity": {"type": ["string", "null"]},
+          "model_identity": {"type": ["string", "null"]},
+          "configuration_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "vector_space_identity": {"type": ["string", "null"]},
+          "state": {"const": "ready"},
+          "coverage_completeness": {"const": "complete"},
+          "item_count": {"type": "integer", "minimum": 0},
+          "coverage_count": {"type": "integer", "minimum": 0},
+          "checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "coverage_checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "source_generation_ids": {
+            "type": "array", "items": {"type": "string", "format": "uuid"}, "uniqueItems": true
+          },
+          "language_coverage_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "script_coverage_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "representation_coverage_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "provenance_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      },
+      "allOf": [
+        {"contains": {"properties": {"capability": {"const": "representation_derivation_v2"}}, "required": ["capability"]}, "minContains": 1, "maxContains": 1},
+        {"contains": {"properties": {"capability": {"const": "language_text_v2"}}, "required": ["capability"]}, "minContains": 1, "maxContains": 1},
+        {"contains": {"properties": {"capability": {"const": "multilingual_embedding_v2"}}, "required": ["capability"]}, "minContains": 1, "maxContains": 1},
+        {"contains": {"properties": {"capability": {"const": "multilingual_vector_v2"}}, "required": ["capability"]}, "minContains": 1, "maxContains": 1}
+      ]
+    },
+    "rollback_target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alias_set_digest", "generation_ids", "recovery_mode", "complete", "compatible", "retained"],
+      "properties": {
+        "alias_set_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "generation_ids": {"type": "array", "items": {"type": "string", "format": "uuid"}, "uniqueItems": true},
+        "recovery_mode": {"enum": ["prior_v2_alias_set", "deactivate_v2_alias_set"]},
+        "complete": {"const": true},
+        "compatible": {"const": true},
+        "retained": {"const": true}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"recovery_mode": {"const": "prior_v2_alias_set"}}, "required": ["recovery_mode"]},
+          "then": {"properties": {"generation_ids": {"minItems": 4, "maxItems": 4}}}
+        },
+        {
+          "if": {"properties": {"recovery_mode": {"const": "deactivate_v2_alias_set"}}, "required": ["recovery_mode"]},
+          "then": {"properties": {"generation_ids": {"maxItems": 0}}}
+        }
+      ]
+    },
+    "transport_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "representation_vocabulary_digest", "http_schema_digest", "openapi_digest",
+        "mcp_schema_digest", "structured_content_schema_digest", "json_fallback_schema_digest",
+        "capability_schema_digest", "stdio_verified", "sse_verified"
+      ],
+      "properties": {
+        "representation_vocabulary_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "http_schema_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "openapi_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "mcp_schema_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "structured_content_schema_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "json_fallback_schema_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "capability_schema_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "stdio_verified": {"type": "boolean"},
+        "sse_verified": {"type": "boolean"}
+      }
+    },
+    "v2_ready": {"type": "boolean"},
+    "v2_active": {"type": "boolean"},
+    "v2_exposed": {"type": "boolean"},
+    "reason_codes": {
+      "type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"v2_ready": {"const": true}}, "required": ["v2_ready"]},
+      "then": {
+        "properties": {
+          "provider_dependencies_ready": {"const": true},
+          "detector_dependencies_ready": {"const": true},
+          "representation_dependencies_ready": {"const": true},
+          "transformation_dependencies_ready": {"const": true},
+          "embedding_generation_ready": {"const": true},
+          "sparse_generation_ready": {"const": true},
+          "vector_generation_ready": {"const": true},
+          "vector_space_compatible": {"const": true},
+          "coverage_complete": {"const": true},
+          "checksums_valid": {"const": true},
+          "provenance_complete": {"const": true},
+          "authorization_compatible": {"const": true},
+          "rollback_metadata_valid": {"const": true}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"v2_active": {"const": true}}, "required": ["v2_active"]},
+      "then": {
+        "properties": {
+          "v2_ready": {"const": true},
+          "active_alias_set_atomic": {"const": true},
+          "active_alias_matches_ready_set": {"const": true}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"v2_exposed": {"const": true}}, "required": ["v2_exposed"]},
+      "then": {
+        "properties": {
+          "v2_active": {"const": true},
+          "transport_contract_complete": {"const": true},
+          "transport_parity_verified": {"const": true},
+          "shared_application_path_verified": {"const": true},
+          "pre_exposure_security_gate_passed": {"const": true}
+        }
+      }
+    }
+  ],
+  "x-mnemo-derived-state-contract": [
+    "Phase85RuntimeV1 remains the sole lifecycle authority. This document is an immutable evidence snapshot and deterministic projection, not a mutable state machine.",
+    "V2_READY is the conjunction of every READY prerequisite encoded above. A not-required detector or transformer is represented by a configured no-op capability evidence record whose compatibility and coverage are explicit; it is never silently omitted.",
+    "V2_ACTIVE requires V2_READY plus one transactionally promoted alias set that names the exact generation set and retains a complete compatible rollback target.",
+    "V2_EXPOSED requires V2_ACTIVE plus the shared application path, canonical representation vocabulary, HTTP/OpenAPI/MCP/structured/fallback/capability schema parity, required stdio/SSE proof and the V2 pre-exposure security gate.",
+    "Behavioral verification and certification remain later ADR-0074/ADR-0070 evidence and are not implied by V2_EXPOSED."
+  ],
+  "x-mnemo-fail-closed-reasons": {
+    "missing_vector_generation": "v2_ready=false; vector_generation_missing",
+    "incomplete_embedding_generation": "v2_ready=false; embedding_generation_incomplete",
+    "stale_generation": "v2_ready=false; generation_stale",
+    "mismatched_provider_revision": "v2_ready=false; provider_identity_mismatch",
+    "mismatched_vector_space": "v2_ready=false; vector_space_mismatch",
+    "incomplete_language_coverage": "v2_ready=false; language_coverage_incomplete",
+    "incomplete_representation_coverage": "v2_ready=false; representation_coverage_incomplete",
+    "missing_sparse_projection": "v2_ready=false; sparse_generation_missing",
+    "missing_transport_contract": "v2_exposed=false; transport_contract_incomplete",
+    "failed_security_verification": "v2_exposed=false; pre_exposure_security_gate_failed"
+  }
+}

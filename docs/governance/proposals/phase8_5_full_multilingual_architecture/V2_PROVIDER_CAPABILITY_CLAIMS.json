@@ -1,0 +1,312 @@
+{
+  "artifact_digest": "bf4d25e88b982ce3f9f56f49b2e85cb20f4a8b0d6db8bc91c05644cb66133840",
+  "broader_provider_language_claim": {
+    "reason": "local model cards say multilingual but contain no governed exhaustive BCP-47 enumeration",
+    "status": "UNVERIFIED"
+  },
+  "claim_policy": "explicit_deployment_probe_only_no_marketing_expansion",
+  "claims": [
+    {
+      "claim_strength": "deployment_probe_observed_only",
+      "evidence_sources": [
+        {
+          "claim": "multilingual_not_enumerated",
+          "kind": "local_model_card",
+          "sha256": "0b81ccf9134e5874d620a86e6905062ea999e779c34eb1a7e65eaeb7fe00e450"
+        },
+        {
+          "kind": "offline_synthetic_provider_probe",
+          "scope": "en",
+          "sha256": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+        }
+      ],
+      "language": "en",
+      "lifecycle": {
+        "active": false,
+        "buildable": true,
+        "certified": false,
+        "configured": true,
+        "evaluated": false,
+        "exposed": false,
+        "implemented": true,
+        "model_supported": true,
+        "ready": false,
+        "verified": false
+      },
+      "model": "BAAI/bge-m3",
+      "operation": "query_embedding",
+      "provider": "sentence-transformers",
+      "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+      "script": "Latn"
+    },
+    {
+      "claim_strength": "deployment_probe_observed_only",
+      "evidence_sources": [
+        {
+          "claim": "multilingual_not_enumerated",
+          "kind": "local_model_card",
+          "sha256": "0b81ccf9134e5874d620a86e6905062ea999e779c34eb1a7e65eaeb7fe00e450"
+        },
+        {
+          "kind": "offline_synthetic_provider_probe",
+          "scope": "hi",
+          "sha256": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+        }
+      ],
+      "language": "hi",
+      "lifecycle": {
+        "active": false,
+        "buildable": true,
+        "certified": false,
+        "configured": true,
+        "evaluated": false,
+        "exposed": false,
+        "implemented": true,
+        "model_supported": true,
+        "ready": false,
+        "verified": false
+      },
+      "model": "BAAI/bge-m3",
+      "operation": "query_embedding",
+      "provider": "sentence-transformers",
+      "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+      "script": "Deva"
+    },
+    {
+      "claim_strength": "deployment_probe_observed_only",
+      "evidence_sources": [
+        {
+          "claim": "multilingual_not_enumerated",
+          "kind": "local_model_card",
+          "sha256": "0b81ccf9134e5874d620a86e6905062ea999e779c34eb1a7e65eaeb7fe00e450"
+        },
+        {
+          "kind": "offline_synthetic_provider_probe",
+          "scope": "mr",
+          "sha256": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+        }
+      ],
+      "language": "mr",
+      "lifecycle": {
+        "active": false,
+        "buildable": true,
+        "certified": false,
+        "configured": true,
+        "evaluated": false,
+        "exposed": false,
+        "implemented": true,
+        "model_supported": true,
+        "ready": false,
+        "verified": false
+      },
+      "model": "BAAI/bge-m3",
+      "operation": "query_embedding",
+      "provider": "sentence-transformers",
+      "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+      "script": "Deva"
+    },
+    {
+      "claim_strength": "deployment_probe_observed_only",
+      "evidence_sources": [
+        {
+          "claim": "multilingual_not_enumerated",
+          "kind": "local_model_card",
+          "sha256": "0b81ccf9134e5874d620a86e6905062ea999e779c34eb1a7e65eaeb7fe00e450"
+        },
+        {
+          "kind": "offline_synthetic_provider_probe",
+          "scope": "en",
+          "sha256": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+        }
+      ],
+      "language": "en",
+      "lifecycle": {
+        "active": false,
+        "buildable": true,
+        "certified": false,
+        "configured": true,
+        "evaluated": false,
+        "exposed": false,
+        "implemented": true,
+        "model_supported": true,
+        "ready": false,
+        "verified": false
+      },
+      "model": "BAAI/bge-m3",
+      "operation": "document_embedding",
+      "provider": "sentence-transformers",
+      "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+      "script": "Latn"
+    },
+    {
+      "claim_strength": "deployment_probe_observed_only",
+      "evidence_sources": [
+        {
+          "claim": "multilingual_not_enumerated",
+          "kind": "local_model_card",
+          "sha256": "0b81ccf9134e5874d620a86e6905062ea999e779c34eb1a7e65eaeb7fe00e450"
+        },
+        {
+          "kind": "offline_synthetic_provider_probe",
+          "scope": "hi",
+          "sha256": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+        }
+      ],
+      "language": "hi",
+      "lifecycle": {
+        "active": false,
+        "buildable": true,
+        "certified": false,
+        "configured": true,
+        "evaluated": false,
+        "exposed": false,
+        "implemented": true,
+        "model_supported": true,
+        "ready": false,
+        "verified": false
+      },
+      "model": "BAAI/bge-m3",
+      "operation": "document_embedding",
+      "provider": "sentence-transformers",
+      "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+      "script": "Deva"
+    },
+    {
+      "claim_strength": "deployment_probe_observed_only",
+      "evidence_sources": [
+        {
+          "claim": "multilingual_not_enumerated",
+          "kind": "local_model_card",
+          "sha256": "0b81ccf9134e5874d620a86e6905062ea999e779c34eb1a7e65eaeb7fe00e450"
+        },
+        {
+          "kind": "offline_synthetic_provider_probe",
+          "scope": "mr",
+          "sha256": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+        }
+      ],
+      "language": "mr",
+      "lifecycle": {
+        "active": false,
+        "buildable": true,
+        "certified": false,
+        "configured": true,
+        "evaluated": false,
+        "exposed": false,
+        "implemented": true,
+        "model_supported": true,
+        "ready": false,
+        "verified": false
+      },
+      "model": "BAAI/bge-m3",
+      "operation": "document_embedding",
+      "provider": "sentence-transformers",
+      "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+      "script": "Deva"
+    },
+    {
+      "claim_strength": "deployment_probe_observed_only",
+      "evidence_sources": [
+        {
+          "claim": "multilingual_not_enumerated",
+          "kind": "local_model_card",
+          "sha256": "c887aa6dd2598f908bf0582ca7068cc816585c7a1b6a07df305b631ede0cb174"
+        },
+        {
+          "kind": "offline_synthetic_provider_probe",
+          "scope": "en",
+          "sha256": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+        }
+      ],
+      "language": "en",
+      "lifecycle": {
+        "active": false,
+        "buildable": true,
+        "certified": false,
+        "configured": true,
+        "evaluated": false,
+        "exposed": false,
+        "implemented": true,
+        "model_supported": true,
+        "ready": false,
+        "verified": false
+      },
+      "model": "BAAI/bge-reranker-v2-m3",
+      "operation": "reranking",
+      "provider": "sentence-transformers",
+      "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+      "script": "Latn"
+    },
+    {
+      "claim_strength": "deployment_probe_observed_only",
+      "evidence_sources": [
+        {
+          "claim": "multilingual_not_enumerated",
+          "kind": "local_model_card",
+          "sha256": "c887aa6dd2598f908bf0582ca7068cc816585c7a1b6a07df305b631ede0cb174"
+        },
+        {
+          "kind": "offline_synthetic_provider_probe",
+          "scope": "hi",
+          "sha256": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+        }
+      ],
+      "language": "hi",
+      "lifecycle": {
+        "active": false,
+        "buildable": true,
+        "certified": false,
+        "configured": true,
+        "evaluated": false,
+        "exposed": false,
+        "implemented": true,
+        "model_supported": true,
+        "ready": false,
+        "verified": false
+      },
+      "model": "BAAI/bge-reranker-v2-m3",
+      "operation": "reranking",
+      "provider": "sentence-transformers",
+      "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+      "script": "Deva"
+    },
+    {
+      "claim_strength": "deployment_probe_observed_only",
+      "evidence_sources": [
+        {
+          "claim": "multilingual_not_enumerated",
+          "kind": "local_model_card",
+          "sha256": "c887aa6dd2598f908bf0582ca7068cc816585c7a1b6a07df305b631ede0cb174"
+        },
+        {
+          "kind": "offline_synthetic_provider_probe",
+          "scope": "mr",
+          "sha256": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+        }
+      ],
+      "language": "mr",
+      "lifecycle": {
+        "active": false,
+        "buildable": true,
+        "certified": false,
+        "configured": true,
+        "evaluated": false,
+        "exposed": false,
+        "implemented": true,
+        "model_supported": true,
+        "ready": false,
+        "verified": false
+      },
+      "model": "BAAI/bge-reranker-v2-m3",
+      "operation": "reranking",
+      "provider": "sentence-transformers",
+      "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+      "script": "Deva"
+    }
+  ],
+  "operational_admission_rule": "provider_claim_alone_never_admits_runtime_operation",
+  "probe_evidence_digest": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90",
+  "probe_file_sha256": "9199b0d931da71fc1a770cc2ec5b90b57ecba7b17fe7b35f2c4a1a237568f51b",
+  "profile_scope": "full_multilingual_v2_local_prebuild",
+  "schema_version": "mnemo.v2-provider-capability-claims/1"
+}

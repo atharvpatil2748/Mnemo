@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/schemas/v2-configuration-artifact.schema.json",
+  "title": "Mnemo Full Multilingual V2 governed configuration artifact",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_digest"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^mnemo\\.v2-"
+    },
+    "artifact_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": true
+}

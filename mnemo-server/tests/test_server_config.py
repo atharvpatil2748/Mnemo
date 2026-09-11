@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -84,3 +85,43 @@ def test_server_config_from_env_invalid_log_level() -> None:
         pytest.raises(ValueError, match="must be one of"),
     ):
         ServerConfig.from_env()
+
+
+def test_durable_reranker_activation_configuration_is_atomic() -> None:
+    common = {
+        "production_mode": True,
+        "auth_mode": "api-key",
+        "api_key": "test-key",
+        "delivery_cursor_secret": "x" * 32,
+        "full_multilingual_v2_enabled": True,
+        "full_multilingual_v2_model_cache": Path("models"),
+        "final_qa_operational_store_path": Path("operational.db"),
+        "mcp_stdio_principal_subject": "stdio-server",
+    }
+    with pytest.raises(ValidationError, match="both a state path and operator subject"):
+        ServerConfig(**common, reranker_activation_state_path=Path("reranker.json"))
+    config = ServerConfig(
+        **common,
+        reranker_activation_state_path=Path("reranker.json"),
+        reranker_activation_operator_subject="production-operator",
+    )
+    assert config.reranker_activation_state_path == Path("reranker.json")
+
+
+def test_durable_reranker_activation_environment_binding() -> None:
+    env = {
+        "MNEMO_SERVER_PRODUCTION_MODE": "true",
+        "MNEMO_SERVER_AUTH_MODE": "api-key",
+        "MNEMO_SERVER_API_KEY": "test-key",
+        "MNEMO_SERVER_DELIVERY_CURSOR_SECRET": "x" * 32,
+        "MNEMO_SERVER_FULL_MULTILINGUAL_V2_ENABLED": "true",
+        "MNEMO_SERVER_FULL_MULTILINGUAL_V2_MODEL_CACHE": "models",
+        "MNEMO_SERVER_FINAL_QA_OPERATIONAL_STORE_PATH": "operational.db",
+        "MNEMO_SERVER_MCP_STDIO_PRINCIPAL_SUBJECT": "stdio-server",
+        "MNEMO_SERVER_RERANKER_ACTIVATION_STATE_PATH": "reranker.json",
+        "MNEMO_SERVER_RERANKER_ACTIVATION_OPERATOR_SUBJECT": "production-operator",
+    }
+    with patch.dict(os.environ, env, clear=True):
+        config = ServerConfig.from_env()
+    assert config.reranker_activation_state_path == Path("reranker.json")
+    assert config.reranker_activation_operator_subject == "production-operator"

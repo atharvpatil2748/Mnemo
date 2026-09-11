@@ -22,6 +22,8 @@ from mnemo.config import (
 )
 from mnemo.engine import EngineState, KnowledgeEngine, _builtin_plugins
 from mnemo.interfaces import (
+    AssetCatalogStoreV1,
+    AssetRecordStoreV1,
     DependencyUnavailableError,
     EmbeddingBatch,
     EmbeddingCapabilities,
@@ -32,6 +34,7 @@ from mnemo.interfaces import (
     TokenCounterInterfaceV1,
 )
 from mnemo.models import (
+    Asset,
     DocType,
     Document,
     DocumentMetadata,
@@ -156,7 +159,36 @@ def _make_mock_engine() -> MagicMock:
     storage_mock.get_source = AsyncMock()
     storage_mock.delete_source = AsyncMock()
     storage_mock.list_sources = AsyncMock()
+    storage_mock.contains_hash = AsyncMock(return_value=False)
+
+    async def put_asset(data: bytes, mime_type: str, metadata: FrozenMetadata) -> Asset:
+        content_hash = hashlib.sha256(data).hexdigest()
+        return Asset(
+            asset_id=uuid4(),
+            mime_type=mime_type,
+            content_hash=content_hash,
+            storage_uri=f"blob://{content_hash}",
+            metadata=metadata,
+        )
+
+    storage_mock.put_asset.side_effect = put_asset
     mock_engine.storage = storage_mock
+    catalog = MagicMock(spec=AssetCatalogStoreV1)
+    catalog.register_asset_ingestion = AsyncMock()
+    catalog.get_document_binary_reference = AsyncMock()
+    catalog.list_asset_occurrences = AsyncMock(return_value=())
+
+    async def register_asset_ingestion(**kwargs: object) -> None:
+        catalog.reference = kwargs["binary_reference"]
+        catalog.occurrences = kwargs["occurrences"]
+
+    catalog.register_asset_ingestion.side_effect = register_asset_ingestion
+    catalog.get_document_binary_reference.side_effect = lambda version_id: catalog.reference
+    catalog.list_asset_occurrences.side_effect = lambda version_id: catalog.occurrences
+    mock_engine.asset_catalog = catalog
+    records = MagicMock(spec=AssetRecordStoreV1)
+    records.get_asset_record = AsyncMock()
+    mock_engine.asset_records = records
     return mock_engine
 
 
@@ -217,7 +249,6 @@ async def test_ingest_markdown_source_success(
     """Successfully ingest a new Markdown source file."""
     mock_engine.storage.get_notebook.return_value = test_notebook
     mock_engine.storage.get_document_by_content_hash.return_value = None
-    mock_engine.storage.put_asset.return_value = MagicMock()
     mock_engine.storage.put_parsed_document = AsyncMock()
     mock_engine.storage.upsert_document = AsyncMock()
     mock_engine.storage.upsert_chunks = AsyncMock()
@@ -254,7 +285,6 @@ async def test_ingest_plaintext_source_success(
     """Successfully ingest a plain text file."""
     mock_engine.storage.get_notebook.return_value = test_notebook
     mock_engine.storage.get_document_by_content_hash.return_value = None
-    mock_engine.storage.put_asset.return_value = MagicMock()
     mock_engine.storage.put_parsed_document = AsyncMock()
     mock_engine.storage.upsert_document = AsyncMock()
     mock_engine.storage.upsert_chunks = AsyncMock()
@@ -281,7 +311,6 @@ async def test_ingest_csv_source_success(
     """Successfully ingest a CSV data file."""
     mock_engine.storage.get_notebook.return_value = test_notebook
     mock_engine.storage.get_document_by_content_hash.return_value = None
-    mock_engine.storage.put_asset.return_value = MagicMock()
     mock_engine.storage.put_parsed_document = AsyncMock()
     mock_engine.storage.upsert_document = AsyncMock()
     mock_engine.storage.upsert_chunks = AsyncMock()
@@ -715,7 +744,6 @@ async def test_ingest_embedding_failure_returns_503_and_sets_failed_status(
     """When embedding fails, returns retryable 503 and transitions document to FAILED."""
     mock_engine.storage.get_notebook.return_value = test_notebook
     mock_engine.storage.get_document_by_content_hash.return_value = None
-    mock_engine.storage.put_asset.return_value = MagicMock()
     mock_engine.storage.put_parsed_document = AsyncMock()
     mock_engine.storage.upsert_document = AsyncMock()
 
@@ -777,7 +805,6 @@ async def test_ingest_markdown_when_libmagic_returns_text_plain(
     """Simulate Linux environment where libmagic detects Markdown as text/plain."""
     mock_engine.storage.get_notebook.return_value = test_notebook
     mock_engine.storage.get_document_by_content_hash.return_value = None
-    mock_engine.storage.put_asset.return_value = MagicMock()
     mock_engine.storage.put_parsed_document = AsyncMock()
     mock_engine.storage.upsert_document = AsyncMock()
     mock_engine.storage.upsert_chunks = AsyncMock()
@@ -807,7 +834,6 @@ async def test_ingest_csv_when_libmagic_returns_text_plain(
     """Simulate Linux environment where libmagic detects CSV as text/plain."""
     mock_engine.storage.get_notebook.return_value = test_notebook
     mock_engine.storage.get_document_by_content_hash.return_value = None
-    mock_engine.storage.put_asset.return_value = MagicMock()
     mock_engine.storage.put_parsed_document = AsyncMock()
     mock_engine.storage.upsert_document = AsyncMock()
     mock_engine.storage.upsert_chunks = AsyncMock()

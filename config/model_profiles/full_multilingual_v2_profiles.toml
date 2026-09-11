@@ -1,0 +1,89 @@
+schema_version = "mnemo.model-profiles/1"
+
+[profiles.full_multilingual_v2_local_prebuild]
+profile_id = "full_multilingual_v2_local_prebuild"
+version = "1.0.0"
+mode = "phase8_5"
+trust_class = "local_trusted"
+certification = "candidate"
+certification_evidence = []
+capabilities = ["full_multilingual_v2", "multilingual_embedding", "multilingual_reranker"]
+
+[profiles.full_multilingual_v2_local_prebuild.models.multilingual_embedding]
+provider = "sentence-transformers"
+model = "BAAI/bge-m3"
+revision = "5617a9f61b028005a4858fdac845db406aefb181"
+license = "mit"
+dimensions = 1024
+metric = "cosine"
+normalization = "l2"
+preprocessing = "bge-m3-query-v1"
+modalities = ["text"]
+max_batch = 32
+max_context_tokens = 8192
+
+[[profiles.full_multilingual_v2_local_prebuild.models.multilingual_embedding.language_claims]]
+language = "en"
+script = "Latn"
+operations = ["document_embedding", "query_embedding"]
+claim_source_digest = "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+
+[[profiles.full_multilingual_v2_local_prebuild.models.multilingual_embedding.language_claims]]
+language = "hi"
+script = "Deva"
+operations = ["document_embedding", "query_embedding"]
+claim_source_digest = "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+
+[[profiles.full_multilingual_v2_local_prebuild.models.multilingual_embedding.language_claims]]
+language = "mr"
+script = "Deva"
+operations = ["document_embedding", "query_embedding"]
+claim_source_digest = "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+
+[profiles.full_multilingual_v2_local_prebuild.models.multilingual_reranker]
+provider = "sentence-transformers"
+model = "BAAI/bge-reranker-v2-m3"
+revision = "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
+license = "apache-2.0"
+preprocessing = "bge-reranker-v2-m3-v1"
+modalities = ["text"]
+max_batch = 16
+max_context_tokens = 8192
+
+[[profiles.full_multilingual_v2_local_prebuild.models.multilingual_reranker.language_claims]]
+language = "en"
+script = "Latn"
+operations = ["reranking"]
+claim_source_digest = "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+
+[[profiles.full_multilingual_v2_local_prebuild.models.multilingual_reranker.language_claims]]
+language = "hi"
+script = "Deva"
+operations = ["reranking"]
+claim_source_digest = "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+
+[[profiles.full_multilingual_v2_local_prebuild.models.multilingual_reranker.language_claims]]
+language = "mr"
+script = "Deva"
+operations = ["reranking"]
+claim_source_digest = "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+
+# Preserve the repository's governed reduced-mode selections when this profile
+# document is selected by the production configuration.
+[profiles.v1_only]
+profile_id = "v1_only"
+version = "1.0.0"
+mode = "v1_only"
+trust_class = "local_trusted"
+certification = "non_certified_default"
+certification_evidence = []
+capabilities = []
+
+[profiles.disabled]
+profile_id = "disabled"
+version = "1.0.0"
+mode = "disabled"
+trust_class = "local_sandboxed"
+certification = "non_certified_default"
+certification_evidence = []
+capabilities = []

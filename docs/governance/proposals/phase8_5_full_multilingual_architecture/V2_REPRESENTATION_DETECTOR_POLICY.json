@@ -1,0 +1,35 @@
+{
+  "artifact_digest": "2e9c43d2187101f288c14d3146ddd9f4feca72cbe0dad2dd7e44a3c947e7cb98",
+  "detector_id": "provenance-and-codepoint-representation-detector-v2",
+  "filename_dispatch": false,
+  "language_inference": false,
+  "legacy_font_signature_normalization": "strip_pdf_subset_prefix_decode_pdf_name_escapes_casefold",
+  "legacy_font_signatures": [
+    {
+      "normalized_family": "kruti dev 010",
+      "representation": "legacy_font_encoded_text"
+    }
+  ],
+  "mixed_policy": "split_when_lineage_boundaries_exist_otherwise_mixed_and_fail_closed",
+  "precedence": [
+    "adjudicated_representation_metadata",
+    "evidence_lineage_kind",
+    "parser_font_metadata",
+    "codepoint_integrity",
+    "unknown"
+  ],
+  "schema_version": "mnemo.v2-representation-detector-policy/1",
+  "script_inference": false,
+  "types": [
+    "unicode_semantic_text",
+    "legacy_font_encoded_text",
+    "pdf_encoding_anomaly",
+    "ocr_text",
+    "vision_text",
+    "transliterated_text",
+    "normalized_unicode_text",
+    "mixed",
+    "unknown"
+  ],
+  "version": "1.0.0"
+}

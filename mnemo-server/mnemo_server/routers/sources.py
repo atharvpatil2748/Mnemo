@@ -83,7 +83,11 @@ async def ingest_source(
     filename = Path(file.filename or "uploaded_file").name
 
     # 3. Coordinate ingestion
-    service = IngestionService(engine=engine, token_counter=token_counter)
+    service = IngestionService(
+        engine=engine,
+        token_counter=token_counter,
+        max_asset_bytes=server_config.max_upload_bytes,
+    )
     return await service.ingest_source(
         notebook_id=notebook_id,
         filename=filename,

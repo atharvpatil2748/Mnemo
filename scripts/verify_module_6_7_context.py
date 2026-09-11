@@ -173,7 +173,7 @@ async def _run() -> dict[str, object]:
             "timestamp_utc": datetime.now(UTC).isoformat(),
             "dataset": str(DATASET.relative_to(ROOT)).replace("\\", "/"),
             "dataset_sha256": digest,
-            "module_6_6_evidence": "docs/milestone-evidence/module-6.6-reranking.json",
+            "module_6_6_evidence": "docs/evidence/historical/milestones/module-6.6-reranking.json",
             "query": rerank_result.query,
             "model_id": MODEL_ID,
             "model_revision": MODEL_REVISION,

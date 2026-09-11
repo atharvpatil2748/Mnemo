@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/schemas/v2-buildability-configuration.schema.json",
+  "title": "Full Multilingual V2 buildability configuration",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["schema_version", "policy_id", "precedence", "unknown_language", "script_to_language_inference", "artifact_digest"],
+      "properties": {"schema_version": {"const": "mnemo.v2-language-observation-policy/1"}, "unknown_language": {"const": "und"}, "script_to_language_inference": {"const": false}, "artifact_digest": {"$ref": "#/$defs/sha256"}}
+    },
+    {
+      "type": "object",
+      "required": ["schema_version", "detector_id", "unicode_version", "ranges", "language_inference", "artifact_digest"],
+      "properties": {"schema_version": {"const": "mnemo.v2-script-detector-policy/1"}, "language_inference": {"const": false}, "ranges": {"type": "object", "minProperties": 1}, "artifact_digest": {"$ref": "#/$defs/sha256"}}
+    },
+    {
+      "type": "object",
+      "required": ["schema_version", "detector_id", "types", "filename_dispatch", "language_inference", "script_inference", "artifact_digest"],
+      "properties": {"schema_version": {"const": "mnemo.v2-representation-detector-policy/1"}, "filename_dispatch": {"const": false}, "language_inference": {"const": false}, "script_inference": {"const": false}, "artifact_digest": {"$ref": "#/$defs/sha256"}}
+    },
+    {
+      "type": "object",
+      "required": ["schema_version", "corpus_documents_retained", "excluded_source_documents", "excluded_item_identity_digest", "silent_discard", "canonical_mutation", "artifact_digest"],
+      "properties": {"schema_version": {"const": "mnemo.v2-governed-coverage-limitation/1"}, "excluded_source_documents": {"const": 0}, "silent_discard": {"const": false}, "canonical_mutation": {"const": false}, "excluded_item_identity_digest": {"$ref": "#/$defs/sha256"}, "artifact_digest": {"$ref": "#/$defs/sha256"}}
+    },
+    {
+      "type": "object",
+      "required": ["schema_version", "counts", "records", "provenance_complete", "artifact_digest"],
+      "properties": {"schema_version": {"const": "mnemo.v2-language-script-representation-census/1"}, "records": {"type": "array", "minItems": 1}, "provenance_complete": {"const": true}, "artifact_digest": {"$ref": "#/$defs/sha256"}}
+    }
+  ],
+  "$defs": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+}

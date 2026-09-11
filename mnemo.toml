@@ -1,10 +1,10 @@
 [storage.filesystem]
 enabled = true
-root = "./data/files"
+root = "data/canonical_production/blobs"
 
 [storage.sqlite]
 enabled = true
-path = "./data/manual-gita-qa/mnemo.db"
+path = "scratch/phase8_5_full_multilingual_v2/build-20260831-01/mnemo.db"
 
 [storage.qdrant]
 enabled = false
@@ -23,6 +23,10 @@ database = "knowledge"
 [plugins]
 directory = "./plugins"
 
+[phase85]
+profile_file = "./config/model_profiles/full_multilingual_v2_profiles.toml"
+profile_name = "full_multilingual_v2_local_prebuild"
+
 [llm.planner]
 provider = "ollama"
 model = "gemma4:e4b"
@@ -31,7 +35,7 @@ max_context_tokens = 8192
 [llm.synthesizer]
 provider = "ollama"
 model = "gemma4:e4b"
-max_context_tokens = 16384
+max_context_tokens = 8192
 
 [llm.extractor]
 provider = "ollama"
@@ -44,10 +48,10 @@ model = "gemma4:e4b"
 max_context_tokens = 4096
 
 [embedding]
-provider = "ollama"
-model = "nomic-embed-text"
-dimensions = 768
+provider = "sentence-transformers"
+model = "BAAI/bge-m3"
+dimensions = 1024
 
 [reranker]
-provider = "sentence-transformers"
-model = "cross-encoder/ms-marco-MiniLM-L6-v2"
+provider = "v2-owned-pass-through"
+model = "no-outer-reranker"

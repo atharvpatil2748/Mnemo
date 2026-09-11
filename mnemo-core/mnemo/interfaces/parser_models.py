@@ -1,8 +1,14 @@
 """Transient transport models for parser outputs."""
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 
-from mnemo.models import DocType, DocumentMetadata
+from mnemo.models import (
+    AssetExtractionProvenance,
+    AssetLocator,
+    DocType,
+    DocumentMetadata,
+)
 from mnemo.models._shared import (
     BoundingBox,
     FrozenMetadata,
@@ -194,3 +200,101 @@ class ParseResult:
         require_non_empty(self.language, "language")
         if not isinstance(self.doc_type, DocType):
             raise TypeError("doc_type must be a DocType")
+
+
+class AssetExtractionOutcome(StrEnum):
+    """Auditable result of bounded parser-level asset discovery."""
+
+    NO_ASSETS = "no_assets"
+    COMPLETE = "complete"
+    PARTIAL = "partial"
+    UNSUPPORTED = "unsupported"
+    REJECTED = "rejected"
+
+
+class AssetOmissionReason(StrEnum):
+    """Stable reason codes for assets that could not be safely extracted."""
+
+    CORRUPT_ASSET = "corrupt_asset"
+    EXTERNAL_REFERENCE = "external_reference"
+    LIMIT_EXCEEDED = "limit_exceeded"
+    MALFORMED_RELATIONSHIP = "malformed_relationship"
+    UNSUPPORTED_MEDIA = "unsupported_media"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TransientAssetOccurrence:
+    """Pure parser observation correlated to one transient asset."""
+
+    parser_local_id: str
+    locator: AssetLocator
+    authored_alt_text: str | None
+    extraction_provenance: AssetExtractionProvenance
+
+    def __post_init__(self) -> None:
+        require_non_empty(self.parser_local_id, "parser_local_id")
+        if not isinstance(self.locator, AssetLocator):
+            raise TypeError("locator must be an AssetLocator")
+        require_optional_non_empty(self.authored_alt_text, "authored_alt_text")
+        if not isinstance(self.extraction_provenance, AssetExtractionProvenance):
+            raise TypeError("extraction_provenance must be AssetExtractionProvenance")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AssetExtractionOmission:
+    """Typed, content-free evidence that one optional asset was omitted."""
+
+    reason: AssetOmissionReason
+    ordinal: int
+    locator: AssetLocator | None = None
+    relationship_id: str | None = None
+    declared_media_type: str | None = None
+    metadata: FrozenMetadata = field(default_factory=FrozenMetadata)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.reason, AssetOmissionReason):
+            raise TypeError("reason must be an AssetOmissionReason")
+        require_non_negative(self.ordinal, "ordinal")
+        if self.locator is not None and not isinstance(self.locator, AssetLocator):
+            raise TypeError("locator must be an AssetLocator or None")
+        require_optional_non_empty(self.relationship_id, "relationship_id")
+        require_optional_non_empty(self.declared_media_type, "declared_media_type")
+        if not isinstance(self.metadata, FrozenMetadata):
+            raise TypeError("metadata must be FrozenMetadata")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ParseResultV2:
+    """Additive parser transport retaining V1 text and typed asset provenance."""
+
+    parse_result: ParseResult
+    asset_occurrences: tuple[TransientAssetOccurrence, ...]
+    omissions: tuple[AssetExtractionOmission, ...]
+    outcome: AssetExtractionOutcome
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.parse_result, ParseResult):
+            raise TypeError("parse_result must be a ParseResult")
+        require_tuple(self.asset_occurrences, "asset_occurrences")
+        require_tuple(self.omissions, "omissions")
+        if any(not isinstance(item, TransientAssetOccurrence) for item in self.asset_occurrences):
+            raise TypeError("asset_occurrences must contain TransientAssetOccurrence instances")
+        if any(not isinstance(item, AssetExtractionOmission) for item in self.omissions):
+            raise TypeError("omissions must contain AssetExtractionOmission instances")
+        if not isinstance(self.outcome, AssetExtractionOutcome):
+            raise TypeError("outcome must be an AssetExtractionOutcome")
+        asset_ids = {asset.parser_local_id for asset in self.parse_result.extracted_assets}
+        if any(item.parser_local_id not in asset_ids for item in self.asset_occurrences):
+            raise ValueError("asset occurrence references an unknown transient asset")
+        if self.outcome is AssetExtractionOutcome.COMPLETE and not self.asset_occurrences:
+            raise ValueError("COMPLETE extraction requires at least one occurrence")
+        if self.outcome is AssetExtractionOutcome.NO_ASSETS and (
+            self.asset_occurrences or self.omissions
+        ):
+            raise ValueError("NO_ASSETS extraction cannot contain occurrences or omissions")
+        if self.outcome is AssetExtractionOutcome.PARTIAL and (
+            not self.asset_occurrences or not self.omissions
+        ):
+            raise ValueError("PARTIAL extraction requires occurrences and omissions")
+        if self.outcome is AssetExtractionOutcome.REJECTED and not self.omissions:
+            raise ValueError("REJECTED extraction requires at least one omission")

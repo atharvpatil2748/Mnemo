@@ -36,6 +36,7 @@ from mnemo.interfaces.errors import (
     ConflictError,
     IntegrityError,
     LifecycleError,
+    StorageError,
 )
 from mnemo.models import (
     Asset,
@@ -460,6 +461,18 @@ def test_put_parsed_document_is_idempotent(
     _run(open_store.put_parsed_document(version_id, minimal_parsed_document))  # no error
 
 
+def test_delete_parsed_document_is_idempotent(
+    open_store: FilesystemBlobStore,
+    minimal_parsed_document: ParsedDocument,
+) -> None:
+    version_id = uuid4()
+    _run(open_store.put_parsed_document(version_id, minimal_parsed_document))
+
+    assert _run(open_store.delete_parsed_document(version_id)) is True
+    assert _run(open_store.get_parsed_document(version_id)) is None
+    assert _run(open_store.delete_parsed_document(version_id)) is False
+
+
 def test_put_parsed_document_conflict(
     open_store: FilesystemBlobStore, version_id: UUID, content_hash: str
 ) -> None:
@@ -827,3 +840,58 @@ def test_asset_id_for_hash_deterministic() -> None:
 def test_asset_id_for_hash_differs_for_different_hashes() -> None:
     """_asset_id_for_hash produces different UUIDs for different hashes."""
     assert _asset_id_for_hash("a" * 64) != _asset_id_for_hash("b" * 64)
+
+
+def test_asset_record_fails_closed_for_each_corrupt_sidecar_field(
+    open_store: FilesystemBlobStore,
+) -> None:
+    asset = _run(open_store.put_asset(b"record", "text/plain", FrozenMetadata()))
+    index = open_store._asset_index_path(asset.asset_id)
+    original = json.loads(index.read_text(encoding="utf-8"))
+    assert _run(open_store.get_asset_record(asset.asset_id)) is not None
+    assert _run(open_store.get_asset_record(uuid4())) is None
+    with pytest.raises(TypeError, match="UUID"):
+        _run(open_store.get_asset_record("bad"))  # type: ignore[arg-type]
+    cases = (
+        ({**original, "schema_version": 999}, "unsupported schema"),
+        ({**original, "asset_id": str(uuid4())}, "identity mismatch"),
+        ({**original, "content_hash": "bad"}, "is invalid"),
+        ({**original, "mime_type": ""}, "is invalid"),
+    )
+    for value, message in cases:
+        index.write_text(json.dumps(value), encoding="utf-8")
+        with pytest.raises(IntegrityError, match=message):
+            _run(open_store.get_asset_record(asset.asset_id))
+    index.write_text("{", encoding="utf-8")
+    with pytest.raises(StorageError, match="could not read asset index"):
+        _run(open_store.get_asset_record(asset.asset_id))
+
+
+def test_asset_read_and_delete_handle_missing_blob_and_corrupt_index(
+    open_store: FilesystemBlobStore,
+) -> None:
+    asset = _run(open_store.put_asset(b"payload", "application/octet-stream", FrozenMetadata()))
+    index = open_store._asset_index_path(asset.asset_id)
+    blob = open_store._blob_path(asset.content_hash, asset.mime_type)
+    blob.unlink()
+    assert _run(open_store.get_asset(asset.asset_id)) is None
+    index.write_text(json.dumps({"mime_type": asset.mime_type}), encoding="utf-8")
+    with pytest.raises(IntegrityError, match="missing content_hash"):
+        _run(open_store.get_asset(asset.asset_id))
+    index.write_text("not-json", encoding="utf-8")
+    with pytest.raises(StorageError, match="could not read asset index"):
+        _run(open_store.get_asset(asset.asset_id))
+    with pytest.raises(StorageError, match="could not read asset index"):
+        _run(open_store.delete_asset(asset.asset_id))
+
+
+def test_corrupt_blob_hash_is_rejected_and_index_only_delete_succeeds(
+    open_store: FilesystemBlobStore,
+) -> None:
+    asset = _run(open_store.put_asset(b"original", "text/plain", FrozenMetadata()))
+    blob = open_store._blob_path(asset.content_hash, asset.mime_type)
+    blob.write_bytes(b"tampered")
+    with pytest.raises(IntegrityError, match="blob integrity failure"):
+        _run(open_store.get_asset(asset.asset_id))
+    blob.unlink()
+    assert _run(open_store.delete_asset(asset.asset_id)) is True

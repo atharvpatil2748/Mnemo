@@ -321,6 +321,49 @@ async def test_surreal_unsupported_methods(surreal_store: SurrealDBStore) -> Non
     with pytest.raises(NotImplementedError):
         await surreal_store.search_dense(None, None, 10)  # type: ignore
 
+    calls = (
+        surreal_store.put_parsed_document(uid, None),  # type: ignore[arg-type]
+        surreal_store.get_parsed_document(uid),
+        surreal_store.contains_hash("a" * 64),
+        surreal_store.get_document(uid),
+        surreal_store.get_document_by_content_hash("a" * 64),
+        surreal_store.list_documents(None, 1, None),
+        surreal_store.delete_document(uid, None),
+        surreal_store.upsert_notebook(None),  # type: ignore[arg-type]
+        surreal_store.get_notebook(uid),
+        surreal_store.delete_notebook(uid),
+        surreal_store.list_notebooks(1, None),
+        surreal_store.upsert_source(None),  # type: ignore[arg-type]
+        surreal_store.get_source(uid),
+        surreal_store.delete_source(uid),
+        surreal_store.list_sources(uid, 1, None),
+        surreal_store.list_sources_for_document(uid),
+        surreal_store.upsert_note(None),  # type: ignore[arg-type]
+        surreal_store.get_note(uid),
+        surreal_store.delete_note(uid),
+        surreal_store.list_notes(uid, 1, None),
+        surreal_store.upsert_insight(None),  # type: ignore[arg-type]
+        surreal_store.get_insight(uid),
+        surreal_store.delete_insight(uid),
+        surreal_store.list_insights(uid, 1, None),
+        surreal_store.upsert_session(None),  # type: ignore[arg-type]
+        surreal_store.get_session(uid),
+        surreal_store.list_sessions(uid, 1, None),
+        surreal_store.append_turn(uid, None),  # type: ignore[arg-type]
+        surreal_store.list_turns(uid, None, 1),
+        surreal_store.upsert_citation(None),  # type: ignore[arg-type]
+        surreal_store.get_citations_for_turn(uid),
+        surreal_store.delete_session(uid),
+        surreal_store.upsert_chunks(()),
+        surreal_store.get_chunk("chunk"),
+        surreal_store.delete_chunks_for_document(uid, None),
+        surreal_store.search_sparse("query", None, 1),  # type: ignore[arg-type]
+        surreal_store.delete_document_cascade(uid),
+    )
+    for call in calls:
+        with pytest.raises(NotImplementedError):
+            await call
+
 
 @pytest.mark.anyio
 async def test_surreal_disabled_behavior() -> None:
@@ -358,6 +401,9 @@ async def test_surreal_disabled_behavior() -> None:
         document_id=uuid4(),
     )
     await store.upsert_entity(entity)
+    await store.upsert_edge(
+        GraphEdge(source_id=ent_id, target_id=uuid4(), relation="ignored", weight=1.0)
+    )
     await store.delete_graph_for_document(entity.document_id)
     await store.close()
 
@@ -378,3 +424,43 @@ async def test_surreal_enabled_unopened_raises() -> None:
     ent_id = uuid4()
     with pytest.raises(RuntimeError, match="SurrealDBStore is not open"):
         await store.get_entity(ent_id)
+
+
+@pytest.mark.anyio
+async def test_surreal_graph_empty_results_zero_hops_and_idempotent_lifecycle(
+    surreal_config: SurrealDBStorageConfig, mock_surreal_client: None
+) -> None:
+    store = SurrealDBStore(config=surreal_config)
+    await store.open()
+    client = store._client
+    await store.open()
+    assert store._client is client
+    assert await store.get_related_entities(uuid4(), 0, (), 5) == ()
+
+    async def empty_query(*_args: object, **_kwargs: object) -> list[object]:
+        return []
+
+    client.query = empty_query
+    assert await store.get_entity(uuid4()) is None
+    assert await store.find_entities("absent", None, (), 5) == ()
+    assert await store.get_related_entities(uuid4(), 1, (), 5) == ()
+    await store.close()
+    await store.close()
+
+
+@pytest.mark.anyio
+async def test_surreal_https_endpoint_is_adapted_to_secure_websocket(
+    mock_surreal_client: None,
+) -> None:
+    config = SurrealDBStorageConfig(
+        enabled=True,
+        url=HttpUrl("https://example.test/rpc"),
+        username="root",
+        password="root",
+        namespace="test",
+        database="test",
+    )
+    store = SurrealDBStore(config=config)
+    await store.open()
+    assert MockSurreal.last_url == "wss://example.test"
+    await store.close()

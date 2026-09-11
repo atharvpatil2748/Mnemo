@@ -1,0 +1,144 @@
+{
+  "freeze_metadata": {
+    "corpus_name": "Phase 8.6 Format-Diverse Multilingual Evaluation Corpus",
+    "corpus_version": "1.0.0-frozen",
+    "freeze_timestamp": "2026-09-02T20:54:20.008380+00:00",
+    "freeze_status": "FROZEN",
+    "corpus_manifest_digest": "9bda0f4f79643d0791c910945ffb8c498719cd41ce5de88d04ea96572a647286",
+    "governance_rule": "DEC-P8.6-FD-01 / DEC-P8.6-FD-04",
+    "admitted_unit_scope_declaration": "Admitted units represent specifically individual authentic chapters/pages (Godan Chapter 1 and Shetkaryacha Asud Page 1). Zero claim of complete multi-chapter works is made."
+  },
+  "lifecycle_state": {
+    "corpus_lifecycle": {
+      "declared": true,
+      "implemented": true,
+      "configured": true,
+      "buildable": true,
+      "ready": true,
+      "active": false,
+      "exposed": false,
+      "evaluated": false,
+      "verified": false,
+      "certified": false
+    },
+    "downstream_processing_pipeline": {
+      "parsing": false,
+      "extraction": false,
+      "cleaning": false,
+      "normalization": false,
+      "classification": false,
+      "chunking": false,
+      "ocr": false,
+      "translation": false,
+      "representation_transformation": false,
+      "embedding": false,
+      "indexing": false,
+      "retrieval": false,
+      "qrel_generation": false,
+      "evaluation": false,
+      "model_generation": false,
+      "database_migration": false,
+      "v2_runtime_modification": false
+    }
+  },
+  "admitted_and_frozen_artifacts": [
+    {
+      "candidate_id": "CAND-FD-HI-HTML-01",
+      "artifact_path": "evaluationDataset/Phase 8.6 Format-Diverse Multilingual Evaluation Corpus/CAND-FD-HI-HTML-01-godan.html",
+      "exact_unit_identity": "Godan (Chapter 1 / गो-दान/१) — Munshi Premchand",
+      "complete_work_claim": false,
+      "byte_size": 57029,
+      "sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+      "md5": "08d496d7970608ea99537eaca3744f57",
+      "language": "hi",
+      "script": "Deva",
+      "native_format": "text/html",
+      "html_standard": "HTML5 (MediaWiki Parsoid Specs/HTML/2.8.0)",
+      "parser_family_intended": "HTMLParser (ParserInterfaceV2)",
+      "provenance_endpoint": "https://hi.wikisource.org/w/rest.php/v1/page/%E0%A4%97%E0%A5%8B%E0%A4%A6%E0%A4%BE%E0%A4%A8%2F_%E0%A4%AD%E0%A4%BE%E0%A4%97_1/html",
+      "source_portal": "https://hi.wikisource.org/wiki/गोदान/_भाग_1",
+      "license": "Public Domain / CC BY-SA 4.0",
+      "forensics": {
+        "extracted_text_chars": 15473,
+        "devanagari_chars": 11817,
+        "devanagari_ratio": 0.7637,
+        "latin_chars": 0,
+        "latin_ratio": 0.0,
+        "word_count": 3210,
+        "paragraph_count": 56,
+        "parser_smoke_test_blocks": 55
+      },
+      "governance_status": {
+        "authorized": true,
+        "acquired": true,
+        "forensically_verified": true,
+        "admitted": true,
+        "frozen": true
+      }
+    },
+    {
+      "candidate_id": "CAND-FD-MR-HTML-01",
+      "artifact_path": "evaluationDataset/Phase 8.6 Format-Diverse Multilingual Evaluation Corpus/CAND-FD-MR-HTML-01-shetkaryacha-asud.html",
+      "exact_unit_identity": "Shetkaryacha Asud (Page 1 / शेतकऱ्याचा असूड/पान १) — Mahatma Jotirao Phule",
+      "complete_work_claim": false,
+      "byte_size": 57087,
+      "sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+      "md5": "1e06ff2c840a1d55934d22a6adcbecc2",
+      "language": "mr",
+      "script": "Deva",
+      "native_format": "text/html",
+      "html_standard": "HTML5 (MediaWiki Parsoid Specs/HTML/2.8.0)",
+      "parser_family_intended": "HTMLParser (ParserInterfaceV2)",
+      "provenance_endpoint": "https://mr.wikisource.org/w/rest.php/v1/page/%E0%A4%B6%E0%A5%87%E0%A4%A4%E0%A4%95%E0%A4%B1%E0%A5%8D%E0%A4%AF%E0%A4%BE%E0%A4%9A%E0%A4%BE_%E0%A4%85%E0%A4%B8%E0%A5%82%E0%A4%A1%2F%E0%A4%AA%E0%A4%BE%E0%A4%A8_%E0%A5%A7/html",
+      "source_portal": "https://mr.wikisource.org/wiki/शेतकऱ्याचा_असूड/पान_१",
+      "license": "Public Domain / CC BY-SA 4.0",
+      "forensics": {
+        "extracted_text_chars": 18227,
+        "devanagari_chars": 15524,
+        "devanagari_ratio": 0.8517,
+        "latin_chars": 0,
+        "latin_ratio": 0.0,
+        "word_count": 2369,
+        "paragraph_count": 10,
+        "parser_smoke_test_blocks": 11
+      },
+      "governance_status": {
+        "authorized": true,
+        "acquired": true,
+        "forensically_verified": true,
+        "admitted": true,
+        "frozen": true
+      }
+    }
+  ],
+  "excluded_and_rejected_artifacts": [
+    {
+      "candidate_id": "CAND-FD-MR-PDF-01",
+      "artifact_path": "evaluationDataset/Phase 8.6 Format-Diverse Multilingual Evaluation Corpus/dcfa97c8-e6e7-41d3-95d1-88dacb65e492.pdf",
+      "title": "Economic Survey of Maharashtra 2023-24 (OpenCity CKAN Resource)",
+      "byte_size": 12764759,
+      "sha256": "a55e99f584ea0c1a5b9dece668c57e423c223a54dbcc0836ed683a6cb59345db",
+      "exclusion_reason": "Forensic PyMuPDF analysis proved artifact is English edition (PREFACE_23_24_E_30524.doc) with 0.0% Devanagari. Preserved on disk solely as immutable negative audit evidence of upstream catalog mislabeling.",
+      "governance_status": {
+        "authorized": true,
+        "acquired": true,
+        "forensically_verified": true,
+        "admitted": false,
+        "frozen": true
+      }
+    },
+    {
+      "candidate_id": "CAND-FD-HI-PDF-01",
+      "artifact_path": null,
+      "title": "Annual Report 2023-2024 - Ministry of Education (Hindi)",
+      "exclusion_reason": "Portal dohe-education.gov.in uses client-side token-gated headless WordPress REST API; automated scripted download timed out. Halted under DEC-P8.6-FD-10.",
+      "governance_status": {
+        "authorized": true,
+        "acquired": false,
+        "forensically_verified": false,
+        "admitted": false,
+        "frozen": false
+      }
+    }
+  ]
+}

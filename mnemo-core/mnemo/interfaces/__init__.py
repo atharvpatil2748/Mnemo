@@ -1,7 +1,41 @@
 """Public Phase 1 Module 1.2 interface contracts."""
 
+from .advanced_retrieval import (
+    AdvancedCandidateRerankerV1,
+    AdvancedCanonicalStoreV1,
+    AdvancedRetrievalInterfaceV1,
+    AdvancedRetrievalSourceV1,
+    AdvancedSourcePage,
+    CanonicalEvidenceRecord,
+    DocumentSetResolverV1,
+    MultilingualAdvancedStoreV1,
+    MultilingualEvidencePage,
+    MultilingualEvidenceRecord,
+    MultimodalAdvancedStoreV1,
+    MultimodalEvidencePage,
+    MultimodalEvidenceRecord,
+    VisualQueryEmbeddingProviderV1,
+    VisualQueryVector,
+    VisualVectorMetric,
+)
+from .asset_catalog import (
+    AssetCatalogStoreV1,
+    AssetRecordStoreV1,
+    AuthorizedAssetAnalysisCatalogV1,
+)
 from .cache import CacheInterface, CacheInterfaceV1
 from .chunker import ChunkerInterface, ChunkerInterfaceV1, ChunkerInterfaceV2
+from .delivery import (
+    AssetDeliveryV2,
+    DeliveryAuthorizationError,
+    DeliveryCursorConflictError,
+    DeliveryCursorError,
+    DeliveryCursorExpiredError,
+    DeliveryLimitExceededError,
+    DocumentExpansionServiceV1,
+    DocumentExpansionServiceV2,
+    ExactDocumentReaderV1,
+)
 from .embedding import EmbeddingProvider, EmbeddingProviderV1
 from .errors import (
     ConflictError,
@@ -21,15 +55,76 @@ from .final_qa import FinalQAInterface, FinalQAInterfaceV1
 from .final_qa_execution import FinalQAExecutionStoreV1
 from .fusion_reranker import FusionRerankingInterface, FusionRerankingInterfaceV1
 from .llm import LLMInterface, LLMInterfaceV1
+from .model_profiles import ModelProfileRegistryV1
 from .multi_source_retrieval import (
     MultiSourceRetrievalInterface,
     MultiSourceRetrievalInterfaceV1,
 )
+from .multilingual import (
+    LanguageDetectorProviderV2,
+    LanguageDetectorV1,
+    LanguageEvidenceAuthorizerV2,
+    LanguageEvidenceAuthorizerV3,
+    LanguageEvidenceCatalogV2,
+    LanguageTransformationProviderV1,
+    LanguageTransformationProviderV2,
+    MultilingualCandidateRerankerV1,
+    MultilingualCandidateRerankerV2,
+    MultilingualCandidateRerankerV3,
+    MultilingualEmbeddingProviderV1,
+    MultilingualEmbeddingProviderV2,
+    MultilingualFinalQAInterfaceV1,
+    MultilingualRetrievalInterfaceV1,
+    MultilingualRetrievalSourceV1,
+    MultilingualStoreV1,
+    RepresentationEvidenceAuthorizerV3,
+    RerankerCandidateBuilderProtocolV1,
+    RerankerEvidenceResolverV1,
+    ScriptDetectorV1,
+    V2RetrievalAuthorizerV1,
+)
+from .multimodal import (
+    EvidenceAuthorizerV2,
+    FinalQAExecutionStoreV2,
+    FinalQAInterfaceV2,
+    MultimodalCandidateRerankerV1,
+    MultimodalProviderV1,
+)
+from .ocr import OCRAssetReaderV1, OCRCancellationCheck, OCRProviderV1, OCRStoreV1
 from .parent_promotion import ParentPromotionInterface, ParentPromotionInterfaceV1
-from .parser import ParserInterface, ParserInterfaceV1
+from .parser import ParserInterface, ParserInterfaceV1, ParserInterfaceV2
+from .parser_models import (
+    AssetExtractionOmission,
+    AssetExtractionOutcome,
+    ParseResultV2,
+    TransientAssetOccurrence,
+)
+from .phase85 import Phase85RuntimeV1, ProviderReadinessProbeV1
+from .processing_jobs import ProcessingJobStoreV1, ProcessingOperation, ProcessingWorkerV1
+from .projections import DerivedProjectionBuilderV1, DerivedProjectionStoreV1
 from .reranker import RerankerInterface, RerankerInterfaceV1
 from .retriever import RetrieverInterface, RetrieverInterfaceV1
+from .scope import (
+    DocumentScopeResolverV1,
+    PrincipalContextV1,
+    ResolvedDocumentScope,
+    ScopeResolutionKind,
+    SourceAssociationReaderV1,
+)
 from .storage import StorageInterface, StorageInterfaceV1
+from .structured_retrieval import (
+    StructuredDatasetCatalogV1,
+    StructuredEvidenceExtractorV1,
+    StructuredIRReaderV1,
+    StructuredProjectionStoreV1,
+    StructuredRetrievalInterfaceV1,
+)
+from .text_representations import (
+    RepresentationDetectorV1,
+    RepresentationTransformerV1,
+    TextRepresentationStoreV1,
+    TransformationRegistryV1,
+)
 from .tokenizer import TokenCounterInterfaceV1
 from .types import (
     ChunkerCapabilities,
@@ -52,6 +147,11 @@ from .types import (
     RetrieverCapabilities,
     StorageCapabilities,
 )
+from .v2_evidence import (
+    AuthorizedV2EvidenceResolverV1,
+    GovernedV2CandidateProjectorV1,
+    V2AuthorizedEvidenceStoreV1,
+)
 from .versions import (
     CHUNKER_INTERFACE_V2_VERSION,
     CHUNKER_INTERFACE_VERSION,
@@ -63,6 +163,14 @@ from .versions import (
     RERANKER_INTERFACE_VERSION,
     RETRIEVER_INTERFACE_VERSION,
     STORAGE_INTERFACE_VERSION,
+)
+from .vision import (
+    ImageEmbeddingProviderV1,
+    VisionAssetReaderV1,
+    VisionCancellationCheck,
+    VisionProviderV1,
+    VisionStoreV1,
+    VisualEmbeddingProviderV1,
 )
 
 __all__ = [
@@ -76,8 +184,18 @@ __all__ = [
     "RERANKER_INTERFACE_VERSION",
     "RETRIEVER_INTERFACE_VERSION",
     "STORAGE_INTERFACE_VERSION",
+    "AdvancedCandidateRerankerV1",
+    "AdvancedCanonicalStoreV1",
+    "AdvancedRetrievalInterfaceV1",
+    "AdvancedRetrievalSourceV1",
+    "AdvancedSourcePage",
+    "AssetCatalogStoreV1",
+    "AssetExtractionOmission",
+    "AssetExtractionOutcome",
+    "AssetRecordStoreV1",
     "CacheInterface",
     "CacheInterfaceV1",
+    "CanonicalEvidenceRecord",
     "ChunkerCapabilities",
     "ChunkerInterface",
     "ChunkerInterfaceV1",
@@ -88,19 +206,27 @@ __all__ = [
     "ConflictError",
     "ContractValidationError",
     "DependencyUnavailableError",
+    "DerivedProjectionBuilderV1",
+    "DerivedProjectionStoreV1",
+    "DocumentScopeResolverV1",
+    "DocumentSetResolverV1",
     "EmbeddingBatch",
     "EmbeddingCapabilities",
     "EmbeddingProvider",
     "EmbeddingProviderV1",
     "EmbeddingVector",
+    "EvidenceAuthorizerV2",
     "FileMetadata",
     "FinalQAExecutionStoreV1",
+    "FinalQAExecutionStoreV2",
     "FinalQAInterface",
     "FinalQAInterfaceV1",
+    "FinalQAInterfaceV2",
     "FusionRerankerCapabilities",
     "FusionRerankingInterface",
     "FusionRerankingInterfaceV1",
     "HealthStatus",
+    "ImageEmbeddingProviderV1",
     "IntegrityError",
     "LLMCapabilities",
     "LLMInterface",
@@ -109,29 +235,111 @@ __all__ = [
     "Message",
     "MessageRole",
     "MnemoInterfaceError",
+    "ModelProfileRegistryV1",
     "MultiSourceRetrievalInterface",
     "MultiSourceRetrievalInterfaceV1",
+    "MultilingualAdvancedStoreV1",
+    "MultilingualEvidencePage",
+    "MultilingualEvidenceRecord",
+    "MultimodalAdvancedStoreV1",
+    "MultimodalCandidateRerankerV1",
+    "MultimodalEvidencePage",
+    "MultimodalEvidenceRecord",
+    "MultimodalProviderV1",
     "NotFoundError",
+    "OCRAssetReaderV1",
+    "OCRCancellationCheck",
+    "OCRProviderV1",
+    "OCRStoreV1",
     "OperationCancelledError",
     "OperationTimeoutError",
     "Page",
     "ParentPromotionCapabilities",
     "ParentPromotionInterface",
     "ParentPromotionInterfaceV1",
+    "ParseResultV2",
     "ParserCapabilities",
     "ParserInterface",
     "ParserInterfaceV1",
+    "ParserInterfaceV2",
+    "Phase85RuntimeV1",
     "PluginError",
+    "PrincipalContextV1",
+    "ProcessingJobStoreV1",
+    "ProcessingOperation",
+    "ProcessingWorkerV1",
+    "ProviderReadinessProbeV1",
     "RerankerCapabilities",
     "RerankerInterface",
     "RerankerInterfaceV1",
+    "ResolvedDocumentScope",
     "RetrieverCapabilities",
     "RetrieverInterface",
     "RetrieverInterfaceV1",
+    "ScopeResolutionKind",
+    "SourceAssociationReaderV1",
     "StorageCapabilities",
     "StorageError",
     "StorageInterface",
     "StorageInterfaceV1",
+    "StructuredDatasetCatalogV1",
+    "StructuredEvidenceExtractorV1",
+    "StructuredIRReaderV1",
+    "StructuredProjectionStoreV1",
+    "StructuredRetrievalInterfaceV1",
     "TokenCounterInterfaceV1",
+    "TransientAssetOccurrence",
     "UnsupportedError",
+    "VisionAssetReaderV1",
+    "VisionCancellationCheck",
+    "VisionProviderV1",
+    "VisionStoreV1",
+    "VisualEmbeddingProviderV1",
+    "VisualQueryEmbeddingProviderV1",
+    "VisualQueryVector",
+    "VisualVectorMetric",
+]
+
+__all__ += [
+    "AssetDeliveryV2",
+    "AuthorizedAssetAnalysisCatalogV1",
+    "AuthorizedV2EvidenceResolverV1",
+    "GovernedV2CandidateProjectorV1",
+    "LanguageDetectorProviderV2",
+    "LanguageDetectorV1",
+    "LanguageEvidenceAuthorizerV2",
+    "LanguageEvidenceAuthorizerV3",
+    "LanguageEvidenceCatalogV2",
+    "LanguageTransformationProviderV1",
+    "LanguageTransformationProviderV2",
+    "MultilingualCandidateRerankerV1",
+    "MultilingualCandidateRerankerV2",
+    "MultilingualCandidateRerankerV3",
+    "MultilingualEmbeddingProviderV1",
+    "MultilingualEmbeddingProviderV2",
+    "MultilingualFinalQAInterfaceV1",
+    "MultilingualRetrievalInterfaceV1",
+    "MultilingualRetrievalSourceV1",
+    "MultilingualStoreV1",
+    "RepresentationDetectorV1",
+    "RepresentationEvidenceAuthorizerV3",
+    "RepresentationTransformerV1",
+    "RerankerCandidateBuilderProtocolV1",
+    "RerankerEvidenceResolverV1",
+    "ScriptDetectorV1",
+    "TextRepresentationStoreV1",
+    "TransformationRegistryV1",
+    "V2AuthorizedEvidenceStoreV1",
+    "V2RetrievalAuthorizerV1",
+]
+
+__all__ += [
+    "DeliveryAuthorizationError",
+    "DeliveryCursorConflictError",
+    "DeliveryCursorError",
+    "DeliveryCursorExpiredError",
+    "DeliveryLimitExceededError",
+    "DocumentExpansionServiceV1",
+    "DocumentExpansionServiceV2",
+    "ExactDocumentReaderV1",
 ]

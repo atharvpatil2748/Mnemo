@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/governance/full-multilingual-v2/v2-activation-authorization/1",
+  "title": "V2 activation authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "authorization_id", "artifact_digest", "run_id",
+    "target_database_path", "profile_fingerprint", "corpus_digest", "census_digest",
+    "generation_namespace", "vector_space_identity", "storage_manifest_digest",
+    "build_manifest_digest", "generation_ids", "generation_checksums", "activation_mode",
+    "recovery_mode", "authorization_scope", "authorization_state", "authorized",
+    "authority_class", "decision_reference"
+  ],
+  "properties": {
+    "schema_version": {"const": "mnemo.v2-activation-authorization/1"},
+    "authorization_id": {"type": "string", "format": "uuid"},
+    "artifact_digest": {"$ref": "#/$defs/digest"},
+    "run_id": {"type": "string", "format": "uuid"},
+    "target_database_path": {"type": "string", "pattern": "^scratch/phase8_5_full_multilingual_v2/.+/mnemo\\.db$"},
+    "profile_fingerprint": {"$ref": "#/$defs/digest"},
+    "corpus_digest": {"$ref": "#/$defs/digest"},
+    "census_digest": {"$ref": "#/$defs/digest"},
+    "generation_namespace": {"const": "full_multilingual_v2"},
+    "vector_space_identity": {"$ref": "#/$defs/digest"},
+    "storage_manifest_digest": {"$ref": "#/$defs/digest"},
+    "build_manifest_digest": {"$ref": "#/$defs/digest"},
+    "generation_ids": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": {"type": "string", "format": "uuid"}},
+    "generation_checksums": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"$ref": "#/$defs/digest"}},
+    "activation_mode": {"enum": ["first_v2_activation", "v2_upgrade"]},
+    "recovery_mode": {"enum": ["deactivate_v2_alias_set", "prior_v2_alias_set"]},
+    "authorization_scope": {"const": "activate_exact_ready_v2_alias_set_only"},
+    "authorization_state": {"const": "authorized_for_controlled_v2_activation_only"},
+    "authorized": {"const": true},
+    "authority_class": {"const": "human_governance"},
+    "decision_reference": {"type": "string", "minLength": 1}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"activation_mode": {"const": "first_v2_activation"}}, "required": ["activation_mode"]},
+      "then": {"properties": {"recovery_mode": {"const": "deactivate_v2_alias_set"}}}
+    },
+    {
+      "if": {"properties": {"activation_mode": {"const": "v2_upgrade"}}, "required": ["activation_mode"]},
+      "then": {"properties": {"recovery_mode": {"const": "prior_v2_alias_set"}}}
+    }
+  ],
+  "$defs": {"digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+}

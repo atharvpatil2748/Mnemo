@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/schemas/phase8.5-multilingual-qrel-v1.json",
+  "title": "Mnemo Phase 8.5 Multilingual Qrel Record v1",
+  "description": "Strict evidence-level relevance and provenance judgment. Filesystem paths and provider secrets are forbidden by omission and additionalProperties=false.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "judgment_id",
+    "query_id",
+    "notebook_id",
+    "document_id",
+    "version_id",
+    "evidence_kind",
+    "evidence_id",
+    "occurrence_id",
+    "derivation_id",
+    "source_generation_id",
+    "query_language",
+    "evidence_language",
+    "source_content_hash",
+    "authorization_validity",
+    "provenance_validity",
+    "relevance_grade",
+    "reviewer_id",
+    "reviewer_languages",
+    "adjudication_state",
+    "reviewed_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "mnemo.multilingual-qrel/1"},
+    "judgment_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "query_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "notebook_id": {"$ref": "#/$defs/opaqueId"},
+    "document_id": {"$ref": "#/$defs/opaqueId"},
+    "version_id": {"$ref": "#/$defs/opaqueId"},
+    "evidence_kind": {
+      "enum": [
+        "canonical_chunk",
+        "ocr_region",
+        "vision_derivation",
+        "transliteration_derivation",
+        "translation_derivation"
+      ]
+    },
+    "evidence_id": {"$ref": "#/$defs/opaqueId"},
+    "occurrence_id": {"anyOf": [{"$ref": "#/$defs/opaqueId"}, {"type": "null"}]},
+    "derivation_id": {"anyOf": [{"$ref": "#/$defs/opaqueId"}, {"type": "null"}]},
+    "source_generation_id": {"anyOf": [{"$ref": "#/$defs/opaqueId"}, {"type": "null"}]},
+    "query_language": {"$ref": "#/$defs/language"},
+    "evidence_language": {"$ref": "#/$defs/language"},
+    "source_content_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "authorization_validity": {"enum": ["valid", "invalid"]},
+    "provenance_validity": {"enum": ["valid", "invalid"]},
+    "relevance_grade": {"type": "integer", "minimum": 0, "maximum": 2},
+    "reviewer_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "reviewer_languages": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"enum": ["en", "hi", "mr"]}
+    },
+    "adjudication_state": {"enum": ["independent", "agreed", "disputed", "adjudicated"]},
+    "adjudicator_id": {"anyOf": [{"type": "string", "minLength": 1, "maxLength": 128}, {"type": "null"}]},
+    "reviewed_at": {"type": "string", "format": "date-time"},
+    "notes_code": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "direct_support",
+          "partial_support",
+          "same_document_wrong_section",
+          "wrong_notebook",
+          "wrong_document",
+          "wrong_version",
+          "wrong_occurrence",
+          "wrong_derivation_lineage",
+          "unauthorized",
+          "stale_generation",
+          "wrong_vector_space",
+          "language_ambiguous"
+        ]
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"evidence_kind": {"enum": ["ocr_region", "vision_derivation"]}}},
+      "then": {
+        "properties": {
+          "occurrence_id": {"$ref": "#/$defs/opaqueId"},
+          "derivation_id": {"$ref": "#/$defs/opaqueId"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"evidence_kind": {"enum": ["transliteration_derivation", "translation_derivation"]}}},
+      "then": {
+        "properties": {
+          "derivation_id": {"$ref": "#/$defs/opaqueId"},
+          "source_generation_id": {"$ref": "#/$defs/opaqueId"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"adjudication_state": {"const": "adjudicated"}}},
+      "then": {"required": ["adjudicator_id"], "properties": {"adjudicator_id": {"type": "string", "minLength": 1}}}
+    },
+    {
+      "if": {
+        "anyOf": [
+          {"properties": {"authorization_validity": {"const": "invalid"}}},
+          {"properties": {"provenance_validity": {"const": "invalid"}}}
+        ]
+      },
+      "then": {"properties": {"relevance_grade": {"const": 0}}}
+    }
+  ],
+  "$defs": {
+    "opaqueId": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "language": {"enum": ["en", "hi", "mr", "und", "mixed"]}
+  }
+}

@@ -1,0 +1,2890 @@
+# Mnemo — Local Knowledge Engine
+## Architecture Specification v2.0
+
+> **Current production note (2026-09-08):** This document remains the broad
+> architectural specification. The certified deployed path is the 44-document
+> V2 composition described by the
+> [single-production-path audit](../../reports/architecture/mnemo-v2-single-production-path-audit.md)
+> and governed by [ADR-0076](../../adr/active/ADR-0076-project-owner-engineering-certification-standard.md).
+> Earlier baseline examples below are historical unless that audit incorporates them.
+> Phase 8.8 is the next bounded hardening phase; Phase 9 implementation is gated
+> on Phase 8.8 verification.
+
+**Document Type:** Design Specification  
+**Status:** Living Design Document  
+**Project Type:** Standalone Open-Source Software  
+**License Target:** Apache 2.0  
+
+**Implementation baseline:** Phases 0–8 are complete. Phase 8.5 is complete and
+certified for the exact 44-document production identity under ADR-0076: BGE-M3,
+BGE-reranker-v2-m3, FTS5, RRF, an internal 50-candidate reranker pool, dynamic
+public `requested_k`, central authorization, provenance, separate FinalQA
+operational persistence, durable activation/rollback, and HTTP/MCP stdio/MCP SSE
+parity are evidence-bound. Phase 8.6 is complete as a validated 24-document,
+5,843-chunk format-diverse multilingual **evaluation notebook** with OCR, Vision,
+CLIP, BGE-M3, provenance, canonical manifests, and transport validation; it is
+not production-exposed. Phase 8.7 is the retrospective capability milestone for
+the expanded 14-tool MCP surface, notebook delivery, and real client exercises.
+The later MCP audits found production-launch, authorization, immutable-reader,
+metadata, capability, and tunnel-parity defects; those findings belong to Phase
+8.8 and do not rewrite the earlier implementation milestone.
+
+> **Phase 8.5 architecture & roadmap:** The accepted additive design and execution plan live in
+> [Phase 8.5 Architecture](../historical/phase8.5_architecture.md) and the
+> [Phase 8.5 Engineering Roadmap](../historical/mnemo_phase8_5_engineering_roadmap.md).
+
+> *"A knowledge engine. Not an agent. The difference is everything."*
+
+---
+
+## A Note on Project Name
+
+Throughout this document, the project is referred to as **Mnemo** (from *Mnemosyne*, the Greek goddess of memory and mother of the Muses). This is a working name. The final name is a project decision. What matters is that the name must convey: *local, personal, permanent, private* — not "AI assistant."
+
+---
+
+## Table of Contents
+
+1. [Vision and Philosophy](#1-vision-and-philosophy)
+2. [High-Level Architecture Diagram](#2-high-level-architecture-diagram)
+3. [The Four-Layer Model](#3-the-four-layer-model)
+4. [Layer 1 — mnemo-core](#4-layer-1--mnemo-core)
+5. [Layer 2 — mnemo-server](#5-layer-2--mnemo-server)
+6. [Layer 3 — mnemo-ui](#6-layer-3--mnemo-ui)
+7. [Layer 4 — plugins/](#7-layer-4--plugins)
+8. [Plugin Registry and Interface Contracts](#8-plugin-registry-and-interface-contracts)
+9. [Document Ingestion Pipeline](#9-document-ingestion-pipeline)
+10. [Adaptive Chunking Engine](#10-adaptive-chunking-engine)
+11. [Retrieval Pipeline](#11-retrieval-pipeline)
+12. [Conversation Memory](#12-conversation-memory)
+13. [Storage Architecture](#13-storage-architecture)
+14. [LLM Orchestration](#14-llm-orchestration)
+15. [Performance Architecture](#15-performance-architecture)
+16. [Scalability](#16-scalability)
+17. [Integration Patterns](#17-integration-patterns)
+18. [Deployment Model](#18-deployment-model)
+19. [Implementation Roadmap](#19-implementation-roadmap)
+20. [Critical Review](#20-critical-review)
+21. [Phase 8.5–8.8 Current State and Handoff](#21-phase-8588-current-state-and-handoff)
+22. [Final Architecture Snapshot](#22-final-architecture-snapshot)
+
+---
+
+## 1. Vision and Philosophy
+
+### 1.1 What Mnemo Is
+
+Mnemo is a **local-first Knowledge Engine**. It ingests documents, understands them deeply, and retrieves evidence in response to questions. It persists knowledge permanently. It cites every claim it surfaces. It runs entirely on a personal machine with no cloud dependency.
+
+It is **not** an AI assistant.  
+It is **not** an agent.  
+It is **not** a task executor.
+
+It is the epistemic layer beneath those things — the component that knows what you know, surfaces what is relevant, and hands the evidence upward to whatever reasoning system needs it.
+
+The single most important design constraint is this:
+
+> **Mnemo answers the question: "What do my documents say about X?"  
+> It never answers: "What should I do about X?"**
+
+### 1.2 Two Equally Important Use Cases
+
+#### Use Case 1: Standalone NotebookLM Alternative
+
+A user clones the repository, runs `docker compose up`, and opens a browser. From that moment:
+
+- They upload documents.
+- They create notebooks.
+- They chat with their documents.
+- The system cites sources, generates notes, produces podcasts, builds timelines.
+- Everything runs locally. Nothing is sent to the cloud.
+
+The user does not know or care about ARVSAL. They do not know what MCP is. They simply have a powerful, private, local alternative to Google NotebookLM.
+
+#### Use Case 2: Reusable Knowledge Backend
+
+A developer integrates Mnemo into their application. They call:
+
+```
+REST POST /v1/query
+{
+  "notebook_id": "my-research",
+  "question": "What are the key arguments against X?",
+  "context_budget": 8000
+}
+→ { "answer": "...", "citations": [...], "confidence": 0.87 }
+```
+
+Or they configure Claude Desktop with Mnemo as an MCP server, and Claude gains access to all of the user's knowledge bases as grounded retrieval tools.
+
+Or ARVSAL routes a knowledge query to Mnemo via MCP without Mnemo knowing or caring that ARVSAL exists.
+
+Both use cases are fully supported. Neither is secondary.
+
+### 1.3 The Knowledge Engine Boundary
+
+The following is the formal boundary of what Mnemo does and does not do. This boundary is architectural, not aspirational. Violating it would destroy the project's identity.
+
+**Inside the boundary (Mnemo's responsibility):**
+
+| Responsibility | Rationale |
+|---|---|
+| Document ingestion | Core function |
+| Parsing (all formats) | Core function |
+| OCR and layout analysis | Required for parsing |
+| Metadata extraction | Required for retrieval |
+| Adaptive chunking | Core function |
+| Embedding generation | Core function |
+| Vector indexing | Core function |
+| Keyword indexing | Core function |
+| Retrieval (dense, sparse, graph) | Core function |
+| Reranking | Core function |
+| Cross-document reasoning | Knowledge synthesis |
+| Citation tracking | Epistemic integrity |
+| Notebook management | Organizational layer |
+| Podcast generation | Knowledge export |
+| Timeline generation | Knowledge organization |
+| Notebook summaries | Knowledge synthesis |
+| Evidence collection | Core function |
+| Context building | Core function |
+| Confidence estimation | Core function |
+
+**Outside the boundary (host application's responsibility):**
+
+| Responsibility | Why it belongs elsewhere |
+|---|---|
+| Web browsing | Requires internet access, not a knowledge function |
+| Email sending/reading | Requires external I/O, not a knowledge function |
+| Filesystem management | Requires OS access, not a knowledge function |
+| Code execution | Requires a sandbox, not a knowledge function |
+| Calendar operations | Requires external service access |
+| Task planning | Requires reasoning over goals, not evidence |
+| Tool orchestration | Requires agent-level decision making |
+| Multi-step autonomous action | Requires agency, which Mnemo explicitly does not have |
+
+This boundary is enforced at the API level. Mnemo's REST API and MCP tool definitions never expose an action that crosses it.
+
+### 1.4 Design Principles
+
+1. **Privacy is axiomatic.** No telemetry, no external calls, no "calling home."
+2. **Every interface is replaceable.** Parser, chunker, embedder, storage, LLM — all behind typed contracts.
+3. **Ingest fast, enrich lazily.** The pipeline is split: documents become searchable in seconds, enrichment happens in the background.
+4. **Cite everything.** Every retrieved statement is traceable to a source, page, and chunk.
+5. **Core has no HTTP.** The core library is pure Python. It can be embedded in any application directly.
+6. **Plugins are opt-in.** A minimal installation is functional without any plugin. Complex capabilities are additive.
+7. **Fail gracefully, degrade predictably.** If a plugin fails, its capability is absent — not the system.
+
+---
+
+## 2. High-Level Architecture Diagram
+
+```
+═══════════════════════════════════════════════════════════════════════
+                     EXTERNAL CONSUMERS
+═══════════════════════════════════════════════════════════════════════
+
+  Browser User          MCP Client              REST Client
+  (standalone UI)   (Claude Desktop,        (ARVSAL, LibreChat,
+                   VS Code, ARVSAL)         Open WebUI, custom)
+       │                   │                       │
+       │ HTTP/WS           │ MCP Protocol          │ HTTP REST
+       │                   │                       │
+       └───────────────────┴───────────────────────┘
+                           │
+═══════════════════════════╪═══════════════════════════════════════════
+                    LAYER 2: mnemo-server
+═══════════════════════════╪═══════════════════════════════════════════
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+   ┌──────▼──────┐  ┌──────▼──────┐  ┌─────▼──────┐
+   │  REST API   │  │ MCP Server  │  │  WebSocket │
+   │ (FastAPI)   │  │ (stdio/sse) │  │ (streaming)│
+   └──────┬──────┘  └──────┬──────┘  └─────┬──────┘
+          │                │                │
+          └────────────────┼────────────────┘
+                           │ Python function calls
+═══════════════════════════╪═══════════════════════════════════════════
+                    LAYER 1: mnemo-core
+═══════════════════════════╪═══════════════════════════════════════════
+                           │
+    ┌──────────────────────┼──────────────────────────┐
+    │                      │                           │
+    ▼                      ▼                           ▼
+┌──────────┐       ┌───────────────┐         ┌─────────────────┐
+│INGESTION │       │   RETRIEVAL   │         │   NOTEBOOK      │
+│PIPELINE  │       │   PIPELINE    │         │   MANAGER       │
+│          │       │               │         │                 │
+│ Parser   │       │ QueryPlanner  │         │ Notebook CRUD   │
+│ Cleaner  │       │ Retriever[]   │         │ Source Manager  │
+│ Chunker  │       │ Reranker      │         │ Note Manager    │
+│ Embedder │       │ ContextBuilder│         │ Session Manager │
+│ Indexer  │       │ CitationEngine│         │ Insight Manager │
+└──────┬───┘       └───────┬───────┘         └────────┬────────┘
+       │                   │                           │
+       └───────────────────┼───────────────────────────┘
+                           │
+═══════════════════════════╪═══════════════════════════════════════════
+                    STORAGE LAYER
+═══════════════════════════╪═══════════════════════════════════════════
+                           │
+    ┌──────────────────────┼──────────────────────────┐
+    │                      │                           │
+    ▼                      ▼                           ▼
+┌──────────┐       ┌────────────┐            ┌──────────────────┐
+│  Qdrant  │       │ SQLite FTS5│            │   SurrealDB      │
+│ (optional│       │ + V2 vector│            │ (partial future  │
+│  vector) │       │ projections│            │  graph adapter)  │
+│          │       │            │            │                  │
+└──────────┘       └────────────┘            └──────────────────┘
+                           │
+                    ┌──────▼──────┐
+                    │  Filesystem │
+                    │ (Blobs/IR)  │
+                    └─────────────┘
+═══════════════════════════════════════════════════════════════════════
+                    LAYER 4: plugins/    (optional, loaded at runtime)
+═══════════════════════════════════════════════════════════════════════
+
+   [deepdoc-parser]  [mineru-parser]  [graph-retrieval]  [raptor]
+   [ocr-paddle]      [podcast-gen]    [timeline-gen]     [watchfolder]
+   [git-ingestion]   [email-ingestion][browser-history]  [epub-parser]
+```
+
+---
+
+## 3. The Four-Layer Model
+
+The entire project is organized into four layers. The rule is absolute: **each layer may only call the layer directly beneath it**. No layer may call upward. No layer may skip a layer.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Layer 3: mnemo-ui          (browser, calls Layer 2 only)    │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 2: mnemo-server      (HTTP/MCP, calls Layer 1 only)   │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 1: mnemo-core        (pure Python library, no HTTP)   │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 4: plugins/          (registered into Layer 1)        │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Layer 4 (plugins) is not "above" or "below" — it is injected *into* Layer 1 at startup time via the plugin registry. A plugin implements a Layer 1 interface and is registered as the provider for a given capability.
+
+### Target Repository Structure
+
+The tree below is the end-state layout. Directories assigned to later roadmap
+phases are intentionally absent from the Phase 1 baseline.
+
+```
+mnemo/
+├── mnemo-core/              # Layer 1 — pure Python library
+│   ├── mnemo/
+│   │   ├── ingestion/
+│   │   │   ├── parser.py
+│   │   │   ├── cleaner.py
+│   │   │   ├── chunker.py
+│   │   │   ├── embedder.py
+│   │   │   └── indexer.py
+│   │   ├── retrieval/
+│   │   │   ├── planner.py
+│   │   │   ├── retriever.py
+│   │   │   ├── reranker.py
+│   │   │   ├── context_builder.py
+│   │   │   └── citation_engine.py
+│   │   ├── notebook/
+│   │   │   ├── notebook_manager.py
+│   │   │   ├── source_manager.py
+│   │   │   ├── session_manager.py
+│   │   │   └── insight_manager.py
+│   │   ├── storage/
+│   │   │   ├── storage_interface.py
+│   │   │   ├── qdrant_store.py
+│   │   │   ├── sqlite_store.py
+│   │   │   └── surrealdb_store.py
+│   │   ├── interfaces/          # All typed contracts
+│   │   │   ├── parser_interface.py
+│   │   │   ├── chunker_interface.py
+│   │   │   ├── embedding.py
+│   │   │   ├── retriever_interface.py
+│   │   │   ├── reranker_interface.py
+│   │   │   ├── llm_interface.py
+│   │   │   └── storage_interface.py
+│   │   └── registry.py          # Plugin registry
+│   └── pyproject.toml
+│
+├── mnemo-server/            # Layer 2 — API adapter
+│   ├── mnemo_server/
+│   │   ├── api/
+│   │   │   ├── notebooks.py
+│   │   │   ├── sources.py
+│   │   │   ├── query.py
+│   │   │   ├── ingest.py
+│   │   │   └── insights.py
+│   │   ├── mcp/
+│   │   │   ├── server.py
+│   │   │   └── tools.py
+│   │   ├── ws/
+│   │   │   └── streaming.py
+│   │   └── auth/
+│   │       └── middleware.py
+│   └── pyproject.toml
+│
+├── mnemo-ui/                # Layer 3 — React frontend
+│   ├── src/
+│   │   ├── pages/
+│   │   ├── components/
+│   │   └── api/             # All API calls (never talks to core directly)
+│   └── package.json
+│
+├── plugins/                 # Layer 4 — optional extensions
+│   ├── deepdoc-parser/
+│   ├── mineru-parser/
+│   ├── graph-retrieval/
+│   ├── raptor/
+│   ├── podcast-gen/
+│   ├── timeline-gen/
+│   ├── watchfolder/
+│   ├── git-ingestion/
+│   └── email-ingestion/
+│
+├── docker/
+│   ├── docker-compose.yml           # Full stack
+│   ├── docker-compose.minimal.yml   # Core + SQLite only
+│   └── docker-compose.dev.yml       # Dev with hot reload
+│
+└── docs/
+    ├── quickstart.md
+    ├── api-reference.md
+    ├── mcp-integration.md
+    └── plugin-development.md
+```
+
+---
+
+## 4. Layer 1 — mnemo-core
+
+### Purpose and Constraints
+
+`mnemo-core` is a **pure Python library**. It has:
+
+- No HTTP server.
+- No authentication.
+- No WebSocket.
+- No MCP protocol.
+- No UI.
+
+It can be installed via `pip install mnemo-core` and used programmatically in any Python application. This makes it the correct primitive for embedding in ARVSAL, for testing, and for any application that wants to bypass the HTTP layer.
+
+### Core Module Responsibilities
+
+#### 4.1 Ingestion Pipeline
+
+**Parser**  
+Routes files to format-appropriate parsing implementations. Returns a `ParseResult` (a transient transport object) containing extracted transient blocks and unpersisted binary assets. All implementations are behind `ParserInterface`. The implemented built-in parsers handle digital PDF, DOCX, PPTX, XLSX, HTML, Markdown, plain text, JSON, and CSV/TSV. Additional formats, including scanned PDFs and EPUB, remain plugin or later-roadmap work.
+
+**IngestionPipeline**
+
+Owns the implemented Phase 3.9 sequence: router deduplication, cleaning,
+classification, transient-asset persistence through `StorageInterfaceV1`,
+immutable asset correlation, canonicalization, and publication of the resulting
+`ParsedDocument`. On a deduplication hit it loads the existing current-version
+canonical document instead of reparsing. It never generates permanent asset
+identities and never deletes content-addressed assets as compensation.
+
+**DocumentCanonicalizer**
+
+Purely and synchronously converts a classified `ParseResult` with an
+already-resolved immutable asset map into the canonical `ParsedDocument`. It
+preserves ordering, ordinals, source geometry, language, metadata, and
+classification; resolves raw image references; and performs no storage,
+network, LLM, UUID, routing, cleaning, or classification work. ADR-0014 defines
+the implemented ownership split.
+
+**Cleaner**  
+Normalizes a `ParseResult` before classification and canonicalization. Removes duplicate whitespace and running headers/footers (detected via frequency analysis across pages), fixes hyphenated line breaks, normalizes Unicode to NFC, and detects and tags block language.
+
+**Chunker**  
+Phase 4 consumes the canonical `ParsedDocument` from Module 3.9 together with a
+`ChunkingContext` that binds a `DocumentVersion` and `ChunkingOptions`. A
+version-isolated `ChunkerInterfaceV2` strategy selected by `doc_type` emits
+ordered immutable `ChunkDraft` values. The dispatcher validates provenance,
+size, and hierarchy, then deterministically materializes final `Chunk` IDs and
+relationships. Strategies own semantic splitting; the dispatcher performs no
+storage, network, embedding, indexing, retrieval, or semantic text generation.
+This accepted contract is defined by ADR-0015. Module 4.1 implements the
+contract infrastructure and dispatcher; Modules 4.2 through 4.10 implement all
+nine built-in semantic strategies.
+
+**Embedder**  
+Transforms text into float vectors. Manages a content-addressable embedding cache. Sends batches to the configured `EmbeddingProvider`. `EmbedderInterface` is the later orchestration boundary for batching, caching, and provider selection. It handles dimension mismatch detection when the model is changed.
+
+**Indexer**  
+Writes chunks to configured storage backends as one logical operation. Returned
+failures restore exact affected-key snapshots, preserving replacements and
+removing only newly introduced identities. Because Qdrant has no distributed
+transaction with SQLite, catastrophic interruption during compensation may
+require reconciliation. The indexer maintains document ingestion status and
+version history. Under ADR-0015, SQLite columns, Qdrant payloads, and
+CompositeStorage snapshots must preserve required `Chunk.source_span` exactly.
+Legacy chunks are re-created from canonical documents rather than assigned
+fabricated provenance. Atomic replacement of an entire prior chunk set during
+incremental re-chunking requires a separate later storage/indexing contract;
+ADR-0015 does not change ADR-0002 affected-ID upsert semantics.
+
+#### 4.2 Retrieval Pipeline
+
+**QueryPlanner**  
+Receives a natural language question and produces a `RetrievalPlan`. This is a lightweight planning step using the configured Planner LLM. It identifies the retrieval intent (factual, comparative, exploratory, synthesis) and decomposes the query into one or more `SubQuery` objects.
+
+The canonical Module 6.1 schema is an immutable Pydantic model with
+`intent`, `sub_queries`, `requires_multi_hop`, and `requires_multi_doc`.
+Each `SubQuery` contains `query_text`, an enumerated `retrieval_mode`
+(`dense`, `sparse`, `hybrid`, `graph`, or the compatibility-reserved `parent`), a typed
+`MetadataFilter`, and a bounded positive `max_results`. Plans contain one to
+sixteen ordered sub-queries, each requesting at most 100 results, and reject
+semantic duplicates rather than silently repairing them.
+
+HyDE remains part of planning: at least one dense or hybrid sub-query carries
+the validated hypothetical source-style paragraph in `query_text`. Its vector
+is produced separately through the configured `EmbeddingProviderV1`; neither
+the provider identity nor the transient vector is serialized into
+`RetrievalPlan`.
+
+ADR-0041 defines the execution-time handoff for plans with several dense or
+hybrid subqueries. Module 6.5 embeds the exact text of every effective dense
+invocation through its configured `EmbeddingProviderV1`; it never reuses the
+first HyDE vector for unrelated text. `plan_with_hyde_embedding()` remains a
+standalone Module 6.1 convenience, while the canonical orchestration path uses
+`plan()` and generates the complete invocation-scoped vector set.
+
+**Important:** The `QueryPlanner` plans *retrieval strategy* only. It does not plan user actions, does not invoke external tools, and does not produce action sequences. It answers: "how should I search my documents to answer this question?" — nothing more.
+
+**Retriever**  
+Executes individual `SubQuery` objects. Multiple retrievers may run in parallel:
+- `DenseRetriever`: provider-backed dense search. Historical V1 deployments may
+  use Qdrant; certified V2 uses bounded exact cosine over SQLite BGE-M3 vectors.
+- `SparseRetriever`: BM25 via SQLite FTS5.
+- `GraphRetriever`: future optional SurrealDB graph traversal (requires an
+  activated and certified Graph plugin).
+- `SummaryRetriever`: Returns pre-computed section summaries.
+
+**Parent promotion**
+ADR-0040 resolves the historical ParentRetriever contradiction. ParentRetriever
+is not a `RetrieverInterfaceV1` query executor; it implements the separate
+`ParentPromotionInterfaceV1` transformation. Each already bounded, homogeneous
+retriever result stream is promoted independently before Module 6.5 combines
+sources. Qualifying siblings are replaced once by their stored parent, with the
+first-ranked represented child's raw score/source preserved and ranks
+recomputed locally. The implemented promoter uses only bounded, deduplicated
+`StorageInterfaceV1.get_chunk()` lookups and is registered through the separate
+versioned `parent_promotion` capability. New planners do not emit `parent`
+subqueries; the enum value remains deserializable only, and later orchestration
+must reject it explicitly.
+
+**Multi-source orchestration and fusion**
+ADR-0041 is the normative Module 6.5 contract. `MultiSourceRetriever` expands
+each hybrid subquery into independent dense and sparse invocations, resolves
+retrievers and the parent promoter through `PluginRegistry`, embeds every
+effective dense query separately, and executes the bounded invocations with a
+shared configured concurrency limit. Each stream is parent-promoted exactly
+once before cross-source combination.
+
+Fusion never stores RRF in raw `ScoredChunk.score`. Immutable invocation traces
+retain the raw pre/post-promotion streams, while `FusedChunkResult` carries the
+canonical chunk, RRF score, global rank, and per-invocation evidence. RRF uses
+one-based local ranks, equal weights, `k=60`, deterministic binary64
+`math.fsum`, and one contribution per chunk per invocation. Global ordering is
+`(-rrf_score, chunk.id)` and a required caller `global_limit` from 1 through
+100 is applied after fusion.
+
+Module 6.5 is fail-fast: unsupported `graph`/compatibility-reserved `parent`
+modes, unavailable capabilities, malformed streams, or invocation/promotion
+failures produce no partial successful result. `requires_multi_hop` is returned
+as first-stage state for Module 6.10, and `requires_multi_doc` never causes
+immutable notebook/source filters to be stripped.
+
+ADR-0041 supersedes ADR-0002 only where its specification-only
+`HybridRetriever` ownership conflicts with the detailed Phase 6 schedule.
+Hybrid expansion and RRF belong to Module 6.5; no `retriever/hybrid` capability
+is dispatched by the V1 orchestrator.
+
+The ADR-0041 contract is implemented by the additive
+`MultiSourceRetrievalInterfaceV1` and `MultiSourceRetriever`. Local validation
+includes deterministic invocation/fusion tests and a real Bhagavad Gita run
+through Ollama, Qdrant, SQLite sparse search, and the source-local parent
+promotion capability. This is **historical V1 milestone evidence**, not the
+current certified V2 storage or retrieval topology. This implementation status
+does not verify milestone M6 and does not start reranking or any later Phase 6
+stage.
+
+**Reranker**  
+Cross-encoder scoring of (query, chunk) pairs after Module 6.5 has combined,
+deduplicated, and fused the source-local streams. ADR-0042 makes the canonical
+original user query a separate required input and preserves the complete
+`RetrievalFusionResult` inside an additive `RetrievalRerankResult`. The pinned
+reference model returns one raw logit per pair; Module 6.6 stores both that
+logit and its explicit sigmoid relevance score without overwriting RRF or raw
+retrieval evidence. An absent `fusion_reranker/primary` capability returns a
+typed RRF fallback. A registered provider failure propagates.
+
+The ADR-0042 contract is implemented by `FusionRerankingInterfaceV1`,
+`RerankingModule`, and the pinned CPU `CrossEncoderReranker`. The provider is
+an optional `mnemo-core[reranking]` runtime, loads once through registry startup
+hooks, scores batches of at most 16 while preserving input alignment, and
+releases its executor/model references through reverse-order shutdown hooks.
+Local validation includes the complete unit/repository gates and a real
+Bhagavad Gita handoff from Module 6.5: ten fused candidates entered and ten
+reranked candidates exited with deterministic repeat ordering and unchanged
+ADR-0041 provenance. This implementation status does not start context
+construction and does not verify milestone M6.
+
+**ContextBuilder**  
+ADR-0043 is the normative Module 6.7 contract. ContextBuilder consumes the
+complete `RetrievalRerankResult`, a caller-supplied text-envelope budget and
+system prompt, immutable session messages, and optional exact-version display
+labels. It uses the existing ADR-0015 `TokenCounterInterfaceV1`; the question is
+always the normalized query already retained by Module 6.6.
+
+The top `min(3, candidate_count)` reranked candidates form an all-or-empty
+mandatory verbatim prefix. Remaining candidates use deterministic skip-over
+selection: accept a complete verbatim rendering when it fits, otherwise request
+one sequential structured compression through the existing `llm/extractor`
+slot and accept it only when the complete rendered context fits. No text is
+blindly truncated. Extractor absence degrades by omitting compression-eligible
+items; configured provider or malformed-output failures propagate.
+
+Each selected item receives a contiguous item-level `[N]` marker containing
+required exact document/version UUIDs and optional caller-supplied title,
+heading, and page fields. Markers segment sources without reordering evidence.
+The immutable `ContextBuildResult` retains the exact `RetrievalRerankResult`,
+exact selected and omitted candidate records, rendered context, tokenizer
+identity, and complete budget accounting. Module 6.8 consumes that typed result
+without parsing text to reconstruct provenance. The contract is implemented
+and validated with focused, repository-wide, and real Bhagavad Gita handoff
+acceptance. Module 6.8 is complete and covered by current M6 validation.
+
+**GroundedAnswerGenerator**
+ADR-0044 is the normative Module 6.8 contract. It consumes the exact
+`ContextBuildResult`, resolves the existing `llm/synthesizer` capability, and
+uses one exact grounded prompt to produce marker-bearing answer text. Its
+immutable `GroundedAnswerResult` retains the exact context and separate
+provider/model/token evidence. All ADR-0043 empty outcomes return typed
+`NO_CONTEXT` without provider work. Module 6.8 has no storage dependency and
+does not parse, resolve, or persist citations. The contract is implemented and
+validated with focused, repository-wide, and real Bhagavad Gita context-handoff
+acceptance. Module 6.9 is complete and covered by current M6 validation.
+
+**CitationEngine**  
+ADR-0045 is the normative Module 6.9 contract. The additive `CitationEngine`
+consumes the exact `GroundedAnswerResult`, an already-persisted assistant
+`Turn`, and caller-supplied exact-version `DocumentContextLabel` values. It
+validates canonical `[source:N]` markers against retained `ContextItem`
+provenance, maps each first-occurring unique source to one deterministic
+versioned `Citation`, and persists citations through `StorageInterfaceV1`.
+
+**Citation-compliant publication and source-aware sparse recall**
+ADR-0052 adds a strict final-publication validation boundary: generated
+evidence-backed final answers must use canonical `[source:N]` markers, with at
+most one explicit corrective regeneration; marker text is never normalized.
+ADR-0053 adds an exact-version title projection to SQLite sparse retrieval.
+Titles are derived metadata, not canonical chunk text or corpus-specific
+rules. In historical V1 profiles, a disabled Qdrant backend means sparse-only
+retrieval is available, not that vector-backed hybrid retrieval is healthy.
+Certified V2 dense retrieval does not depend on Qdrant; it uses governed
+SQLite-resident BGE-M3 vectors.
+ADR-0054 fixes the exact one-retry citation-compliance invocation for strict
+persisted Final QA. ADR-0055 defines the thin
+`/v1/notebooks/{notebook_id}/final-qa` `FinalQAInterfaceV1` adapter. Existing
+`/v1/query` and streaming routes are non-persistent preview/search paths, not
+ADR-0045 persisted Final QA. ADR-0056 adds the missing immutable execution
+snapshot and request-fingerprint record required to replay a completed
+assistant publication without regenerating or reconstructing provenance.
+ADR-0057 extends ADR-0042/0053 at the reranker boundary: the exact-version
+title is included in the transient cross-encoder document representation and
+canonical title-match provenance is the first deterministic ordering tier.
+Canonical chunk text and raw sparse/fusion/model evidence remain unchanged.
+These successor decisions are implemented and locally live-validated.
+Canonical `Chunk.text` is the verbatim quote even for compressed context.
+Repeated markers deduplicate; malformed or unknown markers fail; unmarked and
+no-context answers are typed empty outcomes.
+
+Conversation and citation persistence currently uses SQLite behind
+`CompositeStorage`; the SurrealDB conversation/citation methods remain
+unimplemented. Each deterministic citation upsert is an atomic V1 operation,
+but the frozen facade provides no atomic batch or rollback. A later failure can
+leave an idempotently retryable persisted prefix and never returns a partial
+result. The contract is implemented and validated with focused,
+repository-wide, real SQLite/CompositeStorage, and real Bhagavad Gita pipeline
+acceptance. Module 6.10 and the current M6 successor contracts are verified.
+
+**Final QA Integration**
+Module 6.10 composes the completed Phase 6 stages, defines the final typed QA
+response and typed no-context presentation, and owns any streaming delivery
+contract. ADR-0046 resolves the V1 boundary with immutable `FinalQARequest` and
+`FinalQAResult`, a `FinalQAInterfaceV1`/`FinalQAOrchestrator`, deterministic
+single-writer assistant-turn sequencing, typed no-context and unmarked results,
+and fail-fast stage composition. V1 rejects planner multi-hop requests before
+retrieval and explicitly defers streaming to a future versioned contract. The
+contract is implemented by the additive immutable request/result/interface and
+`FinalQAOrchestrator`, with exact typed handoffs and retained provenance.
+ADR-0047 supplies the runtime composition mechanism: the application injects an
+immutable canonical token counter and UTC clock, while `KnowledgeEngine`
+registers the existing built-in retrievers/parent promoter and constructs the
+complete final graph after provider startup. No new registry family or config,
+storage, or frozen-contract change is required. `KnowledgeEngine` constructs
+one graph after registry startup, exposes it only while ready, and drops it on
+shutdown. Module 6.10 is complete; the comprehensive Phase 6 audit and M6
+milestone verification have not run.
+
+#### 4.3 Notebook Manager
+
+Manages the organizational layer: notebooks, sources, notes, sessions, insights.
+
+A notebook is a named collection of sources. A source is an ingested document. Notes are first-class objects (user-created or AI-generated). Sessions are conversation threads attached to a notebook. Insights are extracted claims (entities, summaries, key facts) derived from sources.
+
+The Notebook Manager does not make LLM calls. It is a data management module. Features that require LLM calls (summary generation, insight extraction) are coordinated by later core services. The server remains a transport adapter that calls those core functions.
+
+#### 4.4 Plugin Registry
+
+The registry is the dependency injection container for mnemo-core. During
+`KnowledgeEngine.initialize()`, the engine:
+
+1. loads built-in plugin candidates;
+2. discovers the `mnemo.plugins` Python entry-point group;
+3. scans the immediate Python children of `config.plugins.directory`; and
+4. calls each candidate's `register(registry)` entry point before freezing the
+   registry.
+
+The registry enforces that each slot has at most one active implementation. If two plugins try to register for the same slot with conflicting priorities, the one with higher priority wins and a warning is logged.
+
+```
+Registry slots:
+  parsers:      { "pdf": PDFParser, "docx": DocxParser, ... }
+  chunkers:     { "book": BookChunker, "paper": PaperChunker, ... }
+  embedding_providers: { "primary": OllamaEmbeddingProvider }
+  retrievers:   { "dense": QdrantRetriever, "sparse": SQLiteRetriever, ... }  # historical V1 example
+  reranker:     { "primary": CrossEncoderReranker }  # historical V1 provider family
+  fusion_rerankers: { "primary": CrossEncoderReranker }  # historical ADR-0042 slot
+  llm:          { "planner": OllamaLLM, "synthesizer": OllamaLLM, ... }
+  storage:      { "primary": CompositeStorage }
+```
+
+The current certified V2 composition resolves its server-owned
+`BGE_V2_M3` reranker through the governed V2 production assembler and durable
+activation authority; it does not obtain the production reranker from the
+historical V1 registry example above.
+
+---
+
+## 5. Layer 2 — mnemo-server
+
+### Purpose and Constraints
+
+`mnemo-server` is a **thin adapter**. It has no business logic. Every endpoint is a translation from HTTP/MCP to a `mnemo-core` function call. This is not an opinion — it is a constraint. Any business logic discovered in `mnemo-server` is a bug that must be moved to `mnemo-core`.
+
+The server is built on **FastAPI** (Python). It uses **Uvicorn** as the ASGI server. It handles authentication, rate limiting, websocket connections, and streaming.
+
+### 5.1 REST API Surface
+
+The API is versioned at `/v1`. All requests and responses are JSON unless otherwise specified.
+
+---
+
+#### Notebooks
+
+```
+GET    /v1/notebooks                    → list all notebooks
+POST   /v1/notebooks                    → create notebook
+GET    /v1/notebooks/{id}               → get notebook
+PATCH  /v1/notebooks/{id}               → update notebook metadata
+DELETE /v1/notebooks/{id}               → delete notebook + all sources
+GET    /v1/notebooks/{id}/summary       → get or generate notebook summary
+GET    /v1/notebooks/{id}/timeline      → get timeline events
+GET    /v1/notebooks/{id}/graph         → get entity graph (nodes + edges)
+```
+
+---
+
+#### Sources
+
+```
+GET    /v1/notebooks/{id}/sources            → list sources
+POST   /v1/notebooks/{id}/sources            → ingest new source (multipart)
+GET    /v1/notebooks/{id}/sources/{sid}      → get source metadata
+DELETE /v1/notebooks/{id}/sources/{sid}      → delete source + its chunks
+GET    /v1/notebooks/{id}/sources/{sid}/status → ingestion status (polling)
+```
+
+---
+
+#### Query and Retrieval
+
+```
+POST   /v1/query                        → retrieve evidence for a question
+POST   /v1/query/stream                 → streaming retrieve + synthesize
+POST   /v1/search                       → global full-text + vector search
+```
+
+**POST /v1/query** — the primary endpoint.
+
+Request:
+```json
+{
+  "notebook_id": "uuid | null (null = search all notebooks)",
+  "question": "What are the key arguments against quantitative easing?",
+  "context_budget": 8000,
+  "retrieval_config": {
+    "modes": ["dense", "sparse"],
+    "top_k": 20,
+    "filters": {
+      "doc_type": ["paper", "book"],
+      "date_after": "2020-01-01"
+    },
+    "enable_reranking": true,
+    "enable_parent_retrieval": true
+  },
+  "synthesis": {
+    "enabled": true,
+    "llm_role": "synthesizer",
+    "max_response_tokens": 1000
+  }
+}
+```
+
+Response:
+```json
+{
+  "answer": "The main arguments against quantitative easing are...",
+  "citations": [
+    {
+      "id": "cit-uuid",
+      "chunk_id": "chunk-uuid",
+      "document_title": "Keynes Reconsidered",
+      "page": 47,
+      "heading_path": ["Part II", "Chapter 5", "Monetary Policy"],
+      "quote": "The inflationary pressure of asset purchasing...",
+      "confidence": 0.91
+    }
+  ],
+  "retrieval_metadata": {
+    "chunks_retrieved": 24,
+    "chunks_used": 8,
+    "retrieval_modes_used": ["dense", "sparse"],
+    "latency_ms": 340
+  }
+}
+```
+
+Note that `synthesis.enabled` is optional. A caller can retrieve evidence only (`synthesis.enabled: false`) and perform the synthesis themselves — this is the expected usage for ARVSAL and other agentic systems.
+
+---
+
+#### Sessions and Memory
+
+```
+GET    /v1/notebooks/{id}/sessions           → list sessions
+POST   /v1/notebooks/{id}/sessions           → create session
+GET    /v1/notebooks/{id}/sessions/{sid}     → get session history
+POST   /v1/notebooks/{id}/sessions/{sid}/turns → append a turn
+DELETE /v1/notebooks/{id}/sessions/{sid}     → delete session
+```
+
+---
+
+#### Notes and Insights
+
+```
+GET    /v1/notebooks/{id}/notes              → list notes
+POST   /v1/notebooks/{id}/notes              → create note
+PATCH  /v1/notebooks/{id}/notes/{nid}        → update note
+DELETE /v1/notebooks/{id}/notes/{nid}        → delete note
+GET    /v1/notebooks/{id}/insights           → list extracted insights
+POST   /v1/notebooks/{id}/insights/generate  → trigger insight generation
+```
+
+---
+
+#### Plugins and Features (optional, loaded by plugins)
+
+```
+POST   /v1/notebooks/{id}/podcast            → generate podcast (plugin)
+GET    /v1/notebooks/{id}/podcast            → get podcast status/file (plugin)
+```
+
+---
+
+#### System
+
+```
+GET    /v1/health                       → liveness check
+GET    /v1/config                       → get current plugin/model config
+GET    /v1/config/models                → list available LLM/embedding models
+PATCH  /v1/config                       → update config (hot reload)
+GET    /v1/jobs                         → list background jobs
+GET    /v1/jobs/{id}                    → get job status
+```
+
+---
+
+### 5.2 MCP Server
+
+Mnemo exposes an **MCP (Model Context Protocol) server** that can run in two modes:
+
+- **stdio mode**: For local MCP clients (Claude Desktop, VS Code extensions, ARVSAL local). Mnemo starts as a subprocess that communicates over stdin/stdout.
+- **SSE mode**: For remote MCP clients or applications that need HTTP-based MCP.
+
+The MCP server exposes **knowledge-retrieval tools only**. It does not expose ingestion triggers (those require authentication and are management operations). It does not expose notebook creation or deletion.
+
+#### MCP Tool Definitions
+
+```
+Tool: query_notebook
+Description: Retrieve evidence from a specific notebook in response to a question.
+             Returns grounded evidence with source citations. Does not browse the
+             web, execute code, or perform any external actions.
+Parameters:
+  notebook_id: string   (UUID of the notebook to query)
+  question:    string   (the question to answer)
+  top_k:       integer  (max evidence chunks, default 10)
+  synthesize:  boolean  (whether to synthesize an answer, default true)
+Returns:
+  answer:      string   (synthesized answer, if synthesis requested)
+  citations:   Citation[]
+
+Tool: search_all_notebooks
+Description: Full-text and semantic search across all notebooks.
+Parameters:
+  query:        string   (search query)
+  top_k:        integer  (max results, default 10)
+  notebook_id:  string   (optional filter to specific notebook)
+Returns:
+  results:      SearchResultItem[] (chunk_id, notebook_id, document_id, version_id, text, score, rank, retrieval_mode, heading_path, page_number, metadata)
+  total:        integer
+  latency_ms:   integer
+
+Tool: list_notebooks
+Description: List all available notebooks with their source counts.
+Returns:
+  notebooks: Notebook[]
+
+Tool: get_notebook_summary
+Description: Get a pre-generated or freshly-generated summary of a notebook.
+Parameters:
+  notebook_id: string
+Returns:
+  summary:    string
+  sources:    SourceSummary[]
+
+Tool: get_source_insights
+Description: Get extracted insights (key facts, entities) from a specific source.
+Parameters:
+  source_id:  string
+Returns:
+  insights:   Insight[]
+
+Tool: get_timeline
+Description: Get chronological events extracted from a notebook.
+Parameters:
+  notebook_id: string
+Returns:
+  events:     TimelineEvent[]
+
+Tool: get_document
+Description: Retrieve bounded typed blocks or authorized original bytes for an exact version.
+Parameters:
+  document_id:  string   (required: UUID of the document)
+  version_id:   string   (required: UUID of the document version)
+  notebook_id:  string   (optional: UUID of parent notebook; auto-resolved if unambiguous)
+  mode:         string   (optional: "blocks" or "original", default "blocks")
+  cursor:       string   (optional: keyset HMAC pagination cursor)
+  max_bytes:    integer  (optional: positive integer byte limit)
+  max_items:    integer  (optional: positive integer item limit)
+Returns:
+  DeliveryResponse (completeness, items, next_cursor, usage, attributions) or EmbeddedResource (original mode)
+
+Tool: get_document_chunk
+Description: Retrieve one exact authorized canonical chunk and its ancestry.
+Parameters:
+  document_id:  string   (required: UUID of the document)
+  version_id:   string   (required: UUID of the document version)
+  chunk_id:     string   (required: SHA-256 chunk identity)
+  notebook_id:  string   (optional: UUID of parent notebook; auto-resolved if unambiguous)
+Returns:
+  DeliveryResponse (canonical chunk item and provenance)
+
+Tool: get_asset
+Description: List bounded occurrences or retrieve one authorized original asset.
+Parameters:
+  notebook_id:   string  (required)
+  document_id:   string  (optional)
+  version_id:    string  (optional)
+  occurrence_id: string  (optional)
+  cursor:        string  (optional)
+  limit:         integer (optional)
+
+Tool: get_image_analysis
+Description: Retrieve explicit, latest-ready, or all bounded authorized OCR/vision derivations for an occurrence.
+Parameters:
+  notebook_id:        string (required)
+  occurrence_id:      string (required)
+  ocr_derivation_id:  string (optional)
+  vision_derivation_id: string (optional)
+  selection:          explicit | latest_ready | all (optional)
+  modalities:         [ocr | vision] (optional)
+  profile:            string (optional)
+
+Tool: search_evidence
+Description: Retrieve bounded, typed evidence from explicitly selected representations.
+Parameters:
+  query:               string
+  scope.notebook_id:   string
+  representations:     canonical_text | title_metadata | ocr_text |
+                       vision_analysis | visual_vector | asset_metadata |
+                       multilingual_text | positional_metadata
+  mode:                ranked | exhaustive
+  candidate_budget:    integer
+  evidence_budget:     integer
+Returns:
+  EvidencePage (identity-bound evidence, completeness, provenance, continuation)
+
+Tool: query_structured
+Description: Execute a bounded typed operation against an existing structured projection.
+Returns:
+  Structured result, or an explicit scope-qualified unavailable capability result.
+
+Tool: run_final_qa_v2
+Description: Execute certified V2 retrieval, authorization, evidence resolution,
+             bounded context construction, and grounded FinalQA publication.
+Returns:
+  FinalQA V2 result with evidence citations and immutable execution identity.
+
+Tool: get_capabilities
+Description: Report effective runtime and scope-qualified capability lifecycle state.
+Returns:
+  Capability states and effective configuration/store identity.
+
+Planned in Phase 8.8 — Tool: search_images
+Description: Discover authorized image occurrences through explicit OCR, caption,
+             visual-vector, or governed hybrid retrieval. Results identify assets;
+             exact binary delivery remains the responsibility of get_asset.
+Parameters:
+  notebook_id:         string
+  query:               string
+  mode:                ocr | caption | visual | hybrid
+  requested_k:         integer
+Returns:
+  ImageSearchResult[] (stable IDs, authorized source metadata, retrieval paths,
+  scores where meaningful, provenance, page/locator, and content hash)
+```
+
+The current implementation registers 14 tools: the original six, four delivery
+tools, and four V2 retrieval/capability tools. Phase 8.8 must make every current
+contract production-valid and add one dedicated `search_images` tool, producing
+a 15-tool surface only after its implementation and verification gates pass.
+Registration alone never means configured, ready, active, scope-available, or
+certified. The MCP server does not expose a tool called `run_command`,
+`browse_web`, `send_email`, or any action that crosses the knowledge-engine
+boundary.
+
+---
+
+### 5.3 WebSocket (Streaming)
+
+For the UI's chat experience, Mnemo-server exposes a WebSocket endpoint at `/ws/query`. It streams:
+
+1. `{ event: "retrieval_start" }` — retrieval beginning.
+2. `{ event: "chunk_retrieved", data: { chunk_id, score } }` — as each chunk is retrieved.
+3. `{ event: "synthesis_token", data: { token } }` — streamed LLM tokens.
+4. `{ event: "citations_ready", data: { citations[] } }` — final citation list.
+5. `{ event: "done" }` — stream complete.
+
+This endpoint is the retained V1 streaming contract. It is not the authenticated
+certified V2 FinalQA transport. Before Phase 9 chat is connected to production,
+Phase 8.8 must choose and verify either authenticated HTTP FinalQA V2 or a new
+authenticated/certified V2 streaming contract. The first Phase 9 release may
+instead be explicitly read-only; it must not silently use the unauthenticated V1
+socket as certified V2 chat.
+
+### 5.4 Authentication
+
+Mnemo-server supports three authentication modes, configured at startup:
+
+- **None** (default for local single-user): No authentication required.
+- **API Key**: Static API key in the `Authorization: Bearer` header.
+- **JWT**: For multi-user deployments.
+
+Authentication is handled by a middleware layer and is completely transparent to `mnemo-core`, which never sees credentials.
+
+`none` remains a local-development option, not an acceptable identity source for
+a remotely tunneled certified MCP process. Certified HTTP/MCP operations use a
+typed server-authenticated principal, `CentralAuthorizationServiceV1`, and the
+V2 retrieval authorizer. Phase 8.8 applies that boundary to every remotely
+exposed retained tool and preserves not-found/unauthorized non-disclosure.
+
+---
+
+## 6. Layer 3 — mnemo-ui
+
+### Purpose and Constraints
+
+`mnemo-ui` is a React frontend. It communicates with `mnemo-server` **only** via the REST API and WebSocket. It never imports or calls `mnemo-core` directly. It has no knowledge of how retrieval works.
+
+This constraint is important: the UI must remain functional even if the entire backend is replaced with a different implementation that exposes the same API contract.
+
+### Key Pages
+
+```
+/                          → Dashboard (recent notebooks, quick search)
+/notebooks                 → All notebooks list
+/notebooks/[id]            → Notebook view
+  /notebooks/[id]/chat     → Chat with documents
+  /notebooks/[id]/sources  → Source management, upload
+  /notebooks/[id]/notes    → Notes view
+  /notebooks/[id]/timeline → Timeline view
+  /notebooks/[id]/graph    → Knowledge graph explorer
+  /notebooks/[id]/podcast  → Podcast player + generation
+/search                    → Global search across all notebooks
+/settings                  → Model config, plugin config, storage config
+```
+
+### Design Constraints
+
+- The UI handles no LLM logic. It is a view over data returned by the API.
+- Streaming responses are consumed via WebSocket and rendered token-by-token.
+- Citations are rendered as interactive footnotes that link to the source location.
+- The UI must be functional without JavaScript-heavy dependencies — it must work in low-resource environments.
+
+---
+
+## 7. Layer 4 — plugins/
+
+Plugins are the mechanism by which Mnemo's capabilities can be extended without modifying any of the three core layers.
+
+### Plugin Contract
+
+Every plugin is a Python package with the following structure:
+
+```
+plugins/deepdoc-parser/
+├── pyproject.toml          # declares: mnemo.plugins entry point
+├── deepdoc_parser/
+│   ├── __init__.py
+│   └── parser.py           # implements ParserInterface
+└── README.md               # documents what it provides
+```
+
+The `pyproject.toml` entry point:
+```toml
+[project.entry-points."mnemo.plugins"]
+deepdoc_parser = "deepdoc_parser:register"
+```
+
+The `register` function:
+```python
+def register(registry: PluginRegistry) -> None:
+    registry.register_parser("pdf", DeepDocPDFParser, priority=10)
+    registry.register_parser("docx", DeepDocDocxParser, priority=10)
+```
+
+Installing a plugin is `pip install mnemo-plugin-deepdoc-parser`. Uninstalling removes it from the registry automatically on next restart. No configuration files need to be edited.
+
+### Built-In vs Plugin Capabilities
+
+| Capability | Built-in | Plugin |
+|---|---|---|
+| Digital PDF parsing | ✓ (basic) | deepdoc-parser (advanced) |
+| Scanned PDF / OCR | | ocr-paddle |
+| DOCX/PPTX parsing | ✓ | deepdoc-parser (advanced) |
+| HTML parsing | ✓ | |
+| Markdown parsing | ✓ | |
+| Code (AST-based) chunking | ✓ (built-in) | |
+| Book hierarchical chunking | ✓ (built-in) | |
+| Paper section chunking | ✓ (built-in) | |
+| Email parsing | | email-ingestion |
+| Git repository ingestion | | git-ingestion |
+| EPUB parsing | | epub-parser |
+| Cross-encoder reranking | ✓ (built-in) | |
+| Graph retrieval | | graph-retrieval |
+| RAPTOR hierarchical | | raptor |
+| Knowledge graph extraction | | graph-retrieval |
+| Podcast generation | | podcast-gen |
+| Timeline generation | | timeline-gen |
+| Watch folders | | watchfolder |
+| Browser history ingestion | | browser-history |
+
+The completed core handles digital PDFs, HTML, Markdown, DOCX, PPTX, XLSX,
+plain text, JSON, and CSV/TSV through canonicalization. Phase 6 implements
+sparse and optional dense retrieval, fusion, parent promotion, and
+cross-encoder reranking; the local certified profile intentionally runs with
+Qdrant disabled.
+
+---
+
+## 8. Plugin Registry and Interface Contracts
+
+Phase 1 freezes seven structural, versioned provider contracts. Their exact V1
+signatures, records, lifecycle rules, and exceptions are defined by
+[ADR-0002](../../adr/active/ADR-0002-core-interface-contracts.md) and exported by
+`mnemo.interfaces`. Unversioned names are current-version aliases for the V1
+contracts.
+
+### 8.1 ParserInterface
+
+`ParserInterfaceV1` synchronously converts immutable bytes and `FileMetadata`
+into a `ParseResult`. It exposes immutable `ParserCapabilities` and performs
+no network or persistent-storage I/O.
+
+### 8.2 ChunkerInterface
+
+`ChunkerInterfaceV1` is the released contract from ADR-0002 and remains
+unchanged. ADR-0015 defines `ChunkerInterfaceV2` as the Phase 4 contract. V2
+synchronously accepts `ParsedDocument`, `ChunkingContext`, and one canonical
+local `TokenCounterInterfaceV1`, then returns an ordered tuple of immutable,
+non-persisted `ChunkDraft` values. `ChunkingContext` contains the authoritative
+`DocumentVersion` and `ChunkingOptions`; it does not add identity to
+`ParsedDocument`. The existing `register_chunker()`/`resolve_chunker()` methods
+and `ChunkerInterface` alias remain V1 during the compatibility window. V2 uses
+explicit `register_chunker_v2()`/`resolve_chunker_v2()` methods, and registry
+identity, priority, conflicts, active selection, and deterministic listing are
+isolated by interface version.
+
+Each draft carries an inclusive, contiguous canonical `BlockSpan` and an
+explicit earlier-draft `parent_index` or is a root. The dispatcher finalizes
+the canonical `Chunk` values. Chunk identity uses `version_id`, the persisted
+source span, and text; `heading_path`, text offsets, tokenizer identity,
+metadata, and relationships remain outside identity. The canonical tokenizer
+is the explicitly provisioned, hash-verified, offline-only
+`tiktoken==0.13.0`/`o200k_base` adapter defined by ADR-0015.
+
+The released `ChunkingOptions` model retains its V1 validation. The accepted
+`ChunkingContext` owns the additional V2 minimum of 15 target tokens and
+defensively validates all option relationships. The dispatcher computes the
+effective maximum as `min(max_tokens, 2 * target_tokens)` and applies it to
+draft text; it does not change V1 construction semantics.
+
+### 8.3 EmbeddingProvider
+
+`EmbeddingProviderV1` is the model-provider abstraction for single and batch
+vector generation. It exposes model name, dimensions, token limit,
+`EmbeddingCapabilities`, and a transport-independent health observation.
+`EmbedderInterface` is a separate orchestration contract assigned to a later
+roadmap module.
+
+### 8.4 RetrieverInterface
+
+`RetrieverInterfaceV1` performs one bounded retrieval strategy and returns an
+ordered tuple of raw-scored `ScoredChunk` values. It exposes a stable retrieval
+mode and immutable `RetrieverCapabilities`.
+
+### 8.5 RerankerInterface
+
+`RerankerInterfaceV1` reorders a bounded tuple of candidates while preserving
+chunk provenance and exposes immutable `RerankerCapabilities`.
+
+ADR-0042 preserves that Phase 1/source-local compatibility interface but does
+not flatten ADR-0041 fused evidence into it. Canonical Phase 6 reranking uses
+the additive `FusionRerankingInterfaceV1`, which accepts the original user
+query plus `RetrievalFusionResult` and returns `RetrievalRerankResult`. The
+separate versioned registry family is `fusion_reranker/v1`; legacy `reranker/v1`
+registrations are never silently adapted.
+
+### 8.6 LLMInterface
+
+`LLMInterfaceV1` exposes provider, model, context limit, immutable
+`LLMCapabilities`, typed completion and streaming operations, and a local
+health observation. Its purpose is knowledge retrieval and synthesis only; it
+does not expose tools or autonomous actions.
+
+### 8.7 StorageInterface
+
+`StorageInterfaceV1` is the single atomic façade over blob, vector, keyword,
+metadata, notebook, conversation, and graph persistence. It exposes no backend
+repositories or vendor types. Phase 2 supplies its concrete `primary`
+implementation; Phase 1 defines the contract only.
+
+---
+
+## 9. Document Ingestion Pipeline
+
+The ingestion pipeline is split into a **Fast Path** (blocking, completes before the API returns a job ID with status "indexed") and a **Slow Path** (async background, non-blocking).
+
+```
+INPUT: file bytes (from API upload, watch folder, or programmatic call)
+           │
+           ▼
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           FAST PATH  (target: <30s per 100-page PDF)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           │
+    ┌──────▼──────┐
+    │  STAGE 0    │  Deduplication: SHA-256 → content-addressable store.
+    │  Dedup Gate │  If known, load current ParsedDocument and return it.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 1    │  Format detection: MIME type + extension.
+    │  Detection  │  Route to appropriate ParserInterface implementation.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 2    │  Parsing: convert bytes → ParseResult{blocks[], metadata, extracted_assets[]}.
+    │  Parsing    │  For digital PDF: text extraction + layout analysis.
+    │             │  For scanned: OCR plugin (if installed) → layout.
+    │             │  For DOCX: heading hierarchy preserved.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 3    │  Cleaning: remove headers/footers, fix hyphenation,
+    │  Cleaning   │  normalize unicode, tag languages per block.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 4    │  Assign doc_type and approved deterministic semantic
+    │  Classify   │  annotations. Returns a classified ParseResult.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 4B   │  Future Orchestration: LLM-assisted classification
+    │  (Deferred) │  for ambiguous cases (Fallback).
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 5    │  Preserve parser-produced DocumentMetadata.
+    │  Metadata   │  Optional enrichment remains future roadmap work.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 6    │  IngestionPipeline persists TransientAssets through storage.
+    │  Blob Store │  StorageInterfaceV1 returns permanent Asset identities.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 7    │  Pure DocumentCanonicalizer converts resolved ParseResult
+    │  Canonical  │  to ParsedDocument without generating identity or doing I/O.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 8    │  ParsedDocument + ChunkingContext -> ChunkerInterfaceV2.
+    │  Chunking   │  Drafts -> validated IDs/relationships -> immutable Chunk[].
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 9    │  Embedding: check cache per chunk (sha256 → vector).
+    │  Embedding  │  Batch new chunks. Store embeddings with chunks.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 10   │  Indexing: write canonical state and enabled projections.
+    │  Indexing   │  Compensate failures across the selected profile only.
+    └──────┬──────┘
+           │
+           ▼
+   Status: INDEXED  ←── user can query document from this point
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           SLOW PATH  (background worker, interruptible)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           │
+    ┌──────▼──────┐
+    │  STAGE 9A   │  Future entity extraction → optional governed graph.
+    │  NER        │  Phase 10/11 work; not current certified ingestion.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 9B   │  Question generation: small LLM generates 3–5 questions
+    │  Questions  │  per section. Stored as QUESTION-type chunks, embedded,
+    │             │  indexed. Dramatically improves retrieval on "what does
+    │             │  this document say about X" queries.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 9C   │  Summary generation: per-section summaries (small LLM).
+    │  Summaries  │  Stored as SUMMARY-type chunks, embedded, indexed.
+    └──────┬──────┘
+           │
+    ┌──────▼──────┐
+    │  STAGE 9D   │  Graph edge extraction: lazy, rate-limited LLM calls
+    │  Graph      │  to extract entity relationships from high-priority chunks
+    │             │  (those with high retrieval frequency are prioritized).
+    └──────┬──────┘
+           │
+           ▼
+   Status: ENRICHED  ←── full retrieval quality achieved
+```
+
+---
+
+## 10. Adaptive Chunking Engine
+
+The Adaptive Chunker is the most consequential module in the entire system. Retrieval quality cannot exceed chunking quality. A perfect embedding model cannot retrieve a meaningful answer from a semantically broken chunk.
+
+The fundamental principle: **chunking is semantic compression, not text splitting**.
+
+The canonical boundary is:
+
+```text
+Parser -> ParseResult -> DocumentCleaner -> DocumentClassifier
+       -> IngestionPipeline (asset persistence and resolution)
+       -> DocumentCanonicalizer -> ParsedDocument
+       -> ChunkingContext + ChunkerInterfaceV2 + TokenCounterInterfaceV1
+       -> ordered ChunkDraft values -> dispatcher finalization
+       -> immutable Chunk values -> later embedding and indexing
+```
+
+`ParsedDocument` remains content-only. `DocumentVersion` in `ChunkingContext`
+provides the authoritative document/version binding, and the dispatcher rejects
+a mismatch between their content hashes.
+
+### 10.1 Book
+
+Books have narrative hierarchy: Part → Chapter → Section → Subsection → Paragraph.
+
+**Strategy: Three-Level Hierarchical Chunking**
+
+1. Parse the Table of Contents to establish the hierarchy. If no ToC exists, infer it from heading patterns.
+2. For each section, produce deterministic local chunk types:
+   - `SUMMARY`: only when a source-authored summary is present. Used for high-level routing.
+   - `PASSAGE`: 200–500 tokens, bounded by paragraph breaks (never character count). This is the primary retrieval unit.
+   - `VERBATIM`: For key definitions, quotes, claims. 30–150 tokens.
+3. Each chunk carries `heading_path`: `["Thinking Fast and Slow", "Part II", "Chapter 11", "The Illusion of Understanding"]`.
+4. Chapters are never crossed. A 400-token window that spans a chapter boundary is two separate passages.
+5. Skip the ToC itself (generates pure duplicate noise).
+
+### 10.2 Research Paper
+
+Papers have canonical structure: Abstract, Introduction, Background, Methods, Results, Discussion, Conclusion, References.
+
+**Strategy: Canonical Section Chunking**
+
+1. Detect section headings via layout analysis (font size, bold, numbering patterns: "3.1 Methodology").
+2. Assign each detected section to a canonical `section_type` enum.
+3. Never chunk across section boundaries.
+4. Abstract → always one atomic chunk. It is the highest-priority retrieval anchor and should be complete and unmodified.
+5. References → parsed for structured citation metadata but excluded from embedding.
+6. Figures and tables: source captions become `CAPTION` chunks. Figure content
+   remains represented by the frozen canonical models; later enrichment may
+   add a description using namespaced metadata and an existing `ChunkType`.
+7. Equations: source LaTeX is preserved with `ChunkType.EQUATION`. Any generated
+   plain-language description belongs to later enrichment.
+
+### 10.3 Resume
+
+**Strategy: Semantic Section Isolation**
+
+_Prerequisite: The Phase 3 `DocumentClassifier` deterministically annotates canonical section boundaries (`parser.resume.section`) and Experience role boundaries (`parser.resume.role_local_id`) onto the blocks of a `DocType.RESUME` document (per ADR-0017)._
+
+1. Identify canonical sections from Phase 3 metadata: Contact, Summary, Experience, Education, Skills, Projects, Publications.
+2. Each section becomes one chunk.
+3. Within Experience: each explicitly annotated role (`role_local_id`) is a distinct chunk. Ambiguous blocks lacking a role ID fall back into a generic experience chunk.
+4. Never overlap sections. A query for "Python experience" must not retrieve an education section.
+5. Preserve a source-authored profile summary when present. Generated holistic
+   summaries belong to later enrichment and are not created by Phase 4.
+
+### 10.4 Code
+
+**Strategy: AST-Structural Chunking (tree-sitter)**
+
+1. Parse each file's AST using tree-sitter (supports 100+ languages).
+2. Extract top-level declarations: classes, functions, methods, constants, module-level docstrings.
+3. Each declaration is a chunk. Functions are atomic — never split mid-function.
+4. Each chunk carries: function signature, docstring, body, and a `call_context` metadata field listing what it calls and what calls it (extracted from AST).
+5. Module-level docstrings → `SUMMARY` chunk for the file.
+6. Repository-level `README.md` → parsed as Markdown, used as the `SUMMARY` chunk for the entire codebase.
+7. Imports are extracted as structured metadata (not embedded separately).
+
+### 10.5 Markdown
+
+**Strategy: Header-Hierarchy Chunking**
+
+The Phase 3 Markdown parser interprets the Markdown AST while it still owns the
+source. It records only the bounded immutable semantics required downstream in
+`parser.markdown.*` block metadata: block kind, one exact source slice per
+source-bearing block, resolved internal links, and structured list type and
+nesting. The cleaner carries this metadata unchanged and the pure canonicalizer
+copies it to the corresponding canonical block. AST/token objects and a full
+AST never cross the parser boundary.
+
+The implemented information flow is:
+
+```text
+Markdown bytes
+  -> MarkdownParser AST interpretation
+  -> RawBlock + immutable parser.markdown.* metadata
+  -> DocumentCleaner (typed content normalization; metadata unchanged)
+  -> DocumentCanonicalizer (metadata copied, not interpreted)
+  -> ParsedDocument
+  -> MarkdownChunker (Module 4.6)
+```
+
+1. Consume canonical blocks and the approved parser-produced Markdown metadata;
+   do not reparse the original file.
+2. Split boundaries: H1, H2, H3 headings.
+3. The content between each H3 and the next H3 is a passage chunk.
+4. Code blocks within Markdown: separate `CODE` chunk with language tag.
+5. Tables: derive a text description from canonical `TableBlock.rows` and retain
+   the exact Markdown table string from `parser.markdown.source`.
+6. Internal links: retained as namespaced metadata for a later graph/indexing
+   owner using the parser-resolved `parser.markdown.links` records; the chunker
+   does not write SurrealDB.
+7. Lists, blockquotes, thematic breaks, and inline source fidelity use their
+   approved parser metadata. The chunker does not reconstruct lost syntax or
+   consume parser implementation objects.
+
+### 10.6 Email
+
+**Strategy: Thread-Aware Chunking**
+
+ADR-0016 defines the implemented Email ingestion boundary. One supplied Email
+source container maps to one `ParsedDocument`: `.eml` contains one top-level
+message, while `mbox` may contain one or more source-correlated thread
+components. The optional `email-ingestion` parser owns MIME interpretation,
+deterministic message ordering, source relationship resolution, and immutable
+`parser.email.*` metadata. It performs no remote acquisition, storage, or UUID
+generation. Outlook `.msg` is deferred and is not supported merely because the
+classifier recognizes its extension.
+
+The implemented boundary and strategy flow are:
+
+```text
+Email container bytes
+  -> email-ingestion ParserInterfaceV1
+  -> ParseResult + immutable parser.email.* metadata
+  -> DocumentCleaner (typed content normalization; metadata unchanged)
+  -> DocumentCanonicalizer (metadata copied, not interpreted)
+  -> ParsedDocument
+  -> EmailChunker (Module 4.7; implemented V2 strategy)
+```
+
+1. Partition messages by stable source-thread correlation and never merge
+   distinct thread components.
+2. Each message with retrievable text produces distinct draft content carrying
+   source `sender`, recipients, timestamp, subject, and thread correlation in
+   namespaced metadata. Empty messages are not represented by fabricated text.
+3. Reply hierarchy is expressed by `parent_index` only when the source parent
+   resolves uniquely inside the same canonical document. Dispatcher
+   finalization creates final parent IDs.
+4. Independently ingested Email documents are not assembled by the parser or
+   chunker. Later indexing/retrieval orchestration may correlate them without
+   changing chunk identity.
+5. Long message bodies split only at legal message-internal semantic boundaries
+   using the canonical token counter; never by blind character count.
+6. HTML-only newsletters and announcements are deterministically extracted by
+   the Email parser and remain flat Email content. The chunker applies local
+   semantic prose splitting but never reparses or redispatches source.
+7. Attachment extraction and ingestion as separate documents belongs to later
+   acquisition/indexing workflow. The Email strategy preserves only available
+   source attachment correlation metadata.
+
+### 10.7 Slides / Presentations
+
+**Strategy: Slide-Level Atomic Chunking**
+
+The Phase 3 classifier owns the deterministic `parser.slide.*` semantic
+boundary defined by ADR-0036. Canonicalization preserves that immutable
+metadata; the V2 strategy consumes it without inspecting raw presentation
+source. Slide-number groups must be contiguous and source ordered.
+
+1. One chunk per slide: title + body text + speaker notes (if present).
+2. Images remain linked through canonical `Asset` references; generated vision
+   descriptions belong to later enrichment.
+3. If slides have a section structure (revealed by slide titles or section dividers), group slides by section. A section-level `SUMMARY` exists only when supported by source text.
+4. The title slide → `SUMMARY` chunk for the deck.
+
+### 10.8 Documentation
+
+**Strategy: Task-and-Topic Chunking**
+
+The Phase 3 classifier owns the deterministic `parser.documentation.*`
+semantic boundary defined by ADR-0037. Canonicalization preserves the metadata;
+the V2 strategy consumes it without reparsing Markdown, HTML, or original
+source. Unannotated blocks remain ordinary topic content rather than being
+discarded.
+
+1. Respect the documentation navigation structure (sidebar, ToC) as the primary hierarchy.
+2. Identify **task blocks** — numbered procedures, command sequences — and keep them atomic.
+3. API reference sections: one chunk per function/endpoint, with preserved structure: name, signature, description, parameters, return value, examples.
+4. Callouts (Note, Warning, Tip, Caution) are preserved with their type tag in chunk metadata.
+
+### 10.9 The Universal Chunking Invariants
+
+Regardless of strategy, all chunkers must satisfy:
+
+1. **Canonical counting:** One deterministic, offline token counter instance is
+   supplied to both strategy and dispatcher. No strategy selects its own
+   tokenizer. The frozen engine is `tiktoken==0.13.0` with a hash-verified
+   `o200k_base` asset and adapter V1. Mnemo never redistributes that asset.
+   A user explicitly provisions it from the frozen upstream URL (or imports an
+   independently obtained copy for an air-gapped deployment) into local,
+   content-addressed storage. Provisioning is the only network-capable step;
+   runtime loading and chunking are strictly offline and have no fallback.
+2. **Minimum size:** A draft below 15 tokens is removed only when it is a leaf.
+   A short parent with children is an invalid strategy result.
+3. **Maximum size:** The effective hard maximum is
+   `min(max_tokens, 2 * target_tokens)`. Strategies perform legal semantic
+   splitting before return. The dispatcher rejects oversized output; it never
+   blindly splits or truncates atomic content, and failure is all-or-nothing.
+4. **Provenance:** Every draft and final chunk has a valid inclusive,
+   contiguous canonical `BlockSpan`. Multiple chunks may share a span,
+   including secondary splits within one block. Text boundaries are represented
+   by chunk text; `ChunkPosition` offsets are navigation metadata.
+5. **Heading path:** Hierarchical sources retain sufficient canonical heading
+   context. A hierarchy-free source may use an empty path.
+6. **Hierarchy:** Strategies declare a single-parent forest using
+   `parent_index` references to earlier drafts. Multiple roots and multiple
+   levels are allowed. Parentage is never inferred from `section_index` or
+   `heading_path`. Siblings share one non-null parent, exclude self, are
+   symmetric, and have deterministic order; roots are not siblings by default.
+7. **Semantic atomicity:** A chunk never crosses a major semantic boundary.
+8. **Identity stability:** The chunk ID is the SHA-256 of `version_id`, the
+   canonical source block-ordinal span, and chunk text. `heading_path`, text
+   offsets, tokenizer identity, metadata, and relationships do not participate.
+
+The frozen `ChunkType` enum remains authoritative. Architecture labels such as
+`IMAGE`, `EQUATION_DESCRIPTION`, and `PROFILE_SUMMARY` are not new enum values;
+the corresponding source or later-enrichment role uses an existing
+`ChunkType` plus namespaced metadata. Phase 4 performs no LLM or network calls
+and creates no placeholder summaries or descriptions. Optional generated
+content belongs to a future post-chunk enrichment pipeline that requires its
+own ADR and roadmap assignment before implementation.
+
+---
+
+## 11. Retrieval Pipeline
+
+ADR-0040 defines the normative ordering at the Module 6.4/6.5 boundary:
+
+```text
+each source-local retriever stream
+    -> parent candidate promotion (independent, single-pass)
+    -> Module 6.5 cross-source combination/deduplication/fusion
+    -> global ranking and later stages
+```
+
+Any older diagram that visually places merge/deduplication before parent
+promotion is superseded by this ordering. Parent promotion never compares
+dense and sparse raw scores and never counts siblings across source streams.
+
+ADR-0041 completes the next boundary:
+
+```text
+RetrievalPlan
+    -> deterministic dense/sparse invocation expansion
+    -> per-invocation embedding and bounded parallel retrieval
+    -> source-local ADR-0040 promotion
+    -> canonical chunk-ID grouping with raw evidence retained
+    -> unweighted RRF (one-based rank, k=60)
+    -> deterministic global rank
+    -> required caller global_limit (1..100)
+    -> RetrievalFusionResult
+```
+
+The fused result is not a raw-scored retriever stream. It uses additive Phase 6
+records so `ScoredChunk` continues to mean one provider/source's raw score.
+
+ADR-0042 defines the next typed boundary:
+
+```text
+canonical original user query + RetrievalFusionResult
+    -> optional fusion_reranker/primary
+    -> pinned cross-encoder raw logits + explicit sigmoid relevance
+    -> deterministic relevance/RRF-rank/chunk-ID ordering
+    -> RetrievalRerankResult
+    -> Module 6.7 ContextBuilder (implemented)
+```
+
+The output always retains the complete `RetrievalFusionResult`. Missing
+fusion-aware capability produces the same typed result with the existing RRF
+order; a registered provider failure is not treated as fallback. Module 6.6
+cannot retrieve, refill, recompute RRF, or change candidate cardinality.
+
+ADR-0043 defines the following additive context boundary:
+
+```text
+RetrievalRerankResult + budget inputs + exact-version display labels
+    -> ADR-0015 token accounting
+    -> mandatory top-three verbatim prefix
+    -> deterministic skip-over selection
+    -> optional sequential llm/extractor per-item compression
+    -> exact item-level source markers
+    -> ContextBuildResult
+    -> Module 6.8 Grounded Answer Generation
+    -> GroundedAnswerResult
+    -> Module 6.9 Citation Resolution and Persistence
+    -> Module 6.10 Final QA Integration
+```
+
+Context construction never accesses storage, changes prior-stage evidence, or
+implements answer/citation behavior.
+
+```
+USER QUESTION: "What did Graham say about market volatility?"
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 1: QUERY ANALYSIS                                          │
+│  – Detect intent: factual | comparative | exploratory | synthesis│
+│  – Extract entities: ["Benjamin Graham", "market volatility"]   │
+│  – Detect temporal markers: none                                │
+│  – Determine scope: single notebook specified? all?             │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 2: QUERY EXPANSION (HyDE)                                  │
+│  Generate a hypothetical answer paragraph using Planner LLM:    │
+│  "Graham believed market volatility was not risk itself but     │
+│   rather an opportunity for disciplined investors..."           │
+│  Embed the hypothetical answer (not the original question).     │
+│  This dramatically improves dense retrieval recall.             │
+│  Also: extract synonyms/alternate phrasings for sparse search.  │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 3: RETRIEVAL PLANNING                                      │
+│  Planner LLM constructs a RetrievalPlan:                        │
+│    SubQuery 1: dense, query=HyDE paragraph, k=15               │
+│    SubQuery 2: sparse, query="Graham market volatility", k=10   │
+│    SubQuery 3: sparse, query="Mr. Market Benjamin Graham", k=8  │
+│    SubQuery 4: graph, entity="Benjamin Graham", hops=1          │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼ (all SubQueries in parallel)
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 4: PARALLEL RETRIEVAL                                      │
+│                                                                 │
+│  DenseRetriever      SparseRetriever      GraphRetriever        │
+│  (provider; V2       (SQLite FTS5)        (future optional      │
+│   SQLite exact)                           SurrealDB graph)       │
+│       │                    │                    │               │
+│       └────────────────────┴────────────────────┘               │
+│                            │                                    │
+│                    Keep source-local streams separate           │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 5: METADATA FILTER CONTRACT                                │
+│  These hard filters execute inside each storage search BEFORE  │
+│  backend ranking/top_k; this diagram groups their semantics:    │
+│  – doc_type filter (e.g., papers only)                          │
+│  – date_after / date_before                                     │
+│  – source_id filter (specific documents only)                   │
+│  – notebook_id filter                                           │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 6: PARENT PROMOTION (Hierarchical Upgrade)                 │
+│  For each retrieved chunk: inspect its stored sibling family.   │
+│  If ≥50% of chunks sharing its non-null parent are present,     │
+│  replace them with that explicitly linked parent chunk.         │
+│  This upgrades snippet-level hits to section-level context.     │
+│  Module 6.5 then combines, deduplicates, and fuses streams.     │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 7: RERANKING                                               │
+│  ADR-0042 scores each (original question, chunk) pair.          │
+│  Preserves raw logit, sigmoid relevance, RRF, and provenance.   │
+│  ADR-0048 applies relevance-aware multi-source diversity quota  │
+│  ordering for multi-document queries, while defaulting to pure  │
+│  score ranking for single-source queries.                       │
+│  Flags sigmoid relevance < 0.4; this is not confidence.         │
+│  Absent fusion capability retains typed existing-RRF order.     │
+│  Registered provider failures propagate; RRF is not recomputed. │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 8: CONTEXT COMPRESSION                                     │
+│  Calculate available token budget:                              │
+│  budget = context_budget - system_prompt - question - history   │
+│  Greedily select chunks by score until budget is consumed.      │
+│  For remaining high-score chunks beyond budget:                 │
+│  compress to ~100 tokens using Extractor LLM.                   │
+│  Preserve verbatim the top-3 highest-scored chunks.             │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 9: CONTEXT ASSEMBLY                                        │
+│  Format with attribution markers:                               │
+│                                                                 │
+│  === Source [1]: "The Intelligent Investor" Ch.8 p.204 ===     │
+│  Graham described Mr. Market as a business partner who...       │
+│  === Source [2]: "Graham Interview, Forbes 1974" p.3 ===       │
+│  When asked about volatility, Graham stated...                  │
+│                                                                 │
+│  The typed ContextBuildResult proceeds to Module 6.8.           │
+│  Typed empty context is retained without invented answer text.  │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 10: ANSWER + CITATION PIPELINE                             │
+│  Module 6.8 receives the exact ContextBuildResult.              │
+│  ADR-0048 selects constrained system prompt:                    │
+│    – PROMPT_S1 (Default grounded semantic QA)                   │
+│    – PROMPT_S2 (Exact structured extraction)                    │
+│    – PROMPT_S3 (Code functions, routes, tabular CSV records)    │
+│    – PROMPT_S4 (Multi-document comparative synthesis)           │
+│  Grounded answer uses exact [source:N] markers.                 │
+│  Module 6.9 resolves markers from retained ContextItem evidence.│
+│  Module 6.10 owns final QA response and delivery.               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Multi-Hop Retrieval
+
+For complex analytical queries (`requires_multi_hop: true` in the plan):
+
+1. **Hop 1:** Standard ADR-0041 retrieval pass. Module 6.5 returns this typed
+   first-stage result with `requires_multi_hop` intact.
+2. **Entity extraction:** Extract entities from top-5 retrieved chunks.
+3. **Hop 2:** New SubQuery using extracted entities as search terms.
+4. **Fusion:** Merge hop-1 and hop-2 results with RRF.
+5. Maximum 3 hops. Hard limit — prevents infinite traversal.
+6. Multi-hop is only triggered when the Planner identifies it as necessary.
+
+### Cross-Document Retrieval
+
+When `requires_multi_doc: true`:
+
+1. Module 6.5 adds no implicit single-source restriction. Immutable
+   planner/caller `notebook_id` and `source_ids` hard filters remain enforced;
+   results may come from any eligible document.
+2. The ContextBuilder segments the assembled context by source document.
+3. The Synthesizer receives explicit instructions to compare/contrast/synthesize across sources.
+4. Each source's contribution is tracked in the citation record.
+
+---
+
+## 12. Conversation Memory
+
+Mnemo implements a **three-tier memory model**. Note that global long-term memory (Tier 4 from the ARVSAL design) is removed from this specification — it is the responsibility of the host application (e.g., ARVSAL), not the knowledge engine.
+
+### Tier 1: Immediate Context
+- Current prompt + the last N turns (configurable, default 10).
+- Held in the LLM's context window.
+- The server maintains session history and injects it into each completion call.
+
+### Tier 2: Working Memory (Within-Session Retrieval)
+- Current conversation persistence is SQLite; SurrealDB is a future optional
+  graph/session adapter rather than a present requirement.
+- When processing a new turn, the QueryPlanner receives the last 3 turns as context.
+- Relevant past turns are retrieved from the session via BM25 keyword search (SQLite FTS5 over session history).
+- This enables follow-up questions ("what about the next chapter?") to be correctly resolved.
+
+### Tier 3: Notebook Memory (Persistent Session Knowledge)
+- Session Notes are planned as first-class documents in the authoritative
+  relational store; future profiles may project them into SurrealDB.
+- Session Notes may be embedded into the selected derived vector backend; Qdrant
+  is not required by the current certified profile.
+- They are retrievable via the standard retrieval pipeline.
+- All citations from past sessions persist — every AI statement is permanently traceable to its source.
+- This enables the system to reference past conversations ("As we discussed last month...") when asked.
+
+### Memory API
+
+The host application controls memory access via session parameters:
+
+```json
+POST /v1/query
+{
+  "session_id": "sess-uuid",       // enables working memory injection
+  "include_session_notes": true,   // enables Tier 3 retrieval
+  ...
+}
+```
+
+A stateless caller (no `session_id`) receives pure retrieval results with no memory context. This is the correct mode for API integrations that manage their own memory.
+
+---
+
+## 13. Storage Architecture
+
+### Four Storage Adapters and the Certified Topology
+
+Mnemo's architecture contains four specialized storage adapters; it does **not**
+require every indexed document to be replicated into all four systems. The
+current certified V2 topology is content-addressed filesystem storage plus an
+immutable SQLite corpus, with a separate mutable operational SQLite store for
+FinalQA execution state. Qdrant and SurrealDB are disabled optional/future
+adapters and are outside the certified production path. Canonical identity,
+authorization, provenance, and evidence remain anchored outside optional derived
+indexes.
+
+#### Qdrant — Optional Derived Vector Store
+
+Qdrant is a functional V1 vector adapter and a future scale path. It is not used
+by current certified V2 retrieval. Current V2 dense retrieval reads governed
+BGE-M3 vectors from immutable SQLite and performs bounded exact cosine scoring
+in process. A future Qdrant activation requires a V2 projection/synchronization
+path, authorization-preserving dense-source adapter, lifecycle, rollback, and
+fresh certification; Phase 8.8 and Phase 9 do not require it.
+
+**Why Qdrant over embedded alternatives:**
+- HNSW index delivers <15ms ANN search at 20M+ vectors with >99% recall.
+- Named vectors: store multiple embeddings per chunk (body embedding + title embedding + question embedding) without duplicating chunk data.
+- Payload filters: apply metadata filters at the HNSW index level, not post-retrieval. This is critical for notebook-scoped queries.
+- Runs as a single binary with no dependencies. Zero-configuration local setup.
+- Persists data as a directory — backup is `cp -r`.
+
+**Can SurrealDB replace Qdrant?** Not at scale. SurrealDB supports vector search but not HNSW — it uses brute-force or flat index. At 1M+ chunks, query latency diverges by 10–100×.
+
+---
+
+#### SQLite FTS5 — Full-Text / Keyword Store
+
+The gold standard for exact-phrase and BM25 retrieval.
+
+**Why it cannot be removed:**
+Vector search is fundamentally unable to reliably retrieve exact terms, identifiers, names, and codes. `ISBN 978-0-06-055566-5`, `CVSS-2025-3841`, `function authenticate()` — these must be found by exact text match, not semantic similarity.
+
+SQLite FTS5 ships as part of SQLite (no extra dependency), supports BM25 ranking natively, handles billions of rows efficiently, and is the most stable local text search solution available.
+
+Sparse retrieval metadata follows ADR-0039. Exact-version document type and
+publication date are held in a rebuildable SQLite projection keyed by
+`(document_id, version_id)`, while notebook/source constraints use canonical
+relational `Source` rows. These predicates execute inside the FTS query before
+BM25 ordering and `top_k`. SQLite's negative BM25 cost is sign-inverted once to
+the descending raw-score convention; it is not normalized or compared directly
+with dense scores.
+
+**Deployment:** A single `.db` file. No server, no daemon.
+
+---
+
+#### SurrealDB — Partial Optional Graph Adapter
+
+SurrealDB is a partial optional adapter retained for future graph and structured
+relationship work. Current certified V2 does not depend on it and does not use
+it for canonical documents, notebooks, chunks, conversations, citations, jobs,
+or FinalQA execution state. Canonical source/asset bytes reside in the
+content-addressed filesystem; the immutable SQLite corpus owns document,
+version, membership, chunk, FTS5, vector, identity, provenance, authorization,
+and evidence state; and a separate mutable SQLite operational store owns
+FinalQA executions, snapshots, transitions, and citations.
+
+**Historical/intended roles, not current certified behavior:**
+- Document registry, notebook/source relationships, and chunk/document graph
+  projections were part of the original multi-adapter design.
+- Session turns, citations, notes, insights, and background jobs were proposed
+  SurrealDB-backed capabilities; current implementations use the governed
+  SQLite boundaries where those capabilities exist.
+- Entity nodes, relationship edges, graph persistence, and graph retrieval
+  remain deferred future work. The roadmap places the explicit entity-graph and
+  multi-hop retrieval path in Phase 11.
+
+SurrealDB is not a Phase 8.8 or Phase 9 prerequisite. Any future activation must
+preserve canonical IDs and authorization/provenance, define synchronization and
+rollback, and receive its own lifecycle validation and certification.
+
+**Historical rationale for considering SurrealDB over PostgreSQL:** SurrealDB handles relational, document, and graph queries in one engine. For a personal-scale local deployment, the alternative (PostgreSQL + Neo4j) is operationally heavier.
+
+**Historical rationale for a future graph adapter beyond SQLite:** SQLite does not have native graph traversal. A future entity graph would require graph-query support for multi-hop entity relationships; certified V2 does not currently require that capability.
+
+---
+
+#### Filesystem — Content-Addressable Blob Store
+
+Raw files, parsed IR JSON, extracted images, generated audio.
+
+```
+~/.mnemo/blobs/
+    ab/cdef1234.../
+        raw.pdf                ← original file
+        parsed.ir.json         ← ParsedDocument as JSON
+        chunks.json            ← chunk list (pre-embedding)
+    cd/ef5678.../
+        raw.png                ← extracted figure
+```
+
+All paths are content-addressed (`sha256(bytes)[:2]/sha256(bytes)`). Duplicate files share one blob. This directory is the authoritative source for re-ingestion if any index is corrupted.
+
+---
+
+#### Version-Aware Dense Retrieval Metadata Projection
+
+Per ADR-0038, Qdrant filter payload is derived search-index state rather than
+canonical metadata. `CompositeStorage` projects the exact version's
+`ParsedDocument.doc_type` and `DocumentVersion.metadata.publication_date`, plus
+the logical document's canonical `Source` and notebook memberships, onto each
+vector point identified by `(document_id, version_id)`.
+
+`QdrantStore` applies every non-empty `MetadataFilter` condition before ANN
+ranking and `top_k` truncation. Date bounds are inclusive; versions without a
+publication date do not match a date-bounded query. Multiple values within
+`source_ids` or `doc_types` are OR alternatives, while different filter fields
+intersect. Empty filters retain the direct vector-search path. Qdrant never
+becomes authoritative for type, publication date, source, or notebook state;
+collections may be rebuilt from parsed IR and relational records.
+
+Mutable source and notebook operations synchronously refresh affected vector
+payloads through `CompositeStorage` and use explicit compensation on failure.
+Historical v0.20.1 collections predate this projection and remain unmodified.
+
+---
+
+### Storage Decision Summary
+
+| Question | Answer |
+|---|---|
+| What is the current certified topology? | Content-addressed filesystem + immutable SQLite corpus + separate operational SQLite. |
+| Must every file exist in all four adapters? | No. No accepted ADR establishes a four-copy invariant. |
+| Is Qdrant required by Phase 8.8 or Phase 9? | No. It remains an optional derived scale path, presently disabled. |
+| Is SurrealDB required by Phase 8.8 or Phase 9? | No. Its graph role is partial and deferred to later graph work. |
+| Should SurrealDB replace Qdrant? | No. HNSW performance is non-negotiable at scale. |
+| Should SurrealDB replace SQLite? | No. FTS5 BM25 is a distinct query pattern. |
+| Should PostgreSQL replace SurrealDB? | Only for multi-user enterprise deployments. |
+| Should GraphRAG-style communities be built? | No. The cost (LLM calls per chunk at ingest) is prohibitive locally. Lazy graph construction instead. |
+
+---
+
+## 14. LLM Orchestration
+
+### Specialist Role-Based Architecture
+
+Mnemo uses four LLM roles. Each role has different model requirements. The configuration maps roles to models, and every role's model is independently configurable. Embedding and reranking are separate provider families rather than LLM roles.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    LLM ROLE REGISTRY                                 │
+├────────────────┬─────────────────────────────────────────────────────┤
+│ ROLE           │ JOB                              │ MODEL PROFILE    │
+├────────────────┼──────────────────────────────────┼──────────────────┤
+│ planner        │ Decompose queries into sub-      │ Fast, small.     │
+│                │ queries. Generate retrieval plan. │ 7B–14B param.   │
+├────────────────┼──────────────────────────────────┼──────────────────┤
+│ synthesizer    │ Write grounded answers from      │ High quality.    │
+│                │ retrieved context.               │ 32B–70B param.  │
+├────────────────┼──────────────────────────────────┼──────────────────┤
+│ extractor      │ NER, entity relationship         │ Small, batch.   │
+│                │ extraction. Question generation.  │ 3B–7B param.   │
+├────────────────┼──────────────────────────────────┼──────────────────┤
+│ classifier     │ Document-type classification.    │ Fast, small.     │
+│                │                                  │ Structured.      │
+├────────────────┼──────────────────────────────────┼──────────────────┤
+│ embedding      │ Separate provider family:        │ nomic-embed or  │
+│                │ Called at ingest and query time. │ mxbai-embed     │
+├────────────────┼──────────────────────────────────┼──────────────────┤
+│ reranker       │ Separate provider family:        │ certified BGE-  │
+│                │ Not generative.                  │ reranker-v2-m3  │
+└────────────────┴──────────────────────────────────┴──────────────────┘
+```
+
+**Configuration shape (TOML; provider and model values are required):**
+
+```toml
+[llm.planner]
+provider = "ollama"
+model = "planner-model"
+
+[llm.synthesizer]
+provider = "ollama"
+model = "synthesizer-model"
+
+[llm.extractor]
+provider = "ollama"
+model = "extractor-model"
+
+[llm.classifier]
+provider = "ollama"
+model = "classifier-model"
+
+[embedding]
+provider = "ollama"
+model = "embedding-model"
+dimensions = 768
+
+[reranker]
+provider = "sentence-transformers"
+model = "BAAI/bge-reranker-v2-m3"
+revision = "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
+```
+
+The certified V2 production manifest additionally binds pair policy
+`bge-reranker-v2-m3-pair-256-contextual-v1`, CUDA execution, batch size 2, and
+forbids CPU fallback. The earlier
+`cross-encoder/ms-marco-MiniLM-L6-v2` revision
+`233902d25c440f23af6f7d6e94d2946bac0bee0a` belongs only to historical
+ADR-0042/V1 evaluation evidence; it is not the configured or certified
+production reranker.
+
+Every generative role implements `LLMInterface`; embedding implements
+`EmbeddingProvider`, and reranking implements `RerankerInterface`. Provider
+identifiers are registry-resolved free-form strings.
+
+### What Mnemo's LLMs Are NOT Allowed to Do
+
+The LLMs inside Mnemo are constrained by their prompts and by what the modules around them do with their outputs:
+
+- The **Planner LLM** outputs a `RetrievalPlan` JSON structure. It cannot output arbitrary tool calls. Its output schema is a typed Pydantic model.
+- The **Synthesizer LLM** outputs a string with optional `[source:N]` citation markers. It cannot output `<tool_call>` or action directives. The system prompt explicitly instructs it to answer only from the provided context.
+- The **Extractor LLM** outputs structured entity and relationship JSON. No free-form generation.
+
+These constraints are architectural, not just prompt engineering. The modules that call these LLMs parse their outputs into typed structures and discard anything that doesn't parse.
+
+### Grounded Answer System Prompt Routing (ADR-0048)
+
+To maximize generation fidelity across diverse query intents while preserving epistemic grounding and negative refusal invariants, `GroundedAnswerGenerator` uses a conservative query-intent prompt router:
+
+| Template | Intent Target | Routing Criteria | Grounding Policy |
+|---|---|---|---|
+| `PROMPT_S1` | Default Semantic / Conceptual QA | General questions, conceptual queries, ambiguous fallback | Strict context grounding with `[source:N]` markers |
+| `PROMPT_S2` | Exact Structural Extraction | Exact verses (e.g. Gita), tolerances, dimensions | Verbatim extraction without paraphrasing |
+| `PROMPT_S3` | Code & Tabular Extraction | Code functions, routes, tabular CSV records | Exact routes, methods, and tabular cell values |
+| `PROMPT_S4` | Cross-Document Synthesis | Multi-document comparisons (`compare`, `across`, etc.) | Separate breakdown per source document |
+
+---
+
+## 15. Performance Architecture
+
+### Incremental Indexing
+
+When a document is updated (detected by hash mismatch on re-ingest):
+1. Chunk all blocks again.
+2. Compare new chunk IDs against stored chunk IDs.
+3. Delete chunks whose IDs are absent (removed content).
+4. Insert chunks whose IDs are new (added content).
+5. Re-embed only new chunks (changed chunks have new IDs by design).
+6. Update graph entities for changed sections only.
+
+Result: re-indexing a minor edit to a 500-page document is O(changed sections), not O(entire document).
+
+### Fast Path / Slow Path Split
+
+| Stage | Path | Target Latency |
+|---|---|---|
+| Parse + Clean + Classify | Fast | <10s per 100 pages |
+| Chunk + Embed + Index | Fast | <20s per 100 pages |
+| NER + Question Gen | Slow | background, ≤5 min |
+| Graph edge extraction | Slow | background, lazy |
+| Section summaries | Slow | background, ≤5 min |
+
+The fast path is synchronous and blocks the API response (returns when indexing
+is complete). The current durable slow-path job store is SQLite. A future
+SurrealDB-backed queue would require an explicit adapter/lifecycle decision.
+
+### Embedding Cache
+
+```
+Key:   sha256(text) + "::" + model_name
+Value: float[] (stored as binary in SQLite)
+```
+
+When the same text appears in multiple documents (e.g., a commonly quoted passage), it is embedded once. Cache hit rates on personal document collections typically exceed 60%.
+
+### Parallel Ingestion
+
+The background worker maintains a thread pool (configurable, default 4 threads for CPU-bound parsing, 8 async tasks for I/O-bound embedding). Multiple documents are ingested concurrently.
+
+### Watch Folders (plugin)
+
+The `watchfolder` plugin monitors configured directories using `watchdog`. New or modified files are automatically enqueued for ingestion. The plugin is designed to be idle (zero CPU) when no changes are detected.
+
+### Document Versioning
+
+```
+Document:
+  document_id:  "stable-uuid"
+  versions:
+    - hash: "abc123", created_at: "2024-01-01", status: SUPERSEDED
+    - hash: "def456", created_at: "2025-06-01", status: CURRENT
+  current_hash: "def456"
+```
+
+Old chunks remain queryable (by default). A configurable `archive_superseded` flag moves old version chunks to lower-priority retrieval pools.
+
+---
+
+## 16. Scalability
+
+### At 100,000 Documents and 20 Million Chunks
+
+The estimates below describe a future optional scale profile, not the current
+certified V2 deployment.
+
+#### Storage Projections
+
+| Resource | Estimate |
+|---|---|
+| Raw documents (avg 5 MB) | 500 GB |
+| Qdrant HNSW index (768d vectors) | ~58 GB in-memory, ~30 GB on-disk |
+| SQLite FTS5 index | ~10 GB |
+| SurrealDB metadata + graph | ~5 GB |
+| Filesystem blobs (IR JSON) | ~20 GB |
+| **Total** | ~600 GB |
+
+Fits on a 2 TB NVMe drive. The Qdrant in-memory requirement (58 GB) may require 64–128 GB RAM for optimal performance, or Qdrant's `memmap` mode which sacrifices ~3× speed for ~10× memory reduction.
+
+#### Query Latency
+
+| Stage | Latency |
+|---|---|
+| HyDE query expansion | 500–1500ms (small LLM) |
+| Dense retrieval (Qdrant HNSW) | 5–20ms |
+| Sparse retrieval (SQLite FTS5) | 10–50ms |
+| Metadata filtering | <5ms |
+| Parent retrieval | <10ms |
+| Cross-encoder reranking (50 candidates) | 200–500ms |
+| Context assembly | <10ms |
+| Synthesis (70B LLM @ 40 tok/s) | 15–60s (streaming starts in <5s) |
+
+#### Graceful Degradation
+
+- If Qdrant is in `memmap` mode (low RAM): dense retrieval degrades to ~50ms. Acceptable.
+- If no GPU: synthesis with a 70B model runs at ~10 tok/s on CPU. Slow but functional.
+- Module 6.5 V1 rejects a requested `graph` subquery explicitly when graph
+  retrieval is unavailable; it never silently returns a partial dense/sparse
+  success. A later accepted graph/multi-hop contract may define typed graceful
+  degradation.
+
+---
+
+## 17. Integration Patterns
+
+### 17.1 Standalone User (Docker)
+
+```bash
+git clone https://github.com/[org]/mnemo
+docker compose up
+open http://localhost:3000
+```
+
+Nothing else required. The user interacts entirely via the browser UI.
+
+---
+
+### 17.2 REST API Client (Custom Application)
+
+```python
+import httpx
+
+client = httpx.AsyncClient(base_url="http://localhost:8000")
+
+# Ingest a document
+with open("paper.pdf", "rb") as f:
+    response = await client.post(
+        "/v1/notebooks/my-research/sources",
+        files={"file": ("paper.pdf", f, "application/pdf")}
+    )
+job_id = response.json()["job_id"]
+
+# Query without synthesis (ARVSAL does its own synthesis)
+result = await client.post("/v1/query", json={
+    "notebook_id": "my-research",
+    "question": "What are the key findings?",
+    "synthesis": {"enabled": False},
+    "retrieval_config": {"modes": ["dense", "sparse"], "top_k": 10}
+})
+# → { "context": "...", "citations": [...] }
+
+# ARVSAL then takes this context and synthesizes with its own LLM
+```
+
+---
+
+### 17.3 MCP Integration (Claude Desktop)
+
+**`~/.config/claude/config.json`:**
+```json
+{
+  "mcpServers": {
+    "mnemo": {
+      "command": "mnemo-mcp",
+      "args": ["--host", "localhost", "--port", "8000"]
+    }
+  }
+}
+```
+
+Claude Desktop now has access to:
+- `query_notebook` — ask questions grounded in the user's documents.
+- `search_all_notebooks` — full-text search across all knowledge.
+- `list_notebooks` — enumerate available notebooks.
+- `get_notebook_summary` — get an overview of a notebook.
+- `get_timeline` — get chronological events.
+
+Claude does not ingest documents. Claude does not manage notebooks. Claude only retrieves knowledge. The user manages documents via the Mnemo UI or REST API.
+
+---
+
+### 17.4 MCP Integration (ARVSAL)
+
+ARVSAL treats Mnemo as one of many registered MCP tools:
+
+```
+User → ARVSAL Orchestrator
+         │
+         ├── [decides knowledge query is needed]
+         │
+         ▼
+   MCP Tool Call: query_notebook(
+       notebook_id = "research",
+       question = "What does the literature say about X?",
+       synthesize = false    ← ARVSAL synthesizes its own answer
+   )
+         │
+         ▼
+   Mnemo returns: { context: "...", citations: [...] }
+         │
+         ▼
+   ARVSAL synthesizes its final answer using its own LLM,
+   incorporating the Mnemo evidence as grounded context.
+         │
+         ▼
+   Response to user with citations from Mnemo embedded.
+```
+
+ARVSAL never calls Mnemo's ingestion endpoints during a conversation. Document management is a separate, deliberate operation.
+
+---
+
+### 17.5 Python Library (Direct Embedding)
+
+For maximum performance and zero HTTP overhead, `mnemo-core` can be used as a Python library:
+
+```python
+from mnemo import KnowledgeEngine, MnemoConfig
+
+engine = KnowledgeEngine(config=MnemoConfig.from_file("mnemo.toml"))
+await engine.initialize()
+try:
+    # Ingestion and retrieval APIs are added in their designated later phases.
+    ...
+finally:
+    await engine.shutdown()
+```
+
+This is the deployment model for ARVSAL running Mnemo as an embedded library rather than an external service.
+
+---
+
+## 18. Deployment Model
+
+### Minimal Stack (Single Container)
+
+For users with minimal resources or simple needs:
+
+```yaml
+# docker-compose.minimal.yml
+services:
+  mnemo:
+    image: mnemo/mnemo:latest
+    ports:
+      - "3000:3000"   # UI
+      - "8000:8000"   # API + MCP
+    volumes:
+      - ./data:/data
+    environment:
+      MNEMO_STORAGE_FILESYSTEM_ROOT: /data/files
+      MNEMO_STORAGE_SQLITE_PATH: /data/mnemo.db
+      MNEMO_STORAGE_QDRANT_ENABLED: "false"
+      MNEMO_STORAGE_SURREALDB_ENABLED: "false"
+      # Required LLM, embedding, and reranker provider/model values are
+      # supplied through mnemo.toml or their canonical MNEMO_ variables.
+```
+
+Tradeoffs: with Qdrant disabled, historical V1 profiles may be sparse-only.
+Certified V2 is not: it uses SQLite FTS5 plus persisted SQLite BGE-M3 vectors
+with bounded exact cosine retrieval and RRF. Qdrant remains an optional scale
+profile and must not be enabled without its own V2 lifecycle and certification.
+
+---
+
+### Standard Stack (Historical/Optional Reference Deployment)
+
+> **Historical/optional reference deployment — not the current certified V2
+> topology.** The current certified V2 deployment is content-addressed
+> filesystem storage plus an immutable SQLite corpus and a separate mutable
+> operational SQLite store. Qdrant is an optional derived vector-scale path;
+> SurrealDB is a partial future graph path. Neither is required for Phase 8.8 or
+> Phase 9.
+
+```yaml
+# docker-compose.yml
+services:
+  mnemo-core:
+    image: mnemo/mnemo:latest
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+      - "8001:8001"  # MCP SSE
+    volumes:
+      - ./data:/data
+    depends_on:
+      - qdrant
+      - surrealdb
+    environment:
+      MNEMO_STORAGE_QDRANT_URL: http://qdrant:6333
+      MNEMO_STORAGE_SURREALDB_URL: http://surrealdb:8000
+      # Required LLM, embedding, and reranker provider/model values are
+      # supplied through mnemo.toml or their canonical MNEMO_ variables.
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    ports:
+      - "6333:6333"
+
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    command: start --log info file:/data/surrealdb
+    volumes:
+      - ./surrealdb_data:/data
+    ports:
+      - "8000:8000"
+```
+
+---
+
+### Dev Stack
+
+```yaml
+# docker-compose.dev.yml
+# Adds hot reload for core and server.
+# Mounts source directories as volumes.
+# Enables debug logging.
+```
+
+---
+
+## 19. Product Delivery Roadmap
+
+This section preserves the architecture's original product-delivery stages.
+They are not the numbered engineering phases. The authoritative implementation
+sequence and completion state are defined by `mnemo_engineering_roadmap.md`.
+
+### Product Stage 1 — Minimum Working Notebook (Weeks 1–8)
+**Goal:** `docker compose up` → working UI → ingest PDF → chat.
+
+> **Historical product-stage proposal:** this stage predates the certified V2
+> topology and is retained as design history, not current deployment guidance.
+
+- `mnemo-core`: Parser (digital PDF + Markdown), basic chunker, Ollama embedder, Qdrant + SQLite stores, SurrealDB metadata, dense retriever, basic synthesizer.
+- `mnemo-server`: REST API for notebooks, sources, query. No auth.
+- `mnemo-ui`: Notebook list, source upload, chat view, basic citation rendering.
+- `docker-compose.yml`: Standard stack.
+
+**Exit criterion:** User can ingest a 300-page PDF and receive a cited answer within 60 seconds.
+
+---
+
+### Product Stage 2 — Adaptive Chunking + Full Parser Suite (Weeks 9–16)
+**Goal:** All document types handled correctly.
+
+- Implement all built-in `ChunkerInterfaceV2` strategies (generic, book, paper,
+  code, Markdown, email, resume, slides, documentation).
+- Plugin: `deepdoc-parser` (advanced PDF layout understanding).
+- Plugin: `ocr-paddle` (scanned document support).
+- Plugin: `git-ingestion` (codebase ingestion via AST chunking).
+- Plugin: `email-ingestion`.
+
+**Exit criterion:** A 1,000-page textbook chunked with correct chapter/section hierarchy, retrievable at section granularity.
+
+---
+
+### Product Stage 3 — Hybrid Retrieval + Reranking (Weeks 17–22)
+**Goal:** Retrieval quality that matches or exceeds NotebookLM.
+
+- Sparse retriever (SQLite FTS5 BM25).
+- Reciprocal Rank Fusion.
+- CrossEncoder Reranker.
+- Parent Retrieval.
+- HyDE query expansion.
+- MCP server (stdio mode).
+
+**Exit criterion:** >85% answer accuracy on a personal multi-source benchmark. Claude Desktop can query notebooks via MCP.
+
+---
+
+### Product Stage 4 — NotebookLM Feature Parity (Weeks 23–30)
+**Goal:** Every NotebookLM feature implemented locally.
+
+- Multi-hop retrieval.
+- Cross-document reasoning mode.
+- Notebook summaries.
+- Automatic Session Notes.
+- Citation Engine (persistent, UI-clickable).
+- MCP SSE mode for remote clients.
+- Plugin: `podcast-gen` (Kokoro TTS).
+- Plugin: `timeline-gen`.
+
+**Exit criterion:** A 20-minute podcast generated from a 10-source notebook. All citations rendered as clickable links in the UI.
+
+---
+
+### Product Stage 5 — Knowledge Graph + Source Insights (Weeks 31–38)
+**Goal:** The system understands relationships, not just content.
+
+- Plugin: `graph-retrieval` (spaCy NER + lazy relationship extraction + SurrealDB graph retrieval).
+- Insight extraction and management.
+- Knowledge Graph Explorer UI.
+- Watch folder support (`watchfolder` plugin).
+- Document versioning.
+
+**Exit criterion:** User can explore the entity graph of a 50-source notebook with relationship edges.
+
+---
+
+### Product Stage 6 — Scale + Production Polish (Weeks 39–46)
+**Goal:** Production-grade stability at 100K document scale.
+
+- Qdrant `memmap` mode configuration for low-RAM environments.
+- Embedding cache with cross-session persistence.
+- Background job management UI.
+- API key authentication.
+- Plugin: `raptor` (hierarchical summary indexing for very long documents).
+- Benchmark: 100K PDF collection, 20M chunks, query latency <30s end-to-end.
+
+**Exit criterion:** Mnemo handles a 100K document corpus on a machine with 32 GB RAM.
+
+---
+
+### Product Stage 7 — Ecosystem and Extensibility (Month 12+)
+**Goal:** Become the reference implementation for local knowledge retrieval.
+
+- Plugin SDK documentation.
+- Official plugins: EPUB parser, browser history ingestion.
+- OpenAPI specification published.
+- MCP server certified against the MCP specification test suite.
+- Embed in Open WebUI as a knowledge retrieval backend.
+
+---
+
+## 20. Critical Review
+
+### Weakness 1: Optional Multi-Store Profiles Add Operational Complexity
+
+Enabling Qdrant and SurrealDB alongside SQLite and filesystem storage creates
+additional synchronization, monitoring, backup, lifecycle, and certification
+work. A disabled optional adapter must not break the selected profile.
+
+**Mitigation:** The certified profile keeps canonical source bytes and provenance
+in filesystem/SQLite, uses a separate operational SQLite store, and leaves
+Qdrant/SurrealDB disabled. Future profiles treat optional indexes as derived and
+rebuildable, introduce explicit reconciliation/activation, and are certified as
+new compositions rather than assumed equivalent.
+
+---
+
+### Weakness 2: Local LLM Quality Ceiling
+
+The quality of synthesis, planning, and extraction is bounded by the best model the user can run locally. For users with <16 GB RAM, this means 7B models, which produce noticeably lower quality than GPT-4o.
+
+**Mitigation:** The `LLMInterface` accepts any provider. Users who want higher quality for synthesis can configure an OpenAI-compatible cloud endpoint for just that role while keeping all data locally. Document data never leaves the machine — only the synthesized query does, if the user chooses.
+
+---
+
+### Weakness 3: Knowledge Graph Quality Degrades at Scale
+
+The entity graph is built by a small LLM running in batch. At 100K documents, the graph will have:
+- Duplicate entities (different surface forms for the same entity).
+- Low-confidence relationships hallucinated by the extractor.
+
+**Mitigation:** Entity normalization before insertion (fuzzy match + canonical form). Low-confidence edges are flagged and not used for primary retrieval. The graph is an additive enrichment layer — its failure degrades graph retrieval only, not dense or sparse retrieval.
+
+---
+
+### Weakness 4: HyDE Adds Latency
+
+Generating a hypothetical answer paragraph using the Planner LLM adds 500–1500ms before any retrieval begins.
+
+**Mitigation:** HyDE is configurable. It can be disabled globally or per-request. For latency-sensitive integrations (MCP tool calls inside an interactive conversation), callers can disable HyDE and accept slightly lower recall. For background batch analysis, HyDE should always be enabled.
+
+---
+
+### Weakness 5: Plugin Fragmentation Risk
+
+As the plugin ecosystem grows, users will face incompatibility between plugin versions and core versions. A breaking change in `ParserInterface` breaks every parser plugin.
+
+**Mitigation:** Interface contracts are versioned (`ParserInterfaceV1`, `ParserInterfaceV2`). Core supports multiple interface versions simultaneously with a deprecation window. Plugin manifests declare compatible core version ranges. The registry warns on startup if a plugin declares an incompatible range.
+
+---
+
+### Weakness 6: No Multi-User Access Control at Core Level
+
+`mnemo-core` has no concept of users, permissions, or access control. This is intentional for single-user deployments but is a gap for shared deployments.
+
+**Mitigation:** Multi-user access control belongs in `mnemo-server`, not `mnemo-core`. The server layer enforces user-scoped notebook access. At the core level, all notebooks are accessible to all callers — the server is the trust boundary. Enterprise deployments requiring row-level security must implement it in `mnemo-server`.
+
+---
+
+## 21. Phase 8.5–8.8 Current State and Handoff
+
+### 21.1 Evidence-backed phase state
+
+| Phase | Status | Architectural result | Boundary retained |
+|---|---|---|---|
+| 8.5 | **COMPLETED / CERTIFIED** | Full Multilingual V2, BGE-M3 + FTS5 + RRF, BGE-reranker-v2-m3, identity-bound authorization/evidence, provenance, FinalQA operational-store separation, durable reranker activation/rollback, and HTTP/stdio/SSE parity | Certification applies to the exact immutable 44-document production identity; the historical 94.4% evaluation is not identity-equivalent to the 83.3% production-parity result |
+| 8.6 | **COMPLETED / VALIDATED EVALUATION NOTEBOOK** | 24 governed sources across PDF, HTML, DOCX, PPTX, XLSX, CSV, JSON, and Markdown; Hindi, Marathi, and English; structure-aware chunking; 5,843 FTS rows and BGE-M3 embeddings; 161 image occurrences with complete OCR, Vision, and CLIP derivations; canonical manifest and transport validation | Evaluation-only; not merged into or exposed as the certified production corpus |
+| 8.7 | **COMPLETED CAPABILITY MILESTONE; HARDENING FOLLOW-UP REQUIRED** | Expanded MCP surface to 14 registered tools, additive retrieval/delivery contracts, notebook/asset identity propagation, FinalQA exposure, and real client exercises | The later audits found historical tunnel composition, retained-tool authorization, immutable-schema reader, metadata, capability, and parity defects; Phase 8.8 owns those corrections |
+| 8.8 | **DESIGNED / NOT IMPLEMENTED** | MCP production convergence, contract correctness, semantic image discovery, and Phase 9 architectural preparation | No Phase 9 implementation, no Phase 8.6 promotion, and no Qdrant/SurrealDB production integration |
+
+The authoritative evidence is ADR-0070, ADR-0071, ADR-0073 through ADR-0076,
+the current V2 certification report, the single-production-path audit, the
+canonical-manifest repair report, the post-Phase-8 architecture audit, and the
+MCP failure/contract audit. Phase 8.7 is a retrospective label for the completed
+post-8.6 MCP/client capability work; it was not previously a formal master-roadmap
+heading.
+
+Evidence navigation:
+
+- [Current V2 certification](../../reports/certification/current/mnemo-v2-final-certification.md)
+- [Single production path](../../reports/architecture/mnemo-v2-single-production-path-audit.md)
+- [Phase 8.5/8.6 canonical manifest validation](../../reports/evaluation/canonical-manifest-identity-fix.md)
+- [Post-Phase-8 architecture decision audit](../../reports/operations/mnemo-post-phase8-architecture-next-step-audit.md)
+- [MCP failure and contract audit](../../reports/operations/mnemo-mcp-failure-and-contract-audit.md)
+- [Memory and artifact audit/cleanup](../../reports/operations/mnemo-memory-audit.md)
+- [Historical index and embedding cleanup](../../reports/operations/mnemo-historical-index-cleanup.md)
+
+The current certified production lifecycle is:
+
+```text
+DECLARED = PASS       IMPLEMENTED = PASS    CONFIGURED = PASS
+BUILDABLE = PASS      READY = PASS          ACTIVE = PASS
+EXPOSED = PASS        EVALUATED = PASS      VERIFIED = PASS
+CERTIFIED = PASS
+```
+
+The durable production reranker state is `BGE_ACTIVE = TRUE` and
+`RERANKER_MODE = BGE_V2_M3`. Phase 8.8 must preserve that evidence-bound state
+while correcting transport composition and contracts.
+
+The completed memory/artifact and historical-index cleanups removed only
+audited disposable or superseded payloads. They preserved the certified
+production DB, both current evaluation notebooks, production configuration,
+models, and certification state; their reports are the operational evidence and
+are not duplicated here.
+
+### 21.2 Phase 8.8 certified runtime convergence
+
+Phase 8.8 converges every production transport on one server-owned composition:
+
+```text
+canonical production configuration + signed certification identity
+                              │
+              fail-closed identity validation
+                              │
+              production composition root
+                              │
+       ┌──────────────┬───────┴────────┬──────────────┐
+       │              │                │              │
+     HTTP          MCP stdio         MCP SSE     existing tunnel
+       └──────────────┴───────┬────────┴──────────────┘
+                              │
+                 authenticated principal
+                              │
+              CentralAuthorizationServiceV1
+                              │
+               certified V2 serving graph
+                              │
+       immutable 44-document corpus + operational FinalQA store
+```
+
+The effective database, database identity, configuration digest, model revisions,
+reranker activation identity, authorization policy, and operational-store binding
+must agree. Startup fails closed before tool exposure when any binding diverges.
+An external tunnel is a transport to this composition, not permission to create
+a second configuration.
+
+### 21.3 Immutable corpus and compatible read model
+
+The certified corpus is immutable and must not be migrated to satisfy newer
+generic readers. Phase 8.8 introduces one shared compatibility/read-model
+boundary for retained sparse retrieval, canonical-text evidence, document blocks,
+and exact chunks. The known mismatch is that generic readers select
+`chunks.position_page_start` and `chunks.position_page_end`, while the certified
+immutable schema predates those additive columns. The read model selects only
+columns physically present, reconstructs optional
+page information only from governed evidence, preserves stable IDs/provenance,
+and returns an explicit unavailable field when a locator is genuinely absent.
+It must never invent page ranges or mutate the certified database. The separate
+mutable FinalQA operational store remains the only destination for execution,
+snapshot, transition, and citation records.
+
+### 21.4 Authorization and non-disclosure
+
+Every remote tool follows:
+
+```text
+transport-authenticated principal
+  → CentralAuthorizationServiceV1
+  → notebook/source/document/version/chunk/asset authorization
+  → retrieval or delivery
+```
+
+Client arguments cannot supply or override a principal, model, reranker, internal
+candidate pool, store path, generation, or activation state. Unauthorized and
+unknown resources retain the repository's non-disclosure contract. Phase 8.8
+must test the boundary for every tool rather than infer safety from shared class
+existence.
+
+### 21.5 Tool and routing declarations
+
+| Tool | Route after Phase 8.8 | Availability rule |
+|---|---|---|
+| `list_notebooks` | Retained V1 contract over compatible authorized read model | Valid scoped listing; no unauthorized membership disclosure |
+| `get_notebook_summary` | Retained storage contract | Empty is valid when no generated summary exists |
+| `get_timeline` | Retained storage contract | Empty is valid when no events exist |
+| `get_source_insights` | Retained storage contract | Empty is valid when no insights exist |
+| `search_all_notebooks` | Retained V1 retrieval | Must use compatible readers and central authorization |
+| `query_notebook` | Retained V1 retrieval/synthesis | Must not silently substitute for certified V2 FinalQA |
+| `search_evidence` | V2 contract; representation-specific sources | `canonical_text` may adapt retained sparse; `multilingual_text` uses governed V2; each requested representation reports availability |
+| `get_capabilities` | Phase 8.5 runtime/certification view | Reports lifecycle and scope truth, not registration alone |
+| `query_structured` | Typed V2 structured service | Executes only for an existing authorized projection; otherwise explicit unavailable |
+| `get_document` | Shared V2 delivery service | Compatible exact-version blocks/original bytes |
+| `get_document_chunk` | Shared V2 delivery service | Compatible exact authorized chunk and ancestry |
+| `get_asset` | Shared V2 delivery service | Lists occurrences or delivers an exact known asset |
+| `get_image_analysis` | Shared V2 delivery service | Delivers persisted authorized OCR/Vision derivations; does not perform discovery |
+| `run_final_qa_v2` | Certified V2 FinalQA service | Requires certified composition and separate operational store |
+| `search_images` *(new in 8.8)* | Dedicated authorized multimodal discovery service | OCR, caption, visual, or governed hybrid mode; results lead to `get_asset` |
+
+Retained V1 contracts are not blindly rewritten as V2. They remain explicit,
+compatible, and authorized. V2 operations cannot fall back to the historical V1
+database or model profile.
+
+### 21.6 Source metadata and provenance envelope
+
+Stable IDs remain identity. Presentation metadata is additive and authorized.
+One reusable envelope supplies, where truthfully persisted:
+
+```text
+notebook_id, source_id, document_id, version_id,
+chunk_id | asset_id | occurrence_id,
+display_name, original_filename?, document_title?, mime_type?, content_hash,
+page/locator?, representation/derivation, retrieval_paths, provenance
+```
+
+`list_notebooks`, summaries, insights, timeline results, retrieval results,
+documents/chunks, assets/analysis, image search, and FinalQA citations reuse this
+resolver where their result refers to a source. A filename is nullable presentation
+metadata: it is never canonical identity, authorization scope, or a uniqueness
+assumption. Filesystem paths are never exposed.
+
+### 21.7 Capability and error state
+
+Capability responses distinguish:
+
+```text
+registered → implemented → configured → buildable → ready
+           → active → exposed → available_for_scope → certified
+```
+
+They also bind the effective configuration and store identity. Asset delivery,
+OCR derivation availability, Vision derivation availability, CLIP embedding
+availability, and semantic image-search readiness are separate capabilities.
+For example, `get_asset` may be active while `visual` search is unavailable for
+the selected notebook.
+
+MCP errors use safe typed categories: `invalid_input`, `unauthorized`,
+`not_found`, `capability_unavailable`, `configuration_mismatch`,
+`schema_compatibility`, `retrieval_failure`, `transport_failure`, `timeout`, and
+`server_failure`. Responses preserve a stable machine code and correlation ID
+without stack traces or unauthorized existence leakage.
+
+### 21.8 Dedicated semantic image search
+
+The Phase 8.8 tool is named `search_images`, matching the existing verb-object
+tool style and distinguishing discovery from `get_asset` delivery.
+
+```text
+                         query + notebook scope
+                                  │
+             authorization before candidate disclosure
+                                  │
+          ┌───────────────┬───────┴────────┬──────────────┐
+          │               │                │              │
+        OCR text       Vision caption   CLIP vector    hybrid
+          │               │                │              │
+          └───────────────┴──── governed RRF ─────────────┘
+                                  │
+          identity-deduplicated, provenance-bearing image results
+                                  │
+                         occurrence_id / asset_id
+                                  │
+                              get_asset
+```
+
+Modes are `ocr`, `caption`, `visual`, and `hybrid`:
+
+- `ocr` searches text extracted from image/page occurrences.
+- `caption` searches persisted Vision captions/observations as a distinct text
+  representation.
+- `visual` embeds the text query with the exact compatible CLIP text encoder and
+  compares it with authorized persisted visual embeddings.
+- `hybrid` uses the existing deterministic RRF pattern across available named
+  paths. Phase 8.8 freezes contribution rules through an ADR/evidence contract;
+  it does not tune weights to a convenient result.
+
+The minimum request is `notebook_id`, `query`, `mode`, and dynamic
+`requested_k`; existing authorized source/document filters may be reused without
+inventing filesystem filters. Results include stable notebook/source/document/
+version/asset/occurrence identities, source display metadata, MIME/content hash,
+page/locator when present, contributing retrieval paths, per-path rank/score when
+meaningful, fused rank/score, derivation/generation identity, and provenance.
+Binary content is not duplicated in search responses.
+
+No modality may disclose an unauthorized occurrence. An unavailable requested
+modality returns a typed scope-qualified capability result. Hybrid behavior must
+state whether it used all requested paths or a governed permitted subset.
+
+### 21.9 Phase 8.6 exposure boundary
+
+```text
+Phase 8.5 production identity → certified → exposed
+Phase 8.6 evaluation identity → validated → evaluation-only
+```
+
+The evaluation registry is not a production federation mechanism. Phase 8.8
+must preserve that separation and reject arbitrary client filesystem paths. Any
+future Phase 8.6 promotion requires an explicit serving-role decision, allowlist,
+authorization memberships, compatible read model, lifecycle/capability binding,
+and fresh transport/provenance certification. Promotion never means merging the
+evaluation corpus into the certified production database.
+
+### 21.10 Phase 9 preparation and gate
+
+Phase 8.8 resolves three prerequisite classes before Phase 9 implementation:
+
+1. **Mutable workspace boundary.** Choose a separately governed mutable workspace
+   for notebook creation/uploads, or declare the first Phase 9 release read-only.
+   UI writes cannot target the immutable hash-bound certified corpus.
+2. **Authenticated V2 chat.** Choose authenticated HTTP FinalQA V2 or design and
+   certify an authenticated V2 streaming contract. The legacy V1 WebSocket is
+   not silently promoted.
+3. **Documentation consistency.** Keep current topology, phase status, V1/V2
+   routing, optional Qdrant, deferred SurrealDB, and Phase 9 dependencies aligned
+   across the living architecture and engineering roadmap.
+
+Phase 8.8 acceptance additionally requires all 14 existing tools plus
+`search_images` to pass valid, invalid, unavailable, authorization, provenance,
+typed-error, HTTP/stdio/SSE/tunnel, and scope tests; real long-running tunnel
+FinalQA correlation; OCR/caption/visual/hybrid image tests; notebook isolation;
+and protected-hash verification.
+
+```text
+Phase 8.8 VERIFIED
+        ↓
+    Phase 9 GO
+        ↓
+Phase 9 implementation begins
+```
+
+Phase 9 is the next implementation phase, but it must not begin before these
+gates pass.
+
+### 21.11 Explicit deferrals and future seams
+
+Phase 8.8 does not integrate Qdrant, complete SurrealDB graph persistence, promote
+Phase 8.6, add arbitrary graph retrieval/graph UI, perform Phase 13 scale work,
+or redesign certified V2 retrieval. Qdrant remains an optional derived vector
+scale path; SurrealDB remains a partial future graph path. Existing typed source,
+projection-generation, canonical ID, authorization, and provenance seams permit
+later additive integration without making either backend a Phase 9 prerequisite.
+
+## 22. Final Architecture Snapshot
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                              MNEMO                                        │
+│                    Local Knowledge Engine                                 │
+│                       Open Source · Local-First · Privacy-Absolute       │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  IDENTITY                                                                 │
+│  ────────                                                                 │
+│  Not an agent. Not an assistant. Not a tool executor.                     │
+│  A knowledge retrieval engine. The epistemic layer.                       │
+│  "What do my documents say about X?" — that is its only question.        │
+│                                                                            │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  LAYER MODEL                                                              │
+│  ───────────                                                              │
+│  mnemo-core    │ Pure Python library. No HTTP. Embeddable.               │
+│  mnemo-server  │ FastAPI adapter. REST + MCP + WebSocket.                │
+│  mnemo-ui      │ React frontend. Calls server only.                      │
+│  plugins/      │ Opt-in extensions. Implement typed interfaces.          │
+│                                                                            │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  CERTIFIED STORAGE / OPTIONAL ADAPTERS                                    │
+│  ─────────────────────────────────────                                    │
+│  Filesystem    │ Content-addressable source/asset bytes. Canonical.       │
+│  SQLite corpus │ Immutable IDs, chunks, FTS5, vectors, provenance.        │
+│  SQLite ops    │ Separate mutable FinalQA execution state.                │
+│  Qdrant        │ Disabled optional derived vector scale path.             │
+│  SurrealDB     │ Disabled partial future graph path.                      │
+│                                                                            │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  LLM ROLES                                                               │
+│  ─────────                                                               │
+│  planner       │ Retrieval planning only. Structured output.             │
+│  synthesizer   │ Grounded answer generation. Citation-aware.             │
+│  extractor     │ NER, relationships, questions. Batch mode.              │
+│  classifier    │ Document-type classification.                           │
+│  All roles:    │ Independently configurable providers and models.        │
+│  embedding     │ Separate text-to-vector provider family.                │
+│  reranker      │ Separate candidate-scoring provider family.             │
+│                                                                            │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  INGESTION                                                               │
+│  ─────────                                                               │
+│  Fast Path     │ Parse → Clean → Classify → Chunk → Embed → Index        │
+│  Target        │ <30s per 100-page PDF                                   │
+│  Slow Path     │ NER → Questions → Summaries → Graph Edges               │
+│  Target        │ <5 min background, interruptible                        │
+│                                                                            │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  CERTIFIED V2 RETRIEVAL                                                   │
+│  ──────────────────────                                                   │
+│  Dense         │ BGE-M3 vectors from immutable SQLite; exact cosine.      │
+│  Sparse        │ SQLite FTS5.                                             │
+│  Fusion        │ RRF; 50 internal candidates enter reranking.            │
+│  Reranking     │ BGE-reranker-v2-m3; governed 256-token pairs.           │
+│  Public k      │ Dynamic caller result count; never fixed to 50.          │
+│  Citations     │ Evidence → chunk/occurrence → version → document/source. │
+│                                                                            │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  INTEGRATION                                                             │
+│  ───────────                                                             │
+│  Standalone    │ docker compose up → browser → done                      │
+│  REST API      │ Any HTTP client. Full management + retrieval.           │
+│  MCP stdio     │ Claude Desktop, VS Code, ARVSAL (local).               │
+│  MCP SSE       │ Remote MCP clients over HTTP.                           │
+│  Python lib    │ pip install mnemo-core. Zero HTTP overhead.             │
+│                                                                            │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  DESIGN PRINCIPLES                                                        │
+│  ─────────────────                                                        │
+│  1. Privacy is axiomatic. No telemetry. No external calls.               │
+│  2. Every interface is a typed contract. Every impl is replaceable.      │
+│  3. Ingest fast. Enrich lazily.                                          │
+│  4. Chunking is semantic compression, not text splitting.                │
+│  5. Retrieval fuses enabled typed streams; production hybrid uses dense  │
+│     + sparse (+ graph when available).                                   │
+│  6. Every statement is cited. Every fact is traceable.                   │
+│  7. Core has no HTTP. Server has no business logic.                      │
+│  8. Plugins are opt-in. Minimal install is fully functional.             │
+│                                                                            │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+*End of Mnemo Architecture Specification v2.0*  
+*This document supersedes the ARVSAL Notebook Architecture Specification v1.0.*  
+*All implementation must conform to the layer boundaries and interface contracts defined herein.*  
+*No business logic may exist in mnemo-server.*  
+*No HTTP may exist in mnemo-core.*  
+*These two constraints are inviolable.*

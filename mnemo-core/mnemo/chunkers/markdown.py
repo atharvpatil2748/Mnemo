@@ -1,7 +1,9 @@
 """Deterministic Markdown-aware semantic chunking strategy."""
 
+import logging
 import re
 from dataclasses import dataclass
+from itertools import pairwise
 
 from mnemo.interfaces import (
     ChunkerCapabilities,
@@ -25,9 +27,13 @@ from mnemo.models import (
     TextBlock,
 )
 
+from .atomic_structures import render_table_part, split_exact_text, split_table_row
+
 _SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+")
 _WORD_WITH_SPACE = re.compile(r"\S+(?:\s+|$)")
 _TEXT_KINDS = frozenset({"paragraph", "paragraph_fragment", "list", "blockquote", "thematic_break"})
+_LIST_ITEM_LINE = re.compile(r"^(?P<indent>[ \t]*)(?:[-+*]|\d+[.)])[ \t]+")
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +51,7 @@ class _Unit:
     list_structure: FrozenMetadata | None = None
     table_structure: FrozenMetadata | None = None
     code_language: str | None = None
+    subdivision: FrozenMetadata | None = None
     separator: str = "\n\n"
     mergeable: bool = True
 
@@ -172,22 +179,35 @@ class MarkdownChunker:
                 raise UnsupportedError("Markdown table metadata kind is inconsistent")
             source = self._source(block, required=True)
             assert source is not None
-            return self._atomic(
+            if counter.count(source) <= hard_max:
+                return self._atomic(
+                    source,
+                    ChunkType.PASSAGE,
+                    span,
+                    heading_path,
+                    section_index,
+                    block,
+                    kind,
+                    counter,
+                    hard_max,
+                    sources=(source,),
+                    links=links,
+                    heading_links=heading_links,
+                    table_structure=FrozenMetadata(
+                        {"header_row_count": block.header_row_count, "rows": block.rows}
+                    ),
+                )
+            return self._oversized_table_units(
+                block,
                 source,
-                ChunkType.PASSAGE,
+                links,
+                heading_links,
                 span,
                 heading_path,
                 section_index,
-                block,
-                kind,
-                counter,
+                target,
                 hard_max,
-                sources=(source,),
-                links=links,
-                heading_links=heading_links,
-                table_structure=FrozenMetadata(
-                    {"header_row_count": block.header_row_count, "rows": block.rows}
-                ),
+                counter,
             )
         if isinstance(block, CodeBlock):
             if kind != "code":
@@ -232,20 +252,34 @@ class MarkdownChunker:
             source = self._source(block, required=True)
             assert source is not None
             structure = self._list_structure(block)
-            return self._atomic(
+            if counter.count(source) <= hard_max:
+                return self._atomic(
+                    source,
+                    ChunkType.PASSAGE,
+                    span,
+                    heading_path,
+                    section_index,
+                    block,
+                    kind,
+                    counter,
+                    hard_max,
+                    sources=(source,),
+                    links=links,
+                    heading_links=heading_links,
+                    list_structure=structure,
+                )
+            return self._oversized_list_units(
+                block,
                 source,
-                ChunkType.PASSAGE,
+                structure,
+                links,
+                heading_links,
                 span,
                 heading_path,
                 section_index,
-                block,
-                kind,
-                counter,
+                target,
                 hard_max,
-                sources=(source,),
-                links=links,
-                heading_links=heading_links,
-                list_structure=structure,
+                counter,
             )
         if kind == "blockquote":
             source = self._source(block, required=True)
@@ -280,6 +314,211 @@ class MarkdownChunker:
             hard_max,
             counter,
         )
+
+    def _oversized_list_units(
+        self,
+        block: TextBlock,
+        source: str,
+        structure: FrozenMetadata,
+        links: tuple[FrozenMetadata, ...],
+        heading_links: tuple[FrozenMetadata, ...],
+        span: BlockSpan,
+        heading_path: tuple[str, ...],
+        section_index: int,
+        target: int,
+        hard_max: int,
+        counter: TokenCounterInterfaceV1,
+    ) -> tuple[_Unit, ...]:
+        source_items = _list_source_items(source)
+        structure_items = structure["items"]
+        assert isinstance(structure_items, tuple)
+        item_groups = _list_structure_groups(structure_items)
+        if len(source_items) != len(item_groups):
+            raise UnsupportedError(
+                "oversized Markdown list source and structured item boundaries disagree"
+            )
+
+        reserve = min(48, max(1, hard_max // 8))
+        payload_target = max(1, target - reserve)
+        payload_hard = max(1, hard_max - reserve)
+        atomic_items: list[tuple[str, tuple[FrozenMetadata, ...], int, int]] = []
+        for item_index, (item_source, item_structure) in enumerate(
+            zip(source_items, item_groups, strict=True)
+        ):
+            pieces = split_exact_text(
+                item_source,
+                target=payload_target,
+                hard_max=payload_hard,
+                counter=counter,
+                label="Markdown list item",
+            )
+            atomic_items.extend(
+                (piece, item_structure, item_index, part_index)
+                for part_index, piece in enumerate(pieces)
+            )
+
+        batches: list[tuple[str, tuple[FrozenMetadata, ...], int, int]] = []
+        current_source = ""
+        current_items: list[FrozenMetadata] = []
+        current_start = 0
+        current_end = 0
+        for item_source, item_structure, item_index, _ in atomic_items:
+            candidate = current_source + item_source
+            if current_source and counter.count(candidate) > payload_target:
+                batches.append((current_source, tuple(current_items), current_start, current_end))
+                current_source = ""
+                current_items = []
+                current_start = item_index
+            if not current_source:
+                current_start = item_index
+            current_source += item_source
+            current_items.extend(item_structure)
+            current_end = item_index
+        if current_source:
+            batches.append((current_source, tuple(current_items), current_start, current_end))
+        if "".join(item[0] for item in batches) != source:
+            raise AssertionError("Markdown list subdivision did not conserve exact source")
+
+        _LOGGER.warning(
+            "[CHUNKER] oversized atomic structure detected type=markdown_list "
+            "block=%s tokens=%s limit=%s strategy=structure_aware_subdivision "
+            "parts=%s content_conservation=PASS",
+            block.ordinal,
+            counter.count(source),
+            hard_max,
+            len(batches),
+        )
+        result: list[_Unit] = []
+        for part_index, (body, items, start, end) in enumerate(batches):
+            prefix = (
+                f"Markdown list block {block.ordinal}, items {start + 1}-{end + 1}, "
+                f"part {part_index + 1}/{len(batches)}\n"
+            )
+            text = prefix + body
+            if counter.count(text) > hard_max:
+                raise UnsupportedError(
+                    "structure-aware Markdown list subdivision exceeds the token maximum"
+                )
+            list_values = dict(structure)
+            list_values["items"] = items
+            result.append(
+                _Unit(
+                    text=text,
+                    chunk_type=ChunkType.PASSAGE,
+                    source_span=span,
+                    heading_path=heading_path,
+                    section_index=section_index,
+                    page_number=block.page_number,
+                    kinds=("list",),
+                    sources=(body,),
+                    links=links,
+                    heading_links=heading_links,
+                    list_structure=FrozenMetadata(list_values),
+                    mergeable=False,
+                    subdivision=_subdivision_metadata(
+                        "markdown_list", block.ordinal, part_index, len(batches)
+                    ),
+                )
+            )
+        return tuple(result)
+
+    def _oversized_table_units(
+        self,
+        block: TableBlock,
+        source: str,
+        links: tuple[FrozenMetadata, ...],
+        heading_links: tuple[FrozenMetadata, ...],
+        span: BlockSpan,
+        heading_path: tuple[str, ...],
+        section_index: int,
+        target: int,
+        hard_max: int,
+        counter: TokenCounterInterfaceV1,
+    ) -> tuple[_Unit, ...]:
+        lines = source.splitlines(keepends=True)
+        header_line_count = block.header_row_count + 1
+        data_rows = block.rows[block.header_row_count :]
+        if block.header_row_count < 1 or len(lines) != header_line_count + len(data_rows):
+            raise UnsupportedError(
+                "oversized Markdown table lacks deterministic row/source correspondence"
+            )
+        header_source = "".join(lines[:header_line_count])
+        data_lines = tuple(lines[header_line_count:])
+        reserve = min(48, max(1, hard_max // 8))
+        payload_target = max(1, target - reserve)
+        payload_hard = max(1, hard_max - reserve)
+
+        batches: list[tuple[str, int, int]] = []
+        current = ""
+        current_start = 0
+        for row_index, row_source in enumerate(data_lines):
+            candidate = header_source + current + row_source
+            if current and counter.count(candidate) > payload_target:
+                batches.append((header_source + current, current_start, row_index - 1))
+                current = ""
+                current_start = row_index
+                candidate = header_source + row_source
+            if counter.count(candidate) > payload_hard:
+                if current:
+                    batches.append((header_source + current, current_start, row_index - 1))
+                    current = ""
+                parts = split_table_row(
+                    block.rows[: block.header_row_count],
+                    data_rows[row_index],
+                    target=payload_target,
+                    hard_max=payload_hard,
+                    counter=counter,
+                )
+                batches.extend((render_table_part(part), row_index, row_index) for part in parts)
+                current_start = row_index + 1
+            else:
+                current += row_source
+        if current:
+            batches.append((header_source + current, current_start, len(data_lines) - 1))
+
+        _LOGGER.warning(
+            "[CHUNKER] oversized atomic structure detected type=markdown_table "
+            "block=%s tokens=%s limit=%s strategy=structure_aware_subdivision "
+            "parts=%s content_conservation=PASS",
+            block.ordinal,
+            counter.count(source),
+            hard_max,
+            len(batches),
+        )
+        result: list[_Unit] = []
+        for part_index, (body, start, end) in enumerate(batches):
+            prefix = (
+                f"Markdown table block {block.ordinal}, rows {start + 1}-{end + 1}, "
+                f"part {part_index + 1}/{len(batches)}\n"
+            )
+            text = prefix + body
+            if counter.count(text) > hard_max:
+                raise UnsupportedError(
+                    "structure-aware Markdown table subdivision exceeds the token maximum"
+                )
+            rows = (*block.rows[: block.header_row_count], *data_rows[start : end + 1])
+            result.append(
+                _Unit(
+                    text=text,
+                    chunk_type=ChunkType.PASSAGE,
+                    source_span=span,
+                    heading_path=heading_path,
+                    section_index=section_index,
+                    page_number=block.page_number,
+                    kinds=("table",),
+                    sources=(body,),
+                    links=links,
+                    heading_links=heading_links,
+                    table_structure=FrozenMetadata(
+                        {"header_row_count": block.header_row_count, "rows": rows}
+                    ),
+                    mergeable=False,
+                    subdivision=_subdivision_metadata(
+                        "markdown_table", block.ordinal, part_index, len(batches)
+                    ),
+                )
+            )
+        return tuple(result)
 
     def _paragraph_units(
         self,
@@ -577,4 +816,54 @@ class MarkdownChunker:
             values["chunker.markdown.table"] = unit.table_structure
         if unit.code_language is not None:
             values["chunker.markdown.code_language"] = unit.code_language
+        if unit.subdivision is not None:
+            values["chunker.atomic.subdivision"] = unit.subdivision
+            values["chunker.preserve_short"] = True
         return FrozenMetadata(values)
+
+
+def _list_source_items(source: str) -> tuple[str, ...]:
+    lines = source.splitlines(keepends=True)
+    markers = [
+        (index, len(match.group("indent").replace("\t", "    ")))
+        for index, line in enumerate(lines)
+        if (match := _LIST_ITEM_LINE.match(line)) is not None
+    ]
+    if not markers:
+        raise UnsupportedError("oversized Markdown list has no source item boundaries")
+    root_indent = min(indent for _, indent in markers)
+    starts = [index for index, indent in markers if indent == root_indent]
+    if not starts or starts[0] != 0:
+        raise UnsupportedError("oversized Markdown list root boundary is malformed")
+    starts.append(len(lines))
+    return tuple("".join(lines[start:end]) for start, end in pairwise(starts))
+
+
+def _list_structure_groups(
+    items: tuple[object, ...],
+) -> tuple[tuple[FrozenMetadata, ...], ...]:
+    groups: list[list[FrozenMetadata]] = []
+    for item in items:
+        if not isinstance(item, FrozenMetadata):
+            raise UnsupportedError("Markdown list item metadata is not immutable")
+        if item.get("depth") == 0:
+            groups.append([])
+        if not groups:
+            raise UnsupportedError("Markdown list metadata starts below the root")
+        groups[-1].append(item)
+    return tuple(tuple(group) for group in groups)
+
+
+def _subdivision_metadata(
+    kind: str, block_ordinal: int, part_index: int, total_parts: int
+) -> FrozenMetadata:
+    return FrozenMetadata(
+        {
+            "strategy": "structure_aware_subdivision",
+            "type": kind,
+            "parent_block_ordinal": block_ordinal,
+            "part_index": part_index,
+            "total_parts": total_parts,
+            "content_conservation": "exact_source_or_structured_cells",
+        }
+    )

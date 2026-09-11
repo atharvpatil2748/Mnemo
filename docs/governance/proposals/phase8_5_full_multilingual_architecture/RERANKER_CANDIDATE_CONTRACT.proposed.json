@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/governance/proposals/full-multilingual-v2/RERANKER_CANDIDATE_CONTRACT.proposed.json",
+  "title": "PROPOSED — MultilingualRerankCandidateV3",
+  "description": "Typed output of the sole authorized RerankerCandidateBuilderV1. Callers cannot provide arbitrary scored text.",
+  "$ref": "#/$defs/multilingualRerankCandidateV3",
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "observationReference": {
+      "$ref": "REPRESENTATION_TRANSFORMATION_MODEL.proposed.json#/$defs/observationReference"
+    },
+    "rerankerPairPolicyV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id", "pair_max_tokens", "query_max_content_tokens", "special_token_policy",
+        "query_truncation", "document_truncation", "unused_query_budget_policy",
+        "title_metadata_policy", "rendering_policy", "tie_breaking_policy"
+      ],
+      "properties": {
+        "policy_id": {"const": "bge-reranker-v2-m3-pair-256-v2"},
+        "pair_max_tokens": {"const": 256},
+        "query_max_content_tokens": {"const": 96},
+        "special_token_policy": {"const": "tokenizer_build_inputs_with_special_tokens_pair"},
+        "query_truncation": {"const": "retain_head"},
+        "document_truncation": {"const": "retain_head"},
+        "unused_query_budget_policy": {"const": "assign_to_document_only"},
+        "title_metadata_policy": {"const": "exclude_from_provider_input"},
+        "rendering_policy": {"const": "token_id_pair_via_frozen_tokenizer"},
+        "tie_breaking_policy": {"const": "score_desc_then_input_ordinal_then_candidate_id"}
+      }
+    },
+    "rerankerInputAuditV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "builder_id", "builder_revision", "provider_id", "model_id",
+        "model_revision", "provider_configuration_digest", "query_preprocessing_identity",
+        "document_preprocessing_identity", "tokenizer_identity", "tokenizer_revision",
+        "tokenizer_configuration_digest", "query_hash", "preprocessed_query_hash",
+        "semantic_text_hash", "preprocessed_document_hash", "query_token_count",
+        "document_token_count", "special_token_count", "available_content_token_count",
+        "retained_query_token_count", "retained_document_token_count", "retained_token_count",
+        "query_truncated", "document_truncated", "retained_query_hash",
+        "retained_document_hash", "rendered_input_hash", "retained_input_hash",
+        "title_metadata_included", "pair_policy", "pair_identity"
+      ],
+      "properties": {
+        "schema_version": {"const": "mnemo.reranker-input-audit/1"},
+        "builder_id": {"const": "mnemo.reranker-candidate-builder/1"},
+        "builder_revision": {"type": "string", "minLength": 1},
+        "provider_id": {"type": "string", "minLength": 1},
+        "model_id": {"type": "string", "minLength": 1},
+        "model_revision": {"type": "string", "minLength": 1},
+        "provider_configuration_digest": {"$ref": "#/$defs/sha256"},
+        "query_preprocessing_identity": {"type": "string", "minLength": 1},
+        "document_preprocessing_identity": {"type": "string", "minLength": 1},
+        "tokenizer_identity": {"type": "string", "minLength": 1},
+        "tokenizer_revision": {"type": "string", "minLength": 1},
+        "tokenizer_configuration_digest": {"$ref": "#/$defs/sha256"},
+        "query_hash": {"$ref": "#/$defs/sha256"},
+        "preprocessed_query_hash": {"$ref": "#/$defs/sha256"},
+        "semantic_text_hash": {"$ref": "#/$defs/sha256"},
+        "preprocessed_document_hash": {"$ref": "#/$defs/sha256"},
+        "query_token_count": {"type": "integer", "minimum": 1},
+        "document_token_count": {"type": "integer", "minimum": 1},
+        "special_token_count": {"type": "integer", "minimum": 1, "maximum": 255},
+        "available_content_token_count": {"type": "integer", "minimum": 1, "maximum": 255},
+        "retained_query_token_count": {"type": "integer", "minimum": 1, "maximum": 96},
+        "retained_document_token_count": {"type": "integer", "minimum": 1, "maximum": 254},
+        "retained_token_count": {"type": "integer", "minimum": 3, "maximum": 256},
+        "query_truncated": {"type": "boolean"},
+        "document_truncated": {"type": "boolean"},
+        "retained_query_hash": {"$ref": "#/$defs/sha256"},
+        "retained_document_hash": {"$ref": "#/$defs/sha256"},
+        "rendered_input_hash": {"$ref": "#/$defs/sha256"},
+        "retained_input_hash": {"$ref": "#/$defs/sha256"},
+        "title_metadata_included": {"const": false},
+        "pair_policy": {"$ref": "#/$defs/rerankerPairPolicyV1"},
+        "pair_identity": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "candidateProvenanceV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_reference_digest", "representation_reference_id", "authorization_scope_digest",
+        "retrieval_snapshot_identity", "retrieval_paths_digest", "fusion_policy_id",
+        "fusion_rank", "source_generation_ids"
+      ],
+      "properties": {
+        "source_reference_digest": {"$ref": "#/$defs/sha256"},
+        "representation_reference_id": {"type": "string", "format": "uuid"},
+        "authorization_scope_digest": {"$ref": "#/$defs/sha256"},
+        "retrieval_snapshot_identity": {"$ref": "#/$defs/sha256"},
+        "retrieval_paths_digest": {"$ref": "#/$defs/sha256"},
+        "fusion_policy_id": {"type": "string", "minLength": 1},
+        "fusion_rank": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "source_generation_ids": {
+          "type": "array", "items": {"type": "string", "format": "uuid"},
+          "uniqueItems": true,
+          "description": "May be empty only for canonical source evidence with no generation-backed retrieval path; every generation-backed path is retained."
+        }
+      }
+    },
+    "multilingualRerankCandidateV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "candidate_id", "input_ordinal", "source_reference",
+        "representation_reference", "semantic_text", "semantic_text_origin",
+        "semantic_text_hash", "title_metadata", "language_observation_references",
+        "script_observation_references", "provenance", "input_audit"
+      ],
+      "properties": {
+        "schema_version": {"const": "mnemo.multilingual-rerank-candidate/3"},
+        "candidate_id": {"type": "string", "format": "uuid"},
+        "input_ordinal": {"type": "integer", "minimum": 0, "maximum": 199},
+        "source_reference": {"$ref": "LANGUAGE_EVIDENCE_REFERENCE_V3.proposed.json"},
+        "representation_reference": {
+          "$ref": "REPRESENTATION_TRANSFORMATION_MODEL.proposed.json#/$defs/textRepresentationReferenceV1"
+        },
+        "semantic_text": {"type": "string", "minLength": 1, "maxLength": 2000000, "pattern": "\\S"},
+        "semantic_text_origin": {"const": "authorized_evidence_resolution"},
+        "semantic_text_hash": {"$ref": "#/$defs/sha256"},
+        "title_metadata": {"type": ["string", "null"], "maxLength": 4096},
+        "language_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        },
+        "script_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        },
+        "provenance": {"$ref": "#/$defs/candidateProvenanceV1"},
+        "input_audit": {"$ref": "#/$defs/rerankerInputAuditV1"}
+      }
+    }
+  },
+  "x-mnemo-builder-contract": [
+    "RerankerCandidateBuilderV1 accepts only a server-authorized evidence reference plus query and resolves semantic_text through the authorized evidence catalog; callers cannot supply semantic_text.",
+    "The builder rejects missing, blank or whitespace-only semantic text before tokenization and before any provider call.",
+    "The builder verifies semantic_text_hash equals both the resolved evidence bytes and representation reference content_hash. A display title is never an evidence resolver.",
+    "Title metadata is retained only for display/audit and title_metadata_included is always false for this policy.",
+    "The public multilingual reranker protocol accepts only MultilingualRerankCandidateV3; direct private-runtime calls are not production or evaluation evidence."
+  ],
+  "x-mnemo-pair-256-algorithm": [
+    "1. Apply the frozen query and document preprocessing identities separately; reject an empty result.",
+    "2. Tokenize each preprocessed string with the frozen tokenizer/revision, add_special_tokens=false and truncation=false; reject either zero-token stream.",
+    "3. Compute special_token_count as len(tokenizer.build_inputs_with_special_tokens([], [])); fail closed unless it is in [1,255].",
+    "4. Set available_content_token_count = 256 - special_token_count and fail closed if it is less than 2.",
+    "5. Set retained_query_token_count = min(query_token_count, 96, available_content_token_count - 1); retain the query head.",
+    "6. Set document_budget = available_content_token_count - retained_query_token_count; retain min(document_token_count, document_budget) document head tokens. Unused query budget belongs only to the document; document budget never moves back to query above 96.",
+    "7. Render the exact pair with tokenizer.build_inputs_with_special_tokens(retained_query_ids, retained_document_ids). The resulting length must equal retained_query_token_count + retained_document_token_count + special_token_count and be <=256, otherwise fail closed.",
+    "8. retained_query_hash and retained_document_hash are SHA-256 over RFC 8785 canonical UTF-8 JSON arrays of the retained token IDs. rendered_input_hash is SHA-256 over RFC 8785 canonical UTF-8 JSON with keys input_ids, attention_mask and token_type_ids; an input not emitted by the tokenizer is encoded as null, never omitted. retained_input_hash additionally binds tokenizer identity/revision/configuration digest and policy_id. pair_identity is SHA-256 over RFC 8785 canonical UTF-8 JSON binding candidate_id, query_hash, retained_input_hash, provider/model revision and preprocessing identities.",
+    "9. Submit exactly that rendered pair through the public reranker adapter. Rank by score descending, then input_ordinal ascending, then candidate_id lexical lowercase UUID."
+  ]
+}

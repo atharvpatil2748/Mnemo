@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -38,7 +40,9 @@ async def test_mcp_sse_health_endpoint(mock_engine: MagicMock) -> None:
 @pytest.mark.anyio
 async def test_mcp_sse_auth_protection(mock_engine: MagicMock) -> None:
     """When api-key auth mode is enabled, non-exempt paths require Authorization."""
-    config = ServerConfig(auth_mode="api-key", api_key="secret-token")
+    config = ServerConfig(
+        auth_mode="api-key", api_key="secret-token", delivery_cursor_secret="c" * 32
+    )
     app = create_sse_app(config=config, engine=mock_engine)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -80,6 +84,35 @@ def test_mcp_sse_lifespan_lifecycle() -> None:
         resp = client.get("/health")
         assert resp.status_code == 200
         assert engine.initialize.called
+
+
+def test_mcp_sse_lifespan_publishes_and_closes_v2_runtime(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A ready injected engine receives the governed V2 runtime during SSE startup."""
+    from starlette.testclient import TestClient
+
+    engine = MagicMock(spec=KnowledgeEngine)
+    engine.state = EngineState.READY
+    engine.shutdown = AsyncMock()
+    installed = SimpleNamespace(close=AsyncMock())
+    installer = AsyncMock(return_value=installed)
+    monkeypatch.setattr("mnemo_server.mcp.server._install_v2_if_enabled", installer)
+    config = ServerConfig(
+        production_mode=True,
+        auth_mode="api-key",
+        api_key="key",
+        delivery_cursor_secret="x" * 32,
+        full_multilingual_v2_enabled=True,
+        full_multilingual_v2_model_cache=tmp_path / "models",
+        final_qa_operational_store_path=tmp_path / "operational.db",
+        mcp_stdio_principal_subject="stdio",
+    )
+    app = create_sse_app(config=config, engine=engine)
+    with TestClient(app) as client:
+        assert client.get("/health").json()["engine_state"] == "ready"
+        assert app.state.full_multilingual_v2_runtime is installed
+    installed.close.assert_awaited_once()
 
 
 def test_mcp_sse_lifespan_creates_engine_from_config() -> None:

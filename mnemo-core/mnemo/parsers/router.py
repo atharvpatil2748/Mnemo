@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Protocol, cast
 
 from mnemo.interfaces.errors import UnsupportedError
-from mnemo.interfaces.parser_models import ParseResult
+from mnemo.interfaces.parser import ParserInterfaceV1, ParserInterfaceV2
+from mnemo.interfaces.parser_models import AssetExtractionOutcome, ParseResult, ParseResultV2
 from mnemo.interfaces.storage import StorageInterfaceV1
 from mnemo.interfaces.types import FileMetadata
 from mnemo.models import Document, FrozenMetadata
@@ -91,6 +92,32 @@ class ParserRouter:
         Raises:
             UnsupportedError: If no parser can handle the detected MIME type or extension.
         """
+        selected = await self._select(data, filename)
+        if isinstance(selected, Document):
+            return selected
+        parser, metadata = selected
+        return parser.parse(data, filename, metadata)
+
+    async def route_with_assets(self, data: bytes, filename: str) -> Document | ParseResultV2:
+        """Route through parser V2 when available while preserving V1 compatibility."""
+        selected = await self._select(data, filename)
+        if isinstance(selected, Document):
+            return selected
+        parser, metadata = selected
+        if isinstance(parser, ParserInterfaceV2):
+            return parser.parse_with_assets(data, filename, metadata)
+        parsed = parser.parse(data, filename, metadata)
+        return ParseResultV2(
+            parse_result=parsed,
+            asset_occurrences=(),
+            omissions=(),
+            outcome=AssetExtractionOutcome.UNSUPPORTED,
+        )
+
+    async def _select(
+        self, data: bytes, filename: str
+    ) -> Document | tuple[ParserInterfaceV1, FileMetadata]:
+        """Resolve deduplication and one pure parser invocation contract."""
         # 1. Compute SHA-256 for deduplication
         sha256_hash = hashlib.sha256(data).hexdigest()
 
@@ -104,16 +131,14 @@ class ParserRouter:
         extension = Path(filename).suffix.lower()
 
         # 4. Parser Resolution
-        parser = self.registry.resolve_parser(mime_type)
-        if not parser and extension:
-            parser = self.registry.resolve_parser(extension)
+        parser = self._resolve_parser(mime_type, extension)
 
         if not parser:
             raise UnsupportedError(
                 f"No parser found for MIME type '{mime_type}' or extension '{extension}'"
             )
 
-        # 5. Dispatch
+        # 5. Build immutable parser metadata
         metadata = FileMetadata(
             content_hash=sha256_hash,
             size_bytes=len(data),
@@ -122,4 +147,11 @@ class ParserRouter:
             metadata=FrozenMetadata(),
         )
 
-        return parser.parse(data, filename, metadata)
+        return parser, metadata
+
+    def _resolve_parser(self, mime_type: str, extension: str) -> ParserInterfaceV1 | None:
+        """Resolve MIME first; specialized server routing may override precedence."""
+        parser = self.registry.resolve_parser(mime_type)
+        if parser is None and extension:
+            parser = self.registry.resolve_parser(extension)
+        return parser

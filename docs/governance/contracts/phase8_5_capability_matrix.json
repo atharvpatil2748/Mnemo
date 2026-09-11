@@ -1,0 +1,327 @@
+{
+  "$schema": "./phase8_5_capability_matrix.schema.json",
+  "schema_version": "1.0",
+  "snapshot_date": "2026-08-28",
+  "authority": [
+    "Accepted ADRs, with later accepted ADRs narrowly superseding earlier mechanisms",
+    "Frozen Phase 0-8 and V1 contracts",
+    "docs/governance/historical/PHASE_8_5_COMPLETE_IMPLEMENTATION_PLAN.md",
+    "Current source code as runtime fact",
+    "Historical gate/evaluation reports only for the behavior they actually demonstrated"
+  ],
+  "state_semantics": {
+    "code_present": "The required domain/interface implementation exists; this alone is not support.",
+    "configured": "An enabled, valid, exact provider/profile and policy configuration exists.",
+    "provider_ready": "The provider and required local/external resources passed capability checks; null means not applicable.",
+    "generation_present": "A persisted generation/projection exists; null means the capability has no generation.",
+    "generation_active": "A validated READY generation is atomically selected; null means not applicable.",
+    "exposed_http": "A compatible production HTTP adapter exposes the capability.",
+    "exposed_mcp": "A compatible production MCP tool/resource exposes the capability.",
+    "discoverable": "An unfamiliar client can infer availability, intended use, bounds, and chaining from public metadata.",
+    "behaviorally_verified": "End-to-end behavior, not only class/direct-call conformance, passed for this exact snapshot.",
+    "security_verified": "The applicable authorization, isolation, cursor, resource, and injection matrix passed.",
+    "certified": "ADR-0070 governance approved this exact runtime/profile/generation/scope. No unsupported PASS is permitted.",
+    "implication_rule": "No true state implies any later state. certified requires every applicable earlier state true."
+  },
+  "runtime_mapping": {
+    "declared": "A matrix capability row exists; code_present separately records implementation availability.",
+    "configured": "Maps directly to states.configured.",
+    "buildable": "Computed at runtime from code presence, exact profile registration, and service construction; it is not inferred from a persisted matrix boolean.",
+    "ready": "Computed at runtime from successful provider/service probes and, where applicable, a READY generation.",
+    "active": "Computed at runtime from ready state plus explicit activation and active-generation selection; generation-backed activation maps additionally to states.generation_active.",
+    "exposed": "Maps to the applicable states.exposed_http and states.exposed_mcp transport snapshots.",
+    "verified": "Maps to states.behaviorally_verified and states.security_verified as independent evidence dimensions.",
+    "certified": "Maps directly to states.certified and is never inferred by the runtime."
+  },
+  "frozen_v1": {
+    "contracts": [
+      "canonical document/version/source/chunk identities",
+      "canonical Chunk.text and digest",
+      "StorageInterfaceV1 pre-ADR-0072 method set",
+      "V1 FTS, embeddings, retrieval plans, ranking and reranking",
+      "V1 citations and Final-QA including ADR-0054 and ADR-0056",
+      "V1 HTTP and streaming semantics",
+      "the original six MCP tool semantics",
+      "Qdrant optionality"
+    ],
+    "known_drift": "ADR-0072 added list_sources_for_document to StorageInterfaceV1; WP-14 completed ADR-0075 migration to DocumentScopeResolverV1 and restored the frozen protocol while preserving notebook propagation and fail-closed resolution.",
+    "storage_interface_v1_pre_0072_methods": [
+      "open", "close", "health_check", "capabilities", "put_asset", "get_asset",
+      "delete_asset", "put_parsed_document", "get_parsed_document", "contains_hash",
+      "upsert_document", "get_document", "get_document_by_content_hash", "list_documents",
+      "delete_document", "upsert_notebook", "get_notebook", "delete_notebook",
+      "list_notebooks", "upsert_source", "get_source", "delete_source", "list_sources",
+      "upsert_note", "get_note", "delete_note", "list_notes", "upsert_insight",
+      "get_insight", "delete_insight", "list_insights", "upsert_session", "get_session",
+      "list_sessions", "append_turn", "list_turns", "upsert_citation",
+      "get_citations_for_turn", "delete_session", "upsert_entity", "upsert_edge",
+      "get_entity", "find_entities", "get_related_entities", "delete_graph_for_document",
+      "upsert_chunks", "get_chunk", "delete_chunks_for_document", "search_dense",
+      "search_sparse", "delete_document_cascade"
+    ]
+  },
+  "capabilities": [
+    {
+      "id": "canonical_ingestion", "owner": "KnowledgeEngine ingestion pipeline", "dependencies": ["parser registry", "chunker", "embedding provider", "StorageInterfaceV1"],
+      "storage_or_index": ["canonical documents/versions/sources/chunks", "FTS/title", "V1 embeddings"], "http": ["V1 source ingestion"], "mcp": [],
+      "readiness_conditions": ["configured parser/chunker/embedder/storage", "indexed lifecycle complete"], "completeness": "Per-document ingestion integrity; not retrieval completeness.",
+      "security": ["input bounds", "notebook/source authorization", "transactional publication"], "certification_requirements": ["Phase 0-8 corpus regression", "parser/chunker/identity invariants"],
+      "states": {"code_present": true, "configured": true, "provider_ready": true, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": null, "discoverable": true, "behaviorally_verified": true, "security_verified": true, "certified": true},
+      "evidence": ["Phase 0-8 certification", "Phase 8.5.11 ingestion report"], "gap": "No WP-00 gap; frozen behavior."
+    },
+    {
+      "id": "v1_retrieval", "owner": "V1 retrieval/query services", "dependencies": ["canonical FTS/title", "V1 embeddings", "reranker"],
+      "storage_or_index": ["canonical FTS/title", "V1 vector cache/backend"], "http": ["/v1/search", "/v1/query", "/v1/query/stream"], "mcp": ["search_all_notebooks", "query_notebook"],
+      "readiness_conditions": ["V1 configuration and indexes ready"], "completeness": "Bounded ranked top-k; never exhaustive.", "security": ["notebook scope", "source/document/version attribution"],
+      "certification_requirements": ["frozen regression", "direct protocol validation"],
+      "states": {"code_present": true, "configured": true, "provider_ready": true, "generation_present": true, "generation_active": true, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": true, "security_verified": true, "certified": true},
+      "evidence": ["Phase 0-8 certification", "current V1 routes/tools", "WP-03 MCP contract tests"], "gap": "No WP-03 gap; metadata now states non-exhaustive bounds without changing V1 semantics."
+    },
+    {
+      "id": "exact_retrieval", "owner": "DocumentExpansionServiceV2 and additive ExactDocumentReaderV1", "dependencies": ["document scope", "exact version"],
+      "storage_or_index": ["canonical chunks/parsed blocks/original reference"], "http": ["V2 delivery routes", "POST V2 document expand"], "mcp": ["get_document", "get_document_chunk"],
+      "readiness_conditions": ["authorized exact version", "bounded delivery service", "exact parsed representation and exact chunk reader"], "completeness": "Complete only at terminal exact selector/snapshot; unavailable positions remain unavailable.", "security": ["version and notebook authorization", "selector/snapshot/bounds cursor binding", "cursor reauthorization"],
+      "certification_requirements": ["exact/full traversal", "blind-agent selector behavior"],
+      "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["direct 116-block traversal", "WP-05 focused exact-selector and cursor tests", "WP-05 HTTP/MCP contract tests"], "gap": "Blind external-agent behavioral certification remains WP-16."
+    },
+    {
+      "id": "positional_retrieval", "owner": "Advanced retrieval plus document expansion", "dependencies": ["typed locators", "exact_retrieval", "cursor_continuation"],
+      "storage_or_index": ["exact-version in-memory chunk/block index", "canonical page/slide/sheet/heading metadata", "asset references"], "http": ["POST V2 document expand"], "mcp": ["get_document selector"],
+      "readiness_conditions": ["format locator coverage", "selector implementation"], "completeness": "Exact declared positional scope or explicit unavailable/truncated.", "security": ["scope-bound selector", "bounded range"],
+      "certification_requirements": ["page/slide/sheet/block/range/tail fixtures"],
+      "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["DocumentExpansionServiceV2", "exact position index", "WP-05 selector/cursor/security tests"], "gap": "Format-specific positions are available only when authoritative parser metadata exists; blind behavioral certification remains WP-16."
+    },
+    {
+      "id": "exhaustive_retrieval", "owner": "AdvancedRetrievalService", "dependencies": ["canonical/derived sources", "signed result cursor", "coverage"],
+      "storage_or_index": ["authorized canonical SQLite/FTS source; later active representation indexes"], "http": ["POST /v2/retrieval/evidence"], "mcp": ["search_evidence"],
+      "readiness_conditions": ["all required sources declare availability/coverage", "stable snapshot"], "completeness": "COMPLETE only after all declared sources terminate; otherwise truncated/partial/unavailable.", "security": ["scope-bound scans", "hard budgets", "signed cursor"],
+      "certification_requirements": ["stable enumeration", "forced truncation", "unavailable-index negatives"],
+      "states": {"code_present": true, "configured": true, "provider_ready": true, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["AdvancedRetrievalService", "canonical production source composition", "WP-07 focused cursor/coverage/MCP/HTTP tests", "WP-14 actor-bound cursor and cross-scope threat matrix"], "gap": "Canonical text is active; derived representation activation and blind-agent certification remain later work packages."
+    },
+    {
+      "id": "structured_retrieval", "owner": "StructuredRetrievalService", "dependencies": ["typed structured projection", "safe compiler", "generation lifecycle"],
+      "storage_or_index": ["structured tables/cells/schema projection", "active structured generation alias"], "http": ["POST /v2/retrieval/structured"], "mcp": ["query_structured"],
+      "readiness_conditions": ["validated active structured generation", "known row universe"], "completeness": "Result and aggregate completeness derives from the exact row universe.", "security": ["allow-listed typed AST", "parameterized execution", "scope authorization"],
+      "certification_requirements": ["known filters/sorts/groups/aggregates", "injection and overflow tests"],
+      "states": {"code_present": true, "configured": true, "provider_ready": true, "generation_present": false, "generation_active": false, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["StructuredDatasetRuntimeService", "authorized exact-version dataset/schema catalog", "strict transport-to-StructuredQueryV1 compiler", "POST /v2/retrieval/structured", "query_structured", "WP-08 focused numeric/cursor/security tests"], "gap": "The configured evaluation database currently has zero structured projections and no active generation, so Phase85RuntimeV1 truthfully keeps execution inactive there; isolated complete-generation fixtures prove activation. Blind-agent certification remains WP-16 and final certification remains WP-17."
+    },
+    {
+      "id": "asset_discovery", "owner": "Asset catalog plus multimodal retrieval", "dependencies": ["asset occurrences", "OCR/Vision/visual projections"],
+      "storage_or_index": ["asset occurrence catalog", "derived search projections"], "http": ["asset inventory by known scope"], "mcp": ["get_asset inventory", "future search_evidence"],
+      "readiness_conditions": ["occurrence catalog ready", "requested semantic projection active"], "completeness": "Inventory can be complete for an exact version; semantic discovery reports representation coverage.", "security": ["occurrence-scoped authorization", "shared-hash isolation"],
+      "certification_requirements": ["standalone/embedded natural-language discovery", "position/order tests"],
+      "states": {"code_present": true, "configured": false, "provider_ready": null, "generation_present": false, "generation_active": false, "exposed_http": true, "exposed_mcp": true, "discoverable": false, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["464 occurrence audit", "WP-06 derivation-enriched bounded inventory and occurrence-order tests", "WP-09 authorized asset-metadata semantic source"], "gap": "Known-scope inventory and occurrence-scoped semantic metadata source exist; active OCR/Vision/visual generations and blind-agent certification remain gated."
+    },
+    {
+      "id": "asset_delivery", "owner": "DocumentExpansionServiceV1", "dependencies": ["asset catalog", "blob reader", "occurrence authorizer"],
+      "storage_or_index": ["content-addressed original bytes"], "http": ["V2 asset content"], "mcp": ["get_asset", "MCP image/resource content"],
+      "readiness_conditions": ["authorized occurrence", "hash/MIME/size-valid bytes", "transport bounds"], "completeness": "Atomic full item or explicit valid byte-range; inventory pagination separate.", "security": ["no arbitrary paths", "MIME/hash verification", "binary bounds"],
+      "certification_requirements": ["decodable binary", "cross-notebook and malformed media tests"],
+      "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["WP-06 original binary range, provenance-header, PNG/JPEG partial-media, malformed-MIME, HTTP and MCP tests"], "gap": "Direct authorized delivery is implemented and tested; blind-agent behavioral verification remains WP-16 and semantic asset discovery remains WP-09."
+    },
+    {
+      "id": "ocr", "owner": "OCR service/provider/store", "dependencies": ["asset occurrence", "processing jobs", "OCR profile"],
+      "storage_or_index": ["OCR results/regions", "OCR projection/FTS"], "http": ["known derivation analysis delivery"], "mcp": ["get_image_analysis", "future search_evidence"],
+      "readiness_conditions": ["authorized occurrence", "provider/profile ready", "active OCR projection for search"], "completeness": "Per-page/occurrence complete, partial, failed, or unavailable plus projection coverage.", "security": ["egress consent", "media/output bounds", "derived-content labeling"],
+      "certification_requirements": ["provider language cohorts", "search and delivery provenance", "injection tests"],
+      "states": {"code_present": true, "configured": true, "provider_ready": true, "generation_present": false, "generation_active": false, "exposed_http": true, "exposed_mcp": true, "discoverable": false, "behaviorally_verified": false, "security_verified": false, "certified": false},
+      "evidence": ["14 OCR result audit", "WP-02 OCR projection/source-contract tests", "WP-06 authorized descriptor and deterministic latest-ready/all/explicit delivery tests", "WP-09 active-generation-gated OCR search source"], "gap": "Known-occurrence derivation selection/delivery and the semantic OCR adapter are implemented; no production search generation is active, so runtime remains unavailable there."
+    },
+    {
+      "id": "vision", "owner": "Vision service/provider/store", "dependencies": ["asset occurrence", "processing jobs", "Vision profile"],
+      "storage_or_index": ["Vision derivations", "future Vision text projection"], "http": ["known derivation analysis delivery"], "mcp": ["get_image_analysis", "future search_evidence"],
+      "readiness_conditions": ["authorized occurrence", "provider/profile ready", "validated active search projection"], "completeness": "Per-occurrence outcome and projection coverage remain explicit.", "security": ["cloud consent/budget", "prompt-injection isolation", "output bounds"],
+      "certification_requirements": ["grounding evaluation", "search/delivery provenance", "malformed output tests"],
+      "states": {"code_present": true, "configured": false, "provider_ready": false, "generation_present": false, "generation_active": false, "exposed_http": true, "exposed_mcp": true, "discoverable": false, "behaviorally_verified": false, "security_verified": false, "certified": false},
+      "evidence": ["26 persisted Vision results", "WP-02 independent Vision text projection implementation", "WP-09 active-generation-gated Vision text search source"], "gap": "Projection generation and semantic source are buildable, but evaluation data/provider declarations do not establish active runtime/search."
+    },
+    {
+      "id": "visual_vector_retrieval", "owner": "Visual embedding provider and advanced retrieval source", "dependencies": ["visual embeddings", "named vector generation", "compatible query space"],
+      "storage_or_index": ["visual embedding records", "visual vector projection"], "http": [], "mcp": ["future search_evidence"],
+      "readiness_conditions": ["provider/profile ready", "active dimension/metric-compatible generation"], "completeness": "Ranked unless an enumerative contract exists; disabled backend is unavailable, not no-match.", "security": ["occurrence authorization", "cache isolation", "vector bounds"],
+      "certification_requirements": ["image/text query-mode metrics", "space compatibility and provenance"],
+      "states": {"code_present": true, "configured": false, "provider_ready": false, "generation_present": false, "generation_active": false, "exposed_http": false, "exposed_mcp": false, "discoverable": false, "behaviorally_verified": false, "security_verified": false, "certified": false},
+      "evidence": ["16 embedding records", "WP-02 visual projection source/coverage lifecycle tests", "WP-09 optional shared-space visual query source"], "gap": "A provider-neutral shared-space adapter exists, but no active production query provider/generation is configured."
+    },
+    {
+      "id": "multilingual_retrieval", "owner": "MultilingualRetrievalService", "dependencies": ["language detector", "multilingual embedder/reranker", "active language projection"],
+      "storage_or_index": ["language derivations", "multilingual embeddings/generation"], "http": [], "mcp": ["future search_evidence"],
+      "readiness_conditions": ["language path and profile ready", "active projection with direction coverage"], "completeness": "Per language direction and representation; fallback/omission explicit.", "security": ["translation consent", "original-language provenance", "injection tests"],
+      "certification_requirements": ["EN/HI/MR same/cross-language metrics", "external-agent verification"],
+      "states": {"code_present": true, "configured": false, "provider_ready": false, "generation_present": false, "generation_active": false, "exposed_http": false, "exposed_mcp": false, "discoverable": false, "behaviorally_verified": false, "security_verified": false, "certified": false},
+      "evidence": ["benchmark candidates selected", "WP-02 language FTS/vector projection implementation", "WP-10 generation-gated multilingual advanced source"], "gap": "Multilingual source activation is implemented but remains unavailable until a complete active language_text generation exists; model certification and directional behavioral verification remain deferred."
+    },
+    {
+      "id": "multilingual_retrieval_v2", "owner": "Full Multilingual V2 shared application service", "dependencies": ["authorization", "provenance", "representation registry", "language/script observations", "multilingual provider/reranker", "complete four-generation V2 alias set"],
+      "storage_or_index": ["side-by-side V2 observations/transformations", "language_text_v2", "multilingual_embeddings_v2", "multilingual_vector_v2", "V2 coverage manifests and atomic alias set"], "http": ["POST /v2/retrieval/evidence when runtime-exposed"], "mcp": ["search_evidence when runtime-exposed"],
+      "readiness_conditions": ["exact provider and preprocessing identities ready", "compatible complete representation/sparse/embedding/vector generations", "coverage/checksum/provenance/authorization/rollback evidence valid"], "completeness": "Per requested operation and active language/script/representation coverage; unavailable paths are explicit and ranked output is not exhaustive.", "security": ["authorization before sparse/vector enumeration", "authorized semantic reranker resolution", "scope/provenance revalidation", "transport parity before exposure"],
+      "certification_requirements": ["isolated V2 generation integrity", "language-generic regression matrix", "stdio/SSE behavioral verification", "security verification", "separate governance certification"],
+      "states": {"code_present": true, "configured": false, "provider_ready": false, "generation_present": false, "generation_active": false, "exposed_http": false, "exposed_mcp": false, "discoverable": true, "behaviorally_verified": false, "security_verified": false, "certified": false},
+      "evidence": ["Full Multilingual V2 implementation contracts", "runtime-derived V2 readiness projection", "focused implementation tests"], "gap": "BUILDABLE implementation is present; no isolated V2 generation, activation, transport exposure, evaluation, verification, or certification is claimed."
+    },
+    {
+      "id": "multimodal_retrieval", "owner": "Multimodal retrieval/fusion service", "dependencies": ["advanced retrieval", "OCR", "Vision", "visual vectors", "typed provenance"],
+      "storage_or_index": ["independent canonical/derived generations"], "http": [], "mcp": ["future search_evidence"],
+      "readiness_conditions": ["requested sources active", "compatible scoring/fusion policy", "authorizer ready"], "completeness": "Coverage union with every unavailable/omitted representation named.", "security": ["reauthorize every candidate", "untrusted derived evidence", "no incompatible vector fusion"],
+      "certification_requirements": ["mixed-modality retrieval", "metadata preservation", "partial-path negatives"],
+      "states": {"code_present": true, "configured": false, "provider_ready": null, "generation_present": false, "generation_active": false, "exposed_http": false, "exposed_mcp": false, "discoverable": false, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["multimodal core/unit tests", "WP-09 occurrence-scoped OCR/Vision/asset sources and rank-fusion composition", "post-Phase-8.5 audit"], "gap": "Sources are composed when active generations/providers exist; current runtime remains truthfully inactive without those projections."
+    },
+    {
+      "id": "multi_document_retrieval", "owner": "Bounded document-set retrieval service", "dependencies": ["document-set resolver", "exhaustive/structured retrieval", "per-partition completeness"],
+      "storage_or_index": ["underlying active indexes only"], "http": ["POST /v2/retrieval/evidence (partitioned)"], "mcp": ["search_evidence (partitioned)"],
+      "readiness_conditions": ["explicit authorized document set", "per-document budgets and coverage"], "completeness": "Per-document/partition and aggregate scope; global top-k is insufficient.", "security": ["authorize every partition", "bounded joins/context"],
+      "certification_requirements": ["named/all-document comparisons", "partition starvation negatives"],
+      "states": {"code_present": true, "configured": false, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["PartitionedRetrievalServiceV1", "WP-11 focused partition tests", "WP-14 authorized document-set and actor-bound aggregate cursor tests"], "gap": "Deterministic authorized partitions are available; adaptive planning remains deferred."
+    },
+    {
+      "id": "final_qa_v2", "owner": "FinalQAInterfaceV2 orchestration", "dependencies": ["typed multimodal evidence", "ADR-0054 compliance", "ADR-0056 snapshot/replay"],
+      "storage_or_index": ["immutable V2 execution snapshots"], "http": ["POST /v2/notebooks/{notebook_id}/final-qa"], "mcp": ["run_final_qa_v2"],
+      "readiness_conditions": ["provider capability/profile ready", "authorized bounded context", "persistent execution store"], "completeness": "Answer preserves retrieval/context completeness and refuses unsupported evidence claims.", "security": ["snapshot authorization", "prompt injection isolation", "fingerprint integrity"],
+      "certification_requirements": ["citation retry/exhaustion", "crash/concurrency/replay", "zero generation replay"],
+      "states": {"code_present": true, "configured": true, "provider_ready": true, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["FinalQAV2ApplicationService", "HTTP/MCP transport replay tests", "zero-generation replay provider counters", "WP-14 principal/evidence/revocation/replay matrix"], "gap": "WP-16 blind-agent verification and WP-17 final certification remain pending."
+    },
+    {
+      "id": "document_delivery", "owner": "DocumentExpansionServiceV1", "dependencies": ["exact scope", "original reference or parsed blocks", "cursor"],
+      "storage_or_index": ["canonical blocks", "original asset reference"], "http": ["V2 document blocks/original"], "mcp": ["get_document"],
+      "readiness_conditions": ["exact authorized version", "available representation", "bounds"], "completeness": "Complete only after selected bounded scope terminates.", "security": ["scope/version authorization", "integrity and size checks"],
+      "certification_requirements": ["full/range/tail traversal", "disconnect and cursor security"],
+      "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["direct HTTP/MCP delivery tests", "WP-05 typed expand route and optional MCP selector tests"], "gap": "Blind external-agent behavioral certification remains WP-16."
+    },
+    {
+      "id": "capability_discovery", "owner": "Phase85RuntimeV1 readiness registry", "dependencies": ["runtime composition", "profile registry", "generation coverage"],
+      "storage_or_index": ["read-only readiness/generation metadata"], "http": ["GET /v2/capabilities"], "mcp": ["get_capabilities", "mnemo://capabilities"],
+      "readiness_conditions": ["runtime truth aggregation", "scope-aware policy state"], "completeness": "All known capabilities reported with state/reason; inaccessible resources hidden.", "security": ["scope-aware redaction", "no secret/provider/resource leakage"],
+      "certification_requirements": ["runtime-to-advertisement agreement", "disabled/unavailable matrices"],
+      "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["CapabilityDiscoveryService", "HTTP/MCP parity and runtime-consistency tests", "blind-agent task-guidance test", "WP-14 secret/path/content redaction matrix"], "gap": "WP-16 external-agent behavioral certification remains pending."
+    },
+    {
+      "id": "cursor_continuation", "owner": "Advanced and delivery cursor codecs", "dependencies": ["secret configuration", "immutable snapshot", "authorization"],
+      "storage_or_index": ["opaque stateless cursor payloads"], "http": ["delivery continuation"], "mcp": ["get_document", "get_asset"],
+      "readiness_conditions": ["non-default production secret", "scope/query/snapshot/budget binding", "expiry"], "completeness": "Continuation exists iff more authorized scope remains; terminal null cursor is explicit.", "security": ["HMAC", "expiry/rotation", "reauthorize each page"],
+      "certification_requirements": ["tamper/expiry/replay/mutation/termination tests"],
+      "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["CursorCodecV2 domain/scope/snapshot/budget binding", "TTL and active/overlap key rotation", "bounded delivery-v1 decoder", "WP-04 focused security and continuation tests"], "gap": "Live two-client continuation behavior and full cross-surface certification remain WP-16/WP-17."
+    },
+    {
+      "id": "provenance", "owner": "Typed evidence and delivery envelopes", "dependencies": ["canonical IDs", "occurrence/derivation/generation identities"],
+      "storage_or_index": ["canonical and derived provenance columns/snapshots"], "http": ["partial V2 delivery provenance"], "mcp": ["partial search/delivery provenance"],
+      "readiness_conditions": ["every boundary preserves applicable identity and retrieval path"], "completeness": "Provenance coverage is mandatory independent of result completeness.", "security": ["opaque IDs only", "derived/original distinction", "no path leakage"],
+      "certification_requirements": ["boundary preservation tests through fusion/rerank/context/delivery/replay"],
+      "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["typed core models", "WP-03 structured output and binary companion tests"], "gap": "Composed future retrieval boundaries remain owned by WP-07 through WP-13."
+    },
+    {
+      "id": "authorization", "owner": "Notebook/version/occurrence authorizers", "dependencies": ["actor context", "DocumentScopeResolverV1", "asset authorizer"],
+      "storage_or_index": ["source/document/version/occurrence association records"], "http": ["all protected routes"], "mcp": ["all knowledge tools/resources"],
+      "readiness_conditions": ["actor mapped", "scope resolvable", "authorization applied at every boundary"], "completeness": "Unauthorized paths are omitted only with policy-safe diagnostics; never advertised complete if required scope was denied.", "security": ["cross-notebook isolation", "shared-hash isolation", "non-enumerating errors"],
+      "certification_requirements": ["cross-scope/revocation/cache/cursor/snapshot matrix"],
+      "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": false, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["asset/delivery authorization tests", "ADR-0072 ambiguity tests", "WP-14 DocumentScopeResolverV1, centralized principal boundary, and cross-scope threat matrix"], "gap": "No WP-14 P0/P1 gap; actor-to-notebook ownership policy remains intentionally outside the current schema."
+    },
+    {
+      "id": "completeness", "owner": "Domain result sets and transport envelope", "dependencies": ["source coverage", "budgets", "cursor termination"],
+      "storage_or_index": ["generation coverage metadata"], "http": ["partial delivery completeness"], "mcp": ["partial delivery completeness"],
+      "readiness_conditions": ["central semantics map all domain states without upgrading certainty"], "completeness": "This capability defines COMPLETE/PARTIAL/BOUNDED/TRUNCATED/NO_MATCH/UNAVAILABLE/FAILED/UNKNOWN semantics.", "security": ["denied/omitted scopes do not become complete", "safe diagnostics"],
+      "certification_requirements": ["false-completeness mutation tests across all result families"],
+      "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["domain completeness enums", "WP-03 MCP output contracts", "WP-04 lossless transport coverage mapper and terminal-cursor invariants"], "gap": "Later WP result families must adopt the mapper; live false-completeness mutation certification remains WP-16/WP-17."
+    },
+    {
+      "id": "processing_jobs", "owner": "ProcessingJobStoreV1 and ProcessingWorkerV1", "dependencies": ["policy/consent", "resource admission", "provider registry"],
+      "storage_or_index": ["jobs/attempts/checkpoints/events/ledger"], "http": [], "mcp": [],
+      "readiness_conditions": ["durable store open", "worker policy configured", "authorized manifest"], "completeness": "Explicit durable terminal/recoverable state, not retrieval completeness.", "security": ["actor/notebook scope", "no secrets/content in manifests/logs", "egress consent"],
+      "certification_requirements": ["claim/lease/crash/retry/cancel/budget/concurrency tests"],
+      "states": {"code_present": true, "configured": false, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": false, "exposed_mcp": false, "discoverable": false, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["processing store/worker unit tests", "Phase85RuntimeV1 service registry"], "gap": "The store is accessible to runtime composition, but no worker/policy bundle is selected; it therefore remains inactive and unexposed."
+    },
+    {
+      "id": "multilingual_ocr", "owner": "Multilingual OCR projection", "dependencies": ["ocr", "multilingual_retrieval"],
+      "storage_or_index": ["OCR derivations and language observations"], "http": [], "mcp": [],
+      "readiness_conditions": ["OCR provider ready with requested language packs", "active OCR generation"], "completeness": "Reports language/page coverage and never upgrades partial OCR.", "security": ["occurrence authorization", "provider egress policy"],
+      "certification_requirements": ["English/Hindi/Marathi OCR behavior and isolation tests"],
+      "states": {"code_present": true, "configured": false, "provider_ready": false, "generation_present": false, "generation_active": false, "exposed_http": false, "exposed_mcp": false, "discoverable": false, "behaviorally_verified": false, "security_verified": false, "certified": false},
+      "evidence": ["typed OCR language metadata"], "gap": "No OCR production profile is configured or activated by WP-01."
+    },
+    {
+      "id": "multilingual_vision", "owner": "Multilingual Vision projection", "dependencies": ["vision", "multilingual_retrieval"],
+      "storage_or_index": ["vision language observations"], "http": [], "mcp": [],
+      "readiness_conditions": ["vision provider ready", "active vision generation", "language behavior verified"], "completeness": "Reports analyzed and omitted occurrences without upgrading partial analysis.", "security": ["occurrence authorization", "provider egress policy"],
+      "certification_requirements": ["multilingual image behavior and isolation tests"],
+      "states": {"code_present": true, "configured": true, "provider_ready": false, "generation_present": false, "generation_active": false, "exposed_http": false, "exposed_mcp": false, "discoverable": false, "behaviorally_verified": false, "security_verified": false, "certified": false},
+      "evidence": ["typed vision language metadata"], "gap": "Configured model identity is not a ready provider or active generation."
+    },
+    {
+      "id": "behavioral_verification", "owner": "WP-16 blind-agent evaluation", "dependencies": ["exposed Phase 8.5 capabilities"],
+      "storage_or_index": [], "http": [], "mcp": [],
+      "readiness_conditions": ["blind-agent behavioral harness and corpus are runnable"], "completeness": "Verification records the exact tested capability/profile/generation snapshot.", "security": ["evaluation does not bypass authorization"],
+      "certification_requirements": ["WP-16 evidence"],
+      "states": {"code_present": false, "configured": false, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": false, "exposed_mcp": false, "discoverable": false, "behaviorally_verified": false, "security_verified": false, "certified": false},
+      "evidence": ["WP-00 dependency graph"], "gap": "Owned by WP-16; WP-01 does not fabricate verification."
+    },
+    {
+      "id": "security_verification", "owner": "WP-14 security matrix", "dependencies": ["all exposed Phase 8.5 boundaries"],
+      "storage_or_index": [], "http": [], "mcp": [],
+      "readiness_conditions": ["authorization/isolation/resource/injection matrix is runnable"], "completeness": "Security evidence is scoped to the exact runtime snapshot.", "security": ["all WP-14 requirements"],
+      "certification_requirements": ["WP-14 evidence"],
+      "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": false, "exposed_mcp": false, "discoverable": false, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["PHASE_8_5_WP_14_GATE_EVIDENCE.md", "focused Section 28 threat matrix"], "gap": "Security verification is complete for the Phase 8.5 snapshot; final certification remains WP-17."
+    },
+    {
+      "id": "phase_11_deterministic_primitives", "owner": "Phase85RuntimeV1 public domain contracts", "dependencies": ["all ready Phase 8.5 retrieval/delivery capabilities"],
+      "storage_or_index": ["none beyond owned capability stores"], "http": ["typed V2 operations"], "mcp": ["semantic additive tools"],
+      "readiness_conditions": ["model-neutral typed inputs/results", "opaque cursor", "truthful readiness/completeness"], "completeness": "Phase 11 receives evidence-backed state and may not upgrade it.", "security": ["no storage/provider internals", "reauthorize every iterative call"],
+      "certification_requirements": ["contract consumer tests without concrete store/model knowledge"],
+      "states": {"code_present": false, "configured": false, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": false, "exposed_mcp": false, "discoverable": false, "behaviorally_verified": false, "security_verified": false, "certified": false},
+      "evidence": ["accepted architecture and implementation plan"], "gap": "Individual types exist, but no complete composed deterministic capability boundary."
+    },
+    {
+      "id": "runtime_profile_activation", "owner": "Phase85RuntimeV1", "dependencies": ["profile registry", "providers", "generation aliases", "policy"],
+      "storage_or_index": ["readiness and active-generation metadata"], "http": ["GET /v2/capabilities"], "mcp": ["get_capabilities", "mnemo://capabilities"],
+      "readiness_conditions": ["ADR-0074 lifecycle satisfied per capability"], "completeness": "Reports every known state/reason; does not infer later state.", "security": ["secret-free profiles", "scope-aware advertisement", "no hidden fallback"],
+      "certification_requirements": ["composition/profile/state implication tests"],
+      "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},
+      "evidence": ["ADR-0074", "ModelProfileRegistryV1", "immutable active profile snapshot", "exact profile/generation binding", "WP-15 focused tests", "WP-14 redaction verification"], "gap": "Runtime profile activation is implemented and security verified; WP-16 behavioral verification and WP-17 certification remain pending."
+    }
+  ],
+  "work_packages": [
+    {"id": "WP-00", "depends_on": [], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-01", "depends_on": ["WP-00", "WP-15-contract"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-02", "depends_on": ["WP-01"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-03", "depends_on": ["WP-00", "WP-05", "WP-06", "WP-07", "WP-08", "WP-09", "WP-10", "WP-11", "WP-12", "WP-13"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-04", "depends_on": ["WP-00"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-05", "depends_on": ["WP-04"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-06", "depends_on": ["WP-02", "WP-04"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-07", "depends_on": ["WP-02", "WP-04"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-08", "depends_on": ["WP-02", "WP-04"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-09", "depends_on": ["WP-02", "WP-06", "WP-07"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-10", "depends_on": ["WP-02", "WP-07", "WP-15"], "priority": "P1", "phase_11_boundary": false},
+    {"id": "WP-11", "depends_on": ["WP-05", "WP-06", "WP-07", "WP-08", "WP-09", "WP-10"], "priority": "P1", "phase_11_boundary": true},
+    {"id": "WP-12", "depends_on": ["WP-11"], "priority": "P1", "phase_11_boundary": false},
+    {"id": "WP-13", "depends_on": ["WP-05", "WP-06", "WP-07", "WP-08", "WP-09", "WP-10", "WP-11", "WP-12"], "priority": "P1", "phase_11_boundary": false},
+    {"id": "WP-14", "depends_on": ["WP-01", "WP-02", "WP-03", "WP-04", "WP-05", "WP-06", "WP-07", "WP-08", "WP-09", "WP-10", "WP-11", "WP-12", "WP-13"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-15", "depends_on": ["WP-00"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-16", "depends_on": ["WP-03", "WP-04", "WP-05", "WP-06", "WP-07", "WP-08", "WP-09", "WP-10", "WP-11", "WP-12", "WP-13", "WP-14", "WP-15"], "priority": "P0", "phase_11_boundary": false},
+    {"id": "WP-17", "depends_on": ["WP-00", "WP-01", "WP-02", "WP-03", "WP-04", "WP-05", "WP-06", "WP-07", "WP-08", "WP-09", "WP-10", "WP-11", "WP-12", "WP-13", "WP-14", "WP-15", "WP-16"], "priority": "P0", "phase_11_boundary": false}
+  ],
+  "phase_11_non_goals": [
+    "autonomous query planning",
+    "query decomposition",
+    "evidence-gap detection and replanning",
+    "adaptive or learned tool routing",
+    "recursive multi-hop retrieval",
+    "generalized graph traversal",
+    "open-ended joins",
+    "model-specific agent control flow"
+  ]
+}

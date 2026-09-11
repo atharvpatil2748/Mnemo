@@ -1,0 +1,20 @@
+{
+  "artifact_digest": "ef534bc678285becf3fc980d3c5abe0486a1eae9c317c0830a5244cf822f4c9d",
+  "calibrated": false,
+  "confidence_policy": "source_value_or_zero_no_invented_calibration",
+  "detector_fallback": "unknown-language-fallback-v2",
+  "filename_to_language_inference": false,
+  "mixed_language_supported": true,
+  "policy_id": "language-observation-generic-fail-closed-v1",
+  "precedence": [
+    "adjudicated_authoritative_metadata",
+    "source_or_parser_bcp47_metadata",
+    "governed_detector",
+    "und"
+  ],
+  "provider_metadata_rule": "retain_as_unpromoted_claim_unless_governed_and_calibrated",
+  "schema_version": "mnemo.v2-language-observation-policy/1",
+  "script_to_language_inference": false,
+  "unknown_language": "und",
+  "version": "1.0.0"
+}

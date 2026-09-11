@@ -6,6 +6,7 @@ Conforms to ParserInterfaceV1 and returns a ParseResult (ADR-0011).
 
 import base64
 import logging
+from dataclasses import replace
 from typing import Any
 
 try:
@@ -18,9 +19,10 @@ except ImportError:  # pragma: no cover
     HTML_AVAILABLE = False
 
 from mnemo.interfaces.errors import ContractValidationError
-from mnemo.interfaces.parser import ParserInterfaceV1
+from mnemo.interfaces.parser import ParserInterfaceV2
 from mnemo.interfaces.parser_models import (
     ParseResult,
+    ParseResultV2,
     RawBlock,
     RawCodeBlock,
     RawHeadingBlock,
@@ -31,8 +33,14 @@ from mnemo.interfaces.parser_models import (
     TransientAsset,
 )
 from mnemo.interfaces.types import FileMetadata, ParserCapabilities
-from mnemo.models import DocType, DocumentMetadata
+from mnemo.models import AssetContainerKind, DocType, DocumentMetadata, thaw_metadata
 from mnemo.models._shared import FrozenMetadata
+
+from .asset_extraction import (
+    DEFAULT_ASSET_EXTRACTION_LIMITS,
+    AssetExtractionLimits,
+    bounded_asset_result,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +77,7 @@ CONTAINER_TAGS = {
 }
 
 
-class HTMLParser(ParserInterfaceV1):
+class HTMLParser(ParserInterfaceV2):
     """Parses HTML documents into RawBlocks using readability-lxml and bs4.
 
     Implements ParserInterfaceV1 (ADR-0011). Pure transformation — performs
@@ -78,9 +86,10 @@ class HTMLParser(ParserInterfaceV1):
     entries linked to RawImageBlocks via parser_local_id.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, limits: AssetExtractionLimits = DEFAULT_ASSET_EXTRACTION_LIMITS) -> None:
         if not HTML_AVAILABLE:  # pragma: no cover
             raise ContractValidationError("beautifulsoup4 and readability-lxml are not installed.")
+        self._limits = limits
 
     # ------------------------------------------------------------------
     # ParserInterfaceV1
@@ -101,6 +110,35 @@ class HTMLParser(ParserInterfaceV1):
 
     def parse(self, data: bytes, filename: str, metadata: FileMetadata) -> ParseResult:
         """Parse HTML bytes into a ParseResult."""
+        return self._parse_v1(data, filename, metadata)
+
+    def parse_with_assets(
+        self, data: bytes, filename: str, metadata: FileMetadata
+    ) -> ParseResultV2:
+        parsed = self._parse_v1(data, filename, metadata)
+        blocks = tuple(
+            replace(
+                block,
+                metadata=FrozenMetadata(
+                    {
+                        **thaw_metadata(block.metadata),
+                        "parser.asset.dom_path": f"html/block[{block.ordinal}]",
+                    }
+                ),
+            )
+            if isinstance(block, RawImageBlock)
+            else block
+            for block in parsed.blocks
+        )
+        return bounded_asset_result(
+            replace(parsed, blocks=blocks),
+            parser_id="mnemo.html",
+            container_kind=AssetContainerKind.HTML,
+            limits=self._limits,
+        )
+
+    def _parse_v1(self, data: bytes, filename: str, metadata: FileMetadata) -> ParseResult:
+        """Preserve the released V1 HTML transformation."""
         try:
             content = data.decode("utf-8")
         except UnicodeDecodeError as exc:

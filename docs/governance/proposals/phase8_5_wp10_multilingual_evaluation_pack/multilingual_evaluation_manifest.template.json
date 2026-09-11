@@ -1,0 +1,101 @@
+{
+  "$schema": "./multilingual_evaluation_contract.proposed.schema.json",
+  "schema_version": "mnemo.multilingual-evaluation-contract/1",
+  "contract_id": "phase8.5-wp10-multilingual-evaluation-v1",
+  "status": "template",
+  "approval": {"state":"pending","approver_id":null,"approved_at":null},
+  "corpus": {
+    "corpus_id": "phase8.5-golden-44-plus-frozen-authorized-derived-evidence-v1",
+    "source_document_count": 44,
+    "source_digest_sha256": "78b414e77603fa1ded285ecfd77184f83badfde03b3b633154b097053b929a81",
+    "candidate_universe": "Every authorized canonical chunk plus eligible immutable OCR region and Vision derivation at the exact frozen document versions; future transliteration/translation candidates remain derived and must retain their authoritative source lineage.",
+    "mutation_permitted": false
+  },
+  "query_construction": {
+    "status": "PROPOSED — REQUIRES HUMAN/GOVERNANCE APPROVAL",
+    "natural_language_only": true,
+    "corpus_specific_identifiers_allowed_only_when_the_task_requires_exact_lookup": true,
+    "candidate_rankings_hidden_from_authors_and_judges": true,
+    "answerable_query_requires_at_least_one_valid_grade_2_qrel": true,
+    "negative_query_requires_exhaustive_human_review_of_the_frozen_candidate_universe": true,
+    "query_texts": [],
+    "query_digest_sha256": null
+  },
+  "directional_cohorts": [
+    {"cohort_id":"en-to-en","purpose":"English query retrieving English evidence.","target_count":75,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"en->en","judgment_requirements":"Two independent EN-qualified reviewers and adjudication.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"en-to-hi","purpose":"English query retrieving Hindi evidence.","target_count":75,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"en->hi","judgment_requirements":"Independent EN+HI competency across the reviewer pair and adjudication.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"en-to-mr","purpose":"English query retrieving Marathi evidence.","target_count":75,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"en->mr","judgment_requirements":"Independent EN+MR competency across the reviewer pair and adjudication.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"hi-to-en","purpose":"Hindi query retrieving English evidence.","target_count":75,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"hi->en","judgment_requirements":"Independent HI+EN competency across the reviewer pair and adjudication.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"hi-to-hi","purpose":"Hindi query retrieving Hindi evidence.","target_count":75,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"hi->hi","judgment_requirements":"Two independent HI-qualified reviewers and adjudication.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"hi-to-mr","purpose":"Hindi query retrieving Marathi evidence.","target_count":75,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"hi->mr","judgment_requirements":"Independent HI+MR competency across the reviewer pair and adjudication.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"mr-to-en","purpose":"Marathi query retrieving English evidence.","target_count":75,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"mr->en","judgment_requirements":"Independent MR+EN competency across the reviewer pair and adjudication.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"mr-to-hi","purpose":"Marathi query retrieving Hindi evidence.","target_count":75,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"mr->hi","judgment_requirements":"Independent MR+HI competency across the reviewer pair and adjudication.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"mr-to-mr","purpose":"Marathi query retrieving Marathi evidence.","target_count":75,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"mr->mr","judgment_requirements":"Two independent MR-qualified reviewers and adjudication.","approval_state":"proposed_requires_human_approval"}
+  ],
+  "secondary_cohorts": [
+    {"cohort_id":"hindi-transliteration","purpose":"Latin transliteration of Hindi retrieving Hindi evidence.","target_count":20,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["canonical_chunk","ocr_region"],"language_direction":"hi-latin->hi","judgment_requirements":"Reviewers verify transliteration intent and original-source provenance.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"marathi-transliteration","purpose":"Latin transliteration of Marathi retrieving Marathi evidence.","target_count":20,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["canonical_chunk","ocr_region"],"language_direction":"mr-latin->mr","judgment_requirements":"Reviewers verify transliteration intent and original-source provenance.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"mixed-script","purpose":"Queries containing Latin and Devanagari scripts.","target_count":30,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"mixed","judgment_requirements":"Record script mixture and do not infer HI/MR from script alone.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"mixed-language","purpose":"Queries containing more than one supported language.","target_count":30,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"mixed","judgment_requirements":"Reviewers cover every language needed to interpret query and evidence.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"hindi-ocr","purpose":"Hindi evidence available through an OCR derivation.","target_count":20,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["ocr_region"],"language_direction":"varies","judgment_requirements":"Occurrence, OCR derivation, region, version, and source hash must be valid.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"marathi-ocr","purpose":"Marathi evidence available through an OCR derivation.","target_count":20,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["ocr_region"],"language_direction":"varies","judgment_requirements":"Occurrence, OCR derivation, region, version, and source hash must be valid.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"multilingual-vision","purpose":"Language-bearing evidence available through a Vision derivation.","target_count":20,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["vision_derivation"],"language_direction":"varies","judgment_requirements":"Vision evidence remains derived and must link to occurrence and source version.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"canonical-text","purpose":"Ensure canonical text remains a first-class source across directions.","target_count":270,"answerable":true,"included_in_ranking_metrics":true,"overlap_allowed":true,"required_evidence_types":["canonical_chunk"],"language_direction":"varies","judgment_requirements":"At least 30 canonical-source cases per primary direction; no canonical mutation.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"negative-no-answer","purpose":"Measure unsupported evidence and publication behavior when no valid answer exists.","target_count":30,"answerable":false,"included_in_ranking_metrics":false,"overlap_allowed":false,"required_evidence_types":["any_authorized"],"language_direction":"varies","judgment_requirements":"Exhaustive human review establishes absence; score false support/publication separately.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"provenance-security","purpose":"Validate notebook/version/occurrence/derivation authorization and lineage.","target_count":30,"answerable":true,"included_in_ranking_metrics":false,"overlap_allowed":true,"required_evidence_types":["any_authorized"],"language_direction":"varies","judgment_requirements":"Any unauthorized or provenance-invalid item is grade 0 and a zero-tolerance failure.","approval_state":"proposed_requires_human_approval"},
+    {"cohort_id":"wp16-p85-b16-through-b20","purpose":"Map the five governed WP-16 multilingual behavioral cases without replacing the ranked evaluation.","target_count":5,"answerable":true,"included_in_ranking_metrics":false,"overlap_allowed":true,"required_evidence_types":["canonical_chunk","ocr_region"],"language_direction":"varies","judgment_requirements":"Retain exact public prompts and add governed evidence targets separately from the blind oracle.","approval_state":"proposed_requires_human_approval"}
+  ],
+  "qrels_contract": {
+    "schema_ref": "./multilingual_qrels.schema.json",
+    "relevance_grades": {"0":"irrelevant","1":"partially_supportive","2":"directly_relevant"},
+    "independent_reviewers": 2,
+    "adjudication_required": true,
+    "candidate_rankings_hidden": true,
+    "qrels": [],
+    "qrels_digest_sha256": null
+  },
+  "metric_contract": {
+    "recall_cutoffs": [1,3,5,10],
+    "recall_relevance": "valid grade-2 evidence only",
+    "mrr_relevance": "first valid grade-2 evidence",
+    "ndcg_at_10_gain": "2^grade - 1 for valid grades 0, 1, 2",
+    "ndcg_at_10_discount": "1/log2(rank+1)",
+    "aggregation": "macro per query then separately per direction and cohort",
+    "tie_break": "score descending then authoritative evidence ID ascending",
+    "no_answer_metrics": ["false_support_rate","false_publication_rate"]
+  },
+  "uncertainty_contract": {
+    "status": "PROPOSED — REQUIRES HUMAN/GOVERNANCE APPROVAL",
+    "confidence_level": 0.95,
+    "proportion_interval": "Wilson score without continuity correction",
+    "mrr_ndcg_interval": "stratified percentile bootstrap over queries",
+    "bootstrap_seed": 8501007,
+    "bootstrap_resamples": 10000
+  },
+  "threshold_contract_ref": "./multilingual_threshold_contract.proposed.json",
+  "latency_contract": {
+    "status": "report_only_until_hardware_profile_and_numeric_bounds_are_approved",
+    "required_statistics": ["p50_ms","p95_ms","timeout_count"],
+    "required_conditions": ["cold_start","warm_query","batch_size","reranker_state","cpu_or_gpu","device_identity"],
+    "numeric_gate": null
+  },
+  "zero_tolerance_gates": {
+    "authorization_leakage":0,"cross_notebook_leakage":0,"cross_version_leakage":0,"provenance_corruption":0,"canonical_text_mutation":0,"false_completeness":0,"fabricated_language_claim":0,"script_only_hindi_or_marathi_inference":0,"wrong_vector_space_mixing":0,"model_revision_mismatch":0,"vector_dimension_mismatch":0,"partial_generation_activation":0,"network_fallback":0,"unlabeled_translation_or_transliteration":0,"ocr_or_vision_represented_as_original":0,"frozen_multimodal_mutation":0,"golden_dataset_mutation":0
+  },
+  "wp16_mapping": [
+    {"scenario_id":"P85-B-16","cohort":"en-to-hi","status":"qrel_target_pending"},
+    {"scenario_id":"P85-B-17","cohort":"en-to-mr","status":"qrel_target_pending"},
+    {"scenario_id":"P85-B-18","cohort":"hi-to-en","status":"qrel_target_pending"},
+    {"scenario_id":"P85-B-19","cohort":"mr-to-en","status":"qrel_target_pending"},
+    {"scenario_id":"P85-B-20","cohort":"hindi-ocr-or-marathi-ocr","status":"qrel_target_pending"}
+  ],
+  "environment_identity": {
+    "embedding_profile":"BAAI/bge-m3@5617a9f61b028005a4858fdac845db406aefb181",
+    "reranker_profile":"BAAI/bge-reranker-v2-m3@953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+    "generation_ids":[],
+    "hardware_profile":null,
+    "software_lock_digest_sha256":null,
+    "network_fallback_permitted":false
+  },
+  "digests": {"manifest_sha256":null,"query_sha256":null,"qrels_sha256":null}
+}

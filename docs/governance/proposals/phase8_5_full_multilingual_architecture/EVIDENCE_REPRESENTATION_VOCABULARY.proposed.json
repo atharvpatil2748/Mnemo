@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/governance/proposals/full-multilingual-v2/EVIDENCE_REPRESENTATION_VOCABULARY.proposed.json",
+  "title": "PROPOSED — Canonical EvidenceRepresentation vocabulary",
+  "description": "One request/transport vocabulary shared by the internal model, HTTP/OpenAPI, MCP JSON Schema, structuredContent, canonical JSON fallback and capability discovery.",
+  "type": "string",
+  "enum": [
+    "canonical_text",
+    "title_metadata",
+    "ocr_text",
+    "vision_analysis",
+    "visual_vector",
+    "asset_metadata",
+    "multilingual_text",
+    "positional_metadata"
+  ],
+  "x-mnemo-authority": "mnemo.models.advanced_retrieval.EvidenceRepresentation",
+  "x-mnemo-compatibility": {
+    "existing_values": "No existing value is renamed or reinterpreted.",
+    "multilingual_text": "The missing MCP schema value is added additively. A runtime may advertise it as callable only when the derived V2_EXPOSED predicate is true.",
+    "unknown_values": "Rejected by every strict transport contract.",
+    "title_metadata": "Selectable metadata representation only; never valid as a substitute for reranker semantic_text.",
+    "namespace": "This is the public retrieval representation vocabulary. RepresentationObservationV1 representation_type is a separate encoding/derivation-state vocabulary and maps to multilingual_text only through a governed TextRepresentationReferenceV1."
+  }
+}

@@ -28,6 +28,13 @@ def validate_final_publication(answer_result: GroundedAnswerResult) -> None:
     if answer is None:  # pragma: no cover - model invariant
         raise IntegrityError("citation_compliance: generated answer is unavailable")
     sources = {item.source_number for item in answer_result.context_result.items}
+    validate_source_markers(answer, sources)
+
+
+def validate_source_markers(answer: str, sources: set[int]) -> tuple[int, ...]:
+    """Validate ADR-0054 markers for any typed evidence generation."""
+    if not isinstance(answer, str) or not answer.strip():
+        raise IntegrityError("citation_compliance: generated answer is unavailable")
     found: list[int] = []
     position = 0
     while True:
@@ -44,3 +51,4 @@ def validate_final_publication(answer_result: GroundedAnswerResult) -> None:
         position = canonical.end()
     if not found:
         raise IntegrityError("citation_compliance: generated final answer requires a source marker")
+    return tuple(found)

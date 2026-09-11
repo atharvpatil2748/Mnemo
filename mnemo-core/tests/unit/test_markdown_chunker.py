@@ -244,6 +244,56 @@ def test_table_uses_exact_markdown_and_retains_structured_rows() -> None:
     assert table["rows"] == (("Name", "Value"), ("A", "1"))
 
 
+def test_oversized_list_subdivides_by_items_and_conserves_exact_source() -> None:
+    markdown = "".join(
+        f"- item {index} " + _words(8, f"value{index}") + "\n" for index in range(20)
+    )
+    document = _document(markdown)
+    context = _context(document, target=25, maximum=50)
+    chunker = MarkdownChunker()
+
+    first = chunker.chunk(document, context, WordCounter())
+    second = chunker.chunk(document, context, WordCounter())
+
+    assert first == second
+    assert len(first) > 1
+    bodies = []
+    items = []
+    for draft in first:
+        assert WordCounter().count(draft.text) <= 50
+        assert draft.metadata["chunker.atomic.subdivision"]["type"] == "markdown_list"
+        bodies.extend(draft.metadata["chunker.markdown.sources"])
+        structure = draft.metadata["chunker.markdown.list"]
+        items.extend(structure["items"])
+    assert "".join(bodies) == markdown
+    assert tuple(item["text"] for item in items) == tuple(
+        f"item {index} " + _words(8, f"value{index}") for index in range(20)
+    )
+
+
+def test_oversized_markdown_table_subdivides_by_rows_and_conserves_cells() -> None:
+    rows = tuple((f"name-{index}", f"value-{index}") for index in range(30))
+    markdown = "| Name | Value |\n|---|---|\n" + "".join(
+        f"| {name} | {value} |\n" for name, value in rows
+    )
+    document = _document(markdown)
+    context = _context(document, target=25, maximum=50)
+    chunker = MarkdownChunker()
+
+    first = chunker.chunk(document, context, WordCounter())
+    second = chunker.chunk(document, context, WordCounter())
+
+    assert first == second
+    assert len(first) > 1
+    reconstructed = []
+    for draft in first:
+        assert WordCounter().count(draft.text) <= 50
+        assert draft.metadata["chunker.atomic.subdivision"]["type"] == "markdown_table"
+        structure = draft.metadata["chunker.markdown.table"]
+        reconstructed.extend(structure["rows"][structure["header_row_count"] :])
+    assert tuple(reconstructed) == rows
+
+
 def test_internal_links_and_inline_source_are_preserved_without_reparsing() -> None:
     markdown = 'Read **bold** [guide](guide.md "Local") and [web](https://example.com).\n'
     document = _document(markdown)

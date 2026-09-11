@@ -1,0 +1,1337 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-02T14:01:39.428135+00:00",
+    "manifest_path": "C:\\Users\\athar\\Desktop\\Mnemo\\docs\\governance\\proposals\\phase8_5_wp10_multilingual_evaluation_pack\\multilingual_evaluation_manifest.proposed.json",
+    "manifest_sha256": "a994e533359c5002a0ee252a169c839e4e5d8a93ad493380e0777be070de208a",
+    "execution_status": "COMPLETED"
+  },
+  "overall_metrics": {
+    "total_queries": 18,
+    "recall_at_1": 0.8333333333333334,
+    "recall_at_5": 0.8888888888888888,
+    "recall_at_10": 0.8888888888888888,
+    "mrr": 0.8444444444444444,
+    "ndcg": 0.8548251559574745
+  },
+  "direction_metrics": {
+    "en->en": {
+      "count": 5,
+      "recall_at_1": 0.8,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 0.8400000000000001,
+      "ndcg": 0.8773705614469083
+    },
+    "en->mr": {
+      "count": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0
+    },
+    "hi->en": {
+      "count": 5,
+      "recall_at_1": 0.8,
+      "recall_at_5": 0.8,
+      "recall_at_10": 0.8,
+      "mrr": 0.8,
+      "ndcg": 0.8
+    },
+    "hi->mr": {
+      "count": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0
+    },
+    "mr->en": {
+      "count": 5,
+      "recall_at_1": 0.8,
+      "recall_at_5": 0.8,
+      "recall_at_10": 0.8,
+      "mrr": 0.8,
+      "ndcg": 0.8
+    },
+    "mr->mr": {
+      "count": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0
+    }
+  },
+  "language_metrics": {
+    "en": {
+      "count": 6,
+      "recall_at_1": 0.8333333333333334,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 0.8666666666666667,
+      "ndcg": 0.8978088012057569
+    },
+    "hi": {
+      "count": 6,
+      "recall_at_1": 0.8333333333333334,
+      "recall_at_5": 0.8333333333333334,
+      "recall_at_10": 0.8333333333333334,
+      "mrr": 0.8333333333333334,
+      "ndcg": 0.8333333333333334
+    },
+    "mr": {
+      "count": 6,
+      "recall_at_1": 0.8333333333333334,
+      "recall_at_5": 0.8333333333333334,
+      "recall_at_10": 0.8333333333333334,
+      "mrr": 0.8333333333333334,
+      "ndcg": 0.8333333333333334
+    }
+  },
+  "topic_metrics": {
+    "Atharv Resume": {
+      "count": 3,
+      "recall_at_1": 0.0,
+      "recall_at_5": 0.3333333333333333,
+      "recall_at_10": 0.3333333333333333,
+      "mrr": 0.06666666666666667,
+      "ndcg": 0.1289509357448472
+    },
+    "Marathi Manuscript": {
+      "count": 3,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0
+    },
+    "Y24 CPI": {
+      "count": 3,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0
+    },
+    "ME361 Syllabus": {
+      "count": 3,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0
+    },
+    "Panch Parmeshwar": {
+      "count": 3,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0
+    },
+    "Server.js Endpoint": {
+      "count": 3,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0
+    }
+  },
+  "query_results": [
+    {
+      "query_id": "MBSEL-01",
+      "query_text": "What technical skills are listed in Atharv's resume?",
+      "query_language": "en",
+      "direction": "en->en",
+      "expected_document_name": "Atharv_Patil_RESUME_SDE.pdf",
+      "expected_document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+      "found_rank": 5,
+      "recall_at_1": 0.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 0.2,
+      "ndcg": 0.38685280723454163,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 23025.58840002166,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "f5368433-a6dd-5095-a9aa-da2e7c155401",
+          "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+          "document_title": "Coordinator Application 2026–27",
+          "score": 0.03252247488101534,
+          "preview": "Title: INTRODUCTION\n\nMy name is Atharv Patil, a Y24 B.Tech undergraduate in Mechanical Engineering a"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "745076dc-77c4-5dfc-8147-dd44cc47a668",
+          "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+          "document_title": "llmPrompt.js",
+          "score": 0.014925373134328358,
+          "preview": "function buildSystemPrompt({\r\n  mode = \"neutral\",\r\n  topic = null,\r\n  humour = false,\r\n  noQuestions"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "23104b72-d247-540e-8523-4b9568eb5639",
+          "document_id": "0d0039c5-78e0-56c5-b7e4-d1b1a8483d07",
+          "document_title": "boarding-pass-Atharv-Patil",
+          "score": 0.014084507042253521,
+          "preview": "A NASA boarding pass for the Nancy Grace Roman Space Telescope, featuring Atharv Patil as the namesa"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "48f8b99d-8808-53f0-9cc5-6974f519531b",
+          "document_id": "ec6ee601-e3b0-56c2-a2c8-a2d89a21ee5a",
+          "document_title": "New Doc 06-30-2026 20.31",
+          "score": 0.02813852813852814,
+          "preview": "Maharashtra State Board of Secondary and Higher Secondary Education, Pune\nDocument type: Certificate"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "be46ea61-65ba-58be-8f45-905b2181e59a",
+          "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+          "document_title": "Atharv_Patil_RESUME_SDE.pdf",
+          "score": 0.03057889822595705,
+          "preview": "Atharv Krishnat Patil R pakrishnat24@iitk.ac.in Junior Undergraduate | Department of Mechanical Engi"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-02",
+      "query_text": "अथर्व के रिज्यूमे में कौन से तकनीकी कौशल हैं?",
+      "query_language": "hi",
+      "direction": "hi->en",
+      "expected_document_name": "Atharv_Patil_RESUME_SDE.pdf",
+      "expected_document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+      "found_rank": null,
+      "recall_at_1": 0.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg": 0.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 17853.637200023513,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "0a5c5227-25b5-59d5-a0c8-881b3ea76157",
+          "document_id": "dd39990e-8d41-5a5f-972f-cf4555d26c72",
+          "document_title": "research_8b4fd9e3-312a-487b-b035-995a66021bd0.md",
+          "score": 0.014705882352941176,
+          "preview": "Evaluating suitability for resume tailoring, cover letter writing, mock interviews, and system desig"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "f5368433-a6dd-5095-a9aa-da2e7c155401",
+          "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+          "document_title": "Coordinator Application 2026–27",
+          "score": 0.01639344262295082,
+          "preview": "Title: INTRODUCTION\n\nMy name is Atharv Patil, a Y24 B.Tech undergraduate in Mechanical Engineering a"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "745076dc-77c4-5dfc-8147-dd44cc47a668",
+          "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+          "document_title": "llmPrompt.js",
+          "score": 0.015151515151515152,
+          "preview": "function buildSystemPrompt({\r\n  mode = \"neutral\",\r\n  topic = null,\r\n  humour = false,\r\n  noQuestions"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "5b073cec-97e2-5704-a496-986391689608",
+          "document_id": "dd39990e-8d41-5a5f-972f-cf4555d26c72",
+          "document_title": "research_8b4fd9e3-312a-487b-b035-995a66021bd0.md",
+          "score": 0.014492753623188406,
+          "preview": "*   **Required Skill:** The ability to connect configuration files (e.g., Terraform) with operationa"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "62232b74-44e5-5475-860f-e71367d5643a",
+          "document_id": "ec6ee601-e3b0-56c2-a2c8-a2d89a21ee5a",
+          "document_title": "New Doc 06-30-2026 20.31",
+          "score": 0.014285714285714285,
+          "preview": "[ant SAND ९ १0702 ही\r\nTB) (AN\r\n$7 ZEN महाराष्ट्र राज्य परीक्षा परिषंदं, पुणे %\r\n-« कि\r\nपूर्व माध्यमि"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-03",
+      "query_text": "अथर्वच्या रिझ्युमेमध्ये कोणती तांत्रिक कौशल्ये आहेत?",
+      "query_language": "mr",
+      "direction": "mr->en",
+      "expected_document_name": "Atharv_Patil_RESUME_SDE.pdf",
+      "expected_document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+      "found_rank": null,
+      "recall_at_1": 0.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg": 0.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 15557.797899993602,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "c0cdbbc4-a785-5b7d-bcc9-1694fcff4b5d",
+          "document_id": "f7a2cfb6-9742-56ab-9817-d20a5a7bce9d",
+          "document_title": "Bhagavad-gita As It Is with pics!",
+          "score": 0.014285714285714285,
+          "preview": "tasmät—therefore; tväm—you; uttiñöha—get up; yaçaù—fame; labhasva— gain; jitvä—conquering; çatrün—en"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "62232b74-44e5-5475-860f-e71367d5643a",
+          "document_id": "ec6ee601-e3b0-56c2-a2c8-a2d89a21ee5a",
+          "document_title": "New Doc 06-30-2026 20.31",
+          "score": 0.014285714285714285,
+          "preview": "[ant SAND ९ १0702 ही\r\nTB) (AN\r\n$7 ZEN महाराष्ट्र राज्य परीक्षा परिषंदं, पुणे %\r\n-« कि\r\nपूर्व माध्यमि"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "fe5cd156-4d44-5026-85da-81efef52c2a6",
+          "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+          "document_title": "llmPrompt.js",
+          "score": 0.014925373134328358,
+          "preview": "// - You were created by Atharv."
+        },
+        {
+          "rank": 4,
+          "candidate_id": "e1058d8d-8880-5ef1-b7dd-01b189119783",
+          "document_id": "c6449870-9772-5bfb-bcc3-c8a4d94ca713",
+          "document_title": "arvsal_v3_complete.txt",
+          "score": 0.015873015873015872,
+          "preview": "No Agents. No Tools. No Workspace. ## Communication Boundaries | From | To | Channel | Content | |--"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "736c8ee1-f885-588d-a437-6df3fe0c2b69",
+          "document_id": "c6449870-9772-5bfb-bcc3-c8a4d94ca713",
+          "document_title": "arvsal_v3_complete.txt",
+          "score": 0.015625,
+          "preview": "No Agents. No Tools. No Workspace. ## Communication Boundaries | From | To | Channel | Content | |--"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-04",
+      "query_text": "When did the Marathi book begin?",
+      "query_language": "en",
+      "direction": "en->mr",
+      "expected_document_name": "manuscript.pdf",
+      "expected_document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 16209.65689996956,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "9ffbc07a-91e0-5351-a13e-6dac37dd01b6",
+          "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+          "document_title": "manuscript.pdf",
+          "score": 0.015873015873015872,
+          "preview": "माझे पुस्तक\n\nसुरुवात: 27 May 2026\n\nमला आठवतं, मी सेजलला एक दिवस म्हटलं होतं की... तुझ्यावर मी एक संप"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "e8cff940-4f67-5796-9caa-fb3cce781d22",
+          "document_id": "c59d2d22-66ca-52a2-93e7-9c5fa692a597",
+          "document_title": "Valmiki Ramayana aur Ramakien Ek Tulnamatmak Adhyayan.pdf",
+          "score": 0.014492753623188406,
+          "preview": "a. Jd ८! भारत का राजदूतावास, बेंकाक\r\nmbassador ermanent < Emb. ;\r\nRepresentative to ESCAP ne mbassy "
+        },
+        {
+          "rank": 3,
+          "candidate_id": "84b6d239-d3d0-5da9-a498-38cdc5323d4b",
+          "document_id": "f7a2cfb6-9742-56ab-9817-d20a5a7bce9d",
+          "document_title": "Bhagavad-gita As It Is with pics!",
+          "score": 0.01639344262295082,
+          "preview": "At the present moment we have just passed through five thousand years of the Kali-yuga, which lasts "
+        },
+        {
+          "rank": 4,
+          "candidate_id": "b07dbb7d-5f64-58f4-84ae-be4ed82eed5e",
+          "document_id": "f7a2cfb6-9742-56ab-9817-d20a5a7bce9d",
+          "document_title": "Bhagavad-gita As It Is with pics!",
+          "score": 0.016129032258064516,
+          "preview": "akñaräëäm—of letters; akäraù—the first; asmi—I am; dvandvaù—dual; sämäsikäsya—compounds; ca—and; aha"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "b41be2cd-a339-549e-a11f-ea7f13900845",
+          "document_id": "c59d2d22-66ca-52a2-93e7-9c5fa692a597",
+          "document_title": "Valmiki Ramayana aur Ramakien Ek Tulnamatmak Adhyayan.pdf",
+          "score": 0.014705882352941176,
+          "preview": "A document from the Embassy of India, Bangkok, addressed to the Ambassador & Permanent Representativ"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-05",
+      "query_text": "मराठी पुस्तक की शुरुआत किस तारीख को हुई?",
+      "query_language": "hi",
+      "direction": "hi->mr",
+      "expected_document_name": "manuscript.pdf",
+      "expected_document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 15805.523700022604,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "9ffbc07a-91e0-5351-a13e-6dac37dd01b6",
+          "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+          "document_title": "manuscript.pdf",
+          "score": 0.03252247488101534,
+          "preview": "माझे पुस्तक\n\nसुरुवात: 27 May 2026\n\nमला आठवतं, मी सेजलला एक दिवस म्हटलं होतं की... तुझ्यावर मी एक संप"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "9b461afd-14ed-58c5-9097-1ac6f7ff80eb",
+          "document_id": "f7a2cfb6-9742-56ab-9817-d20a5a7bce9d",
+          "document_title": "Bhagavad-gita As It Is with pics!",
+          "score": 0.014084507042253521,
+          "preview": ">aqZMaae d]ae<a\" SaUTaPau}aSTaQaaSaaE SahaSMadqYaEriPa YaaeDaMau:YaE\" )) 26 ))\n\nv£-ai<a Tae TvrMaa<a"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "e8cff940-4f67-5796-9caa-fb3cce781d22",
+          "document_id": "c59d2d22-66ca-52a2-93e7-9c5fa692a597",
+          "document_title": "Valmiki Ramayana aur Ramakien Ek Tulnamatmak Adhyayan.pdf",
+          "score": 0.03252247488101534,
+          "preview": "a. Jd ८! भारत का राजदूतावास, बेंकाक\r\nmbassador ermanent < Emb. ;\r\nRepresentative to ESCAP ne mbassy "
+        },
+        {
+          "rank": 4,
+          "candidate_id": "84b6d239-d3d0-5da9-a498-38cdc5323d4b",
+          "document_id": "f7a2cfb6-9742-56ab-9817-d20a5a7bce9d",
+          "document_title": "Bhagavad-gita As It Is with pics!",
+          "score": 0.015625,
+          "preview": "At the present moment we have just passed through five thousand years of the Kali-yuga, which lasts "
+        },
+        {
+          "rank": 5,
+          "candidate_id": "20345431-d9ca-55ad-83c0-819283453fbe",
+          "document_id": "f7a2cfb6-9742-56ab-9817-d20a5a7bce9d",
+          "document_title": "Bhagavad-gita As It Is with pics!",
+          "score": 0.014925373134328358,
+          "preview": "TEXT 29 YaQaa Pa[dqá& Jvl/Na& PaTa®a ivXaiNTa NaaXaaYa SaMa*ÖveGaa\" )\n\nTaQaEv NaaXaaYa ivXaiNTa l/ae"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-06",
+      "query_text": "माझ्या पुस्तकाची सुरुवात कोणत्या तारखेला झाली?",
+      "query_language": "mr",
+      "direction": "mr->mr",
+      "expected_document_name": "manuscript.pdf",
+      "expected_document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 15430.417500028852,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "9ffbc07a-91e0-5351-a13e-6dac37dd01b6",
+          "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+          "document_title": "manuscript.pdf",
+          "score": 0.03278688524590164,
+          "preview": "माझे पुस्तक\n\nसुरुवात: 27 May 2026\n\nमला आठवतं, मी सेजलला एक दिवस म्हटलं होतं की... तुझ्यावर मी एक संप"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "e8cff940-4f67-5796-9caa-fb3cce781d22",
+          "document_id": "c59d2d22-66ca-52a2-93e7-9c5fa692a597",
+          "document_title": "Valmiki Ramayana aur Ramakien Ek Tulnamatmak Adhyayan.pdf",
+          "score": 0.014492753623188406,
+          "preview": "a. Jd ८! भारत का राजदूतावास, बेंकाक\r\nmbassador ermanent < Emb. ;\r\nRepresentative to ESCAP ne mbassy "
+        },
+        {
+          "rank": 3,
+          "candidate_id": "10ee7807-ad1b-518b-a0c1-17ab53b5c23b",
+          "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+          "document_title": "manuscript.pdf",
+          "score": 0.03036576949620428,
+          "preview": "मिळाले होते. मलकापूरमध्ये, पहिली ते चौथीपर्यंत, मी एका केवळ मुलांच्या शाळेत होतो... त्यामुळे मुलींच्"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "754a30fe-c1a5-5f0b-b62c-884f02ec85cf",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.014285714285714285,
+          "preview": "/* ================= START ================= */"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "5ef98cf8-17fa-5cd5-9d08-429551731013",
+          "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+          "document_title": "manuscript.pdf",
+          "score": 0.028665028665028666,
+          "preview": "येण्याचं एकच, आणि सर्वात मोठं ध्येय बनलं; म्हणूनच, अगदी आजारी ते दिवस... ते केवळ 'सुंदर' नव्हते; ते "
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-07",
+      "query_text": "Who is ranked first in the Y24 CPI list?",
+      "query_language": "en",
+      "direction": "en->en",
+      "expected_document_name": "Y24_CPI.csv",
+      "expected_document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 16277.837099973112,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "51631724-0042-5a22-9a3b-902b0ecf14a2",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.014705882352941176,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n1\t240465\tINESH AGGARWAL\t1\tCSE\t10.0\n2\t240043\tABUBAKAR SIDDIQUE"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "50b4e724-8b4f-54bd-ac18-30667553a639",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.014925373134328358,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n120\t240740\tPATIL ATHARV KRISHNAT\t110\tME\t9.0\n121\t240788\tPRATYU"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "9efd59b9-91c8-5abd-b2f6-9077b68b75b4",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.015384615384615385,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n1015\t240624\tMANISH MEGHWAL\t1009\tEE\t5.7\n1016\t240803\tPRIYANSH D"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "e4166042-d52c-58d2-9ddd-010c699ca7e8",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.015625,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n430\t240639\tMAYANK RAJ\t414\tΑΕ\t7.9\n431\t240701\tNIRAJKUMAR BINOD "
+        },
+        {
+          "rank": 5,
+          "candidate_id": "bbd874a6-d456-57d5-82c6-d28b1171735d",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.016129032258064516,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n41\t240976\tSHIVAM BANSAL\t34\tEE\t9.5\n42\t241052\tSUJAL SATISH MOTA"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-08",
+      "query_text": "Y24 CPI सूची में पहला स्थान किसका है?",
+      "query_language": "hi",
+      "direction": "hi->en",
+      "expected_document_name": "Y24_CPI.csv",
+      "expected_document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 15703.197900031228,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "50b4e724-8b4f-54bd-ac18-30667553a639",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.014705882352941176,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n120\t240740\tPATIL ATHARV KRISHNAT\t110\tME\t9.0\n121\t240788\tPRATYU"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "9efd59b9-91c8-5abd-b2f6-9077b68b75b4",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.015384615384615385,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n1015\t240624\tMANISH MEGHWAL\t1009\tEE\t5.7\n1016\t240803\tPRIYANSH D"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "bbd874a6-d456-57d5-82c6-d28b1171735d",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.015873015873015872,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n41\t240976\tSHIVAM BANSAL\t34\tEE\t9.5\n42\t241052\tSUJAL SATISH MOTA"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "56b3ad1a-cb0c-5800-ae07-147a81634967",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.016129032258064516,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n704\t241057\tSUMIT JAIN\t685\tBSBE\t7.1\n705\t241062\tSUNIDHI SHYAMBA"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "ad270440-a1be-5393-81cd-9a39eb9b7062",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.015151515151515152,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n1125\t240403\tGOND SIDDHARTH KUMAR JITENDRA\t1123\tMSE\t4.6\n1126\t2"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-09",
+      "query_text": "Y24 CPI यादीत प्रथम क्रमांक कोणाचा आहे?",
+      "query_language": "mr",
+      "direction": "mr->en",
+      "expected_document_name": "Y24_CPI.csv",
+      "expected_document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 16002.64999998035,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "9efd59b9-91c8-5abd-b2f6-9077b68b75b4",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.014925373134328358,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n1015\t240624\tMANISH MEGHWAL\t1009\tEE\t5.7\n1016\t240803\tPRIYANSH D"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "50b4e724-8b4f-54bd-ac18-30667553a639",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.014492753623188406,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n120\t240740\tPATIL ATHARV KRISHNAT\t110\tME\t9.0\n121\t240788\tPRATYU"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "bbd874a6-d456-57d5-82c6-d28b1171735d",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.016129032258064516,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n41\t240976\tSHIVAM BANSAL\t34\tEE\t9.5\n42\t241052\tSUJAL SATISH MOTA"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "56b3ad1a-cb0c-5800-ae07-147a81634967",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.015873015873015872,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n704\t241057\tSUMIT JAIN\t685\tBSBE\t7.1\n705\t241062\tSUNIDHI SHYAMBA"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "9bcff2ca-379f-5420-aee0-646485bf29d5",
+          "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+          "document_title": "Y24_CPI.csv",
+          "score": 0.014705882352941176,
+          "preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n977\t240247\tAYUSHI SHARMA\t976\tCHE\t5.9\n978\t240305\tCHETLA LAKSHM"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-10",
+      "query_text": "What machining processes are included in the ME361 syllabus?",
+      "query_language": "en",
+      "direction": "en->en",
+      "expected_document_name": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)",
+      "expected_document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 16296.025499992538,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "cce6e0c2-012d-55d3-a78c-1ccbb84bc28c",
+          "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+          "document_title": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)",
+          "score": 0.03278688524590164,
+          "preview": "Title: Slide 1\n\nIntroduction to secondary manufacturing processes (1); Conventional machining proces"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "c88d2c3a-96a8-5165-87a8-1d93a4088d88",
+          "document_id": "a7f2ef72-cb07-5c74-b88d-d989fb4638ff",
+          "document_title": "L4_55e70e05-fa79-4e59-9848-f398639f7a68.pdf",
+          "score": 0.014492753623188406,
+          "preview": "The image shows a cross-section of a machining process. A tool is depicted cutting into a material, "
+        },
+        {
+          "rank": 3,
+          "candidate_id": "33a74d07-4f96-5679-8c75-de6328504317",
+          "document_id": "44d9c338-d435-5d0f-b863-ae28536d5db0",
+          "document_title": "ME361_L2-L4_08c3b677-872f-4073-8337-83ad44fa8b88.pdf",
+          "score": 0.014705882352941176,
+          "preview": "Hot forming\r\n10 10%\r\nदै\r\nटर प्री ठी\r\n£ १ 104\r\n2 Forming\r\ne\r\ns [2\r\nन\r\n_, 2\r\ng 107! Cold forming 10\r\nI"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "eb380e4c-1b9e-594a-a30c-13f907ba801e",
+          "document_id": "44d9c338-d435-5d0f-b863-ae28536d5db0",
+          "document_title": "ME361_L2-L4_08c3b677-872f-4073-8337-83ad44fa8b88.pdf",
+          "score": 0.02797339593114241,
+          "preview": "Workpiece\n\ndesign\n\nManufacturing\n\nand assembly\n\n(M+W+T+F) Process planning\n\nPlanning and organizatio"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "de377a85-e048-5d92-8a80-8485ad2ed4f4",
+          "document_id": "44d9c338-d435-5d0f-b863-ae28536d5db0",
+          "document_title": "ME361_L2-L4_08c3b677-872f-4073-8337-83ad44fa8b88.pdf",
+          "score": 0.016129032258064516,
+          "preview": "The image contains two graphs. The left graph (a) plots 'Tolerance range (mm)' on the y-axis against"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-11",
+      "query_text": "ME361 पाठ्यक्रम में कौन सी मशीनिंग प्रक्रियाएँ हैं?",
+      "query_language": "hi",
+      "direction": "hi->en",
+      "expected_document_name": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)",
+      "expected_document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 15829.588899970986,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "cce6e0c2-012d-55d3-a78c-1ccbb84bc28c",
+          "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+          "document_title": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)",
+          "score": 0.01639344262295082,
+          "preview": "Title: Slide 1\n\nIntroduction to secondary manufacturing processes (1); Conventional machining proces"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "e67b6bf0-bca8-5655-a6a8-e02129b8077b",
+          "document_id": "256c8d05-93c5-5448-9246-9985e2cafb3b",
+          "document_title": "IITK",
+          "score": 0.016129032258064516,
+          "preview": "S.No.\tAcademic Session\tSemester\tCourse ID\tCourse Name/Similar Course\tCourse Type\tGrade\tCredits\tRepea"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "9baf62c8-2808-5f51-8b28-42b24e73e85c",
+          "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+          "document_title": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)",
+          "score": 0.015151515151515152,
+          "preview": "Title: Slide 23\n\nManufacturing Processes (at scales?)"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "eb380e4c-1b9e-594a-a30c-13f907ba801e",
+          "document_id": "44d9c338-d435-5d0f-b863-ae28536d5db0",
+          "document_title": "ME361_L2-L4_08c3b677-872f-4073-8337-83ad44fa8b88.pdf",
+          "score": 0.014492753623188406,
+          "preview": "Workpiece\n\ndesign\n\nManufacturing\n\nand assembly\n\n(M+W+T+F) Process planning\n\nPlanning and organizatio"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "682af037-d229-5229-bc1a-b84c96b787ef",
+          "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+          "document_title": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)",
+          "score": 0.015384615384615385,
+          "preview": "Title: Slide 18\n\nWhy manufacturing? PRODUCTS and YOU Material preparation & b illet selection Action"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-12",
+      "query_text": "ME361 अभ्यासक्रमात कोणत्या मशीनिंग प्रक्रिया आहेत?",
+      "query_language": "mr",
+      "direction": "mr->en",
+      "expected_document_name": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)",
+      "expected_document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 15615.124400006607,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "cce6e0c2-012d-55d3-a78c-1ccbb84bc28c",
+          "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+          "document_title": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)",
+          "score": 0.01639344262295082,
+          "preview": "Title: Slide 1\n\nIntroduction to secondary manufacturing processes (1); Conventional machining proces"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "e67b6bf0-bca8-5655-a6a8-e02129b8077b",
+          "document_id": "256c8d05-93c5-5448-9246-9985e2cafb3b",
+          "document_title": "IITK",
+          "score": 0.015625,
+          "preview": "S.No.\tAcademic Session\tSemester\tCourse ID\tCourse Name/Similar Course\tCourse Type\tGrade\tCredits\tRepea"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "9baf62c8-2808-5f51-8b28-42b24e73e85c",
+          "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+          "document_title": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)",
+          "score": 0.015151515151515152,
+          "preview": "Title: Slide 23\n\nManufacturing Processes (at scales?)"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "682af037-d229-5229-bc1a-b84c96b787ef",
+          "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+          "document_title": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)",
+          "score": 0.015384615384615385,
+          "preview": "Title: Slide 18\n\nWhy manufacturing? PRODUCTS and YOU Material preparation & b illet selection Action"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "e6d84a32-75f3-58d1-96f3-19db25aed176",
+          "document_id": "256c8d05-93c5-5448-9246-9985e2cafb3b",
+          "document_title": "IITK",
+          "score": 0.014925373134328358,
+          "preview": "S.No.\tAcademic Session\tSemester\tCourse ID\tCourse Name/Similar Course\tCourse Type\tGrade\tCredits\tRepea"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-13",
+      "query_text": "Why did the old aunt call a village panchayat?",
+      "query_language": "en",
+      "direction": "en->en",
+      "expected_document_name": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+      "expected_document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 16317.224700003862,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "ea23aa75-2793-55b4-a20d-86372c1b0656",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.03200204813108039,
+          "preview": "After this, for many days, leaning on her stick, the old woman hopped from village to village. Her b"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "2328fd0d-9fe2-5497-9206-1a6b630db3f7",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.032266458495966696,
+          "preview": "It was impossible to decide whether the smoke rising from the burning cowdung cakes was thicker or t"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "2ec5ca30-4e71-5a41-83ff-203681f3714e",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.03252247488101534,
+          "preview": "Jumman Shaikh had an old aunt who had some property. She had no other near relation than Jumman. He "
+        },
+        {
+          "rank": 4,
+          "candidate_id": "16f0e25f-f04c-506f-ab90-c1654aa6fcbf",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.03076923076923077,
+          "preview": "For me Ramdhan Misr and Algu are the same.’ Algu didn’t want to get involved in this. He said, ‘Khal"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "c5f5831d-72a8-5106-b704-e88141565898",
+          "document_id": "f7a2cfb6-9742-56ab-9817-d20a5a7bce9d",
+          "document_title": "Bhagavad-gita As It Is with pics!",
+          "score": 0.015151515151515152,
+          "preview": "In the presence of Bhéñma, Droëa and all other chieftains of the world, Håñékeça, the Lord, said, Ju"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-14",
+      "query_text": "बूढ़ी खाला ने पंचायत क्यों बुलाई?",
+      "query_language": "hi",
+      "direction": "hi->en",
+      "expected_document_name": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+      "expected_document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 15893.42239999678,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "16f0e25f-f04c-506f-ab90-c1654aa6fcbf",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.015384615384615385,
+          "preview": "For me Ramdhan Misr and Algu are the same.’ Algu didn’t want to get involved in this. He said, ‘Khal"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "f6a49e01-af08-58fb-8cd0-e8826f24d9d4",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.014925373134328358,
+          "preview": "‘Shaikh Jumman, the Panchayat has considered this matter. To us it looks fair and just that khaala j"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "ea23aa75-2793-55b4-a20d-86372c1b0656",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.015873015873015872,
+          "preview": "After this, for many days, leaning on her stick, the old woman hopped from village to village. Her b"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "2ec5ca30-4e71-5a41-83ff-203681f3714e",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.016129032258064516,
+          "preview": "Jumman Shaikh had an old aunt who had some property. She had no other near relation than Jumman. He "
+        },
+        {
+          "rank": 5,
+          "candidate_id": "2328fd0d-9fe2-5497-9206-1a6b630db3f7",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.01639344262295082,
+          "preview": "It was impossible to decide whether the smoke rising from the burning cowdung cakes was thicker or t"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-15",
+      "query_text": "वृद्ध खालाने पंचायत का बोलावली?",
+      "query_language": "mr",
+      "direction": "mr->en",
+      "expected_document_name": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+      "expected_document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 15901.393099979032,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "16f0e25f-f04c-506f-ab90-c1654aa6fcbf",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.015151515151515152,
+          "preview": "For me Ramdhan Misr and Algu are the same.’ Algu didn’t want to get involved in this. He said, ‘Khal"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "ea23aa75-2793-55b4-a20d-86372c1b0656",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.015873015873015872,
+          "preview": "After this, for many days, leaning on her stick, the old woman hopped from village to village. Her b"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "2328fd0d-9fe2-5497-9206-1a6b630db3f7",
+          "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+          "document_title": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+          "score": 0.01639344262295082,
+          "preview": "It was impossible to decide whether the smoke rising from the burning cowdung cakes was thicker or t"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "358d2e16-fcd9-54c8-a895-8d69ce9405bb",
+          "document_id": "f7a2cfb6-9742-56ab-9817-d20a5a7bce9d",
+          "document_title": "Bhagavad-gita As It Is with pics!",
+          "score": 0.014492753623188406,
+          "preview": "The best sacrifice recommended in this age is called saìkértana-yajïa, the chanting of Hare Kåñëa, H"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "7cd1bbe5-c5f2-5b4a-a0d0-2d4d51bb6dc0",
+          "document_id": "f7a2cfb6-9742-56ab-9817-d20a5a7bce9d",
+          "document_title": "Bhagavad-gita As It Is with pics!",
+          "score": 0.015625,
+          "preview": "Tae b]ø TaiÜdu\" k*-TòMaDYaaTMa& k-MaR cai%l/Ma( )) 29 ))\n\njarä-maraëa-mokñäya mäm äçritya yatanti ye"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-16",
+      "query_text": "Which endpoint in server.js reports health?",
+      "query_language": "en",
+      "direction": "en->en",
+      "expected_document_name": "server.js",
+      "expected_document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 15842.10740000708,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "e381abf9-5474-5365-a699-52ce01058f41",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.029551337359792925,
+          "preview": "app.get(\"/health\", (_req, res) => {\r\n  res.json({ status: \"ok\" });\r\n});"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "4dcd8d4f-e81a-56a8-8103-2015dfafc979",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.015873015873015872,
+          "preview": "/* ================= COMMAND ENDPOINT ================= */"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "4e106126-c245-50b8-85bf-0f3bcc7f8974",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.015625,
+          "preview": "app.post(\"/command\", async (req, res) => {\r\n  const controller = new AbortController();\r\n  const { s"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "1e61b63d-d516-5b39-84b0-06273ceddab8",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.016129032258064516,
+          "preview": "app.get(\"/stream\", (req, res) => {\r\n  res.setHeader(\"Content-Type\", \"text/event-stream\");\r\n  res.set"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "e3f9c361-14c9-5ff5-961f-8838f5529a77",
+          "document_id": "c6449870-9772-5bfb-bcc3-c8a4d94ca713",
+          "document_title": "arvsal_v3_complete.txt",
+          "score": 0.015151515151515152,
+          "preview": "## Output Schema ### Conversation Mode ```json { \"mode\": \"conversation\", \"response\": \"...\" } ``` ###"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-17",
+      "query_text": "server.js में स्वास्थ्य स्थिति कौन सा endpoint देता है?",
+      "query_language": "hi",
+      "direction": "hi->en",
+      "expected_document_name": "server.js",
+      "expected_document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 16314.473399950657,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "e381abf9-5474-5365-a699-52ce01058f41",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.01639344262295082,
+          "preview": "app.get(\"/health\", (_req, res) => {\r\n  res.json({ status: \"ok\" });\r\n});"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "df7fb20f-14b6-545c-9b51-9651db777a5c",
+          "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+          "document_title": "llmPrompt.js",
+          "score": 0.015625,
+          "preview": "// HEALTH:"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "4dcd8d4f-e81a-56a8-8103-2015dfafc979",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.014925373134328358,
+          "preview": "/* ================= COMMAND ENDPOINT ================= */"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "4e106126-c245-50b8-85bf-0f3bcc7f8974",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.014492753623188406,
+          "preview": "app.post(\"/command\", async (req, res) => {\r\n  const controller = new AbortController();\r\n  const { s"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "1e61b63d-d516-5b39-84b0-06273ceddab8",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.016129032258064516,
+          "preview": "app.get(\"/stream\", (req, res) => {\r\n  res.setHeader(\"Content-Type\", \"text/event-stream\");\r\n  res.set"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    },
+    {
+      "query_id": "MBSEL-18",
+      "query_text": "server.js मध्ये आरोग्य स्थिती कोणता endpoint देतो?",
+      "query_language": "mr",
+      "direction": "mr->en",
+      "expected_document_name": "server.js",
+      "expected_document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+      "found_rank": 1,
+      "recall_at_1": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "candidates_returned": 10,
+      "examined_count": 40,
+      "elapsed_ms": 15645.41569998255,
+      "ranked_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "e381abf9-5474-5365-a699-52ce01058f41",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.01639344262295082,
+          "preview": "app.get(\"/health\", (_req, res) => {\r\n  res.json({ status: \"ok\" });\r\n});"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "df7fb20f-14b6-545c-9b51-9651db777a5c",
+          "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+          "document_title": "llmPrompt.js",
+          "score": 0.014925373134328358,
+          "preview": "// HEALTH:"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "4dcd8d4f-e81a-56a8-8103-2015dfafc979",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.014705882352941176,
+          "preview": "/* ================= COMMAND ENDPOINT ================= */"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "4e106126-c245-50b8-85bf-0f3bcc7f8974",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "document_title": "server.js",
+          "score": 0.015151515151515152,
+          "preview": "app.post(\"/command\", async (req, res) => {\r\n  const controller = new AbortController();\r\n  const { s"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "e3f9c361-14c9-5ff5-961f-8838f5529a77",
+          "document_id": "c6449870-9772-5bfb-bcc3-c8a4d94ca713",
+          "document_title": "arvsal_v3_complete.txt",
+          "score": 0.015873015873015872,
+          "preview": "## Output Schema ### Conversation Mode ```json { \"mode\": \"conversation\", \"response\": \"...\" } ``` ###"
+        }
+      ],
+      "sentinel_overflow_triggered": false,
+      "failure_code": null
+    }
+  ],
+  "marathi_semantic_text_inspections": [
+    {
+      "query_id": "MBSEL-04",
+      "candidate_id": "9ffbc07a-91e0-5351-a13e-6dac37dd01b6",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "document_title": "manuscript.pdf",
+      "rank": 1,
+      "semantic_text_sample": "माझे पुस्तक\n\nसुरुवात: 27 May 2026\n\nमला आठवतं, मी सेजलला एक दिवस म्हटलं होतं की... तुझ्यावर मी एक संपूर्ण पुस्तक लिहू शकेन. आणि आज\n\nतो दिवस अखेर आलाच; आता खऱ्या अर्थाने, मी तुझ्याबद्दलचे ते पुस्तक लिही",
+      "is_filename_or_title": false
+    },
+    {
+      "query_id": "MBSEL-05",
+      "candidate_id": "9ffbc07a-91e0-5351-a13e-6dac37dd01b6",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "document_title": "manuscript.pdf",
+      "rank": 1,
+      "semantic_text_sample": "माझे पुस्तक\n\nसुरुवात: 27 May 2026\n\nमला आठवतं, मी सेजलला एक दिवस म्हटलं होतं की... तुझ्यावर मी एक संपूर्ण पुस्तक लिहू शकेन. आणि आज\n\nतो दिवस अखेर आलाच; आता खऱ्या अर्थाने, मी तुझ्याबद्दलचे ते पुस्तक लिही",
+      "is_filename_or_title": false
+    },
+    {
+      "query_id": "MBSEL-05",
+      "candidate_id": "10ee7807-ad1b-518b-a0c1-17ab53b5c23b",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "document_title": "manuscript.pdf",
+      "rank": 10,
+      "semantic_text_sample": "मिळाले होते. मलकापूरमध्ये, पहिली ते चौथीपर्यंत, मी एका केवळ मुलांच्या शाळेत होतो... त्यामुळे मुलींच्या\n\nसहवासाची मला कधी कल्पनाच नव्हती. आणि तुम्हालाच माहीत आहे की, एका सामान्य भारतीय कुटुंबात,\n\nआणि म",
+      "is_filename_or_title": false
+    },
+    {
+      "query_id": "MBSEL-06",
+      "candidate_id": "9ffbc07a-91e0-5351-a13e-6dac37dd01b6",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "document_title": "manuscript.pdf",
+      "rank": 1,
+      "semantic_text_sample": "माझे पुस्तक\n\nसुरुवात: 27 May 2026\n\nमला आठवतं, मी सेजलला एक दिवस म्हटलं होतं की... तुझ्यावर मी एक संपूर्ण पुस्तक लिहू शकेन. आणि आज\n\nतो दिवस अखेर आलाच; आता खऱ्या अर्थाने, मी तुझ्याबद्दलचे ते पुस्तक लिही",
+      "is_filename_or_title": false
+    },
+    {
+      "query_id": "MBSEL-06",
+      "candidate_id": "10ee7807-ad1b-518b-a0c1-17ab53b5c23b",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "document_title": "manuscript.pdf",
+      "rank": 3,
+      "semantic_text_sample": "मिळाले होते. मलकापूरमध्ये, पहिली ते चौथीपर्यंत, मी एका केवळ मुलांच्या शाळेत होतो... त्यामुळे मुलींच्या\n\nसहवासाची मला कधी कल्पनाच नव्हती. आणि तुम्हालाच माहीत आहे की, एका सामान्य भारतीय कुटुंबात,\n\nआणि म",
+      "is_filename_or_title": false
+    },
+    {
+      "query_id": "MBSEL-06",
+      "candidate_id": "5ef98cf8-17fa-5cd5-9d08-429551731013",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "document_title": "manuscript.pdf",
+      "rank": 5,
+      "semantic_text_sample": "येण्याचं एकच, आणि सर्वात मोठं ध्येय बनलं; म्हणूनच, अगदी आजारी ते दिवस... ते केवळ 'सुंदर' नव्हते; ते तर\n\nजणू माझ्या आयुष्यातील स्वर्णिम क्षणण होते, ज्यांचा सुगंध आजही श्वासांतून येत आहे! त्याच्या त्या ",
+      "is_filename_or_title": false
+    },
+    {
+      "query_id": "MBSEL-06",
+      "candidate_id": "c5a515f8-3a49-593b-af4c-c8856184f08d",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "document_title": "manuscript.pdf",
+      "rank": 6,
+      "semantic_text_sample": "मी इयत्ता सातवीमध्ये प्रवेश केला. आमच्या वर्गशिक्षिका होत्या मसुटगे मॅडम; आणि त्याच जुन्या मित्रांसोबत—\n\nयश आणि शार्दुलसोबत—मी नेहमी त्या बेंचवर बसलेला असायचो. पणण खरं सांगायचं झालं, सेजल... ती मला\n\nस",
+      "is_filename_or_title": false
+    },
+    {
+      "query_id": "MBSEL-06",
+      "candidate_id": "a3f88c65-bb92-5145-97cf-5d4f46fcad17",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "document_title": "manuscript.pdf",
+      "rank": 7,
+      "semantic_text_sample": "काळात 'क्रश' (Crush) हा शब्द किती सहज वापरला जातो... पणण माझ्यासाठी, तो शब्द एखाद्या अर्धवट\n\nआठवणीसारखा वाटतो; एक अशी पहिली भावना, जी कुठून आली, कशासाठी आली, हे मला अजूनही पूर्णपणे\n\nकळले नाही. मात्र, ",
+      "is_filename_or_title": false
+    },
+    {
+      "query_id": "MBSEL-06",
+      "candidate_id": "68a0ddfa-6a47-536c-8056-4296d89dc387",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "document_title": "manuscript.pdf",
+      "rank": 8,
+      "semantic_text_sample": "दुसऱ्या पुरुषाचा प्रवेश नसावा, अशी एक तीव्र चिंता मनावर राज्य करत होती. कारणण मी स्वतःच तिला पूर्णपणे\n\nआपल्या ओढात अडकवले होते, पणण हे प्रेम केवळ माझे असले पाहिजे! आणि सर्वात मोठी भीती ही होती की\n\nनकळ",
+      "is_filename_or_title": false
+    }
+  ],
+  "protected_hashes": {
+    "manuscript_pdf_before": "31addf387d13de26e3b155e1fc6ee65d5f554cfdfb4281951c56e9482b6f8085",
+    "manuscript_pdf_after": "31addf387d13de26e3b155e1fc6ee65d5f554cfdfb4281951c56e9482b6f8085",
+    "ramayana_pdf_before": "759f2adbfd2fc1191ff8576401d1cbc34bbfefaf79a573e8747c53d4c858af75",
+    "ramayana_pdf_after": "759f2adbfd2fc1191ff8576401d1cbc34bbfefaf79a573e8747c53d4c858af75",
+    "v2_db_before": "3157ff278a16c9978784211a5a8e77ccd1d2c648cde8496d50c7fd83d3ab458c",
+    "v2_db_after": "3157ff278a16c9978784211a5a8e77ccd1d2c648cde8496d50c7fd83d3ab458c",
+    "canonical_db_id": "0c6c73f9b847d204d073ddec8c2a5d2265c2a8bf2bf19bfec552e264f839af8d",
+    "canonical_vector_space_id": "7dcba654e1c947145253ff65ef93e2b4ef1105cdf680b79218a446c79cc1a0d7",
+    "alias_set_digest_before": "b3479aeaf423630abc48436ea3d23c7d37a7fdee637e53b5df86d08b972fe7c0",
+    "alias_set_digest_after": "b3479aeaf423630abc48436ea3d23c7d37a7fdee637e53b5df86d08b972fe7c0"
+  }
+}

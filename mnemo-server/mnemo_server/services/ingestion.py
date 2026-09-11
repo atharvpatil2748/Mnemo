@@ -6,33 +6,31 @@ import hashlib
 import mimetypes
 from dataclasses import replace
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
+from mnemo.asset_foundation import AssetFoundationService
 from mnemo.chunkers import ChunkerDispatcher
 from mnemo.classifier import DocumentClassifier
 from mnemo.cleaner import DocumentCleaner
 from mnemo.embeddings import EmbedderModule
 from mnemo.engine import KnowledgeEngine
-from mnemo.ingestion import DocumentCanonicalizer, IngestionPipeline
+from mnemo.ingestion import DocumentCanonicalizer, IngestionPipeline, IngestionResultV2
 from mnemo.interfaces import (
     ChunkingContext,
     ChunkingOptions,
     ConflictError,
-    FileMetadata,
     MnemoInterfaceError,
     NotFoundError,
     TokenCounterInterfaceV1,
-    UnsupportedError,
 )
-from mnemo.interfaces.parser_models import ParseResult
+from mnemo.interfaces.parser import ParserInterfaceV1
 from mnemo.models import (
     Document,
     DocumentStatus,
     DocumentVersion,
     DocumentVersionStatus,
-    FrozenMetadata,
+    ParsedDocument,
     Source,
     thaw_metadata,
 )
@@ -50,21 +48,8 @@ class ServerParserRouter(ParserRouter):
     MIME detection from libmagic on Linux platforms.
     """
 
-    async def route(self, data: bytes, filename: str) -> Document | ParseResult:
-        """Route the given bytes to the correct parser, or deduplicate."""
-        # 1. Compute SHA-256 for deduplication
-        sha256_hash = hashlib.sha256(data).hexdigest()
-
-        # 2. Duplicate check
-        existing_doc = await self.storage.get_document_by_content_hash(sha256_hash)
-        if existing_doc is not None:
-            return existing_doc
-
-        # 3. MIME/Extension Resolution
-        mime_type = self._detect_mime(data, filename)
-        extension = Path(filename).suffix.lower()
-
-        # 4. Parser Resolution: prioritize specific format extensions over generic text MIME types
+    def _resolve_parser(self, mime_type: str, extension: str) -> ParserInterfaceV1 | None:
+        """Prefer specific extensions over generic text MIME observations."""
         parser = None
         if extension and extension not in (".txt", ".log"):
             parser = self.registry.resolve_parser(extension)
@@ -73,21 +58,7 @@ class ServerParserRouter(ParserRouter):
         if not parser and extension:
             parser = self.registry.resolve_parser(extension)
 
-        if not parser:
-            raise UnsupportedError(
-                f"No parser found for MIME type '{mime_type}' or extension '{extension}'"
-            )
-
-        # 5. Dispatch
-        metadata = FileMetadata(
-            content_hash=sha256_hash,
-            size_bytes=len(data),
-            mime_type=mime_type,
-            modified_at=None,
-            metadata=FrozenMetadata(),
-        )
-
-        return parser.parse(data, filename, metadata)
+        return parser
 
 
 class IngestionService:
@@ -97,9 +68,12 @@ class IngestionService:
         self,
         engine: KnowledgeEngine,
         token_counter: TokenCounterInterfaceV1,
+        *,
+        max_asset_bytes: int = 100 * 1024 * 1024,
     ) -> None:
         self._engine = engine
         self._token_counter = token_counter
+        self._max_asset_bytes = max_asset_bytes
 
     async def ingest_source(
         self,
@@ -146,6 +120,20 @@ class IngestionService:
                     f"notebook {notebook_id}"
                 )
 
+            parsed_doc = await self._engine.storage.get_parsed_document(
+                existing_doc.current_version_id
+            )
+            if parsed_doc is None:
+                raise NotFoundError("Parsed representation for deduplicated document was not found")
+            router = ServerParserRouter(self._engine.registry, self._engine.storage)
+            await self._retain_original(
+                data=data,
+                filename=filename,
+                media_type=_retention_media_type(router, data, filename),
+                document=existing_doc,
+                parsed_document=parsed_doc,
+            )
+
             # Cross-notebook deduplication: reuse document and chunks, create new Source
             source_id = uuid4()
             now = datetime.now(UTC)
@@ -157,15 +145,10 @@ class IngestionService:
             )
             await self._engine.storage.upsert_source(source)
 
-            parsed_doc = await self._engine.storage.get_parsed_document(
-                existing_doc.current_version_id
-            )
-            doc_type = parsed_doc.doc_type.value if parsed_doc is not None else "generic"
+            doc_type = parsed_doc.doc_type.value
             guessed_mime, _ = mimetypes.guess_type(filename)
             mime_type = guessed_mime or "application/octet-stream"
-            metadata: dict[str, Any] = (
-                thaw_metadata(parsed_doc.metadata.metadata) if parsed_doc is not None else {}
-            )
+            metadata: dict[str, Any] = thaw_metadata(parsed_doc.metadata.metadata)
 
             return SourceResponse(
                 source_id=source.source_id,
@@ -199,7 +182,8 @@ class IngestionService:
             canonicalizer=canonicalizer,
         )
 
-        parsed_doc = await pipeline.ingest(data, filename, version_id)
+        ingestion_result = await pipeline.ingest_with_assets(data, filename, version_id)
+        parsed_doc = ingestion_result.parsed_document
 
         # Create initial Document record in INDEXING state
         doc_version = DocumentVersion(
@@ -222,6 +206,14 @@ class IngestionService:
         await self._engine.storage.upsert_document(doc)
 
         try:
+            await self._retain_original(
+                data=data,
+                filename=filename,
+                media_type=_retention_media_type(router, data, filename),
+                document=doc,
+                parsed_document=parsed_doc,
+                ingestion_result=ingestion_result,
+            )
             # Chunking
             chunking_context = ChunkingContext(
                 document_version=doc_version,
@@ -292,6 +284,34 @@ class IngestionService:
             except Exception:
                 pass
             raise
+
+    async def _retain_original(
+        self,
+        *,
+        data: bytes,
+        filename: str,
+        media_type: str,
+        document: Document,
+        parsed_document: ParsedDocument,
+        ingestion_result: IngestionResultV2 | None = None,
+    ) -> None:
+        service = AssetFoundationService(
+            storage=self._engine.storage,
+            catalog=self._engine.asset_catalog,
+            asset_records=self._engine.asset_records,
+            max_asset_bytes=self._max_asset_bytes,
+        )
+        await service.retain_ingested_version(
+            data=data,
+            filename=filename,
+            declared_media_type=media_type,
+            document=document,
+            parsed_document=parsed_document,
+            extraction=None if ingestion_result is None else ingestion_result.extraction,
+            resolved_assets=(
+                None if ingestion_result is None else ingestion_result.resolved_assets
+            ),
+        )
 
     async def list_sources(
         self,
@@ -464,3 +484,12 @@ class IngestionService:
                 break
             cursor = page.next_cursor
         return None
+
+
+def _retention_media_type(router: ServerParserRouter, data: bytes, filename: str) -> str:
+    """Preserve a specific safe extension type when sniffing is generic text/binary."""
+    detected = router._detect_mime(data, filename)
+    guessed, _ = mimetypes.guess_type(filename)
+    if guessed and detected in {"text/plain", "application/octet-stream"}:
+        return guessed
+    return detected

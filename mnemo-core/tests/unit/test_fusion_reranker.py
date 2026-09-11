@@ -216,6 +216,121 @@ def _result(
     )
 
 
+def test_retrieval_evidence_models_reject_malformed_contracts() -> None:
+    """Every immutable retrieval boundary rejects malformed identity and ordering data."""
+    fusion = _fusion(2)
+    trace = fusion.invocations[0]
+    fused = fusion.results[0]
+    evidence = fused.evidence[0]
+    rerank_evidence = _evidence(fused.chunk, 1.0)
+    reranked = RerankedChunkResult(
+        fused_result=fused,
+        rerank_evidence=rerank_evidence,
+        reranked_rank=1,
+    )
+    valid = _result("question", fusion, (1.0, 0.0))
+
+    invalid_cases: tuple[tuple[Callable[[], object], type[Exception], str], ...] = (
+        (lambda: replace(trace, subquery_index=True), TypeError, "subquery_index"),
+        (lambda: replace(trace, effective_mode=RetrievalMode.HYBRID), ValueError, "effective_mode"),
+        (lambda: replace(trace, invocation_id="wrong"), ValueError, "invocation_id"),
+        (lambda: replace(trace, filters=object()), TypeError, "filters"),
+        (lambda: replace(trace, requested_top_k=True), TypeError, "requested_top_k"),
+        (lambda: replace(trace, requested_top_k=0), ValueError, "requested_top_k"),
+        (lambda: replace(trace, raw_results=[]), TypeError, "raw_results"),
+        (lambda: replace(trace, raw_results=(object(),)), TypeError, "ScoredChunk"),
+        (lambda: replace(evidence, subquery_index=True), TypeError, "subquery_index"),
+        (
+            lambda: replace(evidence, effective_mode=RetrievalMode.HYBRID),
+            ValueError,
+            "effective_mode",
+        ),
+        (lambda: replace(evidence, invocation_id="wrong"), ValueError, "invocation_id"),
+        (lambda: replace(evidence, result=object()), TypeError, "result"),
+        (
+            lambda: replace(evidence, identity_introduced_by_parent_promotion=1),
+            TypeError,
+            "boolean",
+        ),
+        (lambda: replace(fusion, invocations=[]), TypeError, "invocations"),
+        (lambda: replace(fusion, invocations=(object(),)), TypeError, "RetrievalInvocationTrace"),
+        (
+            lambda: replace(fusion, invocations=(trace, trace)),
+            ValueError,
+            "invocation identities",
+        ),
+        (lambda: replace(fusion, results=[]), TypeError, "results"),
+        (lambda: replace(fusion, results=(object(),)), TypeError, "FusedChunkResult"),
+        (
+            lambda: replace(fusion, results=(replace(fused, global_rank=2), fusion.results[1])),
+            ValueError,
+            "global ranks",
+        ),
+        (
+            lambda: replace(rerank_evidence, relevance_score=1.0),
+            ValueError,
+            "strictly between",
+        ),
+        (
+            lambda: replace(rerank_evidence, below_relevance_threshold="no"),
+            TypeError,
+            "boolean",
+        ),
+        (
+            lambda: replace(reranked, rerank_evidence=object()),
+            TypeError,
+            "CrossEncoderEvidence",
+        ),
+        (
+            lambda: replace(reranked, rerank_evidence=replace(rerank_evidence, chunk_id="f" * 64)),
+            ValueError,
+            "chunk identity",
+        ),
+        (lambda: replace(reranked, reranked_rank=True), TypeError, "reranked_rank"),
+        (lambda: replace(reranked, reranked_rank=0), ValueError, "positive"),
+        (lambda: replace(valid, query=" "), ValueError, "empty"),
+        (lambda: replace(valid, query="not  normalized"), ValueError, "normalized"),
+        (lambda: replace(valid, fusion_result=object()), TypeError, "fusion_result"),
+        (lambda: replace(valid, policy="cross_encoder"), TypeError, "policy"),
+        (lambda: replace(valid, results=[]), TypeError, "results"),
+        (lambda: replace(valid, results=(object(), object())), TypeError, "RerankedChunkResult"),
+        (lambda: replace(valid, results=valid.results[:1]), ValueError, "cardinality"),
+        (
+            lambda: replace(
+                valid,
+                results=(replace(valid.results[0], reranked_rank=2), valid.results[1]),
+            ),
+            ValueError,
+            "reranked ranks",
+        ),
+        (
+            lambda: RetrievalRerankResult(
+                query="question",
+                fusion_result=fusion,
+                policy=RerankPolicy.UNCHANGED_EMPTY,
+                results=valid.results,
+            ),
+            ValueError,
+            "empty candidates",
+        ),
+        (
+            lambda: RetrievalRerankResult(
+                query="question",
+                fusion_result=_fusion(0),
+                policy=RerankPolicy.UNCHANGED_EMPTY,
+                results=(),
+                fallback_reason=RerankFallbackReason.PROVIDER_UNAVAILABLE,
+            ),
+            ValueError,
+            "fallback reason",
+        ),
+    )
+
+    for construct, error_type, message in invalid_cases:
+        with pytest.raises(error_type, match=message):
+            construct()
+
+
 def test_cross_encoder_result_preserves_exact_title_evidence_tier() -> None:
     fusion = _fusion(2)
     titled = replace(

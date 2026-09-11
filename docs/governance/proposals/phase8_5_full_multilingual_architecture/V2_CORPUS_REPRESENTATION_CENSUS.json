@@ -1,0 +1,2478 @@
+{
+  "algorithm": "immutable-golden-plus-frozen-db-census-v1",
+  "algorithm_version": "1.0.0",
+  "artifact_digest": "59cd50f2b2abd1153cbd62fb13eb3b24136c565346379cea2e70eef4d4720651",
+  "corpus_files": [
+    {
+      "name": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+      "sha256": "f73069e570e191ccb36763cf2ca09e206469a021802ad08e7eb72a09d2fc3e2f",
+      "size": 203514
+    },
+    {
+      "name": "aiSwitch.js",
+      "sha256": "9482c9d955bc7efa662afb35c561989b971af0e78e230df1702f1a248549e11b",
+      "size": 2078
+    },
+    {
+      "name": "app.py",
+      "sha256": "1ecd236448419660bd72f370ca35e39360340506d363ef607c23c82d49c92005",
+      "size": 5181
+    },
+    {
+      "name": "arvsal_v3_complete.txt",
+      "sha256": "a68fc34260c4ed59c3d898eb4ef065cc6a4e54e253b182b5b6dc3e6312f2fb37",
+      "size": 293767
+    },
+    {
+      "name": "Atharv_Patil_240740.pdf",
+      "sha256": "eb4fe330163f7d89535ca48f792204a16da042bb2e4895a6030102df20a63984",
+      "size": 3821824
+    },
+    {
+      "name": "Atharv_Patil_RESUME_SDE.pdf",
+      "sha256": "985c582edf8eba0a91a4305f9ecb6cd9db5bc5d6dde2a9024f8e99d6a5a89a2d",
+      "size": 150618
+    },
+    {
+      "name": "Bhagavad-gita-As-It-Is.pdf",
+      "sha256": "ff112b0b056d303b792f6f2e68cbd73a89adf612fa9113f932446cdea7741583",
+      "size": 66135830
+    },
+    {
+      "name": "boarding-pass-Atharv-Patil.jpeg",
+      "sha256": "f50fc5ae1a93c6aa9a05370340814e626de5f730f03b90478e3d02baf284edcc",
+      "size": 153967
+    },
+    {
+      "name": "codePrompt.js",
+      "sha256": "53020012146826d1580727632b696cc884d5396dd0f1ae21c26ae4fe05fd5003",
+      "size": 1191
+    },
+    {
+      "name": "Coordinator Application 2026–27.pptx",
+      "sha256": "657eb7989863eb6acdf2555158f6c4f5affead5cdc9a4297fde44971da2e9064",
+      "size": 26802230
+    },
+    {
+      "name": "Health Check Up Schedule List Date Vise.xlsx",
+      "sha256": "f320c082c1e01e9a93c8b21ce4d8e379704142c9036f7eaa205474a7a535d79e",
+      "size": 38506
+    },
+    {
+      "name": "IMG_20251006_075844487_HDR_AE.jpg",
+      "sha256": "8f3b030e1027b5ab9f681e6100b1ba8d6cea0bd9699d044aa91e346df364676e",
+      "size": 3505943
+    },
+    {
+      "name": "IMG_20251224_170546998_HDR_AE.jpg",
+      "sha256": "85aaa86a60652857d2eb1a0d230c15ef4e6f22c4542e874de91ca769e0f8dbad",
+      "size": 5362792
+    },
+    {
+      "name": "IMG_20260210_010608317.jpg",
+      "sha256": "a20eecf3543e91e687b0bdf64e48012fa201a766ba18c345fdc17cf05c645898",
+      "size": 1942277
+    },
+    {
+      "name": "IMG_20260709_212633128_HDR_AE~2 (1).jpg",
+      "sha256": "ebfb3f17ab8bb6ddd7a07760354ad08a83a4d27ee5cb940827a135f3e64eb6f2",
+      "size": 198231
+    },
+    {
+      "name": "IMG_20260709_212833177_HDR_AE.jpg",
+      "sha256": "063755152464b732afca46ae024928813019ed6269506d948f8bf3cff229cfcb",
+      "size": 5224981
+    },
+    {
+      "name": "IMG_20260709_212833177_HDR_AE~2 (1).jpg",
+      "sha256": "f4c71b59dbce9374d05e35b70d518130c3e62e6532765bea93ba88e4c57accac",
+      "size": 573618
+    },
+    {
+      "name": "IMG_20260824_121815328_HDR_AE.jpg",
+      "sha256": "5ed7f5ecb32e3abcdede8c11363d55dbcbcbf0363fc0efcd808c52057b0f0580",
+      "size": 6400625
+    },
+    {
+      "name": "InferenceGateway.js",
+      "sha256": "45f3deca3338ef8951bcc203becfd76a9076d8683a99f9375b6ae8ecfa380c52",
+      "size": 1012
+    },
+    {
+      "name": "L4_55e70e05-fa79-4e59-9848-f398639f7a68.pdf",
+      "sha256": "16b5ca5ce7d5512b4da2d040c71a0305bcf3b516a423bdef66a8efe34f6aa9f9",
+      "size": 4370016
+    },
+    {
+      "name": "llmGuard.js",
+      "sha256": "5731dadfe61bc52325019601bed60fa8fd7b2555f7e3d698c0727609698ed23e",
+      "size": 4276
+    },
+    {
+      "name": "llmPrompt.js",
+      "sha256": "b4144d9061eb3db83cb0a3ea36edc031c4f4c62883d2043fe4f954fe1df0cec2",
+      "size": 7154
+    },
+    {
+      "name": "llmRouter.js",
+      "sha256": "4a286d578d580deb04a5fb842e5fd415140db66b4cd59dd7a942bb20c4477542",
+      "size": 10679
+    },
+    {
+      "name": "llmRunner.js",
+      "sha256": "e85853ad4ebb40cfb5d02dbf13819edfe23c430c78e41597b6a7b2a2167e2c89",
+      "size": 16276
+    },
+    {
+      "name": "localLLM.js",
+      "sha256": "5291384528ea9382533b2c3428d0c561ed7c776d68e9558cb1b006f94f41cf11",
+      "size": 4100
+    },
+    {
+      "name": "manuscript.pdf",
+      "sha256": "31addf387d13de26e3b155e1fc6ee65d5f554cfdfb4281951c56e9482b6f8085",
+      "size": 164240
+    },
+    {
+      "name": "mathPrompt.js",
+      "sha256": "dba33368bf27f8706f81593ffeb55a314180f15a49c9462411106f4d7e28a8ed",
+      "size": 1167
+    },
+    {
+      "name": "ME333 - Exp2-LabReport_To_Submit.docx",
+      "sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+      "size": 2327311
+    },
+    {
+      "name": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1).pptx",
+      "sha256": "a2b51af690a977f1411d0ef2bd4df44472670d228c19b56e390fcd8b352d4d98",
+      "size": 32325311
+    },
+    {
+      "name": "ME361_L2-L4_08c3b677-872f-4073-8337-83ad44fa8b88.pdf",
+      "sha256": "1e88bc1c9b8aa412d9541b555cdc42c4558bf8846415e5f66badd5f97059eb1d",
+      "size": 6361592
+    },
+    {
+      "name": "ME381 lab days.xlsx",
+      "sha256": "53b2d38ccfd1964f089e15e9557a9fd0e2a819d796db433438196a0bf57f14e5",
+      "size": 13768
+    },
+    {
+      "name": "ME381 Lab group A1 - Monday.xlsx",
+      "sha256": "f464fa29a8e14d9c1ab54008ec7af10a87a73ccfdf907ec5b59842c56b863b73",
+      "size": 14536
+    },
+    {
+      "name": "ME381 Lab group A2 - Tuesday.xlsx",
+      "sha256": "8ba9d6eb7ed5b7ddb58d31aa41f4b6670087a45258e4a3bd704982a56e1a6a18",
+      "size": 14595
+    },
+    {
+      "name": "ME381 Lab group A3 - Thursday.xlsx",
+      "sha256": "4eed38984b88c1a867b53c4c63c9738b03aa18ceb3dc5dd12f4da93ec7b9c7ae",
+      "size": 17800
+    },
+    {
+      "name": "New Doc 06-30-2026 20.29.pdf",
+      "sha256": "ac5981da3d51a6f9578c74de6789afd4a543fea654892998c97749cfee316b73",
+      "size": 437797
+    },
+    {
+      "name": "New Doc 06-30-2026 20.31.pdf",
+      "sha256": "a657c7423fe493084d7a34e50502204569b665688978da795eafcea291a5cf4d",
+      "size": 430450
+    },
+    {
+      "name": "ollamaWarmup.js",
+      "sha256": "63ee770aa31bfeeff8240fdd829ce3e46b443952b4c3b43b6d9c867d7fc597b8",
+      "size": 687
+    },
+    {
+      "name": "PHYSICS_JEE_ADVANCED.pdf",
+      "sha256": "f5dadbecc9365ee1cfa9452ed313e2bc14f6951698c71f8c8262f3f8746a3bc3",
+      "size": 21200341
+    },
+    {
+      "name": "research_8b4fd9e3-312a-487b-b035-995a66021bd0.md",
+      "sha256": "2aeadba7ddf8f68c7e6e0e6706328a4b8d212bf27bbd03451f0a45e5275562c2",
+      "size": 178200
+    },
+    {
+      "name": "server.js",
+      "sha256": "f96c9795d07630d9e1e8b6ffcc2cc3b4513de671dd3ec2e21a1d446be1e83796",
+      "size": 59851
+    },
+    {
+      "name": "soc_473_lecture_notes.html",
+      "sha256": "6bac0a40adaa032b7e7e04ab8e6f4af33fadbd673dd143fb8fd06d38f7e612cf",
+      "size": 21303
+    },
+    {
+      "name": "Transcript.pdf",
+      "sha256": "343e51855a0dbad8d680608db1439f57233fe6372f29a9ae975fbb7428ebacd8",
+      "size": 193625
+    },
+    {
+      "name": "Valmiki Ramayana aur Ramakien Ek Tulnamatmak Adhyayan.pdf",
+      "sha256": "759f2adbfd2fc1191ff8576401d1cbc34bbfefaf79a573e8747c53d4c858af75",
+      "size": 3602997
+    },
+    {
+      "name": "Y24_CPI.csv",
+      "sha256": "4b39072ac48be3694dcb32755fd41c27a4109f44575d87f954bfc5bebd142f41",
+      "size": 45204
+    }
+  ],
+  "corpus_manifest_digest": "e086e48dda72b9bc38f6cb4d4f68a60bc5af7dfa38b47b49659fc3312a2efd9b",
+  "counts": {
+    "asset_occurrences": 464,
+    "canonical_chunks": 2658,
+    "documents": 44,
+    "language_derivations": 0,
+    "language_observations": 0,
+    "multilingual_embeddings": 0,
+    "ocr_regions": 402,
+    "ocr_results": 463,
+    "versions": 44,
+    "vision_results": 463
+  },
+  "documents": [
+    {
+      "corpus_file_hash": "a20eecf3543e91e687b0bdf64e48012fa201a766ba18c345fdc17cf05c645898",
+      "document_id": "3743a794-5488-5a79-9cef-06e04853e2bd",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "fe9728d5fc453882c7ba0ab64bb156691927b0b7838daa9c3e9235e0ba95f1ab",
+          "language_script_observations": [
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 1,
+          "representation": "ocr_text",
+          "results": 1
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "e2af83e633f16e1726274308167af8a1828585be08766dd9ec60dbb435b86414",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "0b713b85a766f1651c1083b236c3c0a05ce2e3fe898b6c03cac4adaa227f76d1",
+          "representation": "vision_text",
+          "results": 1
+        }
+      },
+      "file_name": "IMG_20260210_010608317.jpg",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "475ed06b-bfe6-4ce0-aef9-b8c58d0815be"
+      ],
+      "version_id": "052cca28-40b1-5105-9191-b26928ab5461"
+    },
+    {
+      "corpus_file_hash": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+      "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+      "evidence_families": {
+        "canonical": {
+          "count": 6,
+          "identity_digest": "2b721c92ba53b83218e13819cbbdc7ccd6e29d9daea3dc3e0f9461e7537a12e4"
+        },
+        "ocr": {
+          "identity_digest": "86f882120ba21e8652910fb5d450ea4b9a0dcd46b4ff1879a63c8d3bf5f0b478",
+          "language_script_observations": [
+            [
+              "en",
+              "Latn"
+            ],
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 5,
+          "representation": "ocr_text",
+          "results": 5
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "823cd4db74ca09f9de1ce348062f8de0c9a2193a48adbbe40bc09403fb9f4685",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "0a7bddb59c2f267cac713946ecbad970c9bbd8c6ee5929a560a47796e9d81c54",
+          "representation": "vision_text",
+          "results": 5
+        }
+      },
+      "file_name": "ME333 - Exp2-LabReport_To_Submit.docx",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "cde63628-5b31-44e7-ba7f-0eb452519b57"
+      ],
+      "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c"
+    },
+    {
+      "corpus_file_hash": "b4144d9061eb3db83cb0a3ea36edc031c4f4c62883d2043fe4f954fe1df0cec2",
+      "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+      "evidence_families": {
+        "canonical": {
+          "count": 97,
+          "identity_digest": "262a50dff427bb152f4e20f437b1702a27f50b3749fa2531308e0c05c5523c6e"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "llmPrompt.js",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "a039c71a-2d40-451a-a347-6154d09d38ed"
+      ],
+      "version_id": "109911b1-0bac-5bce-af3f-4d8b99b13c32"
+    },
+    {
+      "corpus_file_hash": "a657c7423fe493084d7a34e50502204569b665688978da795eafcea291a5cf4d",
+      "document_id": "ec6ee601-e3b0-56c2-a2c8-a2d89a21ee5a",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "96f79b93622cb84d76abfaf080d51d90b95564ff13ad2c2170e1efa444545741",
+          "language_script_observations": [
+            [
+              "en",
+              "Latn"
+            ],
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 2,
+          "representation": "ocr_text",
+          "results": 2
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "84534da3807a6431a37bb6edb1a22d9265b4a7d4d63a13be0c27f7576b28cfaf",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "77bf41e626d5077cc58e7d14c49d133ade32e2f3cbbe1282ff290daa69c8c4fd",
+          "representation": "vision_text",
+          "results": 2
+        }
+      },
+      "file_name": "New Doc 06-30-2026 20.31.pdf",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "256e0599-5389-45e5-bf07-35cb6b3f105f"
+      ],
+      "version_id": "13780dd2-fd15-5e0f-8bad-903f979cf994"
+    },
+    {
+      "corpus_file_hash": "45f3deca3338ef8951bcc203becfd76a9076d8683a99f9375b6ae8ecfa380c52",
+      "document_id": "6ffce866-2802-5d51-9662-ca620ff51859",
+      "evidence_families": {
+        "canonical": {
+          "count": 8,
+          "identity_digest": "89be9d1f6112d94a469ae435b28f243ce286244780396b75a98ce01251b75c60"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "InferenceGateway.js",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "0c3a5d5d-2e49-4606-815b-605eafc41625"
+      ],
+      "version_id": "1bdcc481-60c6-5bc7-9429-79c934431315"
+    },
+    {
+      "corpus_file_hash": "53b2d38ccfd1964f089e15e9557a9fd0e2a819d796db433438196a0bf57f14e5",
+      "document_id": "9c5a3f7d-0131-5854-ab62-6892b40bbdb5",
+      "evidence_families": {
+        "canonical": {
+          "count": 4,
+          "identity_digest": "1822d33577f12fb094472c27cb4a932e126e77db30a41c18e08b2c1160057b00"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "ME381 lab days.xlsx",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "bf9295c6-1495-4253-bedf-b75efaad7211"
+      ],
+      "version_id": "1bf41017-6368-5f11-9c21-0849e00ebb81"
+    },
+    {
+      "corpus_file_hash": "f5dadbecc9365ee1cfa9452ed313e2bc14f6951698c71f8c8262f3f8746a3bc3",
+      "document_id": "fb0824c4-066d-5be5-9442-cdff2cea987e",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "9c2cc47005afd7e0e8c43f5528704b822ab894235b2f75774c8c832af4a40f0c",
+          "language_script_observations": [
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 39,
+          "representation": "ocr_text",
+          "results": 39
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "e2f00e1c549993d8332701565361ff2791560e5878fba1a369a643f808285557",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "9f63a73354ef19efcc88e8df255fc8234d128e9627215f666b2609d060be6a54",
+          "representation": "vision_text",
+          "results": 39
+        }
+      },
+      "file_name": "PHYSICS_JEE_ADVANCED.pdf",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "3fc6e8eb-8a68-4edc-b730-0ee9037d13fe"
+      ],
+      "version_id": "2154b917-c8d9-57e8-91c1-50fe5929604b"
+    },
+    {
+      "corpus_file_hash": "4b39072ac48be3694dcb32755fd41c27a4109f44575d87f954bfc5bebd142f41",
+      "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+      "evidence_families": {
+        "canonical": {
+          "count": 31,
+          "identity_digest": "12e26b3b297ca4544df2bff84631f7e91f9a7d437dfde53073f2d8a3657c6571"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "Y24_CPI.csv",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "42a948fa-023f-48af-b660-85a0d70b349e"
+      ],
+      "version_id": "2190addb-b826-586f-b2be-65962e520068"
+    },
+    {
+      "corpus_file_hash": "63ee770aa31bfeeff8240fdd829ce3e46b443952b4c3b43b6d9c867d7fc597b8",
+      "document_id": "265c0994-04cb-545c-89a6-b975e345cf63",
+      "evidence_families": {
+        "canonical": {
+          "count": 5,
+          "identity_digest": "b13b890268baa0cd80a11cbf0f185c2df95c1a3f12d03c2d68fa1955a30b4892"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "ollamaWarmup.js",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "a657b3b3-d306-4907-9526-8a5ca5d1232c"
+      ],
+      "version_id": "227e8925-8297-524b-b145-c9f99b3f41dd"
+    },
+    {
+      "corpus_file_hash": "f320c082c1e01e9a93c8b21ce4d8e379704142c9036f7eaa205474a7a535d79e",
+      "document_id": "d23dc9a9-4f9d-50e4-9ccd-10f340c5a770",
+      "evidence_families": {
+        "canonical": {
+          "count": 20,
+          "identity_digest": "49d7a8c3da7eb977022b2263e44d43c17f155662b01b6f7c88f706d510899d18"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "Health Check Up Schedule List Date Vise.xlsx",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "88beccfb-9789-43ed-bbff-d86ab2856c54"
+      ],
+      "version_id": "2622b8c4-cb76-52c8-9632-e40d52e26ae5"
+    },
+    {
+      "corpus_file_hash": "85aaa86a60652857d2eb1a0d230c15ef4e6f22c4542e874de91ca769e0f8dbad",
+      "document_id": "04141de5-5ac0-52e2-9e7e-e47f98037896",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "1ebb5467953bd35b92655e981e7cc3a5d79b7ae4f2b3b86872c3c32bd3977f65",
+          "language_script_observations": [
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 1,
+          "representation": "ocr_text",
+          "results": 1
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "ae172b0e0266936fa3aa67d4bcc6d38ba1e89199eaa5330e15b2cdc210825a63",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "d6bf434eacd777a3234a8774a7fb65acf34a3d629e992cc8ed25d25cfeb56bd8",
+          "representation": "vision_text",
+          "results": 1
+        }
+      },
+      "file_name": "IMG_20251224_170546998_HDR_AE.jpg",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "ae5c8341-0de8-44f8-a465-0e4359df4eae"
+      ],
+      "version_id": "2fd243f7-b8cc-5e9c-9467-54dd3a3bfccd"
+    },
+    {
+      "corpus_file_hash": "f73069e570e191ccb36763cf2ca09e206469a021802ad08e7eb72a09d2fc3e2f",
+      "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+      "evidence_families": {
+        "canonical": {
+          "count": 11,
+          "identity_digest": "661bc5b48d1f07d557b430473df4a67d3f8490bfd25afbfd6937ae8636f7bd51"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "Act 2. panch-parmeshwar-by-munshi-premchand.pdf",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "d0c0e4d4-4501-4f5c-9b45-1c2e33229502"
+      ],
+      "version_id": "32a665e7-fb65-5fd5-aebe-0b0d4ddc84b8"
+    },
+    {
+      "corpus_file_hash": "5ed7f5ecb32e3abcdede8c11363d55dbcbcbf0363fc0efcd808c52057b0f0580",
+      "document_id": "f662b4e1-7e34-5e45-9075-d667a24e8f82",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "0cde6b29bf63ebf2bf36204e7e1c41bf426144cde2d6a3ebe6f901ab3981255f",
+          "language_script_observations": [
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 1,
+          "representation": "ocr_text",
+          "results": 1
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "f6da07a0db8aefcb081abb33933724ea5e05de2cffd616d152f173e185d21e01",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "06244416360218b4eb25a47c04234f7f3ecce482400a674ce597b41efe4c6c3c",
+          "representation": "vision_text",
+          "results": 1
+        }
+      },
+      "file_name": "IMG_20260824_121815328_HDR_AE.jpg",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "8fa513da-5645-4aa1-8186-2e7e17adb1e6"
+      ],
+      "version_id": "41913ab4-08fa-5f00-a78d-1e456494d707"
+    },
+    {
+      "corpus_file_hash": "343e51855a0dbad8d680608db1439f57233fe6372f29a9ae975fbb7428ebacd8",
+      "document_id": "256c8d05-93c5-5448-9246-9985e2cafb3b",
+      "evidence_families": {
+        "canonical": {
+          "count": 5,
+          "identity_digest": "5fcb54223c388890e502cde9d989b0f89666b38f3e7778eaea8a23b5e5be3427"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "Transcript.pdf",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "aed41ef0-d0a2-461a-b397-0993bcfd2000"
+      ],
+      "version_id": "41e81289-e169-517f-969d-670bf928d953"
+    },
+    {
+      "corpus_file_hash": "063755152464b732afca46ae024928813019ed6269506d948f8bf3cff229cfcb",
+      "document_id": "422cd4a4-739e-53e4-b6eb-23fdc4c353e2",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "08ddcdb3f57ae93f6281bf7a01d5d417fe39cf107cedfeb1a5912fcd96898449",
+          "language_script_observations": [
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 1,
+          "representation": "ocr_text",
+          "results": 1
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "bedfb8e0acab9510f21eba2da3e9a5d9efca45105db60dca53a173c744003007",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "810235eeb0cbbd2a8971c51eba2c92a10fbb86953d97a9bbfd1f31ee1d8598cd",
+          "representation": "vision_text",
+          "results": 1
+        }
+      },
+      "file_name": "IMG_20260709_212833177_HDR_AE.jpg",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "25d873f1-2ad5-4131-a97d-7c37d599d57d"
+      ],
+      "version_id": "4c661870-4db8-58f4-92b3-5d2d7a9a04b6"
+    },
+    {
+      "corpus_file_hash": "8f3b030e1027b5ab9f681e6100b1ba8d6cea0bd9699d044aa91e346df364676e",
+      "document_id": "2919d003-e87e-55e8-89b3-fe5953b1ead1",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "12e3a50650ee36ae66b2a44060e9263dfa0eb1eb52bed5eb1b327e9228bd2906",
+          "language_script_observations": [
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 1,
+          "representation": "ocr_text",
+          "results": 1
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "ae5c91582fef82f93e203d06fa64219192f273b6f650fdb2e819eb7b1af1bdcb",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "cc6e87000418d66598091ea4adf5bc6040c95ac7d2abf2724861250314334141",
+          "representation": "vision_text",
+          "results": 1
+        }
+      },
+      "file_name": "IMG_20251006_075844487_HDR_AE.jpg",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "61a79f40-0677-410d-8243-4aca93c73294"
+      ],
+      "version_id": "5102aa71-0ec3-5f38-bdd3-91acbe3c4159"
+    },
+    {
+      "corpus_file_hash": "a2b51af690a977f1411d0ef2bd4df44472670d228c19b56e390fcd8b352d4d98",
+      "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+      "evidence_families": {
+        "canonical": {
+          "count": 23,
+          "identity_digest": "4f193bf0cb7493525d0836db7234d2afa53086ec8c45e9007051e2c9e1504ba2"
+        },
+        "ocr": {
+          "identity_digest": "09b2abf3681fe4e3bab4cae6a4d2ef26b12280e64a899ce19742ca220e6037aa",
+          "language_script_observations": [
+            [
+              "en",
+              "Latn"
+            ],
+            [
+              "und",
+              "Deva"
+            ],
+            [
+              "und",
+              "Zzzz"
+            ]
+          ],
+          "regions": 186,
+          "representation": "ocr_text",
+          "results": 230
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "c5fadf2b2976897bca70446285bd6f8d6c0726625ecda9bc6be6fc8f576f5b02",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "0779ca4a286349697c0debae1a2765fb3ca5aab6a5699aa8796f6a1ae1fe7fb0",
+          "representation": "vision_text",
+          "results": 230
+        }
+      },
+      "file_name": "ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1).pptx",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "d5bb356a-74fb-4fbf-af25-14ec10dcc98b"
+      ],
+      "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e"
+    },
+    {
+      "corpus_file_hash": "dba33368bf27f8706f81593ffeb55a314180f15a49c9462411106f4d7e28a8ed",
+      "document_id": "0a326394-e4ba-50ae-8908-c691f703507b",
+      "evidence_families": {
+        "canonical": {
+          "count": 2,
+          "identity_digest": "fd08a36d5a848e549436249dd1f5e2ee2af4aee9f1b33732c9ee54745749c0dc"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "mathPrompt.js",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "5fb26c92-d254-4929-afaa-5ddb362cb5b9"
+      ],
+      "version_id": "55af02b9-4452-5bcd-862a-50279fd1cdf7"
+    },
+    {
+      "corpus_file_hash": "1ecd236448419660bd72f370ca35e39360340506d363ef607c23c82d49c92005",
+      "document_id": "eb0742b4-c452-5343-8c4d-75880d5d58b1",
+      "evidence_families": {
+        "canonical": {
+          "count": 5,
+          "identity_digest": "1fa8972ba1a319423d5da8f316c12e1bc07928228184ec36c6197d52545d641c"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "app.py",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "bd10518d-47d8-4210-9f31-9bca0257a5c3"
+      ],
+      "version_id": "5872d92c-00fb-5c22-b6a6-33a3f885308b"
+    },
+    {
+      "corpus_file_hash": "4a286d578d580deb04a5fb842e5fd415140db66b4cd59dd7a942bb20c4477542",
+      "document_id": "4836fc89-21c2-56cf-81fa-7c0a2c536bfe",
+      "evidence_families": {
+        "canonical": {
+          "count": 145,
+          "identity_digest": "4e510aabff31e67d4a6f508753ed17d361e110bfc181d54bf5e2f9239500d235"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "llmRouter.js",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "fe1e1269-44b0-4df1-ac93-ce8fee4bf730"
+      ],
+      "version_id": "599ed796-1eb7-5972-9e46-c51b0e25c98d"
+    },
+    {
+      "corpus_file_hash": "e85853ad4ebb40cfb5d02dbf13819edfe23c430c78e41597b6a7b2a2167e2c89",
+      "document_id": "7c5d2541-a467-5a1a-a434-d25cef4b442a",
+      "evidence_families": {
+        "canonical": {
+          "count": 27,
+          "identity_digest": "20f16968bd314a09ccb19f5f41702af210ade1377675d474bc4d4803e03984d2"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "llmRunner.js",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "b7c78eb2-f4b2-48c4-844c-b2096b750539"
+      ],
+      "version_id": "5a19a773-e20c-5f9a-aa60-76ead6b5ef9e"
+    },
+    {
+      "corpus_file_hash": "6bac0a40adaa032b7e7e04ab8e6f4af33fadbd673dd143fb8fd06d38f7e612cf",
+      "document_id": "68c5a259-bc38-5a7b-8279-03d27651221d",
+      "evidence_families": {
+        "canonical": {
+          "count": 1,
+          "identity_digest": "a2073aedcdd021fd1b05e265460b503c4ad8380adcc7c46368ea2ff02073fe5f"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "soc_473_lecture_notes.html",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "e2785e5d-18e1-4382-819a-ed589c83f91f"
+      ],
+      "version_id": "5a459b9c-35b5-5054-91ff-e6ccbde2ee86"
+    },
+    {
+      "corpus_file_hash": "759f2adbfd2fc1191ff8576401d1cbc34bbfefaf79a573e8747c53d4c858af75",
+      "document_id": "c59d2d22-66ca-52a2-93e7-9c5fa692a597",
+      "evidence_families": {
+        "canonical": {
+          "count": 502,
+          "identity_digest": "6e9f850a3aae2b8379b1338268955ef8a90b5777d63d1a4f40d7b330fae2c6a0"
+        },
+        "ocr": {
+          "identity_digest": "adecba47a269a90aa43138563976bfcd35b0cd17381c3f2a2d41161038b7c09f",
+          "language_script_observations": [
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 1,
+          "representation": "ocr_text",
+          "results": 1
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "6956a0b84488e2266e3c19d41044cb3fb201a8779ed063099d11b42e21fd8aa8",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "299a16a2f7bf6b83c71e786fe143447195ef41912da29fc0a1338d9302fe4211",
+          "representation": "vision_text",
+          "results": 1
+        }
+      },
+      "file_name": "Valmiki Ramayana aur Ramakien Ek Tulnamatmak Adhyayan.pdf",
+      "language_observation": {
+        "authority": "adjudicated_governance_evidence",
+        "source_digest": "b3e2d9be4c5bb1927ee149629de12c9feee389c8562405af32f5f91a584f8067",
+        "value": "hi"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [
+          "ABCDEE+Calibri",
+          "ABCDEE+Cambria",
+          "ABCDEE+Cambria,Bold",
+          "ABCDEE+Kruti Dev 010",
+          "Arial",
+          "NQUXHI+Calibri",
+          "NQUXHI+Kruti#20Dev#20010",
+          "SWALNN+Helvetica-Bold",
+          "Times New Roman",
+          "WNEXXG+Kruti#20Dev#20010"
+        ],
+        "transformation_requirement": "LEGACY_TRANSFORMATION_UNRESOLVED",
+        "value": "legacy_font_encoded_text"
+      },
+      "script_observation": {
+        "authority": "unknown_until_transformation",
+        "source_digest": "b3e2d9be4c5bb1927ee149629de12c9feee389c8562405af32f5f91a584f8067",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "c74c9683-2b3d-4c00-aba8-c0ccd94b732d"
+      ],
+      "version_id": "5eb01752-1157-5250-b03b-712483cdf945"
+    },
+    {
+      "corpus_file_hash": "31addf387d13de26e3b155e1fc6ee65d5f554cfdfb4281951c56e9482b6f8085",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "evidence_families": {
+        "canonical": {
+          "count": 10,
+          "identity_digest": "389b32e0f5ce07285b30eb5bd3722eecba632c23c95726dcc097181e6d06bc46"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "manuscript.pdf",
+      "language_observation": {
+        "authority": "adjudicated_governance_evidence",
+        "source_digest": "b3e2d9be4c5bb1927ee149629de12c9feee389c8562405af32f5f91a584f8067",
+        "value": "mr"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [
+          "BAAAAA+ArialUnicodeMS",
+          "CAAAAA+LiberationSerif",
+          "DAAAAA+ArtifaktElement-Heavy",
+          "EAAAAA+NirmalaUI-Bold"
+        ],
+        "transformation_requirement": "not_required",
+        "value": "unicode_semantic_text"
+      },
+      "script_observation": {
+        "authority": "unicode_codepoint_and_governance_evidence",
+        "source_digest": "b3e2d9be4c5bb1927ee149629de12c9feee389c8562405af32f5f91a584f8067",
+        "value": "Deva"
+      },
+      "source_ids": [
+        "bdbf93e5-509d-4f67-874d-05d4cff2b8ee"
+      ],
+      "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8"
+    },
+    {
+      "corpus_file_hash": "5291384528ea9382533b2c3428d0c561ed7c776d68e9558cb1b006f94f41cf11",
+      "document_id": "d708ab34-61a3-5f4b-bc3a-c7ed0ac4478c",
+      "evidence_families": {
+        "canonical": {
+          "count": 81,
+          "identity_digest": "e8f80167182ee024bfc665917c94bf1ace17608f60763773810f33c739291bb5"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "localLLM.js",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "cd0feed4-e65d-4488-b37b-5ed4e7c07d3c"
+      ],
+      "version_id": "7110f20d-a9e5-5d49-9b26-54e7e22d6f70"
+    },
+    {
+      "corpus_file_hash": "657eb7989863eb6acdf2555158f6c4f5affead5cdc9a4297fde44971da2e9064",
+      "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+      "evidence_families": {
+        "canonical": {
+          "count": 21,
+          "identity_digest": "fe1b201df98bbe2e2c8839030cdc7d5ebfb0f19bb4f0b10822707ef612bdf8ba"
+        },
+        "ocr": {
+          "identity_digest": "dd52f32724e26d6e8a1ccd73fc62ee6591f2edffedc4818e6096df9b5b725240",
+          "language_script_observations": [
+            [
+              "en",
+              "Latn"
+            ],
+            [
+              "und",
+              "Deva"
+            ],
+            [
+              "und",
+              "Zzzz"
+            ]
+          ],
+          "regions": 10,
+          "representation": "ocr_text",
+          "results": 11
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "213bdd1a58a23de3b08c70497f28f774f4275e81f9887ae414a739eed0a49ee6",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "db5db82c1f3cb498ed734e3aab705facf33a5675c20fdaae548c14a6c7aa5286",
+          "representation": "vision_text",
+          "results": 11
+        }
+      },
+      "file_name": "Coordinator Application 2026–27.pptx",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "d90d4aac-4f69-47cf-850d-97b08388517b"
+      ],
+      "version_id": "71b3f1bb-3601-5963-a609-1be115e7326c"
+    },
+    {
+      "corpus_file_hash": "985c582edf8eba0a91a4305f9ecb6cd9db5bc5d6dde2a9024f8e99d6a5a89a2d",
+      "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+      "evidence_families": {
+        "canonical": {
+          "count": 5,
+          "identity_digest": "603dd7e1be2af505adb753fced7bdc59e26314c8c12bca847b2b86d7cbffcace"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "Atharv_Patil_RESUME_SDE.pdf",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "8825f7ed-8de5-4b4d-9db0-67f37c526c19"
+      ],
+      "version_id": "738e9121-2179-500e-bd3d-da587e8de9c5"
+    },
+    {
+      "corpus_file_hash": "53020012146826d1580727632b696cc884d5396dd0f1ae21c26ae4fe05fd5003",
+      "document_id": "8abc6c73-7d1c-5248-8c28-4157de5ca51a",
+      "evidence_families": {
+        "canonical": {
+          "count": 2,
+          "identity_digest": "195ec722720442fe0d7c96e6e7585c1333eff9f9d49bbeba79bdcff659910cb2"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "codePrompt.js",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "0410ba7a-28f0-47d1-9348-112ed66424b2"
+      ],
+      "version_id": "7882f1db-a197-5c84-9b10-66b1fe2d3689"
+    },
+    {
+      "corpus_file_hash": "f464fa29a8e14d9c1ab54008ec7af10a87a73ccfdf907ec5b59842c56b863b73",
+      "document_id": "ed3b98bd-e505-508a-80e4-b2c4dd51c41e",
+      "evidence_families": {
+        "canonical": {
+          "count": 4,
+          "identity_digest": "659eafa3d4ffd474382152872e96a51c336d261e2405f805d1605f7dc0ba5686"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "ME381 Lab group A1 - Monday.xlsx",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "7f9c8ccd-1df8-4656-a9df-a9952c61eb52"
+      ],
+      "version_id": "859975ff-546e-5c69-b2b5-cdf4be5aa54b"
+    },
+    {
+      "corpus_file_hash": "9482c9d955bc7efa662afb35c561989b971af0e78e230df1702f1a248549e11b",
+      "document_id": "642f44fe-a7ea-5595-b380-3ad1dd9e2b7b",
+      "evidence_families": {
+        "canonical": {
+          "count": 20,
+          "identity_digest": "8ba818c9471d75cf3be740e67da96451c1634686f84a091390550a80c8cb6a06"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "aiSwitch.js",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "0faf9942-e8fa-49ff-b08c-a922d99a89aa"
+      ],
+      "version_id": "8db8ae58-544b-53ab-8620-8b6ecb9f3639"
+    },
+    {
+      "corpus_file_hash": "5731dadfe61bc52325019601bed60fa8fd7b2555f7e3d698c0727609698ed23e",
+      "document_id": "2881c029-9625-5da1-9ce6-42dcf4301b76",
+      "evidence_families": {
+        "canonical": {
+          "count": 66,
+          "identity_digest": "f544391fabb9c0aaa630e5f6b6a8d2dd918aa096faff4fb3ca0bedbdf32d602a"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "llmGuard.js",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "a474817a-1c4b-4553-96bc-b0f70f28152f"
+      ],
+      "version_id": "91cf98c9-4370-557d-b3bc-619f24f3f969"
+    },
+    {
+      "corpus_file_hash": "ac5981da3d51a6f9578c74de6789afd4a543fea654892998c97749cfee316b73",
+      "document_id": "2cc1a529-277f-57b3-ba23-06767f7a2c97",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "00423d777d7e5d23af249ae2f1bdc39047a2adc38753ce60aed8455318d39216",
+          "language_script_observations": [
+            [
+              "en",
+              "Latn"
+            ],
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 2,
+          "representation": "ocr_text",
+          "results": 2
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "320ba21263961f7f96a0502cfa613424cc561a25c569de4e8a0ee0f19fe93bba",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "77bf41e626d5077cc58e7d14c49d133ade32e2f3cbbe1282ff290daa69c8c4fd",
+          "representation": "vision_text",
+          "results": 2
+        }
+      },
+      "file_name": "New Doc 06-30-2026 20.29.pdf",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "a9da9ced-3f6a-4c19-8250-baafb7674125"
+      ],
+      "version_id": "aaf4ad60-6f40-5084-9318-1d5a6ac10d7a"
+    },
+    {
+      "corpus_file_hash": "8ba9d6eb7ed5b7ddb58d31aa41f4b6670087a45258e4a3bd704982a56e1a6a18",
+      "document_id": "8431496a-e4e6-52c3-b6b8-7e6fd62251d2",
+      "evidence_families": {
+        "canonical": {
+          "count": 4,
+          "identity_digest": "fe3b818bb0d12913a2ffca6a3a25c53ed827c4823ed56c10bb736fa1181ef060"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "ME381 Lab group A2 - Tuesday.xlsx",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "cdcecc00-7011-435a-87e8-5367efcbc5e4"
+      ],
+      "version_id": "aaf5f3d7-68cd-5833-be4e-998df2098aa5"
+    },
+    {
+      "corpus_file_hash": "2aeadba7ddf8f68c7e6e0e6706328a4b8d212bf27bbd03451f0a45e5275562c2",
+      "document_id": "dd39990e-8d41-5a5f-972f-cf4555d26c72",
+      "evidence_families": {
+        "canonical": {
+          "count": 233,
+          "identity_digest": "fa2934c9862955105f17d46a27c644f2e074047716d1286a585b4d3208d2fd80"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "research_8b4fd9e3-312a-487b-b035-995a66021bd0.md",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "16e73ab7-cce8-44e6-9fcf-df2221551b0e"
+      ],
+      "version_id": "bb97a78f-3c9f-5cdf-9fa1-21cc2e9476ed"
+    },
+    {
+      "corpus_file_hash": "f96c9795d07630d9e1e8b6ffcc2cc3b4513de671dd3ec2e21a1d446be1e83796",
+      "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+      "evidence_families": {
+        "canonical": {
+          "count": 152,
+          "identity_digest": "b8d00316eb7450fdf8660e42ebccc40e0be7ae0c275858dece16678903cbac62"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "server.js",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "7c75a5ce-f743-486d-b2da-00ecb8ccda90"
+      ],
+      "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce"
+    },
+    {
+      "corpus_file_hash": "ff112b0b056d303b792f6f2e68cbd73a89adf612fa9113f932446cdea7741583",
+      "document_id": "f7a2cfb6-9742-56ab-9817-d20a5a7bce9d",
+      "evidence_families": {
+        "canonical": {
+          "count": 997,
+          "identity_digest": "450cd900b2d26bf43361a4f78c97f8c4467c18ceadc97376fdc55da56bffaf4d"
+        },
+        "ocr": {
+          "identity_digest": "acdced239ed976a15301933fae1792ffff55054793a2e2166b7de46da9fc17a8",
+          "language_script_observations": [
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 68,
+          "representation": "ocr_text",
+          "results": 69
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "f2ce6f7788067ee8abfecaa83e8f79329eb4f0b2313b770c0088ded2b26b845a",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "f5d074c2c1c35b2b928389511fb0b23d447dd83207f7b04765deb9c84941d5d1",
+          "representation": "vision_text",
+          "results": 69
+        }
+      },
+      "file_name": "Bhagavad-gita-As-It-Is.pdf",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "590d8df9-6dcc-486b-ac86-78f918dcee4b"
+      ],
+      "version_id": "d16f586e-5a4d-5b5f-ae76-012b69263826"
+    },
+    {
+      "corpus_file_hash": "eb4fe330163f7d89535ca48f792204a16da042bb2e4895a6030102df20a63984",
+      "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "39fb59918dff276c3b852fbdb1ffb3fe55b7066d7bd32ff8b3981ac0ae1b9641",
+          "language_script_observations": [
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 6,
+          "representation": "ocr_text",
+          "results": 6
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "2fdced9da7ab77357d938552aa6ff0cf5866aadea8d1378a9c81afbb20dd636e",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "5e62b6b9445515b32d00443325e489a463029514c4eef42a072d4f2c7f5c8f25",
+          "representation": "vision_text",
+          "results": 6
+        }
+      },
+      "file_name": "Atharv_Patil_240740.pdf",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "ee9dc261-3bcf-49ed-a110-8b2f9e39270f"
+      ],
+      "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8"
+    },
+    {
+      "corpus_file_hash": "f4c71b59dbce9374d05e35b70d518130c3e62e6532765bea93ba88e4c57accac",
+      "document_id": "b41295cc-cae4-5f36-b279-79a8b943042e",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "42c76b8365735d7535bc0eb2350cfc0c605e01656f197b4d4931e0fb9f88d3f0",
+          "language_script_observations": [
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 1,
+          "representation": "ocr_text",
+          "results": 1
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "b2fa874b4c52e7072bcdf44203acc9bfd8e85ab3bb95df69945f0bfd18bb7155",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "299a16a2f7bf6b83c71e786fe143447195ef41912da29fc0a1338d9302fe4211",
+          "representation": "vision_text",
+          "results": 1
+        }
+      },
+      "file_name": "IMG_20260709_212833177_HDR_AE~2 (1).jpg",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "68516d75-4dc5-43e2-9727-d65870d22322"
+      ],
+      "version_id": "d66d54bc-912d-5cc6-bc7c-64a99303236a"
+    },
+    {
+      "corpus_file_hash": "a68fc34260c4ed59c3d898eb4ef065cc6a4e54e253b182b5b6dc3e6312f2fb37",
+      "document_id": "c6449870-9772-5bfb-bcc3-c8a4d94ca713",
+      "evidence_families": {
+        "canonical": {
+          "count": 151,
+          "identity_digest": "958dc85e5c9e575019d2479e88e5e692decf5f94e6f21bc83a36ae4c8663c832"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "arvsal_v3_complete.txt",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "61b746cc-aa55-48d5-94cc-ce82871afefe"
+      ],
+      "version_id": "e4f18381-ed85-5670-a2e0-e4bef939f12c"
+    },
+    {
+      "corpus_file_hash": "16b5ca5ce7d5512b4da2d040c71a0305bcf3b516a423bdef66a8efe34f6aa9f9",
+      "document_id": "a7f2ef72-cb07-5c74-b88d-d989fb4638ff",
+      "evidence_families": {
+        "canonical": {
+          "count": 4,
+          "identity_digest": "e32f3b742d120b14267403708f30e9b89c3d5d5001ee1891d9099d9570339ac9"
+        },
+        "ocr": {
+          "identity_digest": "40b3ed485223a6c8de4c63fee309dcc6859a7378ba38d59fd7f84d76480849cf",
+          "language_script_observations": [
+            [
+              "en",
+              "Latn"
+            ],
+            [
+              "und",
+              "Deva"
+            ],
+            [
+              "und",
+              "Zzzz"
+            ]
+          ],
+          "regions": 23,
+          "representation": "ocr_text",
+          "results": 24
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "694ed5b56d616214f95c7bafdb7c653c7eabf2d4abb376db99fd194e50c4c1c2",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "6a739794562e4e17f579bbf5c123764a6b59f3a85a1117e6b392d1ff5763f74d",
+          "representation": "vision_text",
+          "results": 24
+        }
+      },
+      "file_name": "L4_55e70e05-fa79-4e59-9848-f398639f7a68.pdf",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "b76d8aaa-283f-4fb0-bd76-6970e3af6a52"
+      ],
+      "version_id": "f609792d-1dd3-5a10-a815-2d1596b970bd"
+    },
+    {
+      "corpus_file_hash": "1e88bc1c9b8aa412d9541b555cdc42c4558bf8846415e5f66badd5f97059eb1d",
+      "document_id": "44d9c338-d435-5d0f-b863-ae28536d5db0",
+      "evidence_families": {
+        "canonical": {
+          "count": 3,
+          "identity_digest": "ac7810ac7bc3d6e38481ceb58ed0dc39dd4688e5d1b65990b49dea0329aeb7b8"
+        },
+        "ocr": {
+          "identity_digest": "0031aa397e81c7d9cda82fec33f7c9a683bc65466f652555574bb2ca1d0e190a",
+          "language_script_observations": [
+            [
+              "en",
+              "Latn"
+            ],
+            [
+              "und",
+              "Deva"
+            ],
+            [
+              "und",
+              "Zzzz"
+            ]
+          ],
+          "regions": 52,
+          "representation": "ocr_text",
+          "results": 66
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "6742f473dc6fec502afc6a39b665bafb5a544b1f7ce75e7935785fcba69a5ac4",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "7ce7ada21cdfb4686cb7c2194efd2c3718557d874ac01298206fc461b8cab8cc",
+          "representation": "vision_text",
+          "results": 66
+        }
+      },
+      "file_name": "ME361_L2-L4_08c3b677-872f-4073-8337-83ad44fa8b88.pdf",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "743e6cc9-655a-4d04-8f29-c29e6a1579a6"
+      ],
+      "version_id": "f67a7cbc-a581-5b20-91c6-3b2e74c6e3ea"
+    },
+    {
+      "corpus_file_hash": "f50fc5ae1a93c6aa9a05370340814e626de5f730f03b90478e3d02baf284edcc",
+      "document_id": "0d0039c5-78e0-56c5-b7e4-d1b1a8483d07",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "22c806193fa35b3268b83b0bfba9b04896ccb30299ace155decc39e42e556759",
+          "language_script_observations": [
+            [
+              "und",
+              "Deva"
+            ]
+          ],
+          "regions": 1,
+          "representation": "ocr_text",
+          "results": 1
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "f50f5f04bd3dd2c7ef918902969f0eef7fc7cd4eb5bf0b8808fc9326185e7c3a",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "fc206d3eff0f70a3f46614bb0f5f3a12b04ffe791edb85ac6905f5119929539d",
+          "representation": "vision_text",
+          "results": 1
+        }
+      },
+      "file_name": "boarding-pass-Atharv-Patil.jpeg",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "7627446e-15d1-4bba-b3ed-9947ee6376cb"
+      ],
+      "version_id": "f8a702cd-7d5c-5f2d-ae55-39d06405a0cd"
+    },
+    {
+      "corpus_file_hash": "4eed38984b88c1a867b53c4c63c9738b03aa18ceb3dc5dd12f4da93ec7b9c7ae",
+      "document_id": "82ff29e8-cbb5-5ffd-857c-7b9e39003639",
+      "evidence_families": {
+        "canonical": {
+          "count": 13,
+          "identity_digest": "b9acb268c35aecddf5f8bbf7683c1bebab6670cad7b2362191c17750a30c2b87"
+        },
+        "ocr": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_script_observations": [],
+          "regions": 0,
+          "representation": "ocr_text",
+          "results": 0
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "representation": "vision_text",
+          "results": 0
+        }
+      },
+      "file_name": "ME381 Lab group A3 - Thursday.xlsx",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "882d7a97-ee20-474c-aa43-deb4fb5f502a"
+      ],
+      "version_id": "fba07364-7bb7-577f-aa7a-73e75ef0903e"
+    },
+    {
+      "corpus_file_hash": "ebfb3f17ab8bb6ddd7a07760354ad08a83a4d27ee5cb940827a135f3e64eb6f2",
+      "document_id": "0d15b2e0-ff34-5219-8abf-796afc783918",
+      "evidence_families": {
+        "canonical": {
+          "count": 0,
+          "identity_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ocr": {
+          "identity_digest": "6612ffdfe6179b5e6ef08284e20f891458e16d690aa29c51e8a343df1faf5d41",
+          "language_script_observations": [
+            [
+              "en",
+              "Latn"
+            ]
+          ],
+          "regions": 1,
+          "representation": "ocr_text",
+          "results": 1
+        },
+        "transliteration": {
+          "count": 0,
+          "status": "absent"
+        },
+        "vision": {
+          "identity_digest": "50a9ea480a0db7498166abd3b6587fb439d2c7283fedb5d0dc86e32652d16fab",
+          "language_status": "unverified_provider_metadata",
+          "raw_provider_language_claim_digest": "669871c5726b9a7a31dee0dba3aeb74ff9c69b757f1b988178db08bfb21f4af7",
+          "representation": "vision_text",
+          "results": 1
+        }
+      },
+      "file_name": "IMG_20260709_212633128_HDR_AE~2 (1).jpg",
+      "language_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "und"
+      },
+      "representation_observation": {
+        "authority": "read_only_census_v1",
+        "pdf_fonts": [],
+        "transformation_requirement": "requires_representation_observation",
+        "value": "unknown"
+      },
+      "script_observation": {
+        "authority": "unknown_no_governed_observation",
+        "value": "Zzzz"
+      },
+      "source_ids": [
+        "3c1f35a6-053e-4699-8eaf-39414abeeef2"
+      ],
+      "version_id": "fea44835-4de0-599e-9fdf-f6390e1ed0ce"
+    }
+  ],
+  "inference_prohibitions": [
+    "filename_to_language",
+    "script_to_language",
+    "language_to_script",
+    "filename_to_representation"
+  ],
+  "schema_version": "mnemo.v2-corpus-representation-census/1",
+  "source_database_sha256": "18835883dc3a01b588e4c43f44fba1156941d0807d7c08c2a41fd11a802bf55d",
+  "write_operations": false
+}

@@ -185,6 +185,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     },
                 )
 
+            request.state.auth = {"sub": "api-key"}
             return await call_next(request)
 
         if config.auth_mode == "jwt":

@@ -522,6 +522,9 @@ class QdrantStore:
     async def list_sources(self, notebook_id: UUID, limit: int, cursor: str | None) -> Page[Source]:
         raise NotImplementedError("QdrantStore does not implement list_sources")
 
+    async def list_sources_for_document(self, document_id: UUID) -> tuple[Source, ...]:
+        raise NotImplementedError("QdrantStore does not implement list_sources_for_document")
+
     async def upsert_note(self, note: Note) -> None:
         raise NotImplementedError("QdrantStore does not implement upsert_note")
 

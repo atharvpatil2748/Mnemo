@@ -2,7 +2,17 @@
 
 from __future__ import annotations
 
+from .capabilities_v2 import CapabilityDiscoveryRequest, CapabilityDocument
 from .common import PageResponse
+from .cursor import CoverageResponseV2, TransportCompletenessV2, map_transport_coverage
+from .delivery import (
+    DeliveryAttributionResponse,
+    DeliveryCapabilitiesResponse,
+    DeliveryCapabilityResponse,
+    DeliveryItemResponse,
+    DeliveryResponseBody,
+    DeliveryUsageResponse,
+)
 from .graph import EntityGraphResponse, GraphEdgeResponse, GraphNodeResponse
 from .insights import InsightResponse
 from .notebooks import CreateNotebookRequest, NotebookResponse, UpdateNotebookRequest
@@ -61,17 +71,26 @@ from .system import (
 from .timeline import TimelineEventResponse, TimelineResponse
 
 __all__ = [
+    "CapabilityDiscoveryRequest",
+    "CapabilityDocument",
     "ChunkRetrievedData",
     "CitationItemResponse",
     "CitationResponse",
     "CitationsReadyData",
     "ComponentHealthResponse",
     "ConfigResponse",
+    "CoverageResponseV2",
     "CreateJobRequest",
     "CreateNoteRequest",
     "CreateNotebookRequest",
     "CreateSessionRequest",
     "CreateTurnRequest",
+    "DeliveryAttributionResponse",
+    "DeliveryCapabilitiesResponse",
+    "DeliveryCapabilityResponse",
+    "DeliveryItemResponse",
+    "DeliveryResponseBody",
+    "DeliveryUsageResponse",
     "DoneData",
     "EmbeddingConfigResponse",
     "EntityGraphResponse",
@@ -117,8 +136,10 @@ __all__ = [
     "SynthesisTokenData",
     "TimelineEventResponse",
     "TimelineResponse",
+    "TransportCompletenessV2",
     "TurnResponse",
     "UpdateNoteRequest",
     "UpdateNotebookRequest",
     "UpdateServerConfigRequest",
+    "map_transport_coverage",
 ]

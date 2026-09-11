@@ -1,0 +1,19 @@
+{
+  "schema_version": "mnemo.v2-database-artifact-identity/1",
+  "database_id": "b8b855c4-98b3-5f35-bc91-92cf693e507d",
+  "target_path": "scratch/phase8_5_full_multilingual_v2/build-20260831-01/mnemo.db",
+  "build_run_id": "0b04f05c-a3d5-5879-b878-cd5f8e84ff2f",
+  "corpus_digest": "e086e48dda72b9bc38f6cb4d4f68a60bc5af7dfa38b47b49659fc3312a2efd9b",
+  "census_digest": "0cf872e3822494bb0fe9c4be7f0e2adb0009d3330ef96b2461a89c5192302446",
+  "profile_fingerprint": "51eb57f1f252d4e3e771668be8a70316303ede40c97cf0d3d25f7d20ed728034",
+  "vector_space_identity": "7dcba654e1c947145253ff65ef93e2b4ef1105cdf680b79218a446c79cc1a0d7",
+  "build_manifest_digest": "fdd46786cc78aa43ca47a6aca3091374d7bd37cdf24e5791017ee0c7a1275339",
+  "storage_manifest_digest": "0f34a97fd64301d86ccbe8d15dad08bb7442ff484a4e5166d8ec0056b2220ed7",
+  "generations": [
+    {"capability":"language_text_v2","generation_id":"a7220adf-202c-536e-8e7c-c09d4d4c563f","checksum":"1aa2374437c72ef8f3bf23ba9cc09e65b8d6e4aa2f4d0c0b645f60a458b0f3a8","source_generation_ids":["81f673bb-665d-591a-b12b-472ff3e39b7c"],"provider_identity":"sqlite-fts5-unicode61","model_identity":null,"configuration_digest":"38dde8380245fd558e8376301a48a041bfaf13d3f56303b6606267810c081d4b","vector_space_identity":null,"dimensions":null},
+    {"capability":"multilingual_embedding_v2","generation_id":"62243160-bed5-5064-a664-815984232e31","checksum":"3051a749bfdfe41a83e44da4ec60cd3e1df18619dee9ff3135ebd3373bfcba30","source_generation_ids":["81f673bb-665d-591a-b12b-472ff3e39b7c"],"provider_identity":"sentence-transformers","model_identity":"BAAI/bge-m3@5617a9f61b028005a4858fdac845db406aefb181","configuration_digest":"2e492a2fe2db1d867bbfa8ec2ddb4773b1a450c522250043fec8464dc0939cbd","vector_space_identity":"7dcba654e1c947145253ff65ef93e2b4ef1105cdf680b79218a446c79cc1a0d7","dimensions":1024},
+    {"capability":"multilingual_vector_v2","generation_id":"2b26443e-bb99-5bf8-a4af-a01ba99af8ce","checksum":"3051a749bfdfe41a83e44da4ec60cd3e1df18619dee9ff3135ebd3373bfcba30","source_generation_ids":["62243160-bed5-5064-a664-815984232e31"],"provider_identity":"sqlite-exact-cosine-v2","model_identity":"BAAI/bge-m3@5617a9f61b028005a4858fdac845db406aefb181","configuration_digest":"4579485b96df7c521f0c6b6cbd3da0a7232dd523bd7861cd6acb97d55e9cb461","vector_space_identity":"7dcba654e1c947145253ff65ef93e2b4ef1105cdf680b79218a446c79cc1a0d7","dimensions":1024},
+    {"capability":"representation_derivation_v2","generation_id":"81f673bb-665d-591a-b12b-472ff3e39b7c","checksum":"d08a748116bc106f499c4a59f1df85d86907741035be10aa5995eb2d55234335","source_generation_ids":[],"provider_identity":"configured-transformation-registry","model_identity":null,"configuration_digest":"3072a86aaf3d3f49a6454afdaa419965163d0c6254d57e2a7f2f989beb905911","vector_space_identity":null,"dimensions":null}
+  ],
+  "database_identity": "0c6c73f9b847d204d073ddec8c2a5d2265c2a8bf2bf19bfec552e264f839af8d"
+}

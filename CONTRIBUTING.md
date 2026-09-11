@@ -36,7 +36,7 @@ Making your first contribution is straightforward:
 ↓
 **Run Validation** to ensure a clean baseline (`validate.bat` on Windows)
 ↓
-**Understand Architecture:** Read the [Architecture Specification](docs/mnemo_architecture_v2.md) and [Roadmap](docs/mnemo_engineering_roadmap.md)
+**Understand Architecture:** Read the [Architecture Specification](docs/architecture/current/mnemo_architecture_v2.md) and [Roadmap](docs/architecture/current/mnemo_engineering_roadmap.md)
 ↓
 **Pick a Task** relevant to the current phase
 ↓
@@ -93,7 +93,7 @@ uv build --package mnemo-server
 
 Mnemo's architecture is deterministic and rigorously enforced.
 
-1. **Consult the Docs:** Always read the [Architecture Specification](docs/mnemo_architecture_v2.md) and relevant [ADRs](docs/adr/) before proposing a change.
+1. **Consult the Docs:** Always read the [Architecture Specification](docs/architecture/current/mnemo_architecture_v2.md) and relevant [ADRs](docs/adr) before proposing a change.
 2. **Core Isolation:** `mnemo-core` must never make an HTTP request (unless it's an isolated plugin), depend on web frameworks like FastAPI, or execute arbitrary code. It is a pure Python library.
 3. **Interface-Driven:** Components must depend on `Protocol` interfaces (e.g., `ParserInterface`, `StorageInterface`), not concrete implementations.
 4. **No Silent Failures:** If an invariant is broken, raise a typed exception. Do not silently swallow errors.

@@ -1,0 +1,47 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://mnemo.local/governance/proposals/full-multilingual-v2/LANGUAGE_CAPABILITY_MODEL.proposed.json",
+  "title":"PROPOSED — Mnemo operation-scoped language capability record v3",
+  "description":"Deterministic view over Phase85RuntimeV1, profiles, providers, generations, transports, evaluation and governance—not an independent registry or state machine.",
+  "type":"object","additionalProperties":false,
+  "required":["schema_version","snapshot_digest","language","script","operation","representation","provider_support_state","implementation_state","runtime_lifecycle","assurance_state","security_verification_state","behavioral_verification_state","availability_state","effective_state","profile","generation","transport","evidence"],
+  "properties":{
+    "schema_version":{"const":"3.0-proposed"},"snapshot_digest":{"$ref":"#/$defs/sha256"},
+    "language":{"type":"string","pattern":"^(und|[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*)$"},
+    "script":{"oneOf":[{"type":"string","pattern":"^[A-Z][a-z]{3}$"},{"type":"null"}]},
+    "operation":{"enum":["language_detection","script_detection","representation_detection","normalization","representation_transformation","transliteration","translation","embedding","vector_indexing","dense_retrieval","sparse_retrieval","reranking","ocr_language","vision_language","answer_language"]},
+    "representation":{"$ref":"EVIDENCE_REPRESENTATION_VOCABULARY.proposed.json"},
+    "direction":{"oneOf":[{"$ref":"#/$defs/direction"},{"type":"null"}]},
+    "profile":{"oneOf":[{"$ref":"#/$defs/profile"},{"type":"null"}]},
+    "generation":{"oneOf":[{"$ref":"#/$defs/generation"},{"type":"null"}]},
+    "transport":{"$ref":"#/$defs/transport"},
+    "provider_support_state":{"enum":["model_supported","unsupported","unknown"]},
+    "implementation_state":{"enum":["implemented","not_implemented"]},
+    "runtime_lifecycle":{"enum":["declared","configured","buildable","ready","active","exposed"]},
+    "assurance_state":{"enum":["unvalidated","evaluated","verified","certified"]},
+    "security_verification_state":{"enum":["unverified","security_verified"]},
+    "behavioral_verification_state":{"enum":["unverified","behaviorally_verified"]},
+    "availability_state":{"enum":["available","unavailable","disabled","policy_denied"]},
+    "effective_state":{"enum":["model_supported","implemented","buildable","ready","active","exposed","evaluated","verified","certified","unsupported","unavailable","disabled","policy_denied","unvalidated"]},
+    "reason_code":{"type":["string","null"],"maxLength":128},"evidence":{"$ref":"#/$defs/evidence"}
+  },
+  "$defs":{
+    "sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "digests":{"type":"array","items":{"$ref":"#/$defs/sha256"},"uniqueItems":true},
+    "direction":{"type":"object","additionalProperties":false,"required":["query_language","evidence_language"],"properties":{"query_language":{"type":"string","minLength":2},"evidence_language":{"type":"string","minLength":2}}},
+    "profile":{"type":"object","additionalProperties":false,"required":["profile_id","provider","model","revision","preprocessing_identity","vector_space_identity","provider_claim_digest"],"properties":{"profile_id":{"type":"string","minLength":1},"provider":{"type":"string","minLength":1},"model":{"type":"string","minLength":1},"revision":{"type":"string","minLength":1},"preprocessing_identity":{"type":"string","minLength":1},"vector_space_identity":{"type":["string","null"]},"provider_claim_digest":{"$ref":"#/$defs/sha256"}}},
+    "generation":{"type":"object","additionalProperties":false,"required":["generation_id","source_generation_ids","coverage_complete","count_checksum_valid","provenance_complete","active_alias"],"properties":{"generation_id":{"type":"string","format":"uuid"},"source_generation_ids":{"type":"array","items":{"type":"string","format":"uuid"},"uniqueItems":true},"coverage_complete":{"type":"boolean"},"count_checksum_valid":{"type":"boolean"},"provenance_complete":{"type":"boolean"},"active_alias":{"type":"boolean"}}},
+    "transport":{"type":"object","additionalProperties":false,"required":["http","mcp_stdio","mcp_sse","contract_digest","semantic_parity"],"properties":{"http":{"type":"boolean"},"mcp_stdio":{"type":"boolean"},"mcp_sse":{"type":"boolean"},"contract_digest":{"$ref":"#/$defs/sha256"},"semantic_parity":{"type":"boolean"}}},
+    "evidence":{"type":"object","additionalProperties":false,"required":["provider_claims","runtime_refs","generation_refs","transport_refs","evaluation_refs","security_refs","behavioral_refs","governance_refs"],"properties":{"provider_claims":{"$ref":"#/$defs/digests"},"runtime_refs":{"$ref":"#/$defs/digests"},"generation_refs":{"$ref":"#/$defs/digests"},"transport_refs":{"$ref":"#/$defs/digests"},"evaluation_refs":{"$ref":"#/$defs/digests"},"security_refs":{"$ref":"#/$defs/digests"},"behavioral_refs":{"$ref":"#/$defs/digests"},"governance_refs":{"$ref":"#/$defs/digests"}}}
+  },
+  "x-mnemo-effective-state-precedence":"policy_denied > disabled > unsupported > unavailable > certified > verified > evaluated > exposed > active > ready > buildable > implemented > model_supported > unvalidated",
+  "x-mnemo-invariants":[
+    "Language and script are independent observations and neither implies the other.",
+    "MODEL_SUPPORTED is provider metadata only; it never establishes CONFIGURED, READY, ACTIVE or EXPOSED.",
+    "READY, ACTIVE and EXPOSED are projections of V2_ACTIVATION_READINESS_CONTRACT over Phase85RuntimeV1 evidence.",
+    "EXPOSED requires ACTIVE, enabled transport, canonical representation-vocabulary parity and passed security verification.",
+    "EVALUATED, VERIFIED, BEHAVIORALLY_VERIFIED, SECURITY_VERIFIED and CERTIFIED remain separate evidence dimensions.",
+    "Missing retrieval results never establish unsupported language or absent corpus.",
+    "A capability record grants no authorization."
+  ]
+}

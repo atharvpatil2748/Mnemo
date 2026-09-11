@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import replace
 from datetime import UTC, datetime
 from typing import cast
@@ -139,7 +140,7 @@ def _logical_chunk(chunk: Chunk) -> tuple[object, ...]:
 
 @pytest.fixture
 def fs_mock() -> StorageInterfaceV1:
-    mock = AsyncMock(spec=StorageInterfaceV1)
+    mock = AsyncMock(spec=FilesystemBlobStore)
     mock.capabilities.return_value = StorageCapabilities(
         supports_blobs=True,
         supports_dense_search=False,
@@ -371,6 +372,103 @@ async def test_metadata_and_blob_operations_route_to_owners(
     sql_mock.list_sessions.assert_awaited_once_with(identity, 10, None)
     sql_mock.append_turn.assert_awaited_once_with(identity, record)
     sql_mock.get_citations_for_turn.assert_awaited_once_with(identity)
+
+
+@pytest.mark.anyio
+async def test_all_additive_v2_facade_operations_delegate_to_sqlite_owner(
+    composite: CompositeStorage,
+    sql_mock: Mock,
+) -> None:
+    """The additive V2 facade must remain a transparent SQLite ownership boundary."""
+    methods = (
+        "active_multimodal_generation_identity",
+        "retrieve_multimodal_evidence",
+        "active_multilingual_generation_identity",
+        "retrieve_multilingual_evidence",
+        "project_structured_document",
+        "extract_projected_structured_records",
+        "list_structured_datasets",
+        "structured_projection_ready",
+        "active_structured_generation_identity",
+        "extract_structured_dataset_records",
+        "create_final_qa_v2_execution",
+        "get_final_qa_v2_execution",
+        "put_final_qa_v2_snapshot",
+        "get_final_qa_v2_snapshot",
+        "transition_final_qa_v2_execution",
+        "put_final_qa_v2_citations",
+        "put_language_observation",
+        "get_authorized_language_observation",
+        "put_language_derivation",
+        "get_authorized_language_derivation",
+        "get_authorized_language_derivation_by_cache_key",
+        "put_multilingual_embedding",
+        "get_authorized_multilingual_embedding",
+        "register_asset_ingestion",
+        "get_document_binary_reference",
+        "get_document_binary_availability",
+        "get_asset_occurrence",
+        "list_asset_occurrences",
+        "get_authorized_asset_occurrence",
+        "list_authorized_asset_derivations",
+        "create_asset_derivation",
+        "get_asset_derivation",
+        "transition_asset_derivation",
+        "create_index_generation",
+        "get_index_generation",
+        "transition_index_generation",
+        "promote_index_generation",
+        "get_active_index_generation",
+        "put_index_generation_coverage",
+        "get_index_generation_coverage",
+        "put_index_generation_sources",
+        "get_index_generation_sources",
+        "rollback_index_generation",
+        "build_vision_text_projection",
+        "build_language_text_projection",
+        "build_multilingual_vector_projection",
+        "add_asset_gc_reference",
+        "remove_asset_gc_reference",
+        "is_asset_referenced",
+        "delete_asset_catalog_record",
+        "create_final_qa_execution",
+        "get_final_qa_execution",
+        "put_final_qa_execution_snapshot",
+        "get_final_qa_execution_snapshot",
+        "transition_final_qa_execution",
+        "put_ocr_result",
+        "get_authorized_ocr_result",
+        "get_authorized_ocr_result_by_cache_key",
+        "project_ocr_result",
+        "list_ocr_projection_regions",
+        "put_vision_result",
+        "get_authorized_vision_result",
+        "get_authorized_vision_result_by_cache_key",
+        "put_visual_embedding",
+        "get_authorized_visual_embedding",
+        "get_authorized_visual_embedding_by_cache_key",
+        "project_visual_embedding",
+        "list_visual_projection_derivations",
+        "list_exact_document_chunks",
+    )
+    placeholder = Mock(name="facade-argument")
+    for name in methods:
+        operation = getattr(composite, name)
+        backend = getattr(sql_mock, name)
+        backend.reset_mock()
+        signature = inspect.signature(operation)
+        args: list[object] = []
+        kwargs: dict[str, object] = {}
+        for parameter in signature.parameters.values():
+            if parameter.kind is inspect.Parameter.KEYWORD_ONLY:
+                kwargs[parameter.name] = placeholder
+            elif parameter.kind in {
+                inspect.Parameter.POSITIONAL_ONLY,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            }:
+                args.append(placeholder)
+        await operation(*args, **kwargs)
+        backend.assert_awaited_once()
 
 
 @pytest.mark.anyio
@@ -643,18 +741,24 @@ async def test_delete_chunks_failure(
 @pytest.mark.anyio
 async def test_cascade_delete_success(
     composite: CompositeStorage,
+    fs_mock: Mock,
     sql_mock: Mock,
     qdr_mock: Mock,
     sur_mock: Mock,
 ) -> None:
     """Test full document cascade deletion."""
     doc_id = uuid4()
+    version_id = uuid4()
+    document = Mock()
+    document.versions = (Mock(version_id=version_id),)
+    sql_mock.get_document.return_value = document
 
     await composite.delete_document_cascade(doc_id)
 
     qdr_mock.delete_chunks_for_document.assert_awaited_once_with(doc_id, None)
     sur_mock.delete_graph_for_document.assert_awaited_once_with(doc_id)
     sql_mock.delete_document_cascade.assert_awaited_once_with(doc_id)
+    fs_mock.delete_parsed_document.assert_awaited_once_with(version_id)
 
 
 @pytest.mark.anyio

@@ -28,23 +28,19 @@ class DocumentClassifier:
         {
             ".py",
             ".js",
+            ".jsx",
             ".ts",
+            ".tsx",
             ".rs",
             ".go",
             ".java",
             ".c",
             ".cpp",
+            ".cc",
+            ".cxx",
             ".h",
             ".hpp",
             ".sh",
-            ".json",
-            ".yaml",
-            ".yml",
-            ".toml",
-            ".ini",
-            ".css",
-            ".html",
-            ".xml",
             ".rb",
             ".php",
         }
@@ -373,7 +369,16 @@ class DocumentClassifier:
                 table_blocks += 1
                 total_structural_blocks += 1
 
-        if total_structural_blocks > 0 and (code_blocks / total_structural_blocks > 0.8):
+        code_languages_are_explicit = all(
+            block.code_language is not None
+            for block in result.blocks
+            if isinstance(block, RawCodeBlock)
+        )
+        if (
+            total_structural_blocks > 0
+            and code_blocks / total_structural_blocks > 0.8
+            and code_languages_are_explicit
+        ):
             return DocType.CODE
 
         return DocType.GENERIC

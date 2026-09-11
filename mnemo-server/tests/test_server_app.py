@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -116,6 +118,82 @@ async def test_app_lifespan_initialization_failure() -> None:
 
 
 @pytest.mark.anyio
+async def test_app_lifespan_rejects_engine_that_does_not_reach_ready() -> None:
+    """A completed initializer may not publish an engine in a non-READY state."""
+    engine = _make_mock_engine()
+    engine.initialize = AsyncMock()
+    engine.state = EngineState.INITIALIZING
+    app = create_app(engine=engine, provision_tokenizer_on_startup=False)
+    with pytest.raises(RuntimeError, match="failed to reach READY"):
+        async with app.router.lifespan_context(app):
+            pass
+
+
+@pytest.mark.anyio
+async def test_app_lifespan_installs_and_closes_governed_v2_runtime(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The V2 application path publishes readiness, activation authority, and closes cleanly."""
+    engine = _make_mock_engine()
+    engine.config = MagicMock()
+    readiness_evidence = object()
+    readiness = object()
+    installed = SimpleNamespace(
+        exposure_snapshot=object(),
+        close=AsyncMock(),
+        reranker_activation=SimpleNamespace(activate=AsyncMock()),
+    )
+    authority = object()
+    builder = MagicMock()
+    builder.build = AsyncMock(return_value=(readiness_evidence, readiness))
+    monkeypatch.setattr(
+        "mnemo_server.services.production_store_readiness.ProductionV2ReadinessEvidenceBuilderV1",
+        MagicMock(return_value=builder),
+    )
+    installer = AsyncMock(return_value=installed)
+    monkeypatch.setattr(
+        "mnemo_server.services.full_multilingual_v2_startup.install_production_full_multilingual_v2",
+        installer,
+    )
+    restore = AsyncMock(return_value=authority)
+    monkeypatch.setattr(
+        "mnemo_server.services.durable_reranker_activation.restore_production_reranker_activation",
+        restore,
+    )
+    config = ServerConfig(
+        production_mode=True,
+        auth_mode="api-key",
+        api_key="test-key",
+        delivery_cursor_secret="x" * 32,
+        full_multilingual_v2_enabled=True,
+        full_multilingual_v2_model_cache=tmp_path / "models",
+        final_qa_operational_store_path=tmp_path / "operational.db",
+        mcp_stdio_principal_subject="stdio",
+    )
+    app = create_app(
+        server_config=config,
+        engine=engine,
+        provision_tokenizer_on_startup=False,
+    )
+    async with app.router.lifespan_context(app):
+        assert app.state.full_multilingual_v2_runtime is installed
+        assert app.state.full_multilingual_v2_readiness is readiness_evidence
+        assert app.state.reranker_activation_authority is authority
+    installed.close.assert_awaited_once()
+    restore.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_app_lifespan_swallows_shutdown_failure() -> None:
+    """Shutdown errors are logged while the published engine reference is always cleared."""
+    engine = _make_mock_engine(shutdown_side_effect=RuntimeError("shutdown failed"))
+    app = create_app(engine=engine, provision_tokenizer_on_startup=False)
+    async with app.router.lifespan_context(app):
+        assert app.state.engine is engine
+    assert app.state.engine is None
+
+
+@pytest.mark.anyio
 async def test_app_lifespan_loads_repository_toml_when_no_config_is_injected() -> None:
     """The executable ASGI application honors the repository configuration file."""
     from unittest.mock import patch
@@ -123,14 +201,19 @@ async def test_app_lifespan_loads_repository_toml_when_no_config_is_injected() -
     mock_engine = _make_mock_engine()
     config_from_file = MagicMock()
     with (
-        patch("mnemo_server.app.os.path.exists", return_value=True),
-        patch("mnemo_server.app.MnemoConfig.from_file", return_value=config_from_file) as loader,
+        patch(
+            "mnemo_server.app.resolve_mnemo_runtime_config",
+            return_value=config_from_file,
+        ) as loader,
         patch("mnemo_server.app.KnowledgeEngine", return_value=mock_engine) as engine_factory,
     ):
         app = create_app(provision_tokenizer_on_startup=False)
         async with app.router.lifespan_context(app):
-            loader.assert_called_once_with("mnemo.toml")
-            engine_factory.assert_called_once_with(config_from_file, final_qa_components=None)
+            loader.assert_called_once_with(None)
+        engine_factory.assert_called_once()
+        assert engine_factory.call_args.args == (config_from_file,)
+        assert engine_factory.call_args.kwargs["final_qa_components"] is None
+        assert engine_factory.call_args.kwargs["advanced_retrieval_cursor_codec"] is not None
 
 
 @pytest.mark.anyio

@@ -1,5 +1,6 @@
 """Deterministic generic semantic chunking strategy."""
 
+import logging
 import re
 from dataclasses import dataclass
 
@@ -27,10 +28,13 @@ from mnemo.models import (
     TextBlock,
 )
 
+from .atomic_structures import render_table_part, split_table_row
+
 _PARAGRAPH_BOUNDARY = re.compile(r"\n[ \t]*\n+")
 _SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+")
 _WORD_WITH_SPACE = re.compile(r"\S+(?:\s+|$)")
 _METADATA = FrozenMetadata({"chunker.generic.strategy": "recursive"})
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +47,17 @@ class _Unit:
     page_number: int | None
     separator: str
     mergeable: bool = True
+    page_start: int | None = None
+    page_end: int | None = None
+    metadata: FrozenMetadata = _METADATA
+
+    def __post_init__(self) -> None:
+        if self.page_start is None and self.page_number is not None:
+            object.__setattr__(self, "page_start", self.page_number)
+        if self.page_end is None and self.page_number is not None:
+            object.__setattr__(self, "page_end", self.page_number)
+        if self.page_number is None and self.page_start is not None:
+            object.__setattr__(self, "page_number", self.page_start)
 
 
 class GenericChunker:
@@ -96,6 +111,8 @@ class GenericChunker:
         for unit in packed:
             chunk_index = section_indexes.get(unit.section_index, 0)
             section_indexes[unit.section_index] = chunk_index + 1
+            p_start = unit.page_start or unit.page_number
+            p_end = unit.page_end or unit.page_number
             drafts.append(
                 ChunkDraft(
                     text=unit.text,
@@ -103,12 +120,14 @@ class GenericChunker:
                     position=ChunkPosition(
                         section_index=unit.section_index,
                         chunk_index_in_section=chunk_index,
-                        page_number=unit.page_number,
+                        page_number=p_start,
+                        page_start=p_start,
+                        page_end=p_end,
                     ),
                     heading_path=unit.heading_path,
                     source_span=unit.source_span,
                     parent_index=None,
-                    metadata=_METADATA,
+                    metadata=unit.metadata,
                 )
             )
         return tuple(drafts)
@@ -231,7 +250,8 @@ class GenericChunker:
 
         result: list[_Unit] = []
         batch: list[tuple[str, ...]] = []
-        for row in data_rows:
+        for row_offset, row in enumerate(data_rows):
+            row_index = block.header_row_count + row_offset
             candidate = (*headers, *batch, row)
             candidate_text = render(candidate)
             if batch and counter.count(candidate_text) > target:
@@ -251,7 +271,69 @@ class GenericChunker:
                 batch = []
                 candidate_text = render((*headers, row))
             if counter.count(candidate_text) > hard_max:
-                raise UnsupportedError("atomic table row exceeds the effective token maximum")
+                reserve = min(48, max(1, hard_max // 8))
+                parts = split_table_row(
+                    headers,
+                    row,
+                    target=max(1, target - reserve),
+                    hard_max=max(1, hard_max - reserve),
+                    counter=counter,
+                )
+                _LOGGER.warning(
+                    "[CHUNKER] oversized atomic structure detected "
+                    "type=table_row block=%s row=%s tokens=%s limit=%s "
+                    "strategy=structure_aware_subdivision parts=%s content_conservation=PASS",
+                    block.ordinal,
+                    row_index,
+                    counter.count(candidate_text),
+                    hard_max,
+                    len(parts),
+                )
+                for part_index, part in enumerate(parts):
+                    first_column = part.column_indexes[0]
+                    last_column = part.column_indexes[-1]
+                    cell_suffix = (
+                        ""
+                        if part.cell_total_parts == 1
+                        else f", cell-part {part.cell_part_index + 1}/{part.cell_total_parts}"
+                    )
+                    prefix = (
+                        f"Table block {block.ordinal}, row {row_index + 1}, "
+                        f"columns {first_column + 1}-{last_column + 1}{cell_suffix}\n"
+                    )
+                    text = prefix + render_table_part(part)
+                    if counter.count(text) > hard_max:
+                        raise UnsupportedError(
+                            "structure-aware table-row subdivision exceeds the token maximum"
+                        )
+                    result.append(
+                        _Unit(
+                            text=text,
+                            chunk_type=ChunkType.PASSAGE,
+                            source_span=span,
+                            heading_path=heading_path,
+                            section_index=section_index,
+                            page_number=block.page_number,
+                            separator="\n\n",
+                            mergeable=False,
+                            metadata=FrozenMetadata(
+                                {
+                                    "chunker.generic.strategy": "recursive",
+                                    "chunker.atomic.strategy": "structure_aware_subdivision",
+                                    "chunker.atomic.type": "table_row",
+                                    "chunker.atomic.parent_block_ordinal": block.ordinal,
+                                    "chunker.atomic.row_index": row_index,
+                                    "chunker.atomic.column_indexes": part.column_indexes,
+                                    "chunker.atomic.part_index": part_index,
+                                    "chunker.atomic.total_parts": len(parts),
+                                    "chunker.atomic.cell_part_index": part.cell_part_index,
+                                    "chunker.atomic.cell_total_parts": part.cell_total_parts,
+                                    "chunker.preserve_short": True,
+                                }
+                            ),
+                        )
+                    )
+                continue
             batch.append(row)
 
         if batch:
@@ -421,6 +503,8 @@ class GenericChunker:
 
     @staticmethod
     def _merge(left: _Unit, right: _Unit, text: str) -> _Unit:
+        p_start = left.page_start or left.page_number
+        p_end = right.page_end or right.page_number or p_start
         return _Unit(
             text=text,
             chunk_type=left.chunk_type,
@@ -430,6 +514,8 @@ class GenericChunker:
             ),
             heading_path=left.heading_path,
             section_index=left.section_index,
-            page_number=left.page_number,
+            page_number=p_start,
             separator=left.separator,
+            page_start=p_start,
+            page_end=p_end,
         )

@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/governance/proposals/full-multilingual-v2/LANGUAGE_EVIDENCE_REFERENCE_V3.proposed.json",
+  "title": "PROPOSED — LanguageEvidenceReferenceV3",
+  "description": "Versioned successor to the repository's canonical LanguageEvidenceReferenceV2. V2 is not redefined or changed. Every V2 value upgrades losslessly; V3 adds whole OCR-occurrence and representation-derivation lineage. Evidence identifiers remain non-empty strings because canonical chunk identities are not necessarily UUIDs.",
+  "$ref": "#/$defs/languageEvidenceReferenceV3",
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "nullableUuid": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "nullableNonEmptyString": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "languageEvidenceReferenceV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "lineage_origin",
+        "notebook_id",
+        "source_id",
+        "document_id",
+        "version_id",
+        "evidence_kind",
+        "evidence_id",
+        "source_content_hash",
+        "chunk_id",
+        "occurrence_id",
+        "derivation_id",
+        "source_generation_id",
+        "parent_evidence_reference_digest"
+      ],
+      "properties": {
+        "schema_version": {"const": "mnemo.language-evidence-reference/3"},
+        "lineage_origin": {"enum": ["native_v3", "legacy_v2_upgrade"]},
+        "notebook_id": {"type": "string", "format": "uuid"},
+        "source_id": {"type": "string", "format": "uuid"},
+        "document_id": {"type": "string", "format": "uuid"},
+        "version_id": {"type": "string", "format": "uuid"},
+        "evidence_kind": {
+          "enum": [
+            "canonical_chunk",
+            "ocr_occurrence",
+            "ocr_region",
+            "vision_derivation",
+            "language_derivation",
+            "representation_derivation"
+          ]
+        },
+        "evidence_id": {"type": "string", "minLength": 1, "maxLength": 512},
+        "source_content_hash": {"$ref": "#/$defs/sha256"},
+        "chunk_id": {"$ref": "#/$defs/nullableNonEmptyString"},
+        "occurrence_id": {"$ref": "#/$defs/nullableUuid"},
+        "derivation_id": {"$ref": "#/$defs/nullableUuid"},
+        "source_generation_id": {"$ref": "#/$defs/nullableUuid"},
+        "parent_evidence_reference_digest": {
+          "oneOf": [
+            {"$ref": "#/$defs/sha256"},
+            {"type": "null"}
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"evidence_kind": {"const": "canonical_chunk"}}, "required": ["evidence_kind"]},
+          "then": {
+            "properties": {
+              "chunk_id": {"type": "string", "minLength": 1},
+              "occurrence_id": {"type": "null"},
+              "derivation_id": {"type": "null"},
+              "source_generation_id": {"type": "null"},
+              "parent_evidence_reference_digest": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"evidence_kind": {"enum": ["ocr_occurrence", "ocr_region", "vision_derivation"]}}, "required": ["evidence_kind"]},
+          "then": {
+            "properties": {
+              "chunk_id": {"type": "null"},
+              "occurrence_id": {"type": "string", "format": "uuid"},
+              "derivation_id": {"type": "string", "format": "uuid"},
+              "source_generation_id": {"type": "string", "format": "uuid"},
+              "parent_evidence_reference_digest": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"evidence_kind": {"const": "language_derivation"}}, "required": ["evidence_kind"]},
+          "then": {
+            "properties": {
+              "chunk_id": {"type": "null"},
+              "derivation_id": {"type": "string", "format": "uuid"},
+              "source_generation_id": {"type": "string", "format": "uuid"},
+              "parent_evidence_reference_digest": {
+                "oneOf": [
+                  {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                  {"type": "null"}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"evidence_kind": {"const": "representation_derivation"}}, "required": ["evidence_kind"]},
+          "then": {
+            "properties": {
+              "chunk_id": {"type": "null"},
+              "derivation_id": {"type": "string", "format": "uuid"},
+              "source_generation_id": {"type": "string", "format": "uuid"},
+              "parent_evidence_reference_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "evidence_kind": {"const": "language_derivation"},
+              "lineage_origin": {"const": "native_v3"}
+            },
+            "required": ["evidence_kind", "lineage_origin"]
+          },
+          "then": {
+            "properties": {
+              "parent_evidence_reference_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            }
+          }
+        }
+      ]
+    }
+  },
+  "x-mnemo-v2-upgrade": {
+    "canonical_python_type": "mnemo.models.multilingual.LanguageEvidenceReferenceV2",
+    "rule": "Copy every V2 identity field exactly, set schema_version to mnemo.language-evidence-reference/3, lineage_origin to legacy_v2_upgrade, map kind without reinterpretation, and set parent_evidence_reference_digest to null. Native V3 producers set lineage_origin=native_v3 and supply a parent digest for every derived-language/representation reference. V2 OCR_REGION remains ocr_region. No V3-only kind may be downcast to V2.",
+    "identity_digest": "SHA-256 of RFC 8785-style canonical UTF-8 JSON for all required V3 fields in schema order-independent key order; UUID strings lowercase canonical; nulls retained."
+  },
+  "x-mnemo-security-invariants": [
+    "The reference contains no filesystem path, storage URI, credential or source text.",
+    "Notebook, source, document and version identities are mandatory for every kind.",
+    "Canonical chunks never use occurrence, derivation, generation or parent sentinel identities.",
+    "Asset-derived evidence retains the real occurrence, derivation and source generation.",
+    "New language and representation derivations retain their parent reference digest and source generation; a null parent digest is accepted only when losslessly upgrading a legacy V2 language-derivation reference and MUST NOT be emitted by a V3 producer.",
+    "Authorization is evaluated against the full server-owned scope; possessing a reference grants no access."
+  ]
+}

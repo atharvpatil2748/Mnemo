@@ -1,6 +1,7 @@
 from .csv_parser import CSVParser
 from .docx import DOCXParser
 from .html import HTMLParser
+from .image import StandaloneImageParser
 from .json_parser import JSONParser
 from .markdown import MarkdownParser
 from .pdf import PDFParser
@@ -19,5 +20,6 @@ __all__ = [
     "PPTXParser",
     "ParserRouter",
     "PlainTextParser",
+    "StandaloneImageParser",
     "XLSXParser",
 ]

@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": "2.0",
+  "generated": "2026-09-03",
+  "phase": "Phase 8.6 — Format-Diverse Multilingual Evaluation Corpus",
+  "description": "Language × Format Coverage Matrix mapping verified candidates, possible sources, and gaps across Mnemo natively supported parser families.",
+  "status_legend": {
+    "ADMITTED": "Already represented in frozen Phase 8.5 Golden Corpus",
+    "VERIFIED_CANDIDATE": "Specific public source with confirmed document-level artifact, known URL, and verifiable Devanagari text",
+    "POSSIBLE": "Candidate domain or portal identified, but direct file URL or exact format variant requires confirmation",
+    "NOT_FOUND": "Exhaustive discovery round found zero authoritative, non-scraped public documents in this format",
+    "NOT_APPLICABLE": "Format does not extract textual semantic content natively (e.g. standalone image without external OCR)"
+  },
+  "matrix_summary": {
+    "English": {
+      "PDF": "ADMITTED",
+      "DOCX": "ADMITTED",
+      "PPTX": "ADMITTED",
+      "XLSX_CSV": "ADMITTED",
+      "TXT_MD": "ADMITTED",
+      "Image": "ADMITTED"
+    },
+    "Hindi": {
+      "PDF": "VERIFIED_CANDIDATE",
+      "DOCX": "POSSIBLE",
+      "PPTX": "POSSIBLE",
+      "XLSX_CSV": "POSSIBLE",
+      "TXT_MD": "POSSIBLE",
+      "Image": "NOT_APPLICABLE"
+    },
+    "Marathi": {
+      "PDF": "VERIFIED_CANDIDATE",
+      "DOCX": "NOT_FOUND",
+      "PPTX": "NOT_FOUND",
+      "XLSX_CSV": "POSSIBLE",
+      "TXT_MD": "NOT_FOUND",
+      "Image": "NOT_APPLICABLE"
+    }
+  },
+  "detailed_language_coverage": [
+    {
+      "language": "English",
+      "iso_639_1": "en",
+      "script": "Latin",
+      "formats": {
+        "PDF": {
+          "status": "ADMITTED",
+          "phase_8_5_count": 12,
+          "notes": "Abundant coverage across technical, resume, academic, and philosophical texts in Golden Corpus."
+        },
+        "DOCX": {
+          "status": "ADMITTED",
+          "phase_8_5_count": 1,
+          "notes": "Laboratory report (`ME333 - Exp2-LabReport_To_Submit.docx`)."
+        },
+        "PPTX": {
+          "status": "ADMITTED",
+          "phase_8_5_count": 2,
+          "notes": "Academic slide decks (`Coordinator Application 2026–27.pptx`, `ME361_L1_...pptx`)."
+        },
+        "XLSX_CSV": {
+          "status": "ADMITTED",
+          "phase_8_5_count": 6,
+          "notes": "5 Excel workbooks (`ME381 Lab...xlsx`, `Health Check Up...xlsx`) + 1 CSV (`Y24_CPI.csv`)."
+        },
+        "TXT_MD": {
+          "status": "ADMITTED",
+          "phase_8_5_count": 2,
+          "notes": "1 Markdown research file + 1 plain text file."
+        },
+        "Image": {
+          "status": "ADMITTED",
+          "phase_8_5_count": 8,
+          "notes": "8 JPEG personal photos in Golden Corpus."
+        }
+      }
+    },
+    {
+      "language": "Hindi",
+      "iso_639_1": "hi",
+      "script": "Devanagari",
+      "formats": {
+        "PDF": {
+          "status": "VERIFIED_CANDIDATE",
+          "candidates": [
+            {
+              "id": "CAND-FD-HI-PDF-01",
+              "title": "Ministry of Education Annual Report 2023-24 (Hindi)",
+              "publisher": "Ministry of Education, Government of India",
+              "source_page": "https://www.education.gov.in/annual-reports",
+              "suitability": "High — official government report with continuous prose, tables, and statistics.",
+              "governance_classification": "APPROVED_FOR_HUMAN_ACQUISITION_REVIEW"
+            },
+            {
+              "id": "CAND-FD-HI-PDF-03",
+              "title": "National Education Policy 2020 (Hindi Authoritative Text)",
+              "publisher": "Ministry of Education, Government of India",
+              "source_page": "https://www.education.gov.in",
+              "suitability": "High — structured policy document with rich Devanagari terminology.",
+              "governance_classification": "APPROVED_FOR_HUMAN_ACQUISITION_REVIEW"
+            },
+            {
+              "id": "CAND-FD-HI-PDF-02",
+              "title": "NCERT Kshitij Bhag-2 (Class 10 Hindi Literature)",
+              "publisher": "NCERT, Government of India",
+              "source_page": "https://ncert.nic.in/textbook.php",
+              "suitability": "High semantic value, but high license restriction (electronic redistribution prohibited).",
+              "governance_classification": "REVIEW_REQUIRED"
+            }
+          ]
+        },
+        "DOCX": {
+          "status": "POSSIBLE",
+          "candidates": [
+            {
+              "id": "CAND-FD-HI-DOCX-01",
+              "title": "INFLIBNET e-PG Pathshala Postgraduate Course Modules",
+              "publisher": "INFLIBNET Centre / UGC",
+              "source_page": "https://epgp.inflibnet.ac.in",
+              "suitability": "Requires confirmation of unauthenticated DOCX download availability.",
+              "governance_classification": "REVIEW_REQUIRED"
+            }
+          ]
+        },
+        "PPTX": {
+          "status": "POSSIBLE",
+          "candidates": [
+            {
+              "id": "CAND-FD-HI-PPTX-01",
+              "title": "NCERT Teacher Training Workshop Presentation Slides",
+              "publisher": "NCERT",
+              "source_page": "NCERT portals",
+              "suitability": "Slide-level Devanagari headings; requires verified direct binary URL.",
+              "governance_classification": "REVIEW_REQUIRED"
+            }
+          ]
+        },
+        "XLSX_CSV": {
+          "status": "POSSIBLE",
+          "candidates": [
+            {
+              "id": "CAND-FD-HI-XLSX-01",
+              "title": "data.gov.in Census and Demographic Statistics with Bilingual Headers",
+              "publisher": "Government of India Open Data Portal",
+              "source_page": "https://data.gov.in",
+              "suitability": "Tabular data; semantic narrative density is low.",
+              "governance_classification": "REVIEW_REQUIRED"
+            }
+          ]
+        },
+        "TXT_MD": {
+          "status": "POSSIBLE",
+          "notes": "Prior TXT-only archives (Politics.zip, Science & Technology.zip) were deleted under Part A. Plain text may be considered only as supplementary after format-diverse baseline is established."
+        },
+        "Image": {
+          "status": "NOT_APPLICABLE",
+          "notes": "StandaloneImageParser does not extract text. Text extraction requires external OCR provider, which is not unconditionally supported."
+        }
+      }
+    },
+    {
+      "language": "Marathi",
+      "iso_639_1": "mr",
+      "script": "Devanagari",
+      "formats": {
+        "PDF": {
+          "status": "VERIFIED_CANDIDATE",
+          "candidates": [
+            {
+              "id": "CAND-FD-MR-PDF-01",
+              "title": "Economic Survey of Maharashtra 2023-24 (Marathi)",
+              "publisher": "Commissionerate of Economics and Statistics, Government of Maharashtra",
+              "source_page": "https://data.opencity.in/dataset/1816ba03-3dd7-4952-b827-3bb1a64cea20",
+              "direct_url": "https://data.opencity.in/dataset/1816ba03-3dd7-4952-b827-3bb1a64cea20/resource/a24a3a1d-8ab9-4535-943e-d36b0568039d/download/dcfa97c8-e6e7-41d3-95d1-88dacb65e492.pdf",
+              "suitability": "Highest priority Marathi candidate — comprehensive official economic survey with prose and tables.",
+              "governance_classification": "APPROVED_FOR_HUMAN_ACQUISITION_REVIEW"
+            },
+            {
+              "id": "CAND-FD-MR-PDF-03",
+              "title": "Maharashtra State Budget Speech 2023-24 (Marathi)",
+              "publisher": "Finance Department, Government of Maharashtra (Mahakosh)",
+              "source_page": "https://mahakosh.gov.in",
+              "suitability": "High — authentic formal Marathi legislative text, public domain.",
+              "governance_classification": "APPROVED_FOR_HUMAN_ACQUISITION_REVIEW"
+            },
+            {
+              "id": "CAND-FD-MR-PDF-02",
+              "title": "Balbharati Marathi Literature Textbook (Kumarbharati Class 10)",
+              "publisher": "Balbharati, Government of Maharashtra",
+              "source_page": "https://books.ebalbharati.in",
+              "suitability": "High educational prose quality; license scope requires governance decision.",
+              "governance_classification": "REVIEW_REQUIRED"
+            }
+          ]
+        },
+        "DOCX": {
+          "status": "NOT_FOUND",
+          "notes": "State educational portals and government bodies in Maharashtra publish exclusively in PDF. Zero authoritative public Marathi DOCX files identified without authentication barriers."
+        },
+        "PPTX": {
+          "status": "NOT_FOUND",
+          "notes": "No verified direct-download Marathi presentations identified from public government or educational repositories."
+        },
+        "XLSX_CSV": {
+          "status": "POSSIBLE",
+          "candidates": [
+            {
+              "id": "CAND-FD-MR-XLSX-01",
+              "title": "Maharashtra Directorate of Economics and Statistics Tabular Abstract",
+              "publisher": "Government of Maharashtra",
+              "source_page": "https://mahades.maharashtra.gov.in",
+              "suitability": "Low semantic value; tables are predominantly numeric.",
+              "governance_classification": "REVIEW_REQUIRED"
+            }
+          ]
+        },
+        "TXT_MD": {
+          "status": "NOT_FOUND",
+          "notes": "Partial MNATD.zip was deleted under Part A. No other legitimate continuous Marathi plain-text dataset is currently under evaluation."
+        },
+        "Image": {
+          "status": "NOT_APPLICABLE",
+          "notes": "StandaloneImageParser does not extract text. Text extraction requires external OCR provider."
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://mnemo.local/governance/proposals/full-multilingual-v2/FAILURE_TAXONOMY.proposed.json",
+  "title":"PROPOSED — Mnemo multilingual diagnostic failure taxonomy v2",
+  "type":"object","additionalProperties":false,
+  "required":["schema_version","failure_code","stage","evidence_refs","preceding_stage_status","recoverable"],
+  "properties":{
+    "schema_version":{"const":"2.0-proposed"},
+    "failure_code":{"enum":["CORPUS_ABSENT","CORPUS_PRESENT_UNDETECTED","CORPUS_PRESENT_WRONG_LANGUAGE","SCRIPT_UNRESOLVED","REPRESENTATION_UNRESOLVED","REPRESENTATION_PRESENT_WRONG_TYPE","TRANSFORMATION_UNAVAILABLE","TRANSFORMATION_FAILED","PROVIDER_UNAVAILABLE","PROVIDER_IDENTITY_MISMATCH","EMBEDDING_UNAVAILABLE","EMBEDDING_FAILED","GENERATION_MISSING","GENERATION_INCOMPLETE","GENERATION_STALE","INDEX_MISSING","VECTOR_SPACE_MISMATCH","DENSE_RETRIEVAL_FAILED","SPARSE_RETRIEVAL_FAILED","FUSION_FAILED","RERANKER_INPUT_INVALID","RERANKER_FAILED","AUTHORIZATION_FILTERED","PROVENANCE_INVALID","TRANSPORT_FAILED","CAPABILITY_ADVERTISEMENT_INCONSISTENT","QUERY_UNGROUNDED","QREL_INVALID","EVALUATION_HARNESS_ERROR","METRIC_COMPUTATION_ERROR","PRINCIPAL_MISSING","OPERATION_UNAUTHORIZED","RETRIEVAL_SCOPE_UNAUTHORIZED","POSITIONAL_SCOPE_UNAUTHORIZED","ACTIVE_V2_ALIAS_MISSING","ACTIVE_V2_GENERATION_MISMATCH","PROFILE_MISMATCH","AUTHORIZATION_DECISION_STALE","REPRESENTATION_LINEAGE_MISSING","EVIDENCE_OUTSIDE_AUTHORIZED_SCOPE","SEMANTIC_EVIDENCE_MISSING","SEMANTIC_EVIDENCE_BLANK","TITLE_ONLY_EVIDENCE","V1_EVIDENCE_IN_V2_PATH"]},
+    "stage":{"$ref":"#/$defs/stageName"},
+    "case_id":{"type":["string","null"],"minLength":1},
+    "message":{"type":["string","null"],"maxLength":2048,"description":"Sanitized diagnostic only; no source text, secret, filesystem path, storage URI or unauthorized identifier."},
+    "evidence_refs":{"type":"array","items":{"$ref":"#/$defs/evidenceRef"},"uniqueItems":true},
+    "preceding_stage_status":{"type":"array","items":{"$ref":"#/$defs/stageStatus"}},
+    "recoverable":{"type":"boolean"}
+  },
+  "$defs":{
+    "sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "stageName":{"enum":["corpus","language_detection","script_detection","representation_detection","transformation","provider","embedding","generation","active_alias","index","dense_retrieval","sparse_retrieval","fusion","candidate_build","reranking","authorization","provenance","transport","capability","query_design","qrels","transport_harness","metrics"]},
+    "evidenceRef":{"type":"object","additionalProperties":false,"required":["kind","public_id","digest"],"properties":{"kind":{"enum":["corpus_census","evidence_census","language_observation","script_observation","representation_observation","transformation","provider_probe","generation","active_alias","authorization_request","authorization_decision","evidence_resolution","runtime_binding","ranking","provenance_validation","transport_contract","qrel","metric"]},"public_id":{"type":"string","minLength":1,"maxLength":512},"digest":{"$ref":"#/$defs/sha256"}}},
+    "stageStatus":{"type":"object","additionalProperties":false,"required":["stage","status","evidence_digest"],"properties":{"stage":{"$ref":"#/$defs/stageName"},"status":{"enum":["not_run","passed","failed","filtered","unavailable"]},"evidence_digest":{"oneOf":[{"$ref":"#/$defs/sha256"},{"type":"null"}]}}}
+  },
+  "x-mnemo-classification-rules":{
+    "CORPUS_ABSENT":"Permitted only when immutable source-census and authorized evidence-census predicates both prove absence; never inferred from an empty ranking.",
+    "CORPUS_PRESENT_UNDETECTED":"Requires positive corpus/evidence presence and no qualifying observation.",
+    "CORPUS_PRESENT_WRONG_LANGUAGE":"Requires authoritative metadata or adjudicated evidence contradicting the observation.",
+    "RERANKER_INPUT_INVALID":"Includes blank semantic text, title-only substitution, caller-invented text, missing lineage, incompatible representation or preprocessing mismatch.",
+    "AUTHORIZATION_FILTERED":"A security result, never evidence that corpus or language is absent.",
+    "QUERY_UNGROUNDED":"Routing/behavioral use only; excluded from semantic quality metrics.",
+    "QREL_INVALID":"Evaluation defect; never reclassified as retrieval or language failure.",
+    "CAPABILITY_ADVERTISEMENT_INCONSISTENT":"Advertised state disagrees with the Phase85RuntimeV1-derived readiness record.",
+    "PRINCIPAL_MISSING":"No server-derived authenticated PrincipalContextV1 exists; enumeration is forbidden.",
+    "OPERATION_UNAUTHORIZED":"CentralAuthorizationServiceV1 denied the requested operation.",
+    "RETRIEVAL_SCOPE_UNAUTHORIZED":"The requested RetrievalScopeV2 exceeds the bounded decision.",
+    "POSITIONAL_SCOPE_UNAUTHORIZED":"The requested PositionalScopeV2 exceeds the bounded decision.",
+    "ACTIVE_V2_ALIAS_MISSING":"No governed active V2 alias set was resolved.",
+    "ACTIVE_V2_GENERATION_MISMATCH":"Resolved V2 generations differ from the active alias or are not complete and ready.",
+    "PROFILE_MISMATCH":"A profile, database, build run, or provider identity conflicts with the active governed binding.",
+    "AUTHORIZATION_DECISION_STALE":"A current authoritative binding differs from the decision binding; enumeration is forbidden.",
+    "REPRESENTATION_LINEAGE_MISSING":"Derived evidence lacks required governed representation or transformation lineage.",
+    "EVIDENCE_OUTSIDE_AUTHORIZED_SCOPE":"A reference is outside the bounded authorized retrieval or positional scope.",
+    "SEMANTIC_EVIDENCE_MISSING":"The authorized evidence resolver found no semantic evidence.",
+    "SEMANTIC_EVIDENCE_BLANK":"The authorized evidence resolver found only blank semantic evidence.",
+    "TITLE_ONLY_EVIDENCE":"Title metadata was presented as semantic evidence; candidate construction is forbidden.",
+    "V1_EVIDENCE_IN_V2_PATH":"V1 evidence was supplied to an active V2-only runtime path; cross-space fallback is forbidden."
+  }
+}

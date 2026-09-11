@@ -1,0 +1,35 @@
+{
+  "artifact_digest": "0d78e3ab3282c64533a1312004bb9d590100dc31d2920e8fbc764451a456613c",
+  "buildability_effect": "non_blocking_under_governed_limited_coverage",
+  "coverage_decision": "exclude_only_legacy_canonical_items_from_transformation_dependent_generations",
+  "decision": "AUTHORITATIVE_SOURCE_ESTABLISHED_RUNTIME_PROFILE_UNRESOLVED_GOVERNED_EXCLUSION",
+  "dispatch_policy": "representation_observation_only",
+  "excluded_item_count": 502,
+  "excluded_item_identity_digest": "a0e7164466c28d840b8b389879d3b68d370c2c076786ab5a615ca3a3befb2c7c",
+  "failure_policy": "fail_closed_no_output_no_canonical_mutation",
+  "forbidden_dispatch": [
+    "filename",
+    "path",
+    "document_id",
+    "language",
+    "script"
+  ],
+  "license": {
+    "sha256": "81ddafdcf848ba603d85377b73da9f36770fb5b26d9413b0e970a99bc8a076d0",
+    "spdx": "MIT"
+  },
+  "mapping_source": {
+    "commit": "2a39449d20420fe7259f9ce5231c347432840075",
+    "mapping_version": "1.3",
+    "path": "scripts/Deva/legacy/kruti-dev-011/mappings/KrutiDev011.map",
+    "registration_authority": "SIL International",
+    "repository": "https://github.com/silnrsi/wsresources",
+    "sha256": "3ff5befa3b026d6931e0f71f6ddff6d2a388a437755e7f09adff9791e873871c"
+  },
+  "observed_source_content_hash": "759f2adbfd2fc1191ff8576401d1cbc34bbfefaf79a573e8747c53d4c858af75",
+  "ready_effect": "must_report_representation_limitation_and_cannot_claim_legacy_semantic_coverage",
+  "reason": "source is a conditional TECkit 010/011 map; Mnemo has no governed TECkit compiler/runtime, compiled 010 artifact, or adjudicated fixtures",
+  "representation_type": "legacy_font_encoded_text",
+  "runtime_profile_status": "UNRESOLVED",
+  "schema_version": "mnemo.v2-legacy-transformation-decision/2"
+}

@@ -445,11 +445,11 @@ async def test_mcp_golden_corpus_negative_boundaries() -> None:
 
 @pytest.mark.anyio
 async def test_mcp_golden_corpus_security_isolation() -> None:
-    """Verify that only 6 read-only knowledge tools are discoverable and no mutations exist."""
+    """Verify fourteen read-only tools are discoverable and no mutations exist."""
     async with open_golden_engine() as golden_engine:
         tools = get_mcp_tools()
         tool_names = [t.name for t in tools]
-        assert len(tool_names) == 6
+        assert len(tool_names) == 14
         assert set(tool_names) == {
             "query_notebook",
             "search_all_notebooks",
@@ -457,6 +457,14 @@ async def test_mcp_golden_corpus_security_isolation() -> None:
             "get_notebook_summary",
             "get_source_insights",
             "get_timeline",
+            "get_document",
+            "get_document_chunk",
+            "get_asset",
+            "get_image_analysis",
+            "search_evidence",
+            "query_structured",
+            "run_final_qa_v2",
+            "get_capabilities",
         }
 
         # Verify no mutation or execution tools exist

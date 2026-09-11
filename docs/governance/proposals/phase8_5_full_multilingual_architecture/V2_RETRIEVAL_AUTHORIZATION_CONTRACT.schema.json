@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/governance/v2-retrieval-authorization-contract/1/schema",
+  "title": "V2 Retrieval Authorization Contract",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/decision" }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "uuid": { "type": "string", "format": "uuid" },
+    "scope": {
+      "type": "object",
+      "required": ["notebook_id"],
+      "properties": {
+        "notebook_id": { "$ref": "#/$defs/uuid" },
+        "source_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" }, "uniqueItems": true },
+        "document_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" }, "uniqueItems": true },
+        "version_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "position": {
+      "type": "object",
+      "properties": {
+        "page_start": { "type": "integer", "minimum": 1 },
+        "page_end": { "type": "integer", "minimum": 1 },
+        "section_indexes": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "uniqueItems": true },
+        "heading_prefix": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "binding": {
+      "type": "object",
+      "required": ["active_alias_set_identity", "active_generation_identities", "profile_fingerprint", "vector_space_identity", "database_identity", "build_run_identity", "admission_policy_identity"],
+      "properties": {
+        "active_alias_set_identity": { "$ref": "#/$defs/sha256" },
+        "active_generation_identities": { "type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": { "$ref": "#/$defs/uuid" } },
+        "profile_fingerprint": { "$ref": "#/$defs/sha256" },
+        "vector_space_identity": { "$ref": "#/$defs/sha256" },
+        "database_identity": { "$ref": "#/$defs/sha256" },
+        "build_run_identity": { "$ref": "#/$defs/uuid" },
+        "admission_policy_identity": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "required": ["record_type", "contract_version", "request_id", "authenticated_principal", "operation", "requested_retrieval_scope", "requested_positional_scope", "binding", "request_fingerprint"],
+      "properties": {
+        "record_type": { "const": "V2RetrievalAuthorizationRequestV1" },
+        "contract_version": { "const": "mnemo.v2-retrieval-authorization-request/1" },
+        "request_id": { "$ref": "#/$defs/uuid" },
+        "authenticated_principal": {
+          "type": "object",
+          "required": ["actor_id", "authenticated", "principal_derivation_identity"],
+          "properties": {
+            "actor_id": { "$ref": "#/$defs/uuid" },
+            "authenticated": { "const": true },
+            "principal_derivation_identity": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "operation": { "type": "string", "minLength": 1 },
+        "requested_retrieval_scope": { "$ref": "#/$defs/scope" },
+        "requested_positional_scope": { "$ref": "#/$defs/position" },
+        "binding": { "$ref": "#/$defs/binding" },
+        "request_fingerprint": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "decision": {
+      "type": "object",
+      "required": ["record_type", "contract_version", "decision_id", "request_fingerprint", "allow", "authorization_policy_identity", "authorization_policy_revision", "issued_at", "decision_fingerprint"],
+      "properties": {
+        "record_type": { "const": "V2RetrievalAuthorizationDecisionV1" },
+        "contract_version": { "const": "mnemo.v2-retrieval-authorization-decision/1" },
+        "decision_id": { "$ref": "#/$defs/uuid" },
+        "request_fingerprint": { "$ref": "#/$defs/sha256" },
+        "allow": { "type": "boolean" },
+        "denial_code": { "type": "string", "minLength": 1 },
+        "authorized_operation": { "type": "string", "minLength": 1 },
+        "authorized_retrieval_scope": { "$ref": "#/$defs/scope" },
+        "authorized_positional_scope": { "$ref": "#/$defs/position" },
+        "binding": { "$ref": "#/$defs/binding" },
+        "authorization_policy_identity": { "type": "string", "minLength": 1 },
+        "authorization_policy_revision": { "type": "string", "minLength": 1 },
+        "required_provenance_evidence": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "issued_at": { "type": "string", "format": "date-time" },
+        "decision_fingerprint": { "$ref": "#/$defs/sha256" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "allow": { "const": true } } },
+          "then": { "required": ["authorized_operation", "authorized_retrieval_scope", "authorized_positional_scope", "binding", "required_provenance_evidence"] },
+          "else": { "required": ["denial_code"] }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

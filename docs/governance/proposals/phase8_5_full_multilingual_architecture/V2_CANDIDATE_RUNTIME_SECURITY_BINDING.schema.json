@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/governance/v2-candidate-runtime-security-binding/1/schema",
+  "title": "V2CandidateRuntimeSecurityBindingV1",
+  "type": "object",
+  "required": ["schema_version", "authorization_decision_fingerprint", "active_alias_set_identity", "generation_ids", "profile_identity", "profile_fingerprint", "model_identity", "vector_space_identity", "database_identity", "build_run_identity", "identity_digest"],
+  "properties": {
+    "schema_version": {"const": "mnemo.v2-candidate-runtime-security/1"},
+    "authorization_decision_fingerprint": {"$ref": "#/$defs/sha256"},
+    "active_alias_set_identity": {"$ref": "#/$defs/sha256"},
+    "generation_ids": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": {"type": "string", "format": "uuid"}},
+    "profile_identity": {"type": "string", "minLength": 1},
+    "profile_fingerprint": {"$ref": "#/$defs/sha256"},
+    "model_identity": {"type": "string", "minLength": 1},
+    "vector_space_identity": {"$ref": "#/$defs/sha256"},
+    "database_identity": {"$ref": "#/$defs/sha256"},
+    "build_run_identity": {"type": "string", "format": "uuid"},
+    "identity_digest": {"$ref": "#/$defs/sha256"}
+  },
+  "additionalProperties": false,
+  "$defs": {"sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+}

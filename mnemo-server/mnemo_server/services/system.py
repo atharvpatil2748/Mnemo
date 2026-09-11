@@ -299,12 +299,12 @@ class SystemService:
             else current_server_config.cors_origins
         )
 
-        new_server_config = ServerConfig(
-            host=current_server_config.host,
-            port=current_server_config.port,
-            cors_origins=new_cors,
-            log_level=new_log_level,
-            max_upload_bytes=new_max_upload,
+        new_server_config = current_server_config.model_copy(
+            update={
+                "cors_origins": new_cors,
+                "log_level": new_log_level,
+                "max_upload_bytes": new_max_upload,
+            }
         )
 
         if request.log_level is not None:

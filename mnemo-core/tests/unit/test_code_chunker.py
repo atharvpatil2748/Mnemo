@@ -342,6 +342,19 @@ def test_duplicate_canonical_identity_input_fails_closed() -> None:
         CodeChunker().chunk(document, _context(document), WordCounter())
 
 
+def test_repeated_identical_module_comments_do_not_collide() -> None:
+    source = "// disabled\nconst first = 1;\n// disabled\nconst second = 2;"
+    document = _document(CodeBlock(ordinal=0, code=source, code_language="javascript"))
+
+    chunks = ChunkerDispatcher(_registry(CodeChunker()), WordCounter()).dispatch(
+        document, _context(document, target=15, maximum=100)
+    )
+
+    assert sum(chunk.text == "// disabled" for chunk in chunks) == 1
+    assert "const first = 1;" in {chunk.text for chunk in chunks}
+    assert "const second = 2;" in {chunk.text for chunk in chunks}
+
+
 def test_supplied_token_counter_is_used_and_dependency_failure_propagates() -> None:
     source = "def run(value):\n    return value + 1"
     document = _document(CodeBlock(ordinal=0, code=source, code_language="python"))

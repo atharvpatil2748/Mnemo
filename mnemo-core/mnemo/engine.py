@@ -13,27 +13,59 @@ from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 from types import MappingProxyType
-from typing import Literal
+from typing import Literal, cast
 
 from mnemo._version import __version__
 from mnemo.config import MnemoConfig
 from mnemo.interfaces import (
+    AdvancedCanonicalStoreV1,
+    AdvancedRetrievalInterfaceV1,
+    AssetCatalogStoreV1,
+    AssetRecordStoreV1,
     DependencyUnavailableError,
+    DocumentScopeResolverV1,
     EmbeddingCapabilities,
     EmbeddingProviderV1,
     FinalQAExecutionStoreV1,
+    FinalQAExecutionStoreV2,
     FinalQAInterfaceV1,
+    FinalQAInterfaceV2,
     LifecycleError,
     LLMCapabilities,
     LLMInterfaceV1,
     MnemoInterfaceError,
+    MultilingualAdvancedStoreV1,
+    MultimodalAdvancedStoreV1,
+    OCRStoreV1,
+    ProcessingJobStoreV1,
     RerankerCapabilities,
     RerankerInterfaceV1,
     StorageCapabilities,
     StorageInterfaceV1,
+    StructuredDatasetCatalogV1,
     TokenCounterInterfaceV1,
+    VisionStoreV1,
+    VisualQueryEmbeddingProviderV1,
 )
+from mnemo.interfaces.advanced_retrieval import AdvancedRetrievalSourceV1
+from mnemo.models.advanced_retrieval import EvidenceRepresentation
+from mnemo.models.retrieval import ScoredChunk
+from mnemo.phase85 import (
+    Phase85ProviderRegistration,
+    Phase85Runtime,
+    Phase85ServiceRegistration,
+)
+from mnemo.phase85.language_capabilities import LanguageCapabilityRecordV3
+from mnemo.phase85.v2_readiness import V2ReadinessSnapshot
 from mnemo.registry import PluginInterfaceV1, PluginLoadResult, PluginRegistry
+from mnemo.retrieval import (
+    DeterministicComparisonServiceV1,
+    PartitionedRetrievalServiceV1,
+    RetrievalCursorCodec,
+    StorageDocumentScopeResolverV1,
+    StorageSourceAssociationReaderV1,
+    StructuredDatasetRuntimeService,
+)
 
 _LOGGER = logging.getLogger(__name__)
 _PRIMARY_SLOT = "primary"
@@ -74,6 +106,53 @@ class EngineInitializationError(KnowledgeEngineError, DependencyUnavailableError
     code = "engine.initialization"
 
 
+class _V2OwnedOuterPassThroughReranker:
+    """Satisfy the legacy core slot without loading a second production reranker."""
+
+    def capabilities(self) -> RerankerCapabilities:
+        return RerankerCapabilities(
+            supports_cross_encoder=False,
+            supports_batch=False,
+            preserves_raw_scores=True,
+        )
+
+    async def rerank(
+        self,
+        query: str,
+        candidates: tuple[ScoredChunk, ...],
+        top_k: int,
+    ) -> tuple[ScoredChunk, ...]:
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("query must be a non-empty string")
+        if not isinstance(candidates, tuple) or any(
+            not isinstance(candidate, ScoredChunk) for candidate in candidates
+        ):
+            raise TypeError("candidates must be a tuple of ScoredChunk")
+        if isinstance(top_k, bool) or not isinstance(top_k, int):
+            raise TypeError("top_k must be an integer")
+        if top_k < 1:
+            raise ValueError("top_k must be positive")
+        return candidates[:top_k]
+
+
+class _V2OwnedOuterPassThroughRerankerPlugin:
+    """Register the inert outer slot used by the certified V2-owned reranker path."""
+
+    name = "mnemo-v2-owned-outer-pass-through-reranker"
+    version = __version__
+    core_version_range = ">=0.0.0"
+
+    def capabilities(self) -> tuple[str, ...]:
+        return ("reranker",)
+
+    def register(self, registry: PluginRegistry) -> None:
+        registry.register_reranker(
+            _PRIMARY_SLOT,
+            _V2OwnedOuterPassThroughReranker(),
+            priority=0,
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class _ResolvedProviders:
     storage: StorageInterfaceV1
@@ -92,12 +171,17 @@ class FinalQAComponents:
 
     token_counter: TokenCounterInterfaceV1
     clock: Callable[[], datetime]
+    operational_store_v2: FinalQAExecutionStoreV2 | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.token_counter, TokenCounterInterfaceV1):
             raise TypeError("token_counter must implement TokenCounterInterfaceV1")
         if not callable(self.clock):
             raise TypeError("clock must be callable")
+        if self.operational_store_v2 is not None and not isinstance(
+            self.operational_store_v2, FinalQAExecutionStoreV2
+        ):
+            raise TypeError("operational_store_v2 must implement FinalQAExecutionStoreV2")
 
 
 class KnowledgeEngine:
@@ -108,6 +192,15 @@ class KnowledgeEngine:
         config: MnemoConfig,
         *,
         final_qa_components: FinalQAComponents | None = None,
+        phase85_provider_registrations: tuple[Phase85ProviderRegistration, ...] = (),
+        phase85_service_registrations: tuple[Phase85ServiceRegistration, ...] = (),
+        advanced_retrieval_cursor_codec: RetrievalCursorCodec | None = None,
+        visual_query_embedding_provider: VisualQueryEmbeddingProviderV1 | None = None,
+        multilingual_advanced_source: object | None = None,
+        full_multilingual_v2_source: object | None = None,
+        full_multilingual_v2_readiness: V2ReadinessSnapshot | None = None,
+        language_capability_records: tuple[LanguageCapabilityRecordV3, ...] = (),
+        final_qa_v2: FinalQAInterfaceV2 | None = None,
     ) -> None:
         """Create an uninitialized runtime without performing discovery or I/O."""
         if not isinstance(config, MnemoConfig):
@@ -118,7 +211,23 @@ class KnowledgeEngine:
             raise TypeError("final_qa_components must be FinalQAComponents or None")
         self._config = config
         self._final_qa_components = final_qa_components
+        self._phase85_provider_registrations = phase85_provider_registrations
+        self._phase85_service_registrations = phase85_service_registrations
+        self._advanced_retrieval_cursor_codec = advanced_retrieval_cursor_codec
+        self._visual_query_embedding_provider = visual_query_embedding_provider
+        self._multilingual_advanced_source = multilingual_advanced_source
+        self._full_multilingual_v2_source = full_multilingual_v2_source
+        self._full_multilingual_v2_readiness = full_multilingual_v2_readiness
+        self._language_capability_records = language_capability_records
+        if final_qa_v2 is not None and not isinstance(final_qa_v2, FinalQAInterfaceV2):
+            raise TypeError("final_qa_v2 must implement FinalQAInterfaceV2")
+        self._final_qa_v2 = final_qa_v2
         self._final_qa: FinalQAInterfaceV1 | None = None
+        self._phase85: Phase85Runtime | None = None
+        self._advanced_retrieval: AdvancedRetrievalInterfaceV1 | None = None
+        self._partitioned_retrieval: PartitionedRetrievalServiceV1 | None = None
+        self._comparison: DeterministicComparisonServiceV1 | None = None
+        self._structured_retrieval: StructuredDatasetRuntimeService | None = None
         self._registry = self._new_registry()
         self._state = EngineState.UNINITIALIZED
         self._providers: _ResolvedProviders | None = None
@@ -134,6 +243,34 @@ class KnowledgeEngine:
         """Return the current registry owned by this engine."""
         return self._registry
 
+    async def install_exposed_full_multilingual_v2(
+        self,
+        *,
+        source: object,
+        readiness: V2ReadinessSnapshot,
+    ) -> None:
+        """Install the server-composed V2 source after all exposure gates pass.
+
+        The server owns principal resolution and production registration, while
+        core owns the shared retrieval graph.  Installation is deliberately
+        impossible before READY and rejects activation-only readiness evidence.
+        """
+        async with self._lifecycle_lock:
+            providers = self._require_ready()
+            if not readiness.v2_exposed:
+                raise EngineInitializationError(
+                    "Full Multilingual V2 installation requires EXPOSED readiness"
+                )
+            if not isinstance(source, AdvancedRetrievalSourceV1):
+                raise EngineInitializationError(
+                    "Full Multilingual V2 source does not implement shared retrieval"
+                )
+            if source.representation is not EvidenceRepresentation.MULTILINGUAL_TEXT:
+                raise EngineInitializationError("Full Multilingual V2 owns wrong representation")
+            self._full_multilingual_v2_source = source
+            self._full_multilingual_v2_readiness = readiness
+            self._advanced_retrieval = await self._compose_advanced_retrieval(providers)
+
     @property
     def state(self) -> EngineState:
         """Return the current lifecycle state."""
@@ -148,6 +285,46 @@ class KnowledgeEngine:
     def storage(self) -> StorageInterfaceV1:
         """Return the resolved primary storage façade while ready."""
         return self._require_ready().storage
+
+    @property
+    def asset_catalog(self) -> AssetCatalogStoreV1:
+        """Return the additive Phase 8.5 asset catalog capability."""
+        storage = self._require_ready().storage
+        if not isinstance(storage, AssetCatalogStoreV1):
+            raise DependencyUnavailableError("storage does not provide the asset catalog")
+        return storage
+
+    @property
+    def asset_records(self) -> AssetRecordStoreV1:
+        """Return safe asset metadata lookup without exposing physical paths."""
+        storage = self._require_ready().storage
+        if not isinstance(storage, AssetRecordStoreV1):
+            raise DependencyUnavailableError("storage does not provide asset metadata lookup")
+        return storage
+
+    @property
+    def processing_jobs(self) -> ProcessingJobStoreV1:
+        """Return the additive durable processing capability while ready."""
+        storage = self._require_ready().storage
+        if not isinstance(storage, ProcessingJobStoreV1):
+            raise DependencyUnavailableError("storage does not provide durable processing jobs")
+        return storage
+
+    @property
+    def ocr_store(self) -> OCRStoreV1:
+        """Return the additive derived OCR projection capability while ready."""
+        storage = self._require_ready().storage
+        if not isinstance(storage, OCRStoreV1):
+            raise DependencyUnavailableError("storage does not provide OCR derivations")
+        return storage
+
+    @property
+    def vision_store(self) -> VisionStoreV1:
+        """Return additive vision and visual-vector derivation persistence."""
+        storage = self._require_ready().storage
+        if not isinstance(storage, VisionStoreV1):
+            raise DependencyUnavailableError("storage does not provide vision derivations")
+        return storage
 
     @property
     def embedding_provider(self) -> EmbeddingProviderV1:
@@ -166,6 +343,77 @@ class KnowledgeEngine:
         if self._final_qa is None:
             raise DependencyUnavailableError("final QA components were not supplied")
         return self._final_qa
+
+    @property
+    def final_qa_v2(self) -> FinalQAInterfaceV2:
+        """Return the explicitly composed Final-QA V2 application interface."""
+        self._require_ready()
+        if self._final_qa_v2 is None:
+            raise DependencyUnavailableError("Final-QA V2 is not composed")
+        return self._final_qa_v2
+
+    @property
+    def final_qa_v2_execution_store(self) -> FinalQAExecutionStoreV2:
+        """Return the mutable operational store, never an inferred corpus substitute."""
+        providers = self._require_ready()
+        components = self._final_qa_components
+        if components is not None and components.operational_store_v2 is not None:
+            return components.operational_store_v2
+        if isinstance(providers.storage, FinalQAExecutionStoreV2):
+            return providers.storage
+        raise DependencyUnavailableError("Final-QA V2 operational persistence is unavailable")
+
+    @property
+    def phase85(self) -> Phase85Runtime:
+        """Return the single additive Phase 8.5 runtime while the engine is ready."""
+        self._require_ready()
+        if self._phase85 is None:
+            raise DependencyUnavailableError("Phase 8.5 runtime is unavailable")
+        return self._phase85
+
+    @property
+    def language_capability_records(self) -> tuple[LanguageCapabilityRecordV3, ...]:
+        """Return immutable runtime-derived V2 language capability projections."""
+        self._require_ready()
+        return self._language_capability_records
+
+    @property
+    def advanced_retrieval(self) -> AdvancedRetrievalInterfaceV1:
+        """Return the composed additive ranked/exhaustive retrieval service."""
+        self._require_ready()
+        if self._advanced_retrieval is None:
+            raise DependencyUnavailableError("advanced retrieval is not configured")
+        return self._advanced_retrieval
+
+    @property
+    def partitioned_retrieval(self) -> PartitionedRetrievalServiceV1:
+        """Return deterministic multi-document retrieval while ready."""
+        self._require_ready()
+        if self._partitioned_retrieval is None:
+            raise DependencyUnavailableError("partitioned retrieval is not configured")
+        return self._partitioned_retrieval
+
+    @property
+    def comparison(self) -> DeterministicComparisonServiceV1:
+        """Return deterministic comparison primitives over typed evidence."""
+        self._require_ready()
+        if self._comparison is None:
+            raise DependencyUnavailableError("comparison primitives are not configured")
+        return self._comparison
+
+    @property
+    def structured_retrieval(self) -> StructuredDatasetRuntimeService:
+        """Return the additive exact-version structured dataset runtime."""
+        self._require_ready()
+        if self._structured_retrieval is None:
+            raise DependencyUnavailableError("structured retrieval is not configured")
+        return self._structured_retrieval
+
+    @property
+    def document_scope_resolver(self) -> DocumentScopeResolverV1:
+        """Return the additive fail-closed document scope resolver."""
+        storage = self._require_ready().storage
+        return StorageDocumentScopeResolverV1(storage, StorageSourceAssociationReaderV1(storage))
 
     def llm(self, role: _LLMRole) -> LLMInterfaceV1:
         """Return the resolved language model for one fixed role while ready."""
@@ -204,11 +452,53 @@ class KnowledgeEngine:
                 self._registry.freeze()
                 providers = self._resolve_providers()
                 final_qa = self._compose_final_qa(providers)
+                advanced_retrieval = await self._compose_advanced_retrieval(providers)
+                partitioned_retrieval = (
+                    None
+                    if advanced_retrieval is None
+                    else PartitionedRetrievalServiceV1(
+                        advanced_retrieval, self._advanced_retrieval_cursor_codec
+                    )
+                )
+                structured_retrieval = self._compose_structured_retrieval(providers)
+                comparison = (
+                    None if structured_retrieval is None else DeterministicComparisonServiceV1()
+                )
+                final_qa_v2 = self._compose_final_qa_v2(providers)
+                structured_ready = (
+                    False if structured_retrieval is None else await structured_retrieval.ready()
+                )
+                structured_generation_id = (
+                    None
+                    if not structured_ready or structured_retrieval is None
+                    else await structured_retrieval.active_generation_identity()
+                )
+                phase85 = self._compose_phase85_runtime(
+                    providers,
+                    advanced_retrieval,
+                    structured_retrieval,
+                    structured_ready,
+                    structured_generation_id,
+                )
+                await phase85.initialize()
+                if not phase85.readiness().runtime_ready:
+                    raise EngineInitializationError(
+                        "required Phase 8.5 runtime capabilities are unavailable"
+                    )
             except Exception as error:
+                if "phase85" in locals():
+                    with suppress(Exception):
+                        await phase85.shutdown()
                 with suppress(Exception):
                     await self._registry.execute_shutdown_hooks()
                 self._providers = None
                 self._final_qa = None
+                self._final_qa_v2 = None
+                self._phase85 = None
+                self._advanced_retrieval = None
+                self._partitioned_retrieval = None
+                self._comparison = None
+                self._structured_retrieval = None
                 self._registry = self._new_registry()
                 self._state = EngineState.FAILED
                 if isinstance(error, EngineInitializationError):
@@ -218,6 +508,12 @@ class KnowledgeEngine:
                 ) from error
             self._providers = providers
             self._final_qa = final_qa
+            self._final_qa_v2 = final_qa_v2
+            self._phase85 = phase85
+            self._advanced_retrieval = advanced_retrieval
+            self._partitioned_retrieval = partitioned_retrieval
+            self._comparison = comparison
+            self._structured_retrieval = structured_retrieval
             self._state = EngineState.READY
 
     async def startup(self) -> None:
@@ -237,16 +533,252 @@ class KnowledgeEngine:
             if self._state is EngineState.FAILED:
                 self._providers = None
                 self._final_qa = None
+                self._phase85 = None
+                self._advanced_retrieval = None
+                self._partitioned_retrieval = None
+                self._comparison = None
+                self._structured_retrieval = None
                 return
             if self._state in (EngineState.INITIALIZING, EngineState.STOPPING):
                 raise EngineLifecycleError(f"cannot shut down while engine is {self._state.value}")
             self._state = EngineState.STOPPING
             try:
+                if self._phase85 is not None:
+                    await self._phase85.shutdown()
                 await self._registry.execute_shutdown_hooks()
             finally:
                 self._providers = None
                 self._final_qa = None
+                self._phase85 = None
+                self._advanced_retrieval = None
+                self._partitioned_retrieval = None
+                self._comparison = None
+                self._structured_retrieval = None
                 self._state = EngineState.STOPPED
+
+    def _compose_phase85_runtime(
+        self,
+        providers: _ResolvedProviders,
+        advanced_retrieval: AdvancedRetrievalInterfaceV1 | None,
+        structured_retrieval: StructuredDatasetRuntimeService | None,
+        structured_ready: bool,
+        structured_generation_id: str | None,
+    ) -> Phase85Runtime:
+        """Compose ADR-0074 state from already-validated V1 providers and additive services."""
+        service_registrations = list(self._phase85_service_registrations)
+        if not any(item.capability_id == "capability_discovery" for item in service_registrations):
+            service_registrations.append(
+                Phase85ServiceRegistration(
+                    capability_id="capability_discovery",
+                    service=self,
+                    ready=True,
+                    activate=True,
+                    exposed=True,
+                    security_verified=True,
+                )
+            )
+        if isinstance(providers.storage, AssetCatalogStoreV1) and not any(
+            item.capability_id == "asset_discovery" for item in service_registrations
+        ):
+            service_registrations.append(
+                Phase85ServiceRegistration(
+                    capability_id="asset_discovery",
+                    service=providers.storage,
+                    ready=True,
+                    activate=True,
+                    security_verified=True,
+                )
+            )
+        if advanced_retrieval is not None and not any(
+            item.capability_id == "exhaustive_retrieval" for item in service_registrations
+        ):
+            service_registrations.append(
+                Phase85ServiceRegistration(
+                    capability_id="exhaustive_retrieval",
+                    service=advanced_retrieval,
+                    ready=True,
+                    activate=True,
+                    exposed=True,
+                    security_verified=True,
+                )
+            )
+        if (
+            advanced_retrieval is not None
+            and isinstance(providers.storage, MultimodalAdvancedStoreV1)
+            and not any(
+                item.capability_id == "multimodal_retrieval" for item in service_registrations
+            )
+        ):
+            service_registrations.append(
+                Phase85ServiceRegistration(
+                    capability_id="multimodal_retrieval",
+                    service=advanced_retrieval,
+                    ready=True,
+                    activate=True,
+                    exposed=True,
+                    security_verified=True,
+                )
+            )
+        if structured_retrieval is not None and not any(
+            item.capability_id == "structured_retrieval" for item in service_registrations
+        ):
+            service_registrations.append(
+                Phase85ServiceRegistration(
+                    capability_id="structured_retrieval",
+                    service=structured_retrieval,
+                    ready=structured_ready,
+                    activate=structured_ready,
+                    generation_id=structured_generation_id,
+                    generation_active=structured_generation_id is not None,
+                    exposed=structured_ready,
+                    security_verified=True,
+                )
+            )
+        if self._final_qa_v2 is not None and not any(
+            item.capability_id == "final_qa_v2" for item in service_registrations
+        ):
+            service_registrations.append(
+                Phase85ServiceRegistration(
+                    capability_id="final_qa_v2",
+                    service=self._final_qa_v2,
+                    ready=True,
+                    activate=True,
+                    exposed=True,
+                    security_verified=True,
+                )
+            )
+        return Phase85Runtime(
+            self._config,
+            engine_ready=True,
+            active_v1_profiles=frozenset(
+                {
+                    "v1.embedding",
+                    "v1.reranker",
+                    "llm.planner",
+                    "llm.synthesizer",
+                    "llm.extractor",
+                    "llm.classifier",
+                }
+            ),
+            core_active_capabilities=frozenset(
+                {
+                    "canonical_ingestion",
+                    "v1_retrieval",
+                    "authorization",
+                    "completeness",
+                    "cursor_continuation",
+                    "provenance",
+                    "capability_discovery",
+                    "runtime_profile_activation",
+                }
+            ),
+            provider_registrations=self._phase85_provider_registrations,
+            service_registrations=tuple(service_registrations),
+        )
+
+    async def _compose_advanced_retrieval(
+        self, providers: _ResolvedProviders
+    ) -> AdvancedRetrievalInterfaceV1 | None:
+        codec = self._advanced_retrieval_cursor_codec
+        if codec is None or not isinstance(providers.storage, AdvancedCanonicalStoreV1):
+            return None
+        sparse = self._registry.resolve_retriever("sparse")
+        if sparse is None:
+            raise EngineInitializationError("advanced retrieval requires the sparse retriever")
+        from mnemo.interfaces.advanced_retrieval import AdvancedRetrievalSourceV1
+        from mnemo.retrieval import (
+            AdvancedRetrievalService,
+            CanonicalAdvancedReranker,
+            CanonicalTextAdvancedSource,
+            ProjectedMultilingualAdvancedSource,
+            ProjectedMultimodalAdvancedSource,
+        )
+
+        sources: list[AdvancedRetrievalSourceV1] = [
+            CanonicalTextAdvancedSource(store=providers.storage, ranked_retriever=sparse)
+        ]
+        if isinstance(providers.storage, MultimodalAdvancedStoreV1):
+            for representation in (
+                EvidenceRepresentation.ASSET_METADATA,
+                EvidenceRepresentation.OCR_TEXT,
+                EvidenceRepresentation.VISION_ANALYSIS,
+            ):
+                generation = await providers.storage.active_multimodal_generation_identity(
+                    representation
+                )
+                if generation is not None:
+                    sources.append(
+                        ProjectedMultimodalAdvancedSource(
+                            store=providers.storage, representation=representation
+                        )
+                    )
+            visual_provider = self._visual_query_embedding_provider
+            if visual_provider is not None and await visual_provider.ready():
+                generation = await providers.storage.active_multimodal_generation_identity(
+                    EvidenceRepresentation.VISUAL_VECTOR,
+                    profile_id=visual_provider.profile_id,
+                )
+                if generation is not None:
+                    sources.append(
+                        ProjectedMultimodalAdvancedSource(
+                            store=providers.storage,
+                            representation=EvidenceRepresentation.VISUAL_VECTOR,
+                            visual_query_provider=visual_provider,
+                        )
+                    )
+        v2_exposed = (
+            self._full_multilingual_v2_readiness is not None
+            and self._full_multilingual_v2_readiness.v2_exposed
+        )
+        if v2_exposed:
+            multilingual_source = self._full_multilingual_v2_source
+            if not isinstance(multilingual_source, AdvancedRetrievalSourceV1):
+                raise EngineInitializationError(
+                    "exposed Full Multilingual V2 source does not implement shared retrieval"
+                )
+            if multilingual_source.representation is not EvidenceRepresentation.MULTILINGUAL_TEXT:
+                raise EngineInitializationError("Full Multilingual V2 owns wrong representation")
+            sources.append(multilingual_source)
+        elif isinstance(providers.storage, MultilingualAdvancedStoreV1) and (
+            await providers.storage.active_multilingual_generation_identity() is not None
+        ):
+            projected_multilingual = ProjectedMultilingualAdvancedSource(providers.storage)
+            if self._multilingual_advanced_source is None:
+                sources.append(projected_multilingual)
+            else:
+                multilingual_source = self._multilingual_advanced_source
+                if not isinstance(multilingual_source, AdvancedRetrievalSourceV1):
+                    raise EngineInitializationError(
+                        "multilingual advanced source does not implement the shared contract"
+                    )
+                if (
+                    multilingual_source.representation
+                    is not EvidenceRepresentation.MULTILINGUAL_TEXT
+                ):
+                    raise EngineInitializationError(
+                        "multilingual advanced source owns the wrong representation"
+                    )
+                sources.append(multilingual_source)
+
+        return cast(
+            AdvancedRetrievalInterfaceV1,
+            AdvancedRetrievalService(
+                sources=tuple(sources),
+                cursor_codec=codec,
+                # Full Multilingual V2 has already applied the governed BGE
+                # candidate contract.  Applying the legacy primary reranker a
+                # second time would make the public path differ from V2.
+                reranker=(None if v2_exposed else CanonicalAdvancedReranker(providers.reranker)),
+            ),
+        )
+
+    @staticmethod
+    def _compose_structured_retrieval(
+        providers: _ResolvedProviders,
+    ) -> StructuredDatasetRuntimeService | None:
+        if not isinstance(providers.storage, StructuredDatasetCatalogV1):
+            return None
+        return StructuredDatasetRuntimeService(providers.storage)
 
     def _compose_runtime(self) -> None:
         results: list[PluginLoadResult] = []
@@ -301,6 +833,34 @@ class KnowledgeEngine:
             providers.storage,
             components.clock,
             (providers.storage if isinstance(providers.storage, FinalQAExecutionStoreV1) else None),
+        )
+
+    def _compose_final_qa_v2(self, providers: _ResolvedProviders) -> FinalQAInterfaceV2 | None:
+        """Compose V2 only when storage, tokenizer, and configured LLM are available."""
+        if self._final_qa_components is None:
+            return self._final_qa_v2
+        operational_store = self._final_qa_components.operational_store_v2
+        if operational_store is None:
+            if not isinstance(providers.storage, FinalQAExecutionStoreV2):
+                return self._final_qa_v2
+            operational_store = providers.storage
+        from mnemo.retrieval import (
+            FinalQAV2Orchestrator,
+            LLMFinalQAV2Provider,
+            MultimodalContextBuilder,
+            StorageEvidenceAuthorizerV2,
+        )
+
+        provider = LLMFinalQAV2Provider(providers.synthesizer)
+        authorizer = StorageEvidenceAuthorizerV2(providers.storage)
+        return FinalQAV2Orchestrator(
+            store=operational_store,
+            provider=provider,
+            context_builder=MultimodalContextBuilder(
+                authorizer, self._final_qa_components.token_counter
+            ),
+            token_counter=self._final_qa_components.token_counter,
+            authorizer=authorizer,
         )
 
     def _resolve_providers(self) -> _ResolvedProviders:
@@ -458,6 +1018,7 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
                 PDFParser,
                 PlainTextParser,
                 PPTXParser,
+                StandaloneImageParser,
                 XLSXParser,
             )
 
@@ -480,6 +1041,27 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
                 ),
                 (MarkdownParser(), (".md", ".markdown", "text/markdown", "text/x-markdown")),
                 (HTMLParser(), (".html", ".htm", "text/html")),
+                (
+                    StandaloneImageParser(),
+                    (
+                        ".png",
+                        ".jpg",
+                        ".jpeg",
+                        ".gif",
+                        ".webp",
+                        ".tif",
+                        ".tiff",
+                        ".bmp",
+                        ".svg",
+                        "image/png",
+                        "image/jpeg",
+                        "image/gif",
+                        "image/webp",
+                        "image/tiff",
+                        "image/bmp",
+                        "image/svg+xml",
+                    ),
+                ),
                 (
                     plain_text_parser,
                     (
@@ -567,15 +1149,25 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
 
         def register(self, registry: PluginRegistry) -> None:
             from mnemo.embeddings.cached import CachedEmbeddingProvider
-            from mnemo.embeddings.ollama import OllamaEmbedder
             from mnemo.storage.cache import SQLiteEmbeddingCache
 
-            ollama = OllamaEmbedder(config.embedding)
             cache = SQLiteEmbeddingCache(config.storage.sqlite.path.parent / "embedding-cache.db")
-            cached = CachedEmbeddingProvider(ollama, cache)
+            provider: EmbeddingProviderV1
+            if config.embedding.provider == "sentence-transformers":
+                from mnemo.embeddings.sentence_transformers import SentenceTransformersEmbedder
+
+                provider = SentenceTransformersEmbedder(config.embedding)
+            elif config.embedding.provider == "ollama":
+                from mnemo.embeddings.ollama import OllamaEmbedder
+
+                provider = OllamaEmbedder(config.embedding)
+            else:
+                raise ValueError(f"Unsupported embedding provider: {config.embedding.provider}")
+
+            cached = CachedEmbeddingProvider(provider, cache)
             registry.register_embedding_provider("primary", cached, priority=0)
             registry.register_startup_hook(cache.initialize)
-            registry.register_startup_hook(ollama.initialize)
+            registry.register_startup_hook(provider.initialize)
 
     class CoreLLMPlugin:
         name = "mnemo-core-llm"
@@ -609,6 +1201,8 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
         from mnemo.retrieval.reranker import CrossEncoderReranker, CrossEncoderRerankerPlugin
 
         plugins.append(CrossEncoderRerankerPlugin(CrossEncoderReranker(config.reranker)))
+    elif config.reranker.provider == "v2-owned-pass-through":
+        plugins.append(_V2OwnedOuterPassThroughRerankerPlugin())
     return tuple(plugins)
 
 

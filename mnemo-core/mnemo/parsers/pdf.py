@@ -5,9 +5,10 @@ from typing import Any
 import fitz  # type: ignore[import-untyped]
 
 from mnemo.interfaces.errors import ContractValidationError, UnsupportedError
-from mnemo.interfaces.parser import ParserInterfaceV1
+from mnemo.interfaces.parser import ParserInterfaceV2
 from mnemo.interfaces.parser_models import (
     ParseResult,
+    ParseResultV2,
     RawBlock,
     RawHeadingBlock,
     RawImageBlock,
@@ -17,12 +18,21 @@ from mnemo.interfaces.parser_models import (
     TransientAsset,
 )
 from mnemo.interfaces.types import FileMetadata, ParserCapabilities
-from mnemo.models import DocType, DocumentMetadata
+from mnemo.models import AssetContainerKind, DocType, DocumentMetadata
 from mnemo.models._shared import BoundingBox, FrozenMetadata
 
+from .asset_extraction import (
+    DEFAULT_ASSET_EXTRACTION_LIMITS,
+    AssetExtractionLimits,
+    bounded_asset_result,
+)
 
-class PDFParser(ParserInterfaceV1):
+
+class PDFParser(ParserInterfaceV2):
     """Parses PDF documents into structural blocks and transient assets."""
+
+    def __init__(self, limits: AssetExtractionLimits = DEFAULT_ASSET_EXTRACTION_LIMITS) -> None:
+        self._limits = limits
 
     @property
     def supported_formats(self) -> tuple[str, ...]:
@@ -38,6 +48,11 @@ class PDFParser(ParserInterfaceV1):
         )
 
     def parse(self, data: bytes, filename: str, metadata: FileMetadata) -> ParseResult:
+        return self.parse_with_assets(data, filename, metadata).parse_result
+
+    def parse_with_assets(
+        self, data: bytes, filename: str, metadata: FileMetadata
+    ) -> ParseResultV2:
         if not data:
             raise ContractValidationError(f"Cannot parse empty PDF: {filename}")
 
@@ -49,9 +64,18 @@ class PDFParser(ParserInterfaceV1):
         if doc.needs_pass:
             doc.close()
             raise UnsupportedError(f"Encrypted PDFs are not supported: {filename}")
+        if doc.page_count > self._limits.max_container_units:
+            doc.close()
+            raise ContractValidationError("PDF exceeds configured page-count limit")
 
         try:
-            return self._parse_doc(doc, data, filename, metadata)
+            parsed = self._parse_doc(doc, data, filename, metadata)
+            return bounded_asset_result(
+                parsed,
+                parser_id="mnemo.pdf",
+                container_kind=AssetContainerKind.PDF,
+                limits=self._limits,
+            )
         finally:
             doc.close()
 
@@ -255,8 +279,10 @@ class PDFParser(ParserInterfaceV1):
 
     def _to_bbox(self, rect: fitz.Rect | tuple[float, float, float, float]) -> BoundingBox:
         if isinstance(rect, fitz.Rect):
-            return (rect.x0, rect.y0, rect.x1, rect.y1)
-        return (rect[0], rect[1], rect[2], rect[3])
+            r = fitz.Rect(rect).normalize()
+            return (r.x0, r.y0, r.x1, r.y1)
+        x0, y0, x1, y1 = rect[0], rect[1], rect[2], rect[3]
+        return (min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))
 
     def _overlaps_any(self, rect: fitz.Rect, table_bboxes: list[fitz.Rect]) -> bool:
         rect_area = rect.get_area()

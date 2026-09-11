@@ -73,6 +73,12 @@ def create_parser() -> argparse.ArgumentParser:
         default=os.getenv("MNEMO_SERVER_JWT_SECRET"),
         help="JWT shared secret for jwt auth mode on SSE transport.",
     )
+    parser.add_argument(
+        "--stdio-principal-subject",
+        type=str,
+        default=os.getenv("MNEMO_SERVER_MCP_STDIO_PRINCIPAL_SUBJECT"),
+        help="Server-owned authenticated subject for the trusted local stdio transport.",
+    )
 
     subparsers = parser.add_subparsers(dest="command", help="MCP transport subcommands")
 
@@ -125,13 +131,18 @@ def main(argv: list[str] | None = None) -> int:
     raw_port = getattr(args, "sse_port", None) or getattr(args, "port", None)
     port: int = int(raw_port if raw_port is not None else os.getenv("MNEMO_MCP_PORT", "8001"))
 
-    config = ServerConfig(
-        host=host,
-        port=port,
-        log_level=args.log_level,
-        auth_mode=args.auth_mode,
-        api_key=args.api_key,
-        jwt_secret=args.jwt_secret,
+    base_config = ServerConfig.from_env()
+    config = ServerConfig.model_validate(
+        {
+            **base_config.model_dump(),
+            "host": host,
+            "port": port,
+            "log_level": args.log_level,
+            "auth_mode": args.auth_mode,
+            "api_key": args.api_key,
+            "jwt_secret": args.jwt_secret,
+            "mcp_stdio_principal_subject": args.stdio_principal_subject,
+        }
     )
 
     if selected_transport == "stdio":

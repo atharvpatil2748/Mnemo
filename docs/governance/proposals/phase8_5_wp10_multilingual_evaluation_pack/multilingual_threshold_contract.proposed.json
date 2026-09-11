@@ -1,0 +1,135 @@
+{
+  "schema_version": "mnemo.multilingual-threshold-contract.proposed/1",
+  "contract_id": "phase8.5-wp10-decision7-threshold-proposal-v1",
+  "status": "NOT YET DEFENSIBLE",
+  "approval": {
+    "state": "pending_human_governance_approval",
+    "approved_by": null,
+    "approved_at": null
+  },
+  "classification": {
+    "model_selection_threshold": {
+      "status": "historical_selection_evidence_only",
+      "embedding": {
+        "profile": "BAAI/bge-m3@5617a9f61b028005a4858fdac845db406aefb181",
+        "recall_at_1": 0.833,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "mrr": 0.898,
+        "legacy_uncut_single_relevant_ndcg": 0.924
+      },
+      "reranker": {
+        "profile": "BAAI/bge-reranker-v2-m3@953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+        "recall_at_1": 0.944,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "mrr": null,
+        "legacy_uncut_single_relevant_ndcg": null,
+        "reason": "Published MRR/nDCG summaries conflict and raw rankings were not retained."
+      }
+    },
+    "implementation_acceptance_threshold": {
+      "status": "structure_proposed_numeric_floors_open",
+      "directional_numeric_floors": "NOT YET DEFENSIBLE",
+      "allowed_use": "Functional, lifecycle, boundedness, and zero-tolerance correctness acceptance only until numeric floors are approved."
+    },
+    "phase8_5_verification_threshold": {
+      "status": "POST-IMPLEMENTATION",
+      "directional_numeric_floors": "NOT YET DEFENSIBLE"
+    },
+    "certification_threshold": {
+      "status": "POST-IMPLEMENTATION_AND_GOVERNANCE_APPROVAL",
+      "directional_numeric_floors": "NOT YET DEFENSIBLE"
+    }
+  },
+  "sample_size_policy": {
+    "status": "PROPOSED — REQUIRES HUMAN/GOVERNANCE APPROVAL",
+    "amendment_reference": "mnemo.hybrid-stratified-evaluation-contract-amendment/1",
+    "policy_name": "Hybrid Stratified Directional Policy (Option D)",
+    "provisional_answerable_total": 210,
+    "negative_control_total": 30,
+    "provisional_master_pack_total": 240,
+    "provisional_cases_per_direction": {
+      "english_targets": 30,
+      "hindi_targets": 30,
+      "marathi_targets": 10
+    },
+    "certification_cases_per_direction": 75,
+    "specific_claim_examples": [
+      {"observed_rate": 1.0, "wilson_95_lower_bound": 0.90, "minimum_n_at_exact_rate": 35},
+      {"observed_rate": 0.90, "wilson_95_lower_bound": 0.80, "minimum_n_at_exact_rate": 70},
+      {"observed_rate": 0.95, "wilson_95_lower_bound": 0.90, "minimum_n_at_exact_rate": 140},
+      {"observed_rate": 0.80, "wilson_95_lower_bound": 0.70, "minimum_n_at_exact_rate": 85}
+    ],
+    "note": "Directional quality thresholds require independent human governance approval before evaluation execution. Required n depends on the approved observed-rate and lower-bound claim; these examples do not create performance floors."
+  },
+  "directional_floors": [
+    {"direction":"en->en","recall_at_1":null,"recall_at_3":null,"recall_at_5":null,"recall_at_10":null,"mrr":null,"ndcg_at_10":null,"status":"NOT YET DEFENSIBLE"},
+    {"direction":"en->hi","recall_at_1":null,"recall_at_3":null,"recall_at_5":null,"recall_at_10":null,"mrr":null,"ndcg_at_10":null,"status":"NOT YET DEFENSIBLE"},
+    {"direction":"en->mr","recall_at_1":null,"recall_at_3":null,"recall_at_5":null,"recall_at_10":null,"mrr":null,"ndcg_at_10":null,"status":"NOT YET DEFENSIBLE"},
+    {"direction":"hi->en","recall_at_1":null,"recall_at_3":null,"recall_at_5":null,"recall_at_10":null,"mrr":null,"ndcg_at_10":null,"status":"NOT YET DEFENSIBLE"},
+    {"direction":"hi->hi","recall_at_1":null,"recall_at_3":null,"recall_at_5":null,"recall_at_10":null,"mrr":null,"ndcg_at_10":null,"status":"NOT YET DEFENSIBLE"},
+    {"direction":"hi->mr","recall_at_1":null,"recall_at_3":null,"recall_at_5":null,"recall_at_10":null,"mrr":null,"ndcg_at_10":null,"status":"NOT YET DEFENSIBLE"},
+    {"direction":"mr->en","recall_at_1":null,"recall_at_3":null,"recall_at_5":null,"recall_at_10":null,"mrr":null,"ndcg_at_10":null,"status":"NOT YET DEFENSIBLE"},
+    {"direction":"mr->hi","recall_at_1":null,"recall_at_3":null,"recall_at_5":null,"recall_at_10":null,"mrr":null,"ndcg_at_10":null,"status":"NOT YET DEFENSIBLE"},
+    {"direction":"mr->mr","recall_at_1":null,"recall_at_3":null,"recall_at_5":null,"recall_at_10":null,"mrr":null,"ndcg_at_10":null,"status":"NOT YET DEFENSIBLE"}
+  ],
+  "secondary_floors": {
+    "transliteration": "NOT YET DEFENSIBLE",
+    "mixed_script": "NOT YET DEFENSIBLE",
+    "mixed_language": "NOT YET DEFENSIBLE",
+    "ocr_language": "NOT YET DEFENSIBLE",
+    "vision_language": "NOT YET DEFENSIBLE",
+    "reranker_pairwise_accuracy": "NOT YET DEFENSIBLE",
+    "no_answer_false_support_rate": "NOT YET DEFENSIBLE",
+    "no_answer_false_publication_rate": "NOT YET DEFENSIBLE"
+  },
+  "uncertainty": {
+    "status": "PROPOSED — REQUIRES HUMAN/GOVERNANCE APPROVAL",
+    "confidence_level": 0.95,
+    "proportions": "Wilson score interval without continuity correction",
+    "mrr_ndcg": {
+      "method": "stratified percentile bootstrap over queries",
+      "strata": "language direction; secondary tags reported separately",
+      "seed": 8501007,
+      "resamples": 10000
+    }
+  },
+  "latency": {
+    "status": "report_only_until_hardware_profile_and_numeric_bounds_are_approved",
+    "p50_ms_max": null,
+    "p95_ms_max": null,
+    "required_reporting": ["cold_start", "warm_query", "reranker_enabled", "batch_size", "cpu_or_gpu", "device_identity", "timeout_count"]
+  },
+  "threshold_derivation_procedure": [
+    "Freeze the evaluation corpus and evidence snapshot.",
+    "Freeze queries and human-reviewed qrels before candidate measurement.",
+    "Keep candidate rankings hidden from judges.",
+    "Freeze manifest, query, and qrels digests.",
+    "Approve baseline systems and utility-floor methodology independently.",
+    "Run baseline and candidate implementation without changing the pack.",
+    "Retain raw rankings, scores, errors, latency, and environment identity.",
+    "Calculate per-direction and secondary-cohort metrics and uncertainty.",
+    "Evaluate all zero-tolerance gates independently of quality metrics.",
+    "Approve or reject numeric floors without tuning them to make the observed candidate pass."
+  ],
+  "zero_tolerance_gates": {
+    "authorization_leakage":0,
+    "cross_notebook_leakage":0,
+    "cross_version_leakage":0,
+    "provenance_corruption":0,
+    "canonical_text_mutation":0,
+    "false_completeness":0,
+    "fabricated_language_claim":0,
+    "script_only_hindi_or_marathi_inference":0,
+    "wrong_vector_space_mixing":0,
+    "model_revision_mismatch":0,
+    "vector_dimension_mismatch":0,
+    "partial_generation_activation":0,
+    "network_fallback":0,
+    "unlabeled_translation_or_transliteration":0,
+    "ocr_or_vision_represented_as_original":0,
+    "frozen_multimodal_mutation":0,
+    "golden_dataset_mutation":0
+  }
+}

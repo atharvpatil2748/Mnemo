@@ -13,6 +13,16 @@ from uuid import UUID
 import pytest
 from email_ingestion import EmailParser
 from mnemo.chunkers import ChunkerDispatcher, EmailChunker
+from mnemo.chunkers.email import (
+    _address_tuple,
+    _attachment_tuple,
+    _identifier_tuple,
+    _Message,
+    _non_negative_int,
+    _optional_identifier,
+    _optional_string,
+    _required_string,
+)
 from mnemo.cleaner import DocumentCleaner
 from mnemo.ingestion import DocumentCanonicalizer
 from mnemo.interfaces import (
@@ -34,6 +44,7 @@ from mnemo.models import (
     FrozenMetadata,
     ImageBlock,
     ParsedDocument,
+    TableBlock,
     TextBlock,
 )
 from mnemo.registry import PluginRegistry
@@ -628,3 +639,261 @@ def test_end_to_end_mbox_materializes_parent_and_symmetric_siblings() -> None:
     assert chunks[2].sibling_ids == (chunks[1].id,)
     assert all(chunk.heading_path == () for chunk in chunks)
     assert all(chunk.metadata["chunker.email.thread_correlation"] for chunk in chunks)
+
+
+def test_message_attachment_ids_property() -> None:
+    msg = _Message(
+        local_id="message-000000",
+        source_index=0,
+        thread_correlation="a" * 64,
+        message_id="m0@example.com",
+        in_reply_to=None,
+        references=(),
+        reply_to_local_id=None,
+        subject="Sub",
+        sender=(FrozenMetadata({"name": "A", "address": "a@example.com"}),),
+        recipients=FrozenMetadata({"to": (), "cc": (), "bcc": ()}),
+        timestamp="2026-08-11T10:00:00+00:00",
+        attachments=(FrozenMetadata({"local_id": "att-1"}),),
+    )
+    assert msg.attachment_ids == ("att-1",)
+
+
+def test_chunk_validates_argument_types() -> None:
+    doc = _document((_message(0),), (_text_block(0, 0, _words(5)),), container="eml")
+    ctx = _context(doc)
+    counter = WordCounter()
+    with pytest.raises(TypeError, match="document must be ParsedDocument"):
+        EmailChunker().chunk("invalid", ctx, counter)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="context must be ChunkingContext"):
+        EmailChunker().chunk(doc, "invalid", counter)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="token_counter must satisfy TokenCounterInterfaceV1"):
+        EmailChunker().chunk(doc, ctx, object())  # type: ignore[arg-type]
+
+
+def test_chunk_validates_container_format_and_manifest() -> None:
+    doc = _document((_message(0),), (_text_block(0, 0, _words(5)),), container="zip")
+    with pytest.raises(UnsupportedError, match=r"invalid parser\.email\.container_format"):
+        EmailChunker().chunk(doc, _context(doc), WordCounter())
+
+    meta_dict = dict(doc.metadata.metadata)
+    meta_dict["parser.email.container_format"] = "mbox"
+    meta_dict["parser.email.messages"] = "not-a-tuple"
+    invalid_doc = replace(
+        doc,
+        metadata=DocumentMetadata(
+            content_hash="a" * 64,
+            metadata=FrozenMetadata(meta_dict),
+        ),
+    )
+    with pytest.raises(
+        UnsupportedError, match=r"parser\.email\.messages must be an immutable sequence"
+    ):
+        EmailChunker().chunk(invalid_doc, _context(invalid_doc), WordCounter())
+
+    empty_doc = _document((), (), container="mbox")
+    with pytest.raises(UnsupportedError, match="Email messages manifest must not be empty"):
+        EmailChunker().chunk(empty_doc, _context(empty_doc), WordCounter())
+
+    eml_multi = _document(
+        (_message(0), _message(1)),
+        (_text_block(0, 0, _words(5)), _text_block(1, 1, _words(5))),
+        container="eml",
+    )
+    with pytest.raises(UnsupportedError, match="an eml document must contain exactly one message"):
+        EmailChunker().chunk(eml_multi, _context(eml_multi), WordCounter())
+
+
+def test_chunk_validates_message_entry_fields() -> None:
+    m0 = dict(_message(0))
+    del m0["local_id"]
+    doc = _document((FrozenMetadata(m0),), (_text_block(0, 0, _words(5)),), container="eml")
+    with pytest.raises(UnsupportedError, match="Email message manifest entry is malformed"):
+        EmailChunker().chunk(doc, _context(doc), WordCounter())
+
+    doc_thread = _document(
+        (_message(0, thread="not-a-sha256-hex"),),
+        (_text_block(0, 0, _words(5)),),
+        container="eml",
+    )
+    with pytest.raises(
+        UnsupportedError, match="Email thread correlation must be lowercase SHA-256"
+    ):
+        EmailChunker().chunk(doc_thread, _context(doc_thread), WordCounter())
+
+    m_rec = dict(_message(0))
+    m_rec["recipients"] = FrozenMetadata({"to": ()})
+    doc_rec = _document((FrozenMetadata(m_rec),), (_text_block(0, 0, _words(5)),), container="eml")
+    with pytest.raises(UnsupportedError, match="Email recipients metadata is malformed"):
+        EmailChunker().chunk(doc_rec, _context(doc_rec), WordCounter())
+
+    m_time = dict(_message(0))
+    m_time["timestamp"] = "not-rfc3339"
+    doc_time = _document(
+        (FrozenMetadata(m_time),), (_text_block(0, 0, _words(5)),), container="eml"
+    )
+    with pytest.raises(UnsupportedError, match="Email timestamp must be valid RFC3339"):
+        EmailChunker().chunk(doc_time, _context(doc_time), WordCounter())
+
+    m_naive = dict(_message(0))
+    m_naive["timestamp"] = "2026-08-11T10:00:00"
+    doc_naive = _document(
+        (FrozenMetadata(m_naive),), (_text_block(0, 0, _words(5)),), container="eml"
+    )
+    with pytest.raises(UnsupportedError, match="Email timestamp must include an offset"):
+        EmailChunker().chunk(doc_naive, _context(doc_naive), WordCounter())
+
+    doc_dup_src = _document(
+        (_message(0, source_index=0), _message(1, source_index=0)),
+        (_text_block(0, 0, _words(5)), _text_block(1, 1, _words(5))),
+        container="mbox",
+    )
+    with pytest.raises(UnsupportedError, match="Email source indexes must be unique"):
+        EmailChunker().chunk(doc_dup_src, _context(doc_dup_src), WordCounter())
+
+
+def test_chunk_validates_thread_ordering_and_reply_consistency() -> None:
+    m0 = _message(0, thread="a" * 64, message_id="m0@example.com")
+    m1 = _message(1, thread="b" * 64, reply_to="message-000000")
+    doc_cross = _document(
+        (m0, m1),
+        (_text_block(0, 0, _words(5)), _text_block(1, 1, _words(5))),
+        container="mbox",
+    )
+    with pytest.raises(
+        UnsupportedError, match="Email reply relationship crosses thread components"
+    ):
+        EmailChunker().chunk(doc_cross, _context(doc_cross), WordCounter())
+
+    m_t1 = _message(0, source_index=5, thread="a" * 64)
+    m_t2 = _message(1, source_index=1, thread="b" * 64)
+    doc_unsorted_threads = _document(
+        (m_t1, m_t2),
+        (_text_block(0, 0, _words(5)), _text_block(1, 1, _words(5))),
+        container="mbox",
+    )
+    with pytest.raises(
+        UnsupportedError, match="Email thread components are not in canonical order"
+    ):
+        EmailChunker().chunk(doc_unsorted_threads, _context(doc_unsorted_threads), WordCounter())
+
+
+def test_chunk_validates_block_types_and_metadata() -> None:
+    bad_meta_block = TextBlock(
+        ordinal=0,
+        text="hi",
+        metadata=FrozenMetadata({"parser.email.message_local_id": "message-000000"}),
+    )
+    doc_bad_meta = _document((_message(0),), (bad_meta_block,), container="eml")
+    with pytest.raises(UnsupportedError, match="Email block metadata does not match schema v1"):
+        EmailChunker().chunk(doc_bad_meta, _context(doc_bad_meta), WordCounter())
+
+    bad_region_block = _text_block(0, 0, "hi", region="unknown_region")
+    doc_bad_region = _document((_message(0),), (bad_region_block,), container="eml")
+    with pytest.raises(UnsupportedError, match="Email block region or body format is invalid"):
+        EmailChunker().chunk(doc_bad_region, _context(doc_bad_region), WordCounter())
+
+    text_with_att = TextBlock(
+        ordinal=0,
+        text="hi",
+        metadata=_block_metadata("message-000000", attachment_id="att-1"),
+    )
+    doc_text_att = _document((_message(0),), (text_with_att,), container="eml")
+    with pytest.raises(UnsupportedError, match="Email text block cannot reference an attachment"):
+        EmailChunker().chunk(doc_text_att, _context(doc_text_att), WordCounter())
+
+    tbl_block = TableBlock(
+        ordinal=0,
+        rows=(("c1", "c2"), ("v1", "v2")),
+        metadata=_block_metadata("message-000000"),
+    )
+    doc_tbl = _document((_message(0),), (tbl_block,), container="eml")  # type: ignore[arg-type]
+    with pytest.raises(
+        UnsupportedError, match="Email schema v1 supports only text and inline-image blocks"
+    ):
+        EmailChunker().chunk(doc_tbl, _context(doc_tbl), WordCounter())
+
+
+def test_chunk_multi_paragraph_and_sentence_reduction() -> None:
+    p1 = _words(35, "alpha")
+    p2 = _words(35, "beta")
+    multi_p_text = f"{p1}\n\n{p2}"
+    doc = _document((_message(0),), (_text_block(0, 0, multi_p_text),), container="eml")
+    ctx = _context(doc, target=15, maximum=25)
+    drafts = EmailChunker().chunk(doc, ctx, WordCounter())
+    assert len(drafts) > 1
+
+    long_sentence = _words(40, "gamma")
+    doc_long = _document((_message(0),), (_text_block(0, 0, long_sentence),), container="eml")
+    ctx_tight = _context(doc_long, target=15, maximum=20)
+    drafts_split = EmailChunker().chunk(doc_long, ctx_tight, WordCounter())
+    assert len(drafts_split) > 1
+
+
+def test_email_chunker_metadata_helpers_validation() -> None:
+    with pytest.raises(UnsupportedError, match="must be a non-empty string"):
+        _required_string(FrozenMetadata({"key": ""}), "key")
+    with pytest.raises(UnsupportedError, match="must be a non-empty string"):
+        _required_string(FrozenMetadata({"key": 123}), "key")
+
+    with pytest.raises(UnsupportedError, match="must be null or a non-empty string"):
+        _optional_string(FrozenMetadata({"key": ""}), "key")
+    with pytest.raises(UnsupportedError, match="must be null or a non-empty string"):
+        _optional_string(FrozenMetadata({"key": 123}), "key")
+
+    with pytest.raises(UnsupportedError, match="is not a canonical identifier"):
+        _optional_identifier(FrozenMetadata({"key": "not an id with spaces"}), "key")
+
+    with pytest.raises(UnsupportedError, match="must contain canonical identifiers"):
+        _identifier_tuple(FrozenMetadata({"key": "not-a-tuple"}), "key")
+    with pytest.raises(UnsupportedError, match="must contain canonical identifiers"):
+        _identifier_tuple(FrozenMetadata({"key": ("bad id with spaces",)}), "key")
+
+    with pytest.raises(UnsupportedError, match="must be a non-negative integer"):
+        _non_negative_int(FrozenMetadata({"key": -1}), "key")
+    with pytest.raises(UnsupportedError, match="must be a non-negative integer"):
+        _non_negative_int(FrozenMetadata({"key": True}), "key")
+    with pytest.raises(UnsupportedError, match="must be a non-negative integer"):
+        _non_negative_int(FrozenMetadata({"key": "not-int"}), "key")
+
+    with pytest.raises(UnsupportedError, match="must be an immutable address sequence"):
+        _address_tuple(FrozenMetadata({"key": "not-a-tuple"}), "key")
+    with pytest.raises(UnsupportedError, match="Email address metadata is malformed"):
+        _address_tuple(FrozenMetadata({"key": (FrozenMetadata({}),)}), "key")
+
+    with pytest.raises(UnsupportedError, match="must be an immutable sequence"):
+        _attachment_tuple(FrozenMetadata({"key": "not-a-tuple"}), "key", "message-000000")
+    with pytest.raises(UnsupportedError, match="Email attachment metadata is malformed"):
+        _attachment_tuple(FrozenMetadata({"key": (FrozenMetadata({}),)}), "key", "message-000000")
+    bad_mime = _attachment("message-000000-attachment-000000", mime_type="APPLICATION/PDF")
+    with pytest.raises(UnsupportedError, match="Email attachment MIME type must be lowercase"):
+        _attachment_tuple(
+            FrozenMetadata({"key": (FrozenMetadata(bad_mime),)}), "key", "message-000000"
+        )
+    bad_disp = dict(_attachment("message-000000-attachment-000000"))
+    bad_disp["disposition"] = "ATTACHMENT"
+    with pytest.raises(UnsupportedError, match="Email attachment disposition must be lowercase"):
+        _attachment_tuple(
+            FrozenMetadata({"key": (FrozenMetadata(bad_disp),)}), "key", "message-000000"
+        )
+    bad_inline = dict(_attachment("message-000000-attachment-000000"))
+    bad_inline["inline"] = "not-a-bool"
+    with pytest.raises(UnsupportedError, match="Email attachment inline flag must be boolean"):
+        _attachment_tuple(
+            FrozenMetadata({"key": (FrozenMetadata(bad_inline),)}), "key", "message-000000"
+        )
+
+    img_no_att = ImageBlock(
+        ordinal=0,
+        asset_id=UUID(int=9),
+        metadata=FrozenMetadata(
+            {
+                "parser.email.message_local_id": "message-000000",
+                "parser.email.region": "body",
+                "parser.email.body_format": "plain",
+            }
+        ),
+    )
+    doc_img = _document((_message(0),), (img_no_att,), container="eml")
+    with pytest.raises(UnsupportedError, match="Email image block lacks attachment correlation"):
+        EmailChunker().chunk(doc_img, _context(doc_img), WordCounter())

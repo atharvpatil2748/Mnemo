@@ -1,0 +1,209 @@
+{
+  "$schema": "./multilingual_evaluation_manifest.proposed.schema.json",
+  "schema_version": "mnemo.multilingual-evaluation-manifest.proposed/1",
+  "manifest_id": "phase8.5-wp10-decision7-proposal-2026-08-29",
+  "status": "proposal_requires_human_governance_approval",
+  "created_at": "2026-08-29T05:02:02.5293874Z",
+  "evaluator_identity": "Codex read-only governance analysis",
+  "approval": {
+    "state": "pending",
+    "approver": null,
+    "approved_at": null
+  },
+  "protected_inputs": {
+    "golden_dataset": {
+      "document_count": 44,
+      "deterministic_digest_sha256": "78b414e77603fa1ded285ecfd77184f83badfde03b3b633154b097053b929a81",
+      "mutation_permitted": false
+    },
+    "phase8_5_11_source_database": {
+      "sha256": "d70f58198e2f5d2d5d1dcff3a23bcc86681d7a924bb5d3d1fc24fba39f318b71",
+      "mutation_permitted": false
+    },
+    "frozen_multimodal_database": {
+      "sha256": "64ebc88edcb3be5842ea2370f5f10c93e2c1f62dae8184ecc66c389a441338d2",
+      "mutation_permitted": false
+    },
+    "frozen_multimodal_manifest": {
+      "sha256": "17977efc87d3d95bb1e2e6e6c8025e78b63a4c3a0a301f98869b44724fef5a8f",
+      "mutation_permitted": false
+    },
+    "future_evaluation_pack": {
+      "corpus_digest_sha256": null,
+      "query_digest_sha256": null,
+      "judgment_digest_sha256": null,
+      "status": "not_constructed"
+    }
+  },
+  "model_profiles": {
+    "multilingual_embedding": {
+      "provider": "sentence-transformers",
+      "model": "BAAI/bge-m3",
+      "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+      "dimension": 1024,
+      "metric": "cosine",
+      "normalization": "l2",
+      "query_preprocessing": "bge-m3-query-v1",
+      "document_preprocessing": "bge-m3-document-v1"
+    },
+    "multilingual_reranker": {
+      "provider": "sentence-transformers",
+      "model": "BAAI/bge-reranker-v2-m3",
+      "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+      "preprocessing": "bge-reranker-v2-m3-v1",
+      "pair_max_tokens": 256,
+      "max_batch": 16
+    },
+    "detector": {
+      "profile_id": "unicode-en-hi-mr-conservative-v1",
+      "version": "1.0.0",
+      "configuration_digest_sha256": "f0f9b5b35d77d0a885200a2f21e7f8f46944b7d0f675834d2c15e6302f82e3e5",
+      "calibrated": false
+    }
+  },
+  "legacy_selection_cohort": {
+    "purpose": "Model selection and future adapter-reproducibility smoke testing only; not certification.",
+    "source": "scripts/phase8_5_11_benchmark_models.py",
+    "case_count": 18,
+    "canonical_query_inventory_sha256": "c3466771f5af72e4efbd8b59172ee29e75655844b3cecc8fd2a216a3bcb72861",
+    "relevance_label_scheme": "one expected document per query",
+    "candidate_universe": {
+      "kind": "all document versions in the 44-document evaluation database",
+      "document_text": "title plus first 2500 characters of concatenated canonical chunks",
+      "candidate_count": 44
+    },
+    "metrics_calculated": ["recall_at_1", "recall_at_5", "recall_at_10", "mrr", "uncut_single_relevant_ndcg"],
+    "metrics_not_calculated": ["recall_at_3", "ndcg_at_10", "reranker_pairwise_accuracy"],
+    "raw_rankings_retained": false,
+    "per_direction_metrics_retained": false,
+    "immutable": false,
+    "governed": false,
+    "queries": [
+      {"query_id":"MBSEL-01","query":"What technical skills are listed in Atharv's resume?","query_language":"en","expected_document":"Atharv_Patil_RESUME_SDE.pdf","declared_target_language":"en","direction":"en->en"},
+      {"query_id":"MBSEL-02","query":"अथर्व के रिज्यूमे में कौन से तकनीकी कौशल हैं?","query_language":"hi","expected_document":"Atharv_Patil_RESUME_SDE.pdf","declared_target_language":"en","direction":"hi->en"},
+      {"query_id":"MBSEL-03","query":"अथर्वच्या रिझ्युमेमध्ये कोणती तांत्रिक कौशल्ये आहेत?","query_language":"mr","expected_document":"Atharv_Patil_RESUME_SDE.pdf","declared_target_language":"en","direction":"mr->en"},
+      {"query_id":"MBSEL-04","query":"When did the Marathi book begin?","query_language":"en","expected_document":"manuscript.pdf","declared_target_language":"mr","direction":"en->mr"},
+      {"query_id":"MBSEL-05","query":"मराठी पुस्तक की शुरुआत किस तारीख को हुई?","query_language":"hi","expected_document":"manuscript.pdf","declared_target_language":"mr","direction":"hi->mr"},
+      {"query_id":"MBSEL-06","query":"माझ्या पुस्तकाची सुरुवात कोणत्या तारखेला झाली?","query_language":"mr","expected_document":"manuscript.pdf","declared_target_language":"mr","direction":"mr->mr"},
+      {"query_id":"MBSEL-07","query":"Who is ranked first in the Y24 CPI list?","query_language":"en","expected_document":"Y24_CPI.csv","declared_target_language":"en","direction":"en->en"},
+      {"query_id":"MBSEL-08","query":"Y24 CPI सूची में पहला स्थान किसका है?","query_language":"hi","expected_document":"Y24_CPI.csv","declared_target_language":"en","direction":"hi->en"},
+      {"query_id":"MBSEL-09","query":"Y24 CPI यादीत प्रथम क्रमांक कोणाचा आहे?","query_language":"mr","expected_document":"Y24_CPI.csv","declared_target_language":"en","direction":"mr->en"},
+      {"query_id":"MBSEL-10","query":"What machining processes are included in the ME361 syllabus?","query_language":"en","expected_document":"ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)","declared_target_language":"en","direction":"en->en"},
+      {"query_id":"MBSEL-11","query":"ME361 पाठ्यक्रम में कौन सी मशीनिंग प्रक्रियाएँ हैं?","query_language":"hi","expected_document":"ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)","declared_target_language":"en","direction":"hi->en"},
+      {"query_id":"MBSEL-12","query":"ME361 अभ्यासक्रमात कोणत्या मशीनिंग प्रक्रिया आहेत?","query_language":"mr","expected_document":"ME361_L1_fbd03201-7db3-4553-a6e5-06f24817f9ea (1)","declared_target_language":"en","direction":"mr->en"},
+      {"query_id":"MBSEL-13","query":"Why did the old aunt call a village panchayat?","query_language":"en","expected_document":"Act 2. panch-parmeshwar-by-munshi-premchand.pdf","declared_target_language":"en","direction":"en->en"},
+      {"query_id":"MBSEL-14","query":"बूढ़ी खाला ने पंचायत क्यों बुलाई?","query_language":"hi","expected_document":"Act 2. panch-parmeshwar-by-munshi-premchand.pdf","declared_target_language":"en","direction":"hi->en"},
+      {"query_id":"MBSEL-15","query":"वृद्ध खालाने पंचायत का बोलावली?","query_language":"mr","expected_document":"Act 2. panch-parmeshwar-by-munshi-premchand.pdf","declared_target_language":"en","direction":"mr->en"},
+      {"query_id":"MBSEL-16","query":"Which endpoint in server.js reports health?","query_language":"en","expected_document":"server.js","declared_target_language":"en","direction":"en->en"},
+      {"query_id":"MBSEL-17","query":"server.js में स्वास्थ्य स्थिति कौन सा endpoint देता है?","query_language":"hi","expected_document":"server.js","declared_target_language":"en","direction":"hi->en"},
+      {"query_id":"MBSEL-18","query":"server.js मध्ये आरोग्य स्थिती कोणता endpoint देतो?","query_language":"mr","expected_document":"server.js","declared_target_language":"en","direction":"mr->en"}
+    ],
+    "published_embedding_metrics": {"recall_at_1":0.833,"recall_at_5":1.0,"recall_at_10":1.0,"mrr":0.898,"uncut_single_relevant_ndcg":0.924},
+    "published_reranker_metrics": {
+      "evaluation_report":{"recall_at_1":0.944,"recall_at_5":1.0,"recall_at_10":1.0,"mrr":0.963,"uncut_single_relevant_ndcg":0.972},
+      "changelog":{"mrr":0.926,"uncut_single_relevant_ndcg":0.941},
+      "conflict_state":"unresolved_raw_output_not_retained"
+    }
+  },
+  "sample_size_policy": {
+    "status": "proposed_requires_human_governance_approval",
+    "amendment_reference": "mnemo.hybrid-stratified-evaluation-contract-amendment/1",
+    "policy_name": "Hybrid Stratified Directional Policy (Option D)",
+    "provisional_answerable_total": 210,
+    "negative_control_total": 30,
+    "provisional_master_pack_total": 240,
+    "certification_target_cases_per_direction": 50,
+    "rationale": "Amended per governance decision audit to account for corpus asymmetry: 30 cases each for English and Hindi targets; exact 10-chunk census (10 cases) for Marathi targets. Neither count is an existing architecture mandate.",
+    "wilson_95_examples": {
+      "n_5_perfect_lower": 0.566,
+      "n_10_perfect_lower": 0.722,
+      "n_20_perfect_lower": 0.839,
+      "n_30_perfect_lower": 0.886,
+      "n_50_perfect_lower": 0.929,
+      "n_62_observed_0_90_lower": 0.8005
+    },
+    "overlap_secondary_tags_with_directional_cases": true
+  },
+  "directional_cohorts": [
+    {"direction":"en->en","existing_cases":5,"existing_judgments":5,"reusable_for_selection_reproducibility":true,"statistically_usable_for_certification":false,"proposed_minimum_cases":30,"proposed_certification_target_cases":50,"cohort_classification":"STANDARD_PROVISIONAL","queries":[],"judgments":[],"thresholds":{"status":"not_yet_defensible"}},
+    {"direction":"en->hi","existing_cases":0,"existing_judgments":0,"reusable_for_selection_reproducibility":false,"statistically_usable_for_certification":false,"proposed_minimum_cases":30,"proposed_certification_target_cases":50,"cohort_classification":"STANDARD_PROVISIONAL","queries":[],"judgments":[],"thresholds":{"status":"not_yet_defensible"}},
+    {"direction":"en->mr","existing_cases":1,"existing_judgments":1,"reusable_for_selection_reproducibility":true,"statistically_usable_for_certification":false,"proposed_minimum_cases":10,"proposed_certification_target_cases":50,"cohort_classification":"CORPUS_CONSTRAINED_CENSUS","census_chunk_count":10,"queries":[],"judgments":[],"thresholds":{"status":"not_yet_defensible"}},
+    {"direction":"hi->en","existing_cases":5,"existing_judgments":5,"reusable_for_selection_reproducibility":true,"statistically_usable_for_certification":false,"proposed_minimum_cases":30,"proposed_certification_target_cases":50,"cohort_classification":"STANDARD_PROVISIONAL","queries":[],"judgments":[],"thresholds":{"status":"not_yet_defensible"}},
+    {"direction":"hi->hi","existing_cases":0,"existing_judgments":0,"reusable_for_selection_reproducibility":false,"statistically_usable_for_certification":false,"proposed_minimum_cases":30,"proposed_certification_target_cases":50,"cohort_classification":"STANDARD_PROVISIONAL","queries":[],"judgments":[],"thresholds":{"status":"not_yet_defensible"}},
+    {"direction":"hi->mr","existing_cases":1,"existing_judgments":1,"reusable_for_selection_reproducibility":true,"statistically_usable_for_certification":false,"proposed_minimum_cases":10,"proposed_certification_target_cases":50,"cohort_classification":"CORPUS_CONSTRAINED_CENSUS","census_chunk_count":10,"queries":[],"judgments":[],"thresholds":{"status":"not_yet_defensible"}},
+    {"direction":"mr->en","existing_cases":5,"existing_judgments":5,"reusable_for_selection_reproducibility":true,"statistically_usable_for_certification":false,"proposed_minimum_cases":30,"proposed_certification_target_cases":50,"cohort_classification":"STANDARD_PROVISIONAL","queries":[],"judgments":[],"thresholds":{"status":"not_yet_defensible"}},
+    {"direction":"mr->hi","existing_cases":0,"existing_judgments":0,"reusable_for_selection_reproducibility":false,"statistically_usable_for_certification":false,"proposed_minimum_cases":30,"proposed_certification_target_cases":50,"cohort_classification":"STANDARD_PROVISIONAL","queries":[],"judgments":[],"thresholds":{"status":"not_yet_defensible"}},
+    {"direction":"mr->mr","existing_cases":1,"existing_judgments":1,"reusable_for_selection_reproducibility":true,"statistically_usable_for_certification":false,"proposed_minimum_cases":10,"proposed_certification_target_cases":50,"cohort_classification":"CORPUS_CONSTRAINED_CENSUS","census_chunk_count":10,"queries":[],"judgments":[],"thresholds":{"status":"not_yet_defensible"}}
+  ],
+  "secondary_cohorts": [
+    {"cohort":"hindi_transliteration_to_hindi","existing_cases":0,"proposed_minimum_cases":20,"overlap_allowed":true,"status":"queries_and_judgments_missing"},
+    {"cohort":"marathi_transliteration_to_marathi","existing_cases":0,"proposed_minimum_cases":20,"overlap_allowed":true,"status":"queries_and_judgments_missing"},
+    {"cohort":"mixed_script","existing_cases":0,"proposed_minimum_cases":30,"overlap_allowed":true,"status":"queries_and_judgments_missing"},
+    {"cohort":"mixed_language","existing_cases":0,"proposed_minimum_cases":30,"overlap_allowed":true,"status":"queries_and_judgments_missing"},
+    {"cohort":"ocr_hindi_evidence","existing_cases":0,"proposed_minimum_cases":20,"overlap_allowed":true,"status":"queries_and_judgments_missing"},
+    {"cohort":"ocr_marathi_evidence","existing_cases":0,"proposed_minimum_cases":20,"overlap_allowed":true,"status":"queries_and_judgments_missing"},
+    {"cohort":"vision_derived_multilingual_evidence","existing_cases":0,"proposed_minimum_cases":20,"overlap_allowed":true,"status":"queries_and_judgments_missing"},
+    {"cohort":"canonical_text","existing_cases":18,"proposed_minimum_cases":180,"overlap_allowed":true,"status":"legacy_cases_are_document_level_only"},
+    {"cohort":"negative_no_answer","existing_cases":0,"proposed_minimum_cases":30,"overlap_allowed":false,"status":"queries_and_exhaustive_negative_judgments_missing"}
+  ],
+  "judgment_contract": {
+    "status": "proposed_requires_human_governance_approval",
+    "unit": "authorized_evidence_item",
+    "relevance_grades": {"0":"irrelevant","1":"partially_supportive","2":"directly_relevant"},
+    "validity": {
+      "required": true,
+      "invalid_conditions": ["wrong_notebook","wrong_document","wrong_version","wrong_occurrence","wrong_derivation_lineage","unauthorized","wrong_vector_space","stale_generation"],
+      "invalid_items_gain": 0
+    },
+    "required_identity_fields": ["notebook_id","document_id","version_id","evidence_kind","authoritative_evidence_id"],
+    "conditional_identity_fields": ["occurrence_id","derivation_id","source_generation_id"],
+    "review": {"minimum_independent_reviewers":2,"adjudication_required_on_disagreement":true,"reviewer_languages_must_cover_query_and_evidence":true},
+    "multiple_relevant_items": "enumerate every relevant authorized evidence item in the governed candidate universe",
+    "same_document_wrong_section": "grade according to actual support; document identity alone is not relevance",
+    "wrong_derivation": "invalid even when semantically similar",
+    "unauthorized_evidence": "invalid and zero-tolerance security failure"
+  },
+  "metric_contract": {
+    "status": "proposed_requires_human_governance_approval",
+    "deduplication_identity": "authoritative evidence identity",
+    "stable_tie_break": "score descending then authoritative evidence UUID ascending",
+    "recall_at_k": "macro mean over answerable queries of unique valid grade-2 relevant items retrieved in first k divided by all valid grade-2 relevant items",
+    "mrr": "macro mean reciprocal rank of first valid grade-2 relevant item; zero when absent",
+    "ndcg_at_10": "DCG uses gain 2^grade-1 for valid grades 0/1/2 and log2(rank+1) discount through rank 10, divided by ideal DCG@10; zero when no grade-positive result for an answerable query",
+    "reranker_pairwise_accuracy": "correct strict orderings divided by explicit human-judged decisive candidate pairs; ties and unjudged pairs excluded",
+    "missing_results": "contribute zero gain and zero recall",
+    "no_answer_queries": "excluded from Recall/MRR/nDCG and scored separately for unsupported evidence claims and publication",
+    "no_answer_false_support_rate": "fraction of no-answer queries for which any returned item is represented as supporting evidence",
+    "no_answer_publication_rate": "fraction of no-answer queries for which a grounded answer is published",
+    "confidence_intervals": "Wilson 95% intervals for proportions; deterministic stratified bootstrap 95% intervals for MRR and nDCG@10 with frozen seed and resample count to be approved"
+  },
+  "threshold_contract": {
+    "status": "not_yet_defensible",
+    "selection_reproducibility_only": {
+      "embedding":{"recall_at_1_min":0.833,"recall_at_5_min":1.0,"recall_at_10_min":1.0,"mrr_min":0.898,"legacy_uncut_ndcg_min":0.924},
+      "reranker":{"recall_at_1_min":0.944,"recall_at_5_min":1.0,"recall_at_10_min":1.0,"mrr_min":null,"ndcg_at_10_min":null,"reason":"published MRR/nDCG conflict"}
+    },
+    "directional_certification": {
+      "recall_at_1_min":null,"recall_at_3_min":null,"recall_at_5_min":null,"recall_at_10_min":null,"mrr_min":null,"ndcg_at_10_min":null,"status":"not_yet_defensible_requires_governed_evaluation"
+    },
+    "reranker_pairwise_accuracy_min": null,
+    "latency_policy": {"status":"report_only_until_hardware_specific_limit_is_approved","p50_ms_max":null,"p95_ms_max":null},
+    "threshold_freeze_procedure": [
+      "approve and digest queries and judgments before production candidate measurement",
+      "run frozen baseline and candidate profiles without changing the manifest",
+      "publish raw rankings and per-direction metrics with intervals",
+      "approve utility floors independently of the observed winning score",
+      "freeze thresholds and evidence digests before VERIFIED or CERTIFIED lifecycle claims"
+    ]
+  },
+  "zero_tolerance_gates": {
+    "authorization_leakage":0,"cross_notebook_leakage":0,"cross_version_leakage":0,"provenance_corruption":0,"canonical_text_mutation":0,"false_completeness":0,"fabricated_language_claim":0,"script_only_hindi_or_marathi_inference":0,"wrong_vector_space_mixing":0,"model_revision_mismatch":0,"vector_dimension_mismatch":0,"partial_generation_activation":0,"network_fallback":0,"unlabeled_translation_or_transliteration":0,"ocr_or_vision_represented_as_original":0,"frozen_multimodal_mutation":0,"golden_dataset_mutation":0
+  },
+  "wp16_mapping": [
+    {"scenario_id":"P85-B-16","cohort":"en->hi","status":"query_exists_behavioral_relevance_target_not_governed"},
+    {"scenario_id":"P85-B-17","cohort":"en->mr","status":"query_exists_behavioral_relevance_target_not_governed"},
+    {"scenario_id":"P85-B-18","cohort":"hi->en","status":"query_exists_behavioral_relevance_target_not_governed"},
+    {"scenario_id":"P85-B-19","cohort":"mr->en","status":"query_exists_behavioral_relevance_target_not_governed"},
+    {"scenario_id":"P85-B-20","cohort":"ocr_multilingual","status":"query_exists_behavioral_relevance_target_not_governed"}
+  ]
+}

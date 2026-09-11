@@ -1,0 +1,105 @@
+{
+  "artifact_digest": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90",
+  "corpus_used": false,
+  "embedding": {
+    "batch_cardinality": 3,
+    "batch_deterministic": true,
+    "ordered_batch_evidence_ids": [
+      "synthetic:chunk:0",
+      "synthetic:chunk:1",
+      "synthetic:chunk:2"
+    ],
+    "ordered_batch_hashes": [
+      "de9ee831534a1f97dbe1ce175cd311a6299f276bf493e67e0217086bf82741dc",
+      "e507e1f55c3a01191534ea2ebcab17786eb631d96c6c7e48b1f2ae9947f1518a",
+      "7d3fff36cddabd19990e44eeb6cf0a97febdf93d8facaa30259313175f1358d2"
+    ],
+    "ordered_batch_languages": [
+      "en",
+      "hi",
+      "mr"
+    ],
+    "query_results": [
+      {
+        "deterministic": true,
+        "dimensions": 1024,
+        "finite": true,
+        "l2_norm": 0.9999999999013188,
+        "language": "en",
+        "vector_hash": "4442ab395768e39606187c4157f38d977e97a23426f1868330de4298086ebad5"
+      },
+      {
+        "deterministic": true,
+        "dimensions": 1024,
+        "finite": true,
+        "l2_norm": 0.9999999846326607,
+        "language": "hi",
+        "vector_hash": "312c8a971b9312fd31a53eb6ad0349ea028700cb3b1e9b638616d4d174af4e61"
+      },
+      {
+        "deterministic": true,
+        "dimensions": 1024,
+        "finite": true,
+        "l2_norm": 1.0000000537307052,
+        "language": "mr",
+        "vector_hash": "6063dd3eebe11b689f274bb7a931636a052bc828e9dd1f25ef1a3a11f18c5860"
+      }
+    ],
+    "readiness": {
+      "available_locally": true,
+      "exact_identity": true,
+      "initialized": true,
+      "loadable": true,
+      "reason_code": "provider_ready"
+    },
+    "reinitialized": true
+  },
+  "offline": true,
+  "reranker": {
+    "candidate_ids": [
+      "91852dae-912b-5e3a-a8ee-5bdbfb92b323",
+      "3c6446d2-330a-5595-8adf-020f5ef6daff",
+      "8ed20885-7bbf-57d4-bbd4-ca223321818d"
+    ],
+    "deterministic": true,
+    "finite": true,
+    "pair_identities": [
+      "a781664fe674d35f398065a86272f01da4f9dbd33fd5153697f9fb7f7c0672b3",
+      "19f4d69a4a0c164339b11e92529b592fdcc383f32b40ced03e34e6b260287fcc",
+      "34b6ea8104a73235a68e953956461d21980dda65d619c37842cdb004c24d5a61"
+    ],
+    "provider_configuration_digest": "978df04395d67ddabff6088ee23dda9abd20eefd9a2b92d7ffe67361a9ac821a",
+    "readiness": {
+      "available_locally": true,
+      "exact_identity": true,
+      "initialized": true,
+      "loadable": true,
+      "reason_code": "provider_ready"
+    },
+    "reinitialized": true,
+    "retained_token_counts": [
+      31,
+      33,
+      31
+    ],
+    "scores": [
+      0.9962670207023621,
+      0.3787631392478943,
+      0.7864928245544434
+    ],
+    "semantic_text_hashes": [
+      "05b3559576fd25db421dc27940b54522bcf873a9b6f6dfa86d6688aab903ba59",
+      "1146b9a0b7a1d9962b67978fe01e3eda3e5be44ffdd57d814ec11e510a4479f8",
+      "ea9bca4821e95dfd4a8ee10f5ce9f90bb5a752e0ac5e894e383508577f146227"
+    ],
+    "title_metadata_included": [
+      false,
+      false,
+      false
+    ],
+    "tokenizer_configuration_digest": "6dad6ae608d9caa060d53056d2f3eed8836b09f957e82289136c923ad439350b",
+    "tokenizer_identity": "BAAI/bge-reranker-v2-m3",
+    "tokenizer_revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
+  },
+  "schema_version": "mnemo.v2-provider-readiness-evidence/1"
+}

@@ -113,17 +113,17 @@ def test_classify_structural_code(
     classifier: DocumentClassifier, empty_metadata: DocumentMetadata
 ) -> None:
     blocks = (
-        RawCodeBlock(ordinal=0, code="def foo(): pass"),
-        RawCodeBlock(ordinal=1, code="def bar(): pass"),
+        RawCodeBlock(ordinal=0, code="def foo(): pass", code_language="python"),
+        RawCodeBlock(ordinal=1, code="def bar(): pass", code_language="python"),
         RawTextBlock(ordinal=2, text="This is a small comment"),
-        RawCodeBlock(ordinal=3, code="print('hello')"),
-        RawCodeBlock(ordinal=4, code="print('world')"),
+        RawCodeBlock(ordinal=3, code="print('hello')", code_language="python"),
+        RawCodeBlock(ordinal=4, code="print('world')", code_language="python"),
     )
     build_result(blocks, empty_metadata)
     # 4 code blocks out of 5 = 80%, condition is > 0.8, let's see...
     # Oh wait, > 0.8 means strictly greater. 4/5 = 0.8. So it won't be code.
     # Let's add one more code block.
-    blocks2 = (*blocks, RawCodeBlock(ordinal=5, code="pass"))
+    blocks2 = (*blocks, RawCodeBlock(ordinal=5, code="pass", code_language="python"))
     result2 = build_result(blocks2, empty_metadata)
     classified = classifier.classify(result2)
     assert classified.doc_type == DocType.CODE
@@ -139,6 +139,22 @@ def test_classify_fallback_generic(
     result = build_result(blocks, empty_metadata)
     classified = classifier.classify(result, filename="unknown.txt")
     assert classified.doc_type == DocType.GENERIC
+
+
+def test_html_with_untyped_preformatted_blocks_remains_generic(
+    classifier: DocumentClassifier, empty_metadata: DocumentMetadata
+) -> None:
+    result = build_result(
+        (
+            RawCodeBlock(ordinal=0, code="lecture example"),
+            RawCodeBlock(ordinal=1, code="another example"),
+        ),
+        empty_metadata,
+    )
+
+    classified = classifier.classify(result, filename="lecture.html")
+
+    assert classified.doc_type is DocType.GENERIC
 
 
 def test_classify_preserves_attributes(

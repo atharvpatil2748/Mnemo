@@ -1,0 +1,32 @@
+{
+  "affected_representations": [
+    "legacy_font_encoded_text",
+    "pdf_encoding_anomaly"
+  ],
+  "applies_to": [
+    "language_text_v2",
+    "multilingual_embedding_v2",
+    "multilingual_vector_v2"
+  ],
+  "artifact_digest": "0a36cabd3d9b4775f8b2932897d67ba85ad7503d5864463b152bd4aa4002ff20",
+  "canonical_mutation": false,
+  "certification_limitation": "legacy_representation_semantic_retrieval_not_verified_or_certified",
+  "completeness_semantics": "complete_only_against_frozen_eligible_set_with_limitation_disclosed",
+  "corpus_documents_retained": 44,
+  "does_not_apply_to": [
+    "source_census",
+    "canonical_source_retention",
+    "representation_observation"
+  ],
+  "excluded_counts_by_representation": {
+    "legacy_font_encoded_text": 502,
+    "pdf_encoding_anomaly": 2
+  },
+  "excluded_from_transformation_dependent_generations": 504,
+  "excluded_item_identity_digest": "52eedf0e9b83ea4986dfbb48c18982a9266a2bec3a54dcc411c3dba614d85772",
+  "excluded_source_documents": 0,
+  "policy_id": "legacy-representation-fail-closed-exclusion-v1",
+  "reason_code": "representation_transform_unavailable_governed_exclusion",
+  "schema_version": "mnemo.v2-governed-coverage-limitation/1",
+  "silent_discard": false
+}

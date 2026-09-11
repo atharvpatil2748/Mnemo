@@ -131,7 +131,9 @@ async def test_auth_mode_none_allows_all_requests() -> None:
 @pytest.mark.anyio
 async def test_auth_mode_api_key_enforcement() -> None:
     valid_key = "test-secret-api-key-12345"
-    app = _make_test_app(ServerConfig(auth_mode="api-key", api_key=valid_key))
+    app = _make_test_app(
+        ServerConfig(auth_mode="api-key", api_key=valid_key, delivery_cursor_secret="c" * 32)
+    )
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # 1. Health check is always exempt
@@ -168,7 +170,9 @@ async def test_auth_mode_api_key_enforcement() -> None:
 
 @pytest.mark.anyio
 async def test_auth_mode_api_key_misconfigured() -> None:
-    app = _make_test_app(ServerConfig(auth_mode="api-key", api_key=None))
+    app = _make_test_app(
+        ServerConfig(auth_mode="api-key", api_key=None, delivery_cursor_secret="c" * 32)
+    )
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/v1/notebooks")
@@ -179,7 +183,9 @@ async def test_auth_mode_api_key_misconfigured() -> None:
 @pytest.mark.anyio
 async def test_auth_mode_jwt_enforcement() -> None:
     jwt_secret = "my-super-secret-key-32-bytes-long"
-    app = _make_test_app(ServerConfig(auth_mode="jwt", jwt_secret=jwt_secret))
+    app = _make_test_app(
+        ServerConfig(auth_mode="jwt", jwt_secret=jwt_secret, delivery_cursor_secret="c" * 32)
+    )
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # 1. Exempt health endpoint

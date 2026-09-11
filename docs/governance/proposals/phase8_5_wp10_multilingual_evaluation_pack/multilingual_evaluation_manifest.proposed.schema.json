@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/schemas/multilingual-evaluation-manifest-proposed-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "manifest_id",
+    "status",
+    "created_at",
+    "evaluator_identity",
+    "approval",
+    "protected_inputs",
+    "model_profiles",
+    "legacy_selection_cohort",
+    "sample_size_policy",
+    "directional_cohorts",
+    "secondary_cohorts",
+    "judgment_contract",
+    "metric_contract",
+    "threshold_contract",
+    "zero_tolerance_gates",
+    "wp16_mapping"
+  ],
+  "properties": {
+    "$schema": {"type": "string", "minLength": 1},
+    "schema_version": {"const": "mnemo.multilingual-evaluation-manifest.proposed/1"},
+    "manifest_id": {"type": "string", "minLength": 1},
+    "status": {"const": "proposal_requires_human_governance_approval"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "evaluator_identity": {"type": "string", "minLength": 1},
+    "approval": {"$ref": "#/$defs/approval"},
+    "protected_inputs": {"type": "object"},
+    "model_profiles": {"type": "object"},
+    "legacy_selection_cohort": {"$ref": "#/$defs/legacyCohort"},
+    "sample_size_policy": {"type": "object"},
+    "directional_cohorts": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {"$ref": "#/$defs/directionalCohort"}
+    },
+    "secondary_cohorts": {"type": "array", "minItems": 9, "items": {"type": "object"}},
+    "judgment_contract": {"type": "object"},
+    "metric_contract": {"type": "object"},
+    "threshold_contract": {"type": "object"},
+    "zero_tolerance_gates": {"type": "object"},
+    "wp16_mapping": {"type": "array", "minItems": 5, "maxItems": 5, "items": {"type": "object"}}
+  },
+  "$defs": {
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "approver", "approved_at"],
+      "properties": {
+        "state": {"const": "pending"},
+        "approver": {"type": "null"},
+        "approved_at": {"type": "null"}
+      }
+    },
+    "legacyCohort": {
+      "type": "object",
+      "required": ["purpose", "case_count", "candidate_universe", "raw_rankings_retained", "queries"],
+      "properties": {
+        "purpose": {"type": "string"},
+        "case_count": {"const": 18},
+        "candidate_universe": {"type": "object"},
+        "raw_rankings_retained": {"const": false},
+        "queries": {"type": "array", "minItems": 18, "maxItems": 18, "items": {"type": "object"}}
+      }
+    },
+    "directionalCohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "direction",
+        "existing_cases",
+        "existing_judgments",
+        "reusable_for_selection_reproducibility",
+        "statistically_usable_for_certification",
+        "proposed_minimum_cases",
+        "proposed_certification_target_cases",
+        "queries",
+        "judgments",
+        "thresholds"
+      ],
+      "properties": {
+        "direction": {"enum": ["en->en", "en->hi", "en->mr", "hi->en", "hi->hi", "hi->mr", "mr->en", "mr->hi", "mr->mr"]},
+        "existing_cases": {"type": "integer", "minimum": 0},
+        "existing_judgments": {"type": "integer", "minimum": 0},
+        "reusable_for_selection_reproducibility": {"type": "boolean"},
+        "statistically_usable_for_certification": {"const": false},
+        "proposed_minimum_cases": {"enum": [10, 30]},
+        "proposed_certification_target_cases": {"const": 50},
+        "cohort_classification": {"enum": ["STANDARD_PROVISIONAL", "CORPUS_CONSTRAINED_CENSUS"]},
+        "census_chunk_count": {"type": "integer"},
+        "queries": {"type": "array", "maxItems": 0},
+        "judgments": {"type": "array", "maxItems": 0},
+        "thresholds": {"type": "object"}
+      }
+    }
+  }
+}

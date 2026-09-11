@@ -34,10 +34,14 @@ def test_real_bhagavad_gita_to_ollama_and_qdrant() -> None:
     assert completed.returncode == 0, completed.stdout + "\n" + completed.stderr
 
     m4 = json.loads(
-        (ROOT / "docs/milestone-evidence/m4-bhagavad-gita.json").read_text(encoding="utf-8")
+        (ROOT / "docs/evidence/historical/milestones/m4-bhagavad-gita.json").read_text(
+            encoding="utf-8"
+        )
     )
     m5 = json.loads(
-        (ROOT / "docs/milestone-evidence/m5-ollama-qdrant.json").read_text(encoding="utf-8")
+        (ROOT / "docs/evidence/historical/milestones/m5-ollama-qdrant.json").read_text(
+            encoding="utf-8"
+        )
     )
     assert m4["verdict"] == "PASS"
     assert m4["dataset"] == "goldenDataset/Bhagavad-gita-As-It-Is.pdf"

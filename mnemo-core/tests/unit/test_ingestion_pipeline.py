@@ -14,6 +14,7 @@ from mnemo.interfaces.parser_models import ParseResult, RawImageBlock, Transient
 from mnemo.interfaces.storage import StorageInterfaceV1
 from mnemo.models import (
     Asset,
+    AssetContainerKind,
     DocType,
     Document,
     DocumentMetadata,
@@ -25,6 +26,7 @@ from mnemo.models import (
     TextBlock,
 )
 from mnemo.parsers import ParserRouter
+from mnemo.parsers.asset_extraction import extraction_from_parse_result
 
 
 def _result(*, two_assets: bool = False) -> ParseResult:
@@ -138,6 +140,34 @@ async def test_asset_failure_leaves_content_addressed_assets_and_prevents_public
     storage.delete_asset.assert_not_awaited()
     canonicalizer.canonicalize.assert_not_called()
     storage.put_parsed_document.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_v2_ingestion_preserves_frozen_v1_canonical_projection() -> None:
+    canonical_route = _result()
+    extracted_route = _result(two_assets=True)
+    extraction = extraction_from_parse_result(
+        extracted_route,
+        parser_id="synthetic",
+        container_kind=AssetContainerKind.DOCX,
+    )
+    pipeline, storage, cleaner, classifier, canonicalizer = _pipeline(canonical_route)
+    pipeline._router.route_with_assets = AsyncMock(return_value=extraction)  # type: ignore[attr-defined]
+    first_asset = _asset()
+    second_asset = _asset()
+    storage.put_asset.side_effect = (first_asset, second_asset, first_asset)
+    canonical = DocumentCanonicalizer().canonicalize(canonical_route, {"image-1": first_asset})
+    canonicalizer.canonicalize.return_value = canonical
+
+    result = await pipeline.ingest_with_assets(b"raw", "document.docx", uuid4())
+
+    assert result.parsed_document is canonical
+    assert result.extraction is extraction
+    assert result.resolved_assets["image-1"] == first_asset
+    assert result.resolved_assets["image-2"] == second_asset
+    cleaner.clean.assert_called_once_with(canonical_route)
+    classifier.classify.assert_called_once_with(canonical_route, "document.docx")
+    canonicalizer.canonicalize.assert_called_once_with(canonical_route, {"image-1": first_asset})
 
 
 def _document(parsed: ParsedDocument) -> Document:

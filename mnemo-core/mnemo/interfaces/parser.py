@@ -2,7 +2,7 @@
 
 from typing import Protocol, runtime_checkable
 
-from mnemo.interfaces.parser_models import ParseResult
+from mnemo.interfaces.parser_models import ParseResult, ParseResultV2
 
 from .types import FileMetadata, ParserCapabilities
 
@@ -31,3 +31,17 @@ class ParserInterfaceV1(Protocol):  # pragma: no cover
 
 
 ParserInterface = ParserInterfaceV1
+
+
+@runtime_checkable
+class ParserInterfaceV2(ParserInterfaceV1, Protocol):  # pragma: no cover
+    """Additive pure parser contract for typed asset occurrences and omissions."""
+
+    def parse_with_assets(
+        self,
+        data: bytes,
+        filename: str,
+        metadata: FileMetadata,
+    ) -> ParseResultV2:
+        """Return frozen V1 text plus bounded asset-discovery evidence."""
+        ...

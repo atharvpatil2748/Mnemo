@@ -190,6 +190,117 @@ class RerankerConfig(_FrozenConfigModel):
     model: NonEmptyString
 
 
+class DerivedModelProfileConfig(_FrozenConfigModel):
+    """One additive provider/model profile selected by evaluation."""
+
+    enabled: StrictBool = True
+    provider: NonEmptyString | None = None
+    model: NonEmptyString | None = None
+    revision: NonEmptyString | None = None
+    dimensions: PositiveInteger | None = None
+
+    @model_validator(mode="after")
+    def _enabled_profile_has_identity(self) -> DerivedModelProfileConfig:
+        if self.enabled and (self.provider is None or self.model is None or self.revision is None):
+            raise ValueError("enabled model profile requires provider, model, and revision")
+        return self
+
+
+class ModelsConfig(_FrozenConfigModel):
+    """Production model profiles for vision, multilingual, and visual vector capabilities."""
+
+    vision: DerivedModelProfileConfig = Field(
+        default_factory=lambda: DerivedModelProfileConfig(
+            provider="ollama",
+            model="qwen2.5vl:latest",
+            revision="5ced39dfa4ba",
+        )
+    )
+    multilingual_embedding: DerivedModelProfileConfig = Field(
+        default_factory=lambda: DerivedModelProfileConfig(
+            provider="sentence-transformers",
+            model="BAAI/bge-m3",
+            revision="5617a9f61b028005a4858fdac845db406aefb181",
+            dimensions=1024,
+        )
+    )
+    multilingual_reranker: DerivedModelProfileConfig = Field(
+        default_factory=lambda: DerivedModelProfileConfig(
+            provider="sentence-transformers",
+            model="BAAI/bge-reranker-v2-m3",
+            revision="953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+        )
+    )
+    visual_embedding: DerivedModelProfileConfig = Field(
+        default_factory=lambda: DerivedModelProfileConfig(
+            provider="transformers",
+            model="openai/clip-vit-large-patch14",
+            revision="32bd64288804d66eefd0ccbe215aa642df71cc41",
+            dimensions=768,
+        )
+    )
+
+    @classmethod
+    def from_file(cls, path: str | Path) -> ModelsConfig:
+        """Load the model-profile document directly."""
+        config_path = Path(path).expanduser().resolve(strict=False)
+        if config_path.suffix.lower() != ".toml":
+            raise ValueError("Model configuration must use TOML")
+        if not config_path.is_file():
+            raise FileNotFoundError(f"model configuration does not exist: {config_path}")
+        with config_path.open("rb") as stream:
+            values = tomllib.load(stream)
+        return cls.model_validate(values)
+
+
+class Phase85FeatureConfig(_FrozenConfigModel):
+    """Independent Phase 8.5 feature and transport selections."""
+
+    advanced_retrieval: StrictBool = True
+    structured_retrieval: StrictBool = True
+    ocr: StrictBool = True
+    vision: StrictBool = True
+    visual_vector: StrictBool = True
+    multilingual: StrictBool = True
+    multimodal: StrictBool = True
+    final_qa_v2: StrictBool = True
+    http: StrictBool = True
+    mcp: StrictBool = True
+
+
+class Phase85ProfileConfig(_FrozenConfigModel):
+    """Selection and resolved metadata for the additive Phase 8.5 profile."""
+
+    enabled: StrictBool = True
+    profile_file: Path | None = None
+    profile_name: NonEmptyString | None = None
+    model_root: Path | None = None
+    profile_version: NonEmptyString = "inline-v1"
+    mode: NonEmptyString = "phase8_5"
+    trust_class: NonEmptyString = "local_trusted"
+    certification: NonEmptyString = "non_certified_default"
+    certification_evidence: tuple[NonEmptyString, ...] = ()
+    profile_fingerprint: NonEmptyString | None = None
+    features: Phase85FeatureConfig = Field(default_factory=Phase85FeatureConfig)
+
+    @field_validator("profile_file", "model_root", mode="before")
+    @classmethod
+    def _resolve_optional_path(cls, value: Path | str | None, info: ValidationInfo) -> Path | None:
+        return None if value is None else _resolve_path(value, info)
+
+    @model_validator(mode="after")
+    def _selection_is_complete(self) -> Phase85ProfileConfig:
+        if (self.profile_file is None) != (self.profile_name is None):
+            raise ValueError("profile_file and profile_name must be configured together")
+        if self.mode in {"v1_only", "disabled"} and self.enabled:
+            raise ValueError("V1-only/disabled profile must disable Phase 8.5")
+        return self
+
+
+# Backwards-compatibility alias
+Phase85ModelConfig = ModelsConfig
+
+
 class PluginConfig(_FrozenConfigModel):
     """Configuration for local plugin discovery."""
 
@@ -238,6 +349,98 @@ _ENVIRONMENT_FIELDS: Final[dict[str, tuple[_EnvironmentPath, str]]] = {
     "MNEMO_EMBEDDING_DIMENSIONS": (("embedding", "dimensions"), "int"),
     "MNEMO_RERANKER_PROVIDER": (("reranker", "provider"), "string"),
     "MNEMO_RERANKER_MODEL": (("reranker", "model"), "string"),
+    "MNEMO_MODELS_VISION_PROVIDER": (("models", "vision", "provider"), "string"),
+    "MNEMO_MODELS_VISION_ENABLED": (("models", "vision", "enabled"), "bool"),
+    "MNEMO_MODELS_VISION_MODEL": (("models", "vision", "model"), "string"),
+    "MNEMO_MODELS_VISION_REVISION": (("models", "vision", "revision"), "optional"),
+    "MNEMO_MODELS_MULTILINGUAL_EMBEDDING_PROVIDER": (
+        ("models", "multilingual_embedding", "provider"),
+        "string",
+    ),
+    "MNEMO_MODELS_MULTILINGUAL_EMBEDDING_ENABLED": (
+        ("models", "multilingual_embedding", "enabled"),
+        "bool",
+    ),
+    "MNEMO_MODELS_MULTILINGUAL_EMBEDDING_MODEL": (
+        ("models", "multilingual_embedding", "model"),
+        "string",
+    ),
+    "MNEMO_MODELS_MULTILINGUAL_EMBEDDING_REVISION": (
+        ("models", "multilingual_embedding", "revision"),
+        "optional",
+    ),
+    "MNEMO_MODELS_MULTILINGUAL_EMBEDDING_DIMENSIONS": (
+        ("models", "multilingual_embedding", "dimensions"),
+        "int",
+    ),
+    "MNEMO_MODELS_MULTILINGUAL_RERANKER_PROVIDER": (
+        ("models", "multilingual_reranker", "provider"),
+        "string",
+    ),
+    "MNEMO_MODELS_MULTILINGUAL_RERANKER_ENABLED": (
+        ("models", "multilingual_reranker", "enabled"),
+        "bool",
+    ),
+    "MNEMO_MODELS_MULTILINGUAL_RERANKER_MODEL": (
+        ("models", "multilingual_reranker", "model"),
+        "string",
+    ),
+    "MNEMO_MODELS_MULTILINGUAL_RERANKER_REVISION": (
+        ("models", "multilingual_reranker", "revision"),
+        "optional",
+    ),
+    "MNEMO_MODELS_VISUAL_EMBEDDING_PROVIDER": (
+        ("models", "visual_embedding", "provider"),
+        "string",
+    ),
+    "MNEMO_MODELS_VISUAL_EMBEDDING_ENABLED": (
+        ("models", "visual_embedding", "enabled"),
+        "bool",
+    ),
+    "MNEMO_MODELS_VISUAL_EMBEDDING_MODEL": (
+        ("models", "visual_embedding", "model"),
+        "string",
+    ),
+    "MNEMO_MODELS_VISUAL_EMBEDDING_REVISION": (
+        ("models", "visual_embedding", "revision"),
+        "optional",
+    ),
+    "MNEMO_MODELS_VISUAL_EMBEDDING_DIMENSIONS": (
+        ("models", "visual_embedding", "dimensions"),
+        "int",
+    ),
+    "MNEMO_PHASE85_ENABLED": (("phase85", "enabled"), "bool"),
+    "MNEMO_PHASE85_PROFILE_FILE": (("phase85", "profile_file"), "string"),
+    "MNEMO_PHASE85_PROFILE_NAME": (("phase85", "profile_name"), "string"),
+    "MNEMO_PHASE85_MODEL_ROOT": (("phase85", "model_root"), "optional"),
+    "MNEMO_PHASE85_ADVANCED_RETRIEVAL_ENABLED": (
+        ("phase85", "features", "advanced_retrieval"),
+        "bool",
+    ),
+    "MNEMO_PHASE85_STRUCTURED_RETRIEVAL_ENABLED": (
+        ("phase85", "features", "structured_retrieval"),
+        "bool",
+    ),
+    "MNEMO_PHASE85_OCR_ENABLED": (("phase85", "features", "ocr"), "bool"),
+    "MNEMO_PHASE85_VISION_ENABLED": (("phase85", "features", "vision"), "bool"),
+    "MNEMO_PHASE85_VISUAL_VECTOR_ENABLED": (
+        ("phase85", "features", "visual_vector"),
+        "bool",
+    ),
+    "MNEMO_PHASE85_MULTILINGUAL_ENABLED": (
+        ("phase85", "features", "multilingual"),
+        "bool",
+    ),
+    "MNEMO_PHASE85_MULTIMODAL_ENABLED": (
+        ("phase85", "features", "multimodal"),
+        "bool",
+    ),
+    "MNEMO_PHASE85_FINAL_QA_V2_ENABLED": (
+        ("phase85", "features", "final_qa_v2"),
+        "bool",
+    ),
+    "MNEMO_PHASE85_HTTP_ENABLED": (("phase85", "features", "http"), "bool"),
+    "MNEMO_PHASE85_MCP_ENABLED": (("phase85", "features", "mcp"), "bool"),
     "MNEMO_PLUGINS_DIRECTORY": (("plugins", "directory"), "string"),
 }
 
@@ -324,8 +527,82 @@ def _merge_nested(base: dict[str, object], overrides: Mapping[str, object]) -> N
             base[key] = value
 
 
+def _profile_document_values(
+    values: Mapping[str, object],
+    environment: Mapping[str, object],
+    *,
+    base_directory: Path,
+) -> dict[str, object]:
+    """Resolve the selected profile below inline/env precedence."""
+    phase_selection: dict[str, object] = {}
+    inline_phase = values.get("phase85")
+    if isinstance(inline_phase, Mapping):
+        _merge_nested(phase_selection, cast(Mapping[str, object], inline_phase))
+    environment_phase = environment.get("phase85")
+    if isinstance(environment_phase, Mapping):
+        _merge_nested(phase_selection, cast(Mapping[str, object], environment_phase))
+    profile_file = phase_selection.get("profile_file")
+    profile_name = phase_selection.get("profile_name")
+    if profile_file is None and profile_name is None:
+        return {}
+    if not isinstance(profile_file, (str, Path)) or not isinstance(profile_name, str):
+        raise ValueError("profile_file and profile_name must be configured together")
+    path = Path(profile_file).expanduser()
+    if not path.is_absolute():
+        path = base_directory / path
+    from mnemo.phase85.profiles import ModelProfileDocument, ModelProfileMode, profile_snapshot
+
+    document = ModelProfileDocument.from_file(path)
+    definition = document.select(profile_name)
+    snapshot = profile_snapshot(definition, schema_version=document.schema_version)
+    disabled = {"enabled": False, "provider": None, "model": None}
+    models: dict[str, object] = {
+        name: dict(disabled)
+        for name in (
+            "vision",
+            "multilingual_embedding",
+            "multilingual_reranker",
+            "visual_embedding",
+        )
+    }
+    for name, component in snapshot.components.items():
+        models[name] = {
+            "enabled": True,
+            "provider": component.provider,
+            "model": component.model,
+            "revision": component.revision,
+            "dimensions": component.dimensions,
+        }
+    return {
+        "models": models,
+        "phase85": {
+            "enabled": snapshot.enabled,
+            "profile_file": str(path),
+            "profile_name": snapshot.profile_id,
+            "profile_version": snapshot.version,
+            "mode": snapshot.mode.value,
+            "trust_class": snapshot.trust_class.value,
+            "certification": snapshot.certification.value,
+            "certification_evidence": snapshot.certification_evidence,
+            "profile_fingerprint": snapshot.fingerprint,
+            "features": {
+                "advanced_retrieval": snapshot.mode is ModelProfileMode.PHASE85,
+                "structured_retrieval": snapshot.mode is ModelProfileMode.PHASE85,
+                "ocr": snapshot.mode is ModelProfileMode.PHASE85,
+                "vision": snapshot.mode is ModelProfileMode.PHASE85,
+                "visual_vector": snapshot.mode is ModelProfileMode.PHASE85,
+                "multilingual": snapshot.mode is ModelProfileMode.PHASE85,
+                "multimodal": snapshot.mode is ModelProfileMode.PHASE85,
+                "final_qa_v2": snapshot.mode is ModelProfileMode.PHASE85,
+                "http": snapshot.mode is ModelProfileMode.PHASE85,
+                "mcp": snapshot.mode is ModelProfileMode.PHASE85,
+            },
+        },
+    }
+
+
 class MnemoConfig(BaseModel):
-    """The complete immutable V1 runtime configuration snapshot."""
+    """The complete immutable runtime configuration snapshot."""
 
     model_config = ConfigDict(frozen=True, extra="forbid", validate_default=True)
 
@@ -334,6 +611,8 @@ class MnemoConfig(BaseModel):
     embedding: EmbeddingConfig
     reranker: RerankerConfig
     plugins: PluginConfig = Field(default_factory=PluginConfig)
+    models: ModelsConfig = Field(default_factory=ModelsConfig)
+    phase85: Phase85ProfileConfig = Field(default_factory=Phase85ProfileConfig)
 
     @classmethod
     def from_file(cls, path: str | Path) -> MnemoConfig:
@@ -348,9 +627,16 @@ class MnemoConfig(BaseModel):
                 parsed = tomllib.load(stream)
         except tomllib.TOMLDecodeError as error:
             raise ValueError(f"invalid TOML configuration {config_path}: {error}") from error
-        values = cast(dict[str, object], parsed)
+        inline_values = cast(dict[str, object], parsed)
+        environment = _environment_overrides(os.environ)
+        values = _profile_document_values(
+            inline_values,
+            environment,
+            base_directory=config_path.parent,
+        )
+        _merge_nested(values, inline_values)
         _apply_path_defaults(values)
-        _merge_nested(values, _environment_overrides(os.environ))
+        _merge_nested(values, environment)
         return cls.model_validate(
             values,
             context={_PATH_CONTEXT_KEY: config_path.parent},
@@ -359,9 +645,14 @@ class MnemoConfig(BaseModel):
     @classmethod
     def from_env(cls) -> MnemoConfig:
         """Load recognized environment values over V1 defaults and validate."""
-        values: dict[str, object] = {}
+        environment = _environment_overrides(os.environ)
+        values = _profile_document_values(
+            {},
+            environment,
+            base_directory=Path.cwd(),
+        )
         _apply_path_defaults(values)
-        _merge_nested(values, _environment_overrides(os.environ))
+        _merge_nested(values, environment)
         return cls.model_validate(
             values,
             context={_PATH_CONTEXT_KEY: Path.cwd()},

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/schemas/behavioral-manifest-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "corpus_id", "scenarios"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "mnemo.behavioral-manifest/1"},
+    "corpus_id": {"type": "string", "minLength": 1},
+    "scenarios": {"type": "array", "minItems": 31, "maxItems": 31, "items": {"$ref": "#/$defs/scenario"}}
+  },
+  "$defs": {
+    "scenario": {
+      "type": "object", "additionalProperties": false,
+      "required": ["scenario_id", "category", "priority", "prompt", "max_tool_calls", "oracle"],
+      "properties": {
+        "scenario_id": {"type": "string", "pattern": "^P85-B-[0-9]{2}$"},
+        "category": {"type": "string", "minLength": 1},
+        "priority": {"enum": ["P0", "P1"]},
+        "prompt": {"type": "string", "minLength": 1},
+        "max_tool_calls": {"type": "integer", "minimum": 1, "maximum": 32},
+        "oracle": {"$ref": "#/$defs/oracle"}
+      }
+    },
+    "oracle": {
+      "type": "object", "additionalProperties": false,
+      "required": ["required_tool_sequence"],
+      "properties": {
+        "required_tool_sequence": {"type": "array", "items": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}},
+        "forbidden_tools": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "require_cursor_completion": {"type": "boolean"},
+        "require_terminal_complete": {"type": "boolean"},
+        "required_provenance_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "allowed_terminal_states": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "expected_error_codes": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "answer_sha256": {"type": ["string", "null"], "minLength": 64, "maxLength": 64}
+      }
+    }
+  }
+}

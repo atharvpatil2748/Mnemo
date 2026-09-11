@@ -1,0 +1,108 @@
+{
+  "schema_version": "mnemo.full-multilingual-v2-production-manifest/1",
+  "lifecycle": {
+    "active_generation_alias": true,
+    "v2_transport_exposed": true,
+    "bge_reranker_activated": true,
+    "evaluated": true,
+    "verified": true,
+    "certified": true
+  },
+  "configuration_authority": {
+    "status": "CANONICAL_PRODUCTION_CONFIGURATION",
+    "core_runtime": "mnemo.toml",
+    "model_profile": "config/model_profiles/full_multilingual_v2_profiles.toml",
+    "durable_activation_state": "scratch/phase8_5_full_multilingual_v2/operational/reranker_activation.json",
+    "certified_lifecycle_state": "scratch/phase8_5_full_multilingual_v2/operational/certification.json",
+    "final_certification_evidence": "scratch/mnemo-v2-final-certification.json"
+  },
+  "pre_bge_exposure": {
+    "status": "HISTORICAL_TRANSITION_CONTRACT",
+    "reranker_mode": "PASS_THROUGH",
+    "reranker_identity": "v2-pass-through-reranker-v1",
+    "candidate_builder": "mnemo.v2-typed-candidate-builder/1",
+    "preserves_fused_order": true,
+    "loads_model": false
+  },
+  "corpus": {
+    "role": "production",
+    "document_count": 44,
+    "identity_manifest": "docs/governance/proposals/phase8_5_full_multilingual_architecture/V2_DATABASE_ARTIFACT_IDENTITY.json",
+    "database_path": "scratch/phase8_5_full_multilingual_v2/build-20260831-01/mnemo.db",
+    "database_identity": "0c6c73f9b847d204d073ddec8c2a5d2265c2a8bf2bf19bfec552e264f839af8d"
+  },
+  "final_qa_operational_store": {
+    "path": "scratch/phase8_5_full_multilingual_v2/operational/final_qa_v2.db",
+    "role": "mutable_execution_state",
+    "corpus_capabilities_prohibited": true,
+    "must_differ_from_production_database": true
+  },
+  "evaluation_database": {
+    "path": "data/canonical_production/mnemo_canonical.db",
+    "role": "evaluation_only",
+    "prohibited_for_production_serving": true
+  },
+  "retrieval": {
+    "semantic_model": "BAAI/bge-m3",
+    "semantic_revision": "5617a9f61b028005a4858fdac845db406aefb181",
+    "dimensions": 1024,
+    "lexical": "sqlite-fts5-unicode61",
+    "fusion": "reciprocal-rank-fusion",
+    "candidate_pool_k": 50,
+    "candidate_stage": "fused_candidates_entering_reranking"
+  },
+  "timeouts": {
+    "owner": "server_transport",
+    "advanced_retrieval_deadline_milliseconds": 30000,
+    "basis": "greater than observed 9-second serving latency and 15.430-second governed controlled evaluation maximum",
+    "dependency_timeouts_propagate": true
+  },
+  "final_qa_execution": {
+    "provider": "ollama",
+    "model": "gemma4:e4b",
+    "device": "cuda",
+    "ollama_parallelism": "external_shared_service_unchanged",
+    "request_num_ctx": 8192,
+    "cpu_fallback": false,
+    "observed_vram_mib": 4887,
+    "observed_context_tokens": 8192
+  },
+  "reranker": {
+    "model": "BAAI/bge-reranker-v2-m3",
+    "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+    "pair_policy": "bge-reranker-v2-m3-pair-256-contextual-v1",
+    "input_audit": "mnemo.reranker-input-audit/2",
+    "device": "cuda",
+    "batch_size": 2,
+    "cpu_fallback": false
+  },
+  "reranker_activation": {
+    "authority": "DurableRerankerActivationAuthorityV1",
+    "runtime_authority": "RerankerActivationAuthorityV1",
+    "state_path": "scratch/phase8_5_full_multilingual_v2/operational/reranker_activation.json",
+    "state_role": "mutable_server_owned_activation_state",
+    "state_authentication": "hmac-sha256-domain-separated-server-secret",
+    "operator_subject_source": "MNEMO_SERVER_RERANKER_ACTIVATION_OPERATOR_SUBJECT",
+    "restart_restore": true,
+    "corpus_storage_prohibited": true,
+    "final_qa_storage_prohibited": true,
+    "currently_activated": true,
+    "active_mode": "BGE_V2_M3"
+  },
+  "context_builder": {
+    "governance": "ADR-0043",
+    "compression_target_tokens": 100,
+    "compression_hard_max_tokens": 120,
+    "validation": "fail_hard"
+  },
+  "authorization": {
+    "principal": "server-derived PrincipalContextV1",
+    "services": [
+      "CentralAuthorizationServiceV1",
+      "CentralV2RetrievalAuthorizerV1"
+    ]
+  },
+  "answer": "FinalQA via governed ContextBuilder",
+  "interfaces": ["HTTP", "MCP stdio", "MCP SSE"],
+  "store_invariant": "retrieval == authorization == evidence == production corpus"
+}

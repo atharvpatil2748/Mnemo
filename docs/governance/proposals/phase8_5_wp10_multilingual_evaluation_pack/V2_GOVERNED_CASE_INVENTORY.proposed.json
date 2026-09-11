@@ -1,0 +1,3258 @@
+{
+  "schema_version": "mnemo.multilingual-case-inventory.proposed/1",
+  "inventory_id": "phase8.5-wp10-governed-case-inventory-v1",
+  "created_at": "2026-09-02T20:15:00Z",
+  "status": "PROPOSED — AWAITING HUMAN GOVERNANCE APPROVAL",
+  "governance_policy": "Option D — Hybrid Stratified Directional Policy",
+  "summary": {
+    "total_planned_cases": 240,
+    "total_answerable_cases_planned": 210,
+    "total_negative_controls_planned": 30,
+    "english_target_cases_prepared": 90,
+    "marathi_target_census_cases_prepared": 30,
+    "hindi_target_cases_prepared": 3,
+    "negative_controls_prepared": 30,
+    "total_cases_fully_prepared": 153,
+    "hindi_target_deficit_hard_stop": 87,
+    "hard_stop_condition_triggered": "30 independent Hindi cases cannot be constructed honestly from frozen V2 DB without artificial duplication or querying broken math OCR noise",
+    "qrel_status": "HUMAN_REVIEW_REQUIRED / NOT_ADJUDICATED",
+    "threshold_status": "NOT YET DEFENSIBLE"
+  },
+  "directional_cohorts": {
+    "en->mr": {
+      "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+      "census_chunk_count": 10,
+      "cases_prepared": 10,
+      "target_universe": "manuscript.pdf (all 10 canonical chunks)",
+      "cases": [
+        {
+          "case_id": "P85-EVAL-ENMR-001",
+          "direction": "en->mr",
+          "source_language": "en",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "How did the author spend their sixth grade year according to the personal reflection?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "523c5c88b522ce818212ffc42241706b731a767bb4dc5045ffa1a99e3392a0ca",
+              "source_content_hash": "79d8b0a7f0dd89bfffef100682b2c8cef6221c968fce181b796739fe0180af9d",
+              "text_preview": "स्वतःच्याच आयुष्याचा रंगभार जगायला लागलो... आणि सहावीचे वर्षही शांतपणे निघून गेले.",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENMR-002",
+          "direction": "en->mr",
+          "source_language": "en",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "What did Shardul tell Atharv about the girls clapping for their trio, and why was it described as destiny's masterstroke?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "84da15c958cbabadfb3e8449db384c64169af3dc5d21c3b848b04ced049b3851",
+              "source_content_hash": "47a73e13658c199f2c4a23421e14cb387ac8e32bca13bafb68c2c99e85502d93",
+              "text_preview": "एकत्र आहेत. मला नुकतंच आपल्या तिघांसाठी टाळ्या वाजवताना पाहिलं... मैत्रिणींच्या गर्दीतूनही त्यांचे\n\nकौतुक इतकं अधिक तीव्र होतं की, जणू इतर क",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENMR-003",
+          "direction": "en->mr",
+          "source_language": "en",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "On what specific date did the author begin writing the Marathi book dedicated to Sejal?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "664b29abcc5878baeed985556d52c5f898c1097f91ec25b1b2d028c464a1030a",
+              "source_content_hash": "d598923e2a5f0f9351825f826d99ba6750b027aa1d7756a03195b3bd74f3da36",
+              "text_preview": "माझे पुस्तक\n\nसुरुवात: 27 May 2026\n\nमला आठवतं, मी सेजलला एक दिवस म्हटलं होतं की... तुझ्यावर मी एक संपूर्ण पुस्तक लिहू शकेन. आणि आज\n\nतो दिवस अ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENMR-004",
+          "direction": "en->mr",
+          "source_language": "en",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "Who was the class teacher when entering seventh grade, and which friends sat together on the bench?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "af8142c90b999f6626ea66cf7ef1e6045026411a76fde1c8f29aa5d228aa702b",
+              "source_content_hash": "23ad6809d65c4a105eb0d7a0256999d879b03bf074c18b0c579f932897028e30",
+              "text_preview": "मी इयत्ता सातवीमध्ये प्रवेश केला. आमच्या वर्गशिक्षिका होत्या मसुटगे मॅडम; आणि त्याच जुन्या मित्रांसोबत—\n\nयश आणि शार्दुलसोबत—मी नेहमी त्या बे",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENMR-005",
+          "direction": "en->mr",
+          "source_language": "en",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "How did the author's introverted nature and purpose for attending school change after seeing Sejal?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "3c8cee1a9a76bf3480a8d1fd87378de4aa9061e5ab17c2326100f6787735ecb8",
+              "source_content_hash": "2415b6abd671dc4fcf2a594ce36f1987ebf7cb9a745727f8ad8fe9d446cb6cd4",
+              "text_preview": "येण्याचं एकच, आणि सर्वात मोठं ध्येय बनलं; म्हणूनच, अगदी आजारी ते दिवस... ते केवळ 'सुंदर' नव्हते; ते तर\n\nजणू माझ्या आयुष्यातील स्वर्णिम क्षणण",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENMR-006",
+          "direction": "en->mr",
+          "source_language": "en",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "Where did the author park their bicycle each day to ensure seeing Sejal at 5:00 PM?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "687d5fd66b7289d078caaca84268f090ac404769b85316786abe09c5bb040182",
+              "source_content_hash": "471e114bf4f3b95a6647bff57f5c2cb1778f389cf72ebcbe9a9a1a4755c68366",
+              "text_preview": "स्टँडमध्ये लावायची; कारणण मला माहीत होते की, शाळेतून परतताना पाच वाजता आमची ती शेवटची भेट\n\nनक्की होणार असते – जणू काही तो वेळ केवळ आपल्या दो",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENMR-007",
+          "direction": "en->mr",
+          "source_language": "en",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "During the announcement of exam results by Masutge Madam, how was the classroom seating arranged between the boys and the girls?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "eff45c7e9ba4ef50b994e010cb66965dab8aeaef61a0192b4a8b461a9129f637",
+              "source_content_hash": "07f65375bf467b5f3f5968b6e243319ba6d541f65b74ccb415eaa391288b6332",
+              "text_preview": "करून उत्तुंग यश मिळवले होते. त्या निकालाच्या घोषषणासाठी मसुटगे मॅडम उपस्थित होत्या—एक उत्साहाचा\n\nदिवस! मात्र, माझ्यासाठी कथेतील सर्वात महत्त",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENMR-008",
+          "direction": "en->mr",
+          "source_language": "en",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "Who was the author's sweet fifth-grade crush, and why did seeing Navneet walk with her become a turning point?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "d3a00e2104e6286c1ceefc2754488b61e442944285e8f5368d02d4685b72cb47",
+              "source_content_hash": "d9f0d92e547bfcbb91e669a1ac2c62a231832d6cc5e97e8335e6c82aa9991efa",
+              "text_preview": "काळात 'क्रश' (Crush) हा शब्द किती सहज वापरला जातो... पणण माझ्यासाठी, तो शब्द एखाद्या अर्धवट\n\nआठवणीसारखा वाटतो; एक अशी पहिली भावना, जी कुठून ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENMR-009",
+          "direction": "en->mr",
+          "source_language": "en",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "Which three friends formed the author's group and which three girls formed Sejal's group after the second unit test?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "ec273a457d230ec72525b9be4053c255b20130d5cc9cbba3f816446305cbcd63",
+              "source_content_hash": "c6e2ac4d164dd6079d5bc40045ac32d79818863fbfb6e1f41b52ec603219c9ef",
+              "text_preview": "दुसऱ्या पुरुषाचा प्रवेश नसावा, अशी एक तीव्र चिंता मनावर राज्य करत होती. कारणण मी स्वतःच तिला पूर्णपणे\n\nआपल्या ओढात अडकवले होते, पणण हे प्रेम",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENMR-010",
+          "direction": "en->mr",
+          "source_language": "en",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "Which primary school did the author attend in Malkapur from first to fourth grade before moving to Jaysingpur?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "10d9106eeda66707a2437587c6b7e20de56a92214f51f946d99dd4cd3c19c04d",
+              "source_content_hash": "f4f3081f2aa9a9045c12b53b9a1190fa6317f52287577c2ce5749829e7bf7dfb",
+              "text_preview": "मिळाले होते. मलकापूरमध्ये, पहिली ते चौथीपर्यंत, मी एका केवळ मुलांच्या शाळेत होतो... त्यामुळे मुलींच्या\n\nसहवासाची मला कधी कल्पनाच नव्हती. आणि",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        }
+      ]
+    },
+    "hi->mr": {
+      "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+      "census_chunk_count": 10,
+      "cases_prepared": 10,
+      "target_universe": "manuscript.pdf (all 10 canonical chunks)",
+      "cases": [
+        {
+          "case_id": "P85-EVAL-HIMR-001",
+          "direction": "hi->mr",
+          "source_language": "hi",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "लेखक ने अपने व्यक्तिगत संस्मरण के अनुसार अपनी छठी कक्षा का वर्ष कैसे बिताया?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "523c5c88b522ce818212ffc42241706b731a767bb4dc5045ffa1a99e3392a0ca",
+              "source_content_hash": "79d8b0a7f0dd89bfffef100682b2c8cef6221c968fce181b796739fe0180af9d",
+              "text_preview": "स्वतःच्याच आयुष्याचा रंगभार जगायला लागलो... आणि सहावीचे वर्षही शांतपणे निघून गेले.",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIMR-002",
+          "direction": "hi->mr",
+          "source_language": "hi",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "शार्दुल ने अथर्व को तीनों के लिए लड़कियों द्वारा ताली बजाने के बारे में क्या बताया, और इसे नियति का मास्टरस्ट्रोक क्यों कहा गया?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "84da15c958cbabadfb3e8449db384c64169af3dc5d21c3b848b04ced049b3851",
+              "source_content_hash": "47a73e13658c199f2c4a23421e14cb387ac8e32bca13bafb68c2c99e85502d93",
+              "text_preview": "एकत्र आहेत. मला नुकतंच आपल्या तिघांसाठी टाळ्या वाजवताना पाहिलं... मैत्रिणींच्या गर्दीतूनही त्यांचे\n\nकौतुक इतकं अधिक तीव्र होतं की, जणू इतर क",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIMR-003",
+          "direction": "hi->mr",
+          "source_language": "hi",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "लेखक ने सेजल को समर्पित मराठी पुस्तक लिखना किस विशिष्ट तिथि को शुरू किया?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "664b29abcc5878baeed985556d52c5f898c1097f91ec25b1b2d028c464a1030a",
+              "source_content_hash": "d598923e2a5f0f9351825f826d99ba6750b027aa1d7756a03195b3bd74f3da36",
+              "text_preview": "माझे पुस्तक\n\nसुरुवात: 27 May 2026\n\nमला आठवतं, मी सेजलला एक दिवस म्हटलं होतं की... तुझ्यावर मी एक संपूर्ण पुस्तक लिहू शकेन. आणि आज\n\nतो दिवस अ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIMR-004",
+          "direction": "hi->mr",
+          "source_language": "hi",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "सातवीं कक्षा में प्रवेश करते समय कक्षा अध्यापिका कौन थीं, और बेंच पर कौन से दोस्त साथ बैठते थे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "af8142c90b999f6626ea66cf7ef1e6045026411a76fde1c8f29aa5d228aa702b",
+              "source_content_hash": "23ad6809d65c4a105eb0d7a0256999d879b03bf074c18b0c579f932897028e30",
+              "text_preview": "मी इयत्ता सातवीमध्ये प्रवेश केला. आमच्या वर्गशिक्षिका होत्या मसुटगे मॅडम; आणि त्याच जुन्या मित्रांसोबत—\n\nयश आणि शार्दुलसोबत—मी नेहमी त्या बे",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIMR-005",
+          "direction": "hi->mr",
+          "source_language": "hi",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "सेजल को देखने के बाद लेखक का अंतर्मुखी स्वभाव और स्कूल जाने का उद्देश्य कैसे बदल गया?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "3c8cee1a9a76bf3480a8d1fd87378de4aa9061e5ab17c2326100f6787735ecb8",
+              "source_content_hash": "2415b6abd671dc4fcf2a594ce36f1987ebf7cb9a745727f8ad8fe9d446cb6cd4",
+              "text_preview": "येण्याचं एकच, आणि सर्वात मोठं ध्येय बनलं; म्हणूनच, अगदी आजारी ते दिवस... ते केवळ 'सुंदर' नव्हते; ते तर\n\nजणू माझ्या आयुष्यातील स्वर्णिम क्षणण",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIMR-006",
+          "direction": "hi->mr",
+          "source_language": "hi",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "लेखक रोज़ 5:00 बजे सेजल से मिलना सुनिश्चित करने के लिए अपनी साइकिल कहाँ पार्क करता था?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "687d5fd66b7289d078caaca84268f090ac404769b85316786abe09c5bb040182",
+              "source_content_hash": "471e114bf4f3b95a6647bff57f5c2cb1778f389cf72ebcbe9a9a1a4755c68366",
+              "text_preview": "स्टँडमध्ये लावायची; कारणण मला माहीत होते की, शाळेतून परतताना पाच वाजता आमची ती शेवटची भेट\n\nनक्की होणार असते – जणू काही तो वेळ केवळ आपल्या दो",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIMR-007",
+          "direction": "hi->mr",
+          "source_language": "hi",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "मसुटगे मैडम द्वारा परीक्षा परिणाम घोषित किए जाने के दौरान लड़कों और लड़कियों के बीच कक्षा में बैठने की क्या व्यवस्था थी?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "eff45c7e9ba4ef50b994e010cb66965dab8aeaef61a0192b4a8b461a9129f637",
+              "source_content_hash": "07f65375bf467b5f3f5968b6e243319ba6d541f65b74ccb415eaa391288b6332",
+              "text_preview": "करून उत्तुंग यश मिळवले होते. त्या निकालाच्या घोषषणासाठी मसुटगे मॅडम उपस्थित होत्या—एक उत्साहाचा\n\nदिवस! मात्र, माझ्यासाठी कथेतील सर्वात महत्त",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIMR-008",
+          "direction": "hi->mr",
+          "source_language": "hi",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "पांचवीं कक्षा में लेखक का क्रश कौन थी, और नवनीत को उसके साथ जाते देखकर क्या निर्णायक मोड़ आया?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "d3a00e2104e6286c1ceefc2754488b61e442944285e8f5368d02d4685b72cb47",
+              "source_content_hash": "d9f0d92e547bfcbb91e669a1ac2c62a231832d6cc5e97e8335e6c82aa9991efa",
+              "text_preview": "काळात 'क्रश' (Crush) हा शब्द किती सहज वापरला जातो... पणण माझ्यासाठी, तो शब्द एखाद्या अर्धवट\n\nआठवणीसारखा वाटतो; एक अशी पहिली भावना, जी कुठून ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIMR-009",
+          "direction": "hi->mr",
+          "source_language": "hi",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "दूसरी इकाई परीक्षा के बाद लेखक के समूह में कौन से तीन दोस्त थे और सेजल के समूह में कौन सी तीन लड़कियाँ थीं?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "ec273a457d230ec72525b9be4053c255b20130d5cc9cbba3f816446305cbcd63",
+              "source_content_hash": "c6e2ac4d164dd6079d5bc40045ac32d79818863fbfb6e1f41b52ec603219c9ef",
+              "text_preview": "दुसऱ्या पुरुषाचा प्रवेश नसावा, अशी एक तीव्र चिंता मनावर राज्य करत होती. कारणण मी स्वतःच तिला पूर्णपणे\n\nआपल्या ओढात अडकवले होते, पणण हे प्रेम",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIMR-010",
+          "direction": "hi->mr",
+          "source_language": "hi",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "जयसिंगपुर जाने से पहले लेखक ने पहली से चौथी कक्षा तक मलकापुर के किस स्कूल में पढ़ाई की थी?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "10d9106eeda66707a2437587c6b7e20de56a92214f51f946d99dd4cd3c19c04d",
+              "source_content_hash": "f4f3081f2aa9a9045c12b53b9a1190fa6317f52287577c2ce5749829e7bf7dfb",
+              "text_preview": "मिळाले होते. मलकापूरमध्ये, पहिली ते चौथीपर्यंत, मी एका केवळ मुलांच्या शाळेत होतो... त्यामुळे मुलींच्या\n\nसहवासाची मला कधी कल्पनाच नव्हती. आणि",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        }
+      ]
+    },
+    "mr->mr": {
+      "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+      "census_chunk_count": 10,
+      "cases_prepared": 10,
+      "target_universe": "manuscript.pdf (all 10 canonical chunks)",
+      "cases": [
+        {
+          "case_id": "P85-EVAL-MRMR-001",
+          "direction": "mr->mr",
+          "source_language": "mr",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "लेखकाच्या व्यक्तिगत आठवणींनुसार सहावीचे वर्ष कसे शांतपणे निघून गेले?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "523c5c88b522ce818212ffc42241706b731a767bb4dc5045ffa1a99e3392a0ca",
+              "source_content_hash": "79d8b0a7f0dd89bfffef100682b2c8cef6221c968fce181b796739fe0180af9d",
+              "text_preview": "स्वतःच्याच आयुष्याचा रंगभार जगायला लागलो... आणि सहावीचे वर्षही शांतपणे निघून गेले.",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MRMR-002",
+          "direction": "mr->mr",
+          "source_language": "mr",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "शार्दुलने अथर्वला तिघांसाठी टाळ्या वाजवणाऱ्या मुलींबद्दल काय सांगितले आणि त्याला नियतीचा मास्टरस्ट्रोक का म्हटले?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "84da15c958cbabadfb3e8449db384c64169af3dc5d21c3b848b04ced049b3851",
+              "source_content_hash": "47a73e13658c199f2c4a23421e14cb387ac8e32bca13bafb68c2c99e85502d93",
+              "text_preview": "एकत्र आहेत. मला नुकतंच आपल्या तिघांसाठी टाळ्या वाजवताना पाहिलं... मैत्रिणींच्या गर्दीतूनही त्यांचे\n\nकौतुक इतकं अधिक तीव्र होतं की, जणू इतर क",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MRMR-003",
+          "direction": "mr->mr",
+          "source_language": "mr",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "लेखकाने सेजलला समर्पित मराठी पुस्तक लिहायला नेमकी कोणती तारीख निश्चित केली होती?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "664b29abcc5878baeed985556d52c5f898c1097f91ec25b1b2d028c464a1030a",
+              "source_content_hash": "d598923e2a5f0f9351825f826d99ba6750b027aa1d7756a03195b3bd74f3da36",
+              "text_preview": "माझे पुस्तक\n\nसुरुवात: 27 May 2026\n\nमला आठवतं, मी सेजलला एक दिवस म्हटलं होतं की... तुझ्यावर मी एक संपूर्ण पुस्तक लिहू शकेन. आणि आज\n\nतो दिवस अ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MRMR-004",
+          "direction": "mr->mr",
+          "source_language": "mr",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "इयत्ता सातवीमध्ये प्रवेश करताना वर्गशिक्षिका कोण होत्या आणि बाकावर कोणते मित्र एकत्र बसत असत?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "af8142c90b999f6626ea66cf7ef1e6045026411a76fde1c8f29aa5d228aa702b",
+              "source_content_hash": "23ad6809d65c4a105eb0d7a0256999d879b03bf074c18b0c579f932897028e30",
+              "text_preview": "मी इयत्ता सातवीमध्ये प्रवेश केला. आमच्या वर्गशिक्षिका होत्या मसुटगे मॅडम; आणि त्याच जुन्या मित्रांसोबत—\n\nयश आणि शार्दुलसोबत—मी नेहमी त्या बे",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MRMR-005",
+          "direction": "mr->mr",
+          "source_language": "mr",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "सेजलला पाहिल्यानंतर लेखकाचा एकलकोंडा स्वभाव आणि शाळेत जाण्याचा मूळ हेतू कसा पूर्णपणे बदलून गेला?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "3c8cee1a9a76bf3480a8d1fd87378de4aa9061e5ab17c2326100f6787735ecb8",
+              "source_content_hash": "2415b6abd671dc4fcf2a594ce36f1987ebf7cb9a745727f8ad8fe9d446cb6cd4",
+              "text_preview": "येण्याचं एकच, आणि सर्वात मोठं ध्येय बनलं; म्हणूनच, अगदी आजारी ते दिवस... ते केवळ 'सुंदर' नव्हते; ते तर\n\nजणू माझ्या आयुष्यातील स्वर्णिम क्षणण",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MRMR-006",
+          "direction": "mr->mr",
+          "source_language": "mr",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "संध्याकाळी पाच वाजता सेजलची भेट व्हावी म्हणून लेखक आपली सायकल दररोज कुठे लावत असे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "687d5fd66b7289d078caaca84268f090ac404769b85316786abe09c5bb040182",
+              "source_content_hash": "471e114bf4f3b95a6647bff57f5c2cb1778f389cf72ebcbe9a9a1a4755c68366",
+              "text_preview": "स्टँडमध्ये लावायची; कारणण मला माहीत होते की, शाळेतून परतताना पाच वाजता आमची ती शेवटची भेट\n\nनक्की होणार असते – जणू काही तो वेळ केवळ आपल्या दो",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MRMR-007",
+          "direction": "mr->mr",
+          "source_language": "mr",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "मसुटगे मॅडम यांनी परीक्षेचा निकाल जाहीर करताना मुले आणि मुली यांच्यात वर्गातील बैठक व्यवस्था कशी होती?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "eff45c7e9ba4ef50b994e010cb66965dab8aeaef61a0192b4a8b461a9129f637",
+              "source_content_hash": "07f65375bf467b5f3f5968b6e243319ba6d541f65b74ccb415eaa391288b6332",
+              "text_preview": "करून उत्तुंग यश मिळवले होते. त्या निकालाच्या घोषषणासाठी मसुटगे मॅडम उपस्थित होत्या—एक उत्साहाचा\n\nदिवस! मात्र, माझ्यासाठी कथेतील सर्वात महत्त",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MRMR-008",
+          "direction": "mr->mr",
+          "source_language": "mr",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "पाचवीच्या वर्गात लेखकाचा पहिला गोड क्रश कोण होती आणि नवनीतला तिच्यासोबत चालताना पाहून कोणता निर्णायक वळण आला?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "d3a00e2104e6286c1ceefc2754488b61e442944285e8f5368d02d4685b72cb47",
+              "source_content_hash": "d9f0d92e547bfcbb91e669a1ac2c62a231832d6cc5e97e8335e6c82aa9991efa",
+              "text_preview": "काळात 'क्रश' (Crush) हा शब्द किती सहज वापरला जातो... पणण माझ्यासाठी, तो शब्द एखाद्या अर्धवट\n\nआठवणीसारखा वाटतो; एक अशी पहिली भावना, जी कुठून ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MRMR-009",
+          "direction": "mr->mr",
+          "source_language": "mr",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "दुसऱ्या घटक चाचणीनंतर लेखकाच्या गटात कोणते तीन मित्र होते आणि सेजलच्या सहचारी वर्गात कोणत्या तीन मुली होत्या?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "ec273a457d230ec72525b9be4053c255b20130d5cc9cbba3f816446305cbcd63",
+              "source_content_hash": "c6e2ac4d164dd6079d5bc40045ac32d79818863fbfb6e1f41b52ec603219c9ef",
+              "text_preview": "दुसऱ्या पुरुषाचा प्रवेश नसावा, अशी एक तीव्र चिंता मनावर राज्य करत होती. कारणण मी स्वतःच तिला पूर्णपणे\n\nआपल्या ओढात अडकवले होते, पणण हे प्रेम",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MRMR-010",
+          "direction": "mr->mr",
+          "source_language": "mr",
+          "target_language": "mr",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "जयसिंगपूरला जाण्यापूर्वी लेखकाने मलकापूरमध्ये पहिली ते चौथीपर्यंत कोणत्या प्रकारच्या प्राथमिक शाळेत शिक्षण घेतले?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+              "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "10d9106eeda66707a2437587c6b7e20de56a92214f51f946d99dd4cd3c19c04d",
+              "source_content_hash": "f4f3081f2aa9a9045c12b53b9a1190fa6317f52287577c2ce5749829e7bf7dfb",
+              "text_preview": "मिळाले होते. मलकापूरमध्ये, पहिली ते चौथीपर्यंत, मी एका केवळ मुलांच्या शाळेत होतो... त्यामुळे मुलींच्या\n\nसहवासाची मला कधी कल्पनाच नव्हती. आणि",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        }
+      ]
+    },
+    "en->en": {
+      "cohort_classification": "STANDARD_PROVISIONAL",
+      "cases_prepared": 30,
+      "target_universe": "~2,500 English chunks across 12 diverse documents",
+      "cases": [
+        {
+          "case_id": "P85-EVAL-ENEN-001",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What is ARVSAL and what are its core architectural components in Atharv Patil's resume?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+              "version_id": "738e9121-2179-500e-bd3d-da587e8de9c5",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "b6f0215d3ec2e2ec8d07633781c2c9861946ec54bdcefca43f9694f0ad91e0b8",
+              "source_content_hash": "f2f0739cfca7ad3cdd90068f294808b63b8f18dfbadd73a48cefd863f245da5f",
+              "text_preview": "KEY PROJECTS\t\nARVSAL: Personal AI Operating System and Digital Companion (Self Project)  Jan’26 - Present\t\nObjective\t• To design local-firs",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-002",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "Which relevant computer science and mathematics courses are listed in Atharv Patil's resume?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+              "version_id": "738e9121-2179-500e-bd3d-da587e8de9c5",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "1cdb0cb03a12e207da9b0322be1934ef116106ca2127d16cfb5a96ec66053c4c",
+              "source_content_hash": "9aaef29e0b3e577c316cbba1688e55eac06f2d01d4f392f68918d3808a305db1",
+              "text_preview": "RELEVANT COURSES\t\t\t\nModern Cryptology (Ongoing)\t\tBayesian Models & Data Analysis\tFundamentals of Computing - I & II\nLinear Algebra\t\tComplex ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-003",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What academic award did Atharv Patil receive at IIT Kanpur in 2025?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+              "version_id": "738e9121-2179-500e-bd3d-da587e8de9c5",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "c463df3a89059c938d81100392a03710aa4cb338e3e0b04313b5aeac500213e2",
+              "source_content_hash": "71f6cfeb365b82631101f5fac65df1919a3cb0c44345eb9a7fd69a3b609afe5f",
+              "text_preview": "• Honored with the Academic Excellence Award at IIT Kanpur in recognition of exemplary academic achievement\n(2025)\n• Achieved a top-tier SPI",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-004",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "Why does server.js warn that concurrent large model allocations cause VirtualAlloc fatal errors?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "1a6459587d97ca23a2521baad0b4b93264ae1e52242db6254df2420986db7083",
+              "source_content_hash": "e2d48d43fe21700739c2866a80e0f6cc5e48c39e2b23ff1b9b6aca985cc19c62",
+              "text_preview": "// Concurrent large model allocations exhaust address space → VirtualAlloc fatal crash.",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-005",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "How is the /command endpoint configured with AbortController in server.js?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7bb832e402d3643f1b2d0a1b246b52aa6cd38c6271f717da286f77977ea781ae",
+              "source_content_hash": "e202b91e5406c03dca880db7d2528e872dd16ae9eda80d8e4ed85349ef2f6c2d",
+              "text_preview": "app.post(\"/command\", async (req, res) => {\r\n  const controller = new AbortController();\r\n  const { signal } = controller;\r\n\r\n  res.on('close",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-006",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "How does server.js handle uncaughtException events in Node.js?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "b7cb9b4f0e36845fe270a15b69794253c274f48a0c5b8176b23d2720d5911fa9",
+              "source_content_hash": "5298c347fa5fb34a5fba7197af63aad22b98ae6b8914f4c1493f9b42ad37e389",
+              "text_preview": "process.on(\"uncaughtException\", (err) => { console.error('[UncaughtException]', err); _saveCognitiveState(); process.exit(1); });",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-007",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "Where is the general chat hot-path memory exclusively handled according to server.js deprecation comments?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "009b961046e2eb602da48b1ce53d94ac4afea3e3d820d78d1f70ae8738c4b803",
+              "source_content_hash": "4cf2eca9015513a22be625dd46ff1f3539c2617732988d8f94bde6438df00a17",
+              "text_preview": "  /* ---------- COGNITIVE MEMORY LAYER DEPRECATED IN GENERAL PATH ---------- */\r\n  // The general chat hot-path memory is now exclusively ha",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-008",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "When does llmPrompt.js allow providing full mathematical solutions to students?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+              "version_id": "109911b1-0bac-5bce-af3f-4d8b99b13c32",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "3077c89507278f4f600112d9fe5f3ec126cb918613fec70c495714ffa4911e0c",
+              "source_content_hash": "2393526bcf093ba38b5175f15d67e4118defe00c29b5a526f21d087399a2b91d",
+              "text_preview": "// - Mathematical solutions are provided ONLY when explicitly requested by the system or router.",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-009",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What are the persona guidelines regarding subtle dry wit in llmPrompt.js?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+              "version_id": "109911b1-0bac-5bce-af3f-4d8b99b13c32",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "cff53a79637191985f8c151e16aa42f564a6f761de356cdec5c248d7cb0bfa7c",
+              "source_content_hash": "b17d0f11c11d76f15aa94d4bb2d7274332dcd2b3c1e78faa411a9411f742454c",
+              "text_preview": "//   ? \"- Subtle, dry wit is allowed occasionally.\\n- One line only.\\n- Never during serious topics.\"",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-010",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What default mode parameter is accepted by buildSystemPrompt in llmPrompt.js?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+              "version_id": "109911b1-0bac-5bce-af3f-4d8b99b13c32",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "c651162bd8bb6deaec687710e3f47c94a4cf24e3db36262bd2d0481f9aa4e38f",
+              "source_content_hash": "e3cd61fb677f71a68c5b924724fc6d578dfb25bd080977d617818994f7b29c3f",
+              "text_preview": "function buildSystemPrompt({\r\n  mode = \"neutral\",\r\n  topic = null,\r\n  humour = false,\r\n  noQuestions = false,\r\n  stopOnDone = false\r\n}) {\r\n\r",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-011",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What is the primary function of the LLM output safety guard in llmGuard.js?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "2881c029-9625-5da1-9ce6-42dcf4301b76",
+              "version_id": "91cf98c9-4370-557d-b3bc-619f24f3f969",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "18ad1d7c0b425173eb144fe4137fa0bd318fbf162cb977dd5db2036803879b50",
+              "source_content_hash": "b51a9ca14430714ef88f0c284bce7d43d486b6b206d2460089ab7e4c206d2ef2",
+              "text_preview": "/**\r\n * 🔒 LLM OUTPUT SAFETY GUARD\r\n *\r\n * Final firewall before Arvsal speaks.\r\n *\r\n * Design principles:\r\n * - Block CLAIMS, not vocabulary",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-012",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "How does llmGuard.js define and flag factual hallucination and uncertainty?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "2881c029-9625-5da1-9ce6-42dcf4301b76",
+              "version_id": "91cf98c9-4370-557d-b3bc-619f24f3f969",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "76d38eb6f7c02abdec77466a4380895851b3164393354d066403ed13fee39352",
+              "source_content_hash": "7b8e875f0ed0e875291f63d45b3cbc70d9061ea3a98ba23c5ad069e732d036da",
+              "text_preview": "//   /* ================= UNCERTAINTY (FACTUAL HALLUCINATION) ================= */",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-013",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What is the purpose and constructor signature of class InferenceGateway?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "6ffce866-2802-5d51-9662-ca620ff51859",
+              "version_id": "1bdcc481-60c6-5bc7-9429-79c934431315",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "36b3f29e88d8be2bf2ab045a26c502932efb354ec2d7491bcd6aba74c34fc7d1",
+              "source_content_hash": "ed55041f103d40cdf88e12f99cd5e92b9b9b94a961d32239b7229e49b156f1bb",
+              "text_preview": "class InferenceGateway {\n  /**\n   * Universal chat interface for ARVSAL\n   * @param {Array} messages - Array of { role, content }\n   * @para",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-014",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What manufacturing process classification is presented on Slide 12 of ME361 Lecture 1?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7f8c575aa17984cdeaa647bfee5f581313bd8ab443520500ad020749d3aa834b",
+              "source_content_hash": "eec4a21e2fabbf68e5cffb2e47845554814e036410fa91195870f728ad2bf91f",
+              "text_preview": "Title: Slide 12\n\nWhy manufacturing? PRODUCTS and YOU https://www.youtube.com/shorts/WCLosRKOpkA iPhone 17 Pro: The Powerful A19 Pro Chip Man",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-015",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What forming and shaping concepts are detailed on Slide 21 of ME361 Lecture 1?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "9287fd60cffd2efb3efe77bc65b23050f5d74a7c7becd9d4ec2ef51b65fe59aa",
+              "source_content_hash": "734c8b6ebc8a323b2d0a7a5b864ea999351ba94b01a6526c98dde590544dfc9d",
+              "text_preview": "Title: Slide 21\n\nManufacturing Processes: Need for speed/money/lifestyle/materials/innovation/engineering",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-016",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What course overview and topics are introduced on Slide 1 of ME361 Lecture 1?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "16fee3e65a8ca023e7277b2904fb5f9a9d94137e40295e221b22993475186fd5",
+              "source_content_hash": "e13a712e0a325886812dd531aabfef8002bf1b43f8dd2b483cc844b260537c0f",
+              "text_preview": "Title: Slide 1\n\nIntroduction to secondary manufacturing processes (1); Conventional machining processes: Orthogonal cutting mechanics (2) ; ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-017",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What material removal fundamentals are covered on Slide 5 of ME361 Lecture 1?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7c732f1b78d3dad332243527b11fe9056127c608d1f9667f1fca94dede00dc52",
+              "source_content_hash": "26b35176b5f836d60988ae84fa971c841bdc97b3a510305fd25989a4539f5bf1",
+              "text_preview": "Title: Slide 5\n\nManufacturing of a pencil American Lead Pencil Co. (28 Patents, 360 types of pencils) 5",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-018",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What 3D & Optical Illusion Art Workshop details are described in the Coordinator Application?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+              "version_id": "71b3f1bb-3601-5963-a609-1be115e7326c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "b5ef7ff0093abf0d9f116606268b31a58ed09e15f1f3f6923234cedd45953755",
+              "source_content_hash": "e69f4d85b513f622910e675ff113c83556b84cff2a713756eee1d68520d213ae",
+              "text_preview": "Title: 3D & Optical Illusion Art Workshop\n\nConduct a workshop introducing students to 3D drawing and optical illusion art techniques . Parti",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-019",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What is the mission statement articulated in Atharv Patil's Coordinator Application 2026-27?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+              "version_id": "71b3f1bb-3601-5963-a609-1be115e7326c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "8a6441f59e47631de340553adb06a0cddd4ddacbbcc39423316774605a22241b",
+              "source_content_hash": "8ffc4727bddd2cfe0821073da5ef608b84cd983c8593091ba641560d6276cdea",
+              "text_preview": "Title: MISSION\n\nOrganize creative workshops and interactive art events such as 3D illusion art, Kintsugi art, wearable art, and sculpture wo",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-020",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What event timeline and milestones are proposed in the Coordinator Application?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+              "version_id": "71b3f1bb-3601-5963-a609-1be115e7326c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "275d8d2a9b904bd45108a75e945d8c53f0d889481da2c80ac42bb270eca8915c",
+              "source_content_hash": "dcd2be7ea834f78ff62a96378268f568c6c44b572907952d6025f533c53cde56",
+              "text_preview": "Title: TIMELINE\n\n<<November>> • Diwali • Regular practice sessions for Inter-IIT and Audition <<December>> • Inter-IIT Cultural Meet (IICM) ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-021",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What did Ramdhan argue about Samjhu's responsibility for killing the ox in Panch Parmeshwar?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+              "version_id": "32a665e7-fb65-5fd5-aebe-0b0d4ddc84b8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7e0274f4a1c18d6c93b28e97d18fda78753761679365327fae19daa46ea96189",
+              "source_content_hash": "6b0549b731672bc2e9e8f243e3b6ec6ac1b0ba8423604bbf8cd0209edae53665",
+              "text_preview": "Ramdhan said, ‘Samjhu is responsible for killing the ox and he should be punished for this.’ Jumman said, ‘That is another issue. We have no",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-022",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "How is the scene with smoke rising from burning cowdung cakes described in Panch Parmeshwar?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+              "version_id": "32a665e7-fb65-5fd5-aebe-0b0d4ddc84b8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "ca8d7e8158a9c1a7cae72a73e7c9db242b8516727c1228cd17e9aa3567fb0924",
+              "source_content_hash": "76ed99b399743328d3ddbde68fa7add4261e42c1299be94bd78b1828d108d060",
+              "text_preview": "It was impossible to decide whether the smoke rising from the burning cowdung cakes was thicker or that from the puffs exhaled by the hookah",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-023",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What reflection did Algu make about God keeping watch over good and bad deeds in Panch Parmeshwar?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+              "version_id": "32a665e7-fb65-5fd5-aebe-0b0d4ddc84b8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "18925e317e8d18f26968907662985be6cbe68accff8b02b974584ad24068bd53",
+              "source_content_hash": "2b016e251214d5b47854749da3e6636730fc7907dc580abe2f590565796a390e",
+              "text_preview": "One may rest content but God keeps watch on our good and bad deeds.’ Algu on the other hand began to suspect that Jumman had poisoned the ox",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-024",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What is the roll number, branch, and CPI of Samarth Awasthi in the Y24 CPI table?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+              "version_id": "2190addb-b826-586f-b2be-65962e520068",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "613d99c945bd1306418dcd33488ce051d3c903cae550658508ceba4530f039fd",
+              "source_content_hash": "e0eb69253441f01fe5d5bf4c89b6ad1b06867cb56676bc22becccfa65e8857a1",
+              "text_preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n275\t240917\tSAMARTH AWASTHI\t255\tME\t8.4\n276\t241005\tSHRUTI SAHU\t255\tCSE\t8.4\n277\t241039\tSPARSH PRADEEP JA",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-025",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What is the roll number, rank, and CPI of Aman Yadav in Y24_CPI.csv?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+              "version_id": "2190addb-b826-586f-b2be-65962e520068",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "d56b656ce480eb262a23690e9326cd6316985fb1552009c66700cffbe90cbf47",
+              "source_content_hash": "edac9ac3bdb7b1079c4fc9a892faaf710bb922638254aeb203f48e3c3503a58e",
+              "text_preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n547\t240104\tAMAN YADAV\t546\tME\t7.5\n548\t240226\tATHARV PINJARE\t546\tCE\t7.5\n549\t240285\tBRATADEEP SARKAR\t546",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-026",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What is the branch and CPI score of student Rahul Ranjan in Y24_CPI.csv?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+              "version_id": "2190addb-b826-586f-b2be-65962e520068",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "5198a4c86c769695cc8e47d6d4e6437f0891a1dcfcf69d46c07658660927c965",
+              "source_content_hash": "4136a48168312a918cbf328a0f4d3d5a4045f619d3bbc90f3bf8974ac1bd6502",
+              "text_preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n508\t240832\tRAHUL RANJAN\t485\tCE\t7.7\n509\t240839\tRAJVEER SINGH\t485\tEE\t7.7\n510\t240937\tSARTHAK AGRAWAL\t485",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-027",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "How is the Local LLM Adapter defined and initialized in localLLM.js?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "d708ab34-61a3-5f4b-bc3a-c7ed0ac4478c",
+              "version_id": "7110f20d-a9e5-5d49-9b26-54e7e22d6f70",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "30f737dd8a5bb86da4e36a92fac4b915b202471c7d996dd770557ac4e7dbcf5b",
+              "source_content_hash": "81af7c8dd458d4efac1f8df2306d3303dca3a80d62023ab69d18010fff9f21c6",
+              "text_preview": "/**\r\n * Local LLM Adapter\r\n *\r\n * PURPOSE:\r\n * - Thin wrapper over llmRunner\r\n * - Optional chain-of-thought stripping ONLY\r\n * - No executi",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-028",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What does the stripThinking function do when receiving invalid or non-string input in localLLM.js?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "d708ab34-61a3-5f4b-bc3a-c7ed0ac4478c",
+              "version_id": "7110f20d-a9e5-5d49-9b26-54e7e22d6f70",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "aa45be8c8444cdfb2db272f7525534c5774b03427696611a5748fbe958a5e71a",
+              "source_content_hash": "36c288117bc98e4a6de1f228d2795a98cd94cc3c68a3b58215a1d3ef707273f8",
+              "text_preview": "function stripThinking(text) {\r\n  if (!text || typeof text !== \"string\") return null;\r\n\r\n  return text\r\n    // Remove <think>...</think> blo",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-029",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "What experimental objective and setup are described in ME333 Lab Report for Experiment 2?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+              "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "69e14ccf382f744346d617d85f9cfc6a66a17a4ae06614e4acfbd31a3ece53cb",
+              "source_content_hash": "e8d534b3ccb202db965b9e3532545021525ad3d2fe582746d49069aac0f89674",
+              "text_preview": "Experiment-2\n\nVibration transmissibility of a single-degree-of-freedom system\n\nGroup No. - B6 Date – 06/08/2006\n\nShift – 10:00-11:30………….. 1",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-ENEN-030",
+          "direction": "en->en",
+          "source_language": "en",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "Why does the SOC 473 lecture note state that comparison is useful when studying Indian society?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "68c5a259-bc38-5a7b-8279-03d27651221d",
+              "version_id": "5a459b9c-35b5-5054-91ff-e6ccbde2ee86",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "1998cda073f51eb9c7a50a922770ae91d3694a0ccc2348741868c07ef37d3b65",
+              "source_content_hash": "c62a8731b02445dfcd59608512a6885af43aa5ce877be11503d3ffbbd5a64876",
+              "text_preview": "Although focused on Indian society, comparison is useful for clarity.\n\nConcepts like caste, religion, social hierarchy, and culture are bett",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        }
+      ]
+    },
+    "hi->en": {
+      "cohort_classification": "STANDARD_PROVISIONAL",
+      "cases_prepared": 30,
+      "target_universe": "~2,500 English chunks across 12 diverse documents",
+      "cases": [
+        {
+          "case_id": "P85-EVAL-HIEN-001",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "अथर्व पाटिल के बायोडाटा में ARVSAL क्या है और इसके मुख्य घटक क्या हैं?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+              "version_id": "738e9121-2179-500e-bd3d-da587e8de9c5",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "b6f0215d3ec2e2ec8d07633781c2c9861946ec54bdcefca43f9694f0ad91e0b8",
+              "source_content_hash": "f2f0739cfca7ad3cdd90068f294808b63b8f18dfbadd73a48cefd863f245da5f",
+              "text_preview": "KEY PROJECTS\t\nARVSAL: Personal AI Operating System and Digital Companion (Self Project)  Jan’26 - Present\t\nObjective\t• To design local-firs",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-002",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "अथर्व पाटिल के बायोडाटा में कौन से प्रासंगिक कंप्यूटर विज्ञान और गणित पाठ्यक्रम सूचीबद्ध हैं?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+              "version_id": "738e9121-2179-500e-bd3d-da587e8de9c5",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "1cdb0cb03a12e207da9b0322be1934ef116106ca2127d16cfb5a96ec66053c4c",
+              "source_content_hash": "9aaef29e0b3e577c316cbba1688e55eac06f2d01d4f392f68918d3808a305db1",
+              "text_preview": "RELEVANT COURSES\t\t\t\nModern Cryptology (Ongoing)\t\tBayesian Models & Data Analysis\tFundamentals of Computing - I & II\nLinear Algebra\t\tComplex ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-003",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "अथर्व पाटिल को 2025 में आईआईटी कानपुर में कौन सा शैक्षणिक पुरस्कार मिला?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+              "version_id": "738e9121-2179-500e-bd3d-da587e8de9c5",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "c463df3a89059c938d81100392a03710aa4cb338e3e0b04313b5aeac500213e2",
+              "source_content_hash": "71f6cfeb365b82631101f5fac65df1919a3cb0c44345eb9a7fd69a3b609afe5f",
+              "text_preview": "• Honored with the Academic Excellence Award at IIT Kanpur in recognition of exemplary academic achievement\n(2025)\n• Achieved a top-tier SPI",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-004",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "server.js में यह चेतावनी क्यों दी गई है कि बड़े मॉडलों के समवर्ती आवंटन से VirtualAlloc घातक त्रुटि होती है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "1a6459587d97ca23a2521baad0b4b93264ae1e52242db6254df2420986db7083",
+              "source_content_hash": "e2d48d43fe21700739c2866a80e0f6cc5e48c39e2b23ff1b9b6aca985cc19c62",
+              "text_preview": "// Concurrent large model allocations exhaust address space → VirtualAlloc fatal crash.",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-005",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "server.js में AbortController के साथ /command एंडपॉइंट को कैसे कॉन्फ़िगर किया गया है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7bb832e402d3643f1b2d0a1b246b52aa6cd38c6271f717da286f77977ea781ae",
+              "source_content_hash": "e202b91e5406c03dca880db7d2528e872dd16ae9eda80d8e4ed85349ef2f6c2d",
+              "text_preview": "app.post(\"/command\", async (req, res) => {\r\n  const controller = new AbortController();\r\n  const { signal } = controller;\r\n\r\n  res.on('close",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-006",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "server.js Node.js में uncaughtException घटनाओं को कैसे संभालता है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "b7cb9b4f0e36845fe270a15b69794253c274f48a0c5b8176b23d2720d5911fa9",
+              "source_content_hash": "5298c347fa5fb34a5fba7197af63aad22b98ae6b8914f4c1493f9b42ad37e389",
+              "text_preview": "process.on(\"uncaughtException\", (err) => { console.error('[UncaughtException]', err); _saveCognitiveState(); process.exit(1); });",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-007",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "server.js के डिप्रिकेशन टिप्पणियों के अनुसार सामान्य चैट हॉट-पाथ मेमोरी को विशेष रूप से कहाँ संभाला जाता है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "009b961046e2eb602da48b1ce53d94ac4afea3e3d820d78d1f70ae8738c4b803",
+              "source_content_hash": "4cf2eca9015513a22be625dd46ff1f3539c2617732988d8f94bde6438df00a17",
+              "text_preview": "  /* ---------- COGNITIVE MEMORY LAYER DEPRECATED IN GENERAL PATH ---------- */\r\n  // The general chat hot-path memory is now exclusively ha",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-008",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "llmPrompt.js छात्रों को पूर्ण गणितीय समाधान प्रदान करने की अनुमति कब देता है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+              "version_id": "109911b1-0bac-5bce-af3f-4d8b99b13c32",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "3077c89507278f4f600112d9fe5f3ec126cb918613fec70c495714ffa4911e0c",
+              "source_content_hash": "2393526bcf093ba38b5175f15d67e4118defe00c29b5a526f21d087399a2b91d",
+              "text_preview": "// - Mathematical solutions are provided ONLY when explicitly requested by the system or router.",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-009",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "llmPrompt.js में सूक्ष्म हास्य और व्यंग्य के संबंध में क्या दिशानिर्देश दिए गए हैं?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+              "version_id": "109911b1-0bac-5bce-af3f-4d8b99b13c32",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "cff53a79637191985f8c151e16aa42f564a6f761de356cdec5c248d7cb0bfa7c",
+              "source_content_hash": "b17d0f11c11d76f15aa94d4bb2d7274332dcd2b3c1e78faa411a9411f742454c",
+              "text_preview": "//   ? \"- Subtle, dry wit is allowed occasionally.\\n- One line only.\\n- Never during serious topics.\"",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-010",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "llmPrompt.js में buildSystemPrompt फ़ंक्शन द्वारा कौन सा डिफ़ॉल्ट मोड पैरामीटर स्वीकार किया जाता है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+              "version_id": "109911b1-0bac-5bce-af3f-4d8b99b13c32",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "c651162bd8bb6deaec687710e3f47c94a4cf24e3db36262bd2d0481f9aa4e38f",
+              "source_content_hash": "e3cd61fb677f71a68c5b924724fc6d578dfb25bd080977d617818994f7b29c3f",
+              "text_preview": "function buildSystemPrompt({\r\n  mode = \"neutral\",\r\n  topic = null,\r\n  humour = false,\r\n  noQuestions = false,\r\n  stopOnDone = false\r\n}) {\r\n\r",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-011",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "llmGuard.js में LLM आउटपुट सुरक्षा गार्ड का मुख्य कार्य क्या है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "2881c029-9625-5da1-9ce6-42dcf4301b76",
+              "version_id": "91cf98c9-4370-557d-b3bc-619f24f3f969",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "18ad1d7c0b425173eb144fe4137fa0bd318fbf162cb977dd5db2036803879b50",
+              "source_content_hash": "b51a9ca14430714ef88f0c284bce7d43d486b6b206d2460089ab7e4c206d2ef2",
+              "text_preview": "/**\r\n * 🔒 LLM OUTPUT SAFETY GUARD\r\n *\r\n * Final firewall before Arvsal speaks.\r\n *\r\n * Design principles:\r\n * - Block CLAIMS, not vocabulary",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-012",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "llmGuard.js तथ्यात्मक भ्रम (hallucination) और अनिश्चितता को कैसे परिभाषित और चिह्नित करता है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "2881c029-9625-5da1-9ce6-42dcf4301b76",
+              "version_id": "91cf98c9-4370-557d-b3bc-619f24f3f969",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "76d38eb6f7c02abdec77466a4380895851b3164393354d066403ed13fee39352",
+              "source_content_hash": "7b8e875f0ed0e875291f63d45b3cbc70d9061ea3a98ba23c5ad069e732d036da",
+              "text_preview": "//   /* ================= UNCERTAINTY (FACTUAL HALLUCINATION) ================= */",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-013",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "क्लास InferenceGateway का उद्देश्य और कंस्ट्रक्टर क्या है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "6ffce866-2802-5d51-9662-ca620ff51859",
+              "version_id": "1bdcc481-60c6-5bc7-9429-79c934431315",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "36b3f29e88d8be2bf2ab045a26c502932efb354ec2d7491bcd6aba74c34fc7d1",
+              "source_content_hash": "ed55041f103d40cdf88e12f99cd5e92b9b9b94a961d32239b7229e49b156f1bb",
+              "text_preview": "class InferenceGateway {\n  /**\n   * Universal chat interface for ARVSAL\n   * @param {Array} messages - Array of { role, content }\n   * @para",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-014",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "ME361 व्याख्यान 1 की स्लाइड 12 पर कौन सा विनिर्माण प्रक्रिया वर्गीकरण प्रस्तुत किया गया है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7f8c575aa17984cdeaa647bfee5f581313bd8ab443520500ad020749d3aa834b",
+              "source_content_hash": "eec4a21e2fabbf68e5cffb2e47845554814e036410fa91195870f728ad2bf91f",
+              "text_preview": "Title: Slide 12\n\nWhy manufacturing? PRODUCTS and YOU https://www.youtube.com/shorts/WCLosRKOpkA iPhone 17 Pro: The Powerful A19 Pro Chip Man",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-015",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "ME361 व्याख्यान 1 की स्लाइड 21 पर धातु निर्माण और आकार देने की कौन सी अवधारणाएं विस्तृत हैं?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "9287fd60cffd2efb3efe77bc65b23050f5d74a7c7becd9d4ec2ef51b65fe59aa",
+              "source_content_hash": "734c8b6ebc8a323b2d0a7a5b864ea999351ba94b01a6526c98dde590544dfc9d",
+              "text_preview": "Title: Slide 21\n\nManufacturing Processes: Need for speed/money/lifestyle/materials/innovation/engineering",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-016",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "ME361 व्याख्यान 1 की स्लाइड 1 पर कौन से पाठ्यक्रम विषय और अवलोकन पेश किए गए हैं?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "16fee3e65a8ca023e7277b2904fb5f9a9d94137e40295e221b22993475186fd5",
+              "source_content_hash": "e13a712e0a325886812dd531aabfef8002bf1b43f8dd2b483cc844b260537c0f",
+              "text_preview": "Title: Slide 1\n\nIntroduction to secondary manufacturing processes (1); Conventional machining processes: Orthogonal cutting mechanics (2) ; ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-017",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "ME361 व्याख्यान 1 की स्लाइड 5 पर सामग्री हटाने (material removal) के कौन से मूलभूत सिद्धांत शामिल हैं?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7c732f1b78d3dad332243527b11fe9056127c608d1f9667f1fca94dede00dc52",
+              "source_content_hash": "26b35176b5f836d60988ae84fa971c841bdc97b3a510305fd25989a4539f5bf1",
+              "text_preview": "Title: Slide 5\n\nManufacturing of a pencil American Lead Pencil Co. (28 Patents, 360 types of pencils) 5",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-018",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "समन्वयक आवेदन में 3D और ऑप्टिकल इल्यूजन कला कार्यशाला के क्या विवरण दिए गए हैं?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+              "version_id": "71b3f1bb-3601-5963-a609-1be115e7326c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "b5ef7ff0093abf0d9f116606268b31a58ed09e15f1f3f6923234cedd45953755",
+              "source_content_hash": "e69f4d85b513f622910e675ff113c83556b84cff2a713756eee1d68520d213ae",
+              "text_preview": "Title: 3D & Optical Illusion Art Workshop\n\nConduct a workshop introducing students to 3D drawing and optical illusion art techniques . Parti",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-019",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "अथर्व पाटिल के समन्वयक आवेदन 2026-27 में क्या मिशन वक्तव्य दिया गया है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+              "version_id": "71b3f1bb-3601-5963-a609-1be115e7326c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "8a6441f59e47631de340553adb06a0cddd4ddacbbcc39423316774605a22241b",
+              "source_content_hash": "8ffc4727bddd2cfe0821073da5ef608b84cd983c8593091ba641560d6276cdea",
+              "text_preview": "Title: MISSION\n\nOrganize creative workshops and interactive art events such as 3D illusion art, Kintsugi art, wearable art, and sculpture wo",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-020",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "समन्वयक आवेदन में कौन सी घटना समयरेखा और मील के पत्थर प्रस्तावित किए गए हैं?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+              "version_id": "71b3f1bb-3601-5963-a609-1be115e7326c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "275d8d2a9b904bd45108a75e945d8c53f0d889481da2c80ac42bb270eca8915c",
+              "source_content_hash": "dcd2be7ea834f78ff62a96378268f568c6c44b572907952d6025f533c53cde56",
+              "text_preview": "Title: TIMELINE\n\n<<November>> • Diwali • Regular practice sessions for Inter-IIT and Audition <<December>> • Inter-IIT Cultural Meet (IICM) ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-021",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "पंच परमेश्वर में बैल की मौत के लिए समझू की जिम्मेदारी के बारे में रामधन ने क्या कहा?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+              "version_id": "32a665e7-fb65-5fd5-aebe-0b0d4ddc84b8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7e0274f4a1c18d6c93b28e97d18fda78753761679365327fae19daa46ea96189",
+              "source_content_hash": "6b0549b731672bc2e9e8f243e3b6ec6ac1b0ba8423604bbf8cd0209edae53665",
+              "text_preview": "Ramdhan said, ‘Samjhu is responsible for killing the ox and he should be punished for this.’ Jumman said, ‘That is another issue. We have no",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-022",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "पंच परमेश्वर में कंडे के धुएं के दृश्य का वर्णन किस प्रकार किया गया है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+              "version_id": "32a665e7-fb65-5fd5-aebe-0b0d4ddc84b8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "ca8d7e8158a9c1a7cae72a73e7c9db242b8516727c1228cd17e9aa3567fb0924",
+              "source_content_hash": "76ed99b399743328d3ddbde68fa7add4261e42c1299be94bd78b1828d108d060",
+              "text_preview": "It was impossible to decide whether the smoke rising from the burning cowdung cakes was thicker or that from the puffs exhaled by the hookah",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-023",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "पंच परमेश्वर में अलगू ने अच्छे और बुरे कर्मों पर ईश्वर की नज़र होने के बारे में क्या कहा?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+              "version_id": "32a665e7-fb65-5fd5-aebe-0b0d4ddc84b8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "18925e317e8d18f26968907662985be6cbe68accff8b02b974584ad24068bd53",
+              "source_content_hash": "2b016e251214d5b47854749da3e6636730fc7907dc580abe2f590565796a390e",
+              "text_preview": "One may rest content but God keeps watch on our good and bad deeds.’ Algu on the other hand began to suspect that Jumman had poisoned the ox",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-024",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "Y24 सीपीआई तालिका में समर्थ अवस्थी का रोल नंबर, शाखा और सीपीआई क्या है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+              "version_id": "2190addb-b826-586f-b2be-65962e520068",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "613d99c945bd1306418dcd33488ce051d3c903cae550658508ceba4530f039fd",
+              "source_content_hash": "e0eb69253441f01fe5d5bf4c89b6ad1b06867cb56676bc22becccfa65e8857a1",
+              "text_preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n275\t240917\tSAMARTH AWASTHI\t255\tME\t8.4\n276\t241005\tSHRUTI SAHU\t255\tCSE\t8.4\n277\t241039\tSPARSH PRADEEP JA",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-025",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "Y24_CPI.csv में अमन यादव का रोल नंबर, रैंक और सीपीआई क्या है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+              "version_id": "2190addb-b826-586f-b2be-65962e520068",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "d56b656ce480eb262a23690e9326cd6316985fb1552009c66700cffbe90cbf47",
+              "source_content_hash": "edac9ac3bdb7b1079c4fc9a892faaf710bb922638254aeb203f48e3c3503a58e",
+              "text_preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n547\t240104\tAMAN YADAV\t546\tME\t7.5\n548\t240226\tATHARV PINJARE\t546\tCE\t7.5\n549\t240285\tBRATADEEP SARKAR\t546",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-026",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "Y24_CPI.csv में छात्र राहुल रंजन की शाखा और सीपीआई स्कोर क्या है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+              "version_id": "2190addb-b826-586f-b2be-65962e520068",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "5198a4c86c769695cc8e47d6d4e6437f0891a1dcfcf69d46c07658660927c965",
+              "source_content_hash": "4136a48168312a918cbf328a0f4d3d5a4045f619d3bbc90f3bf8974ac1bd6502",
+              "text_preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n508\t240832\tRAHUL RANJAN\t485\tCE\t7.7\n509\t240839\tRAJVEER SINGH\t485\tEE\t7.7\n510\t240937\tSARTHAK AGRAWAL\t485",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-027",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "localLLM.js में लोकल एलएलएम एडाप्टर को कैसे परिभाषित और प्रारंभ किया गया है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "d708ab34-61a3-5f4b-bc3a-c7ed0ac4478c",
+              "version_id": "7110f20d-a9e5-5d49-9b26-54e7e22d6f70",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "30f737dd8a5bb86da4e36a92fac4b915b202471c7d996dd770557ac4e7dbcf5b",
+              "source_content_hash": "81af7c8dd458d4efac1f8df2306d3303dca3a80d62023ab69d18010fff9f21c6",
+              "text_preview": "/**\r\n * Local LLM Adapter\r\n *\r\n * PURPOSE:\r\n * - Thin wrapper over llmRunner\r\n * - Optional chain-of-thought stripping ONLY\r\n * - No executi",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-028",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "localLLM.js में अमान्य या गैर-स्ट्रिंग इनपुट प्राप्त होने पर stripThinking फ़ंक्शन क्या करता है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "d708ab34-61a3-5f4b-bc3a-c7ed0ac4478c",
+              "version_id": "7110f20d-a9e5-5d49-9b26-54e7e22d6f70",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "aa45be8c8444cdfb2db272f7525534c5774b03427696611a5748fbe958a5e71a",
+              "source_content_hash": "36c288117bc98e4a6de1f228d2795a98cd94cc3c68a3b58215a1d3ef707273f8",
+              "text_preview": "function stripThinking(text) {\r\n  if (!text || typeof text !== \"string\") return null;\r\n\r\n  return text\r\n    // Remove <think>...</think> blo",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-029",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "प्रयोग 2 के लिए ME333 लैब रिपोर्ट में कौन सा प्रायोगिक उद्देश्य और सेटअप वर्णित है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+              "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "69e14ccf382f744346d617d85f9cfc6a66a17a4ae06614e4acfbd31a3ece53cb",
+              "source_content_hash": "e8d534b3ccb202db965b9e3532545021525ad3d2fe582746d49069aac0f89674",
+              "text_preview": "Experiment-2\n\nVibration transmissibility of a single-degree-of-freedom system\n\nGroup No. - B6 Date – 06/08/2006\n\nShift – 10:00-11:30………….. 1",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-HIEN-030",
+          "direction": "hi->en",
+          "source_language": "hi",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "SOC 473 व्याख्यान नोट में यह क्यों कहा गया है कि भारतीय समाज का अध्ययन करते समय तुलना उपयोगी होती है?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "68c5a259-bc38-5a7b-8279-03d27651221d",
+              "version_id": "5a459b9c-35b5-5054-91ff-e6ccbde2ee86",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "1998cda073f51eb9c7a50a922770ae91d3694a0ccc2348741868c07ef37d3b65",
+              "source_content_hash": "c62a8731b02445dfcd59608512a6885af43aa5ce877be11503d3ffbbd5a64876",
+              "text_preview": "Although focused on Indian society, comparison is useful for clarity.\n\nConcepts like caste, religion, social hierarchy, and culture are bett",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        }
+      ]
+    },
+    "mr->en": {
+      "cohort_classification": "STANDARD_PROVISIONAL",
+      "cases_prepared": 30,
+      "target_universe": "~2,500 English chunks across 12 diverse documents",
+      "cases": [
+        {
+          "case_id": "P85-EVAL-MREN-001",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "अथर्व पाटील यांच्या बायोडाटामध्ये ARVSAL काय आहे आणि त्याचे मुख्य घटक कोणते आहेत?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+              "version_id": "738e9121-2179-500e-bd3d-da587e8de9c5",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "b6f0215d3ec2e2ec8d07633781c2c9861946ec54bdcefca43f9694f0ad91e0b8",
+              "source_content_hash": "f2f0739cfca7ad3cdd90068f294808b63b8f18dfbadd73a48cefd863f245da5f",
+              "text_preview": "KEY PROJECTS\t\nARVSAL: Personal AI Operating System and Digital Companion (Self Project)  Jan’26 - Present\t\nObjective\t• To design local-firs",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-002",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "अथर्व पाटील यांच्या बायोडाटामध्ये कोणते संबंधित संगणक विज्ञान आणि गणित अभ्यासक्रम सूचीबद्ध आहेत?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+              "version_id": "738e9121-2179-500e-bd3d-da587e8de9c5",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "1cdb0cb03a12e207da9b0322be1934ef116106ca2127d16cfb5a96ec66053c4c",
+              "source_content_hash": "9aaef29e0b3e577c316cbba1688e55eac06f2d01d4f392f68918d3808a305db1",
+              "text_preview": "RELEVANT COURSES\t\t\t\nModern Cryptology (Ongoing)\t\tBayesian Models & Data Analysis\tFundamentals of Computing - I & II\nLinear Algebra\t\tComplex ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-003",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "अथर्व पाटील यांना 2025 मध्ये आयआयटी कानपूर येथे कोणता शैक्षणिक पुरस्कार मिळाला?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+              "version_id": "738e9121-2179-500e-bd3d-da587e8de9c5",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "c463df3a89059c938d81100392a03710aa4cb338e3e0b04313b5aeac500213e2",
+              "source_content_hash": "71f6cfeb365b82631101f5fac65df1919a3cb0c44345eb9a7fd69a3b609afe5f",
+              "text_preview": "• Honored with the Academic Excellence Award at IIT Kanpur in recognition of exemplary academic achievement\n(2025)\n• Achieved a top-tier SPI",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-004",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "server.js मध्ये अशी चेतावणी का दिली आहे की एकाच वेळी मोठ्या मॉडेलच्या वाटपामुळे VirtualAlloc घातक त्रुटी उद्भवते?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "1a6459587d97ca23a2521baad0b4b93264ae1e52242db6254df2420986db7083",
+              "source_content_hash": "e2d48d43fe21700739c2866a80e0f6cc5e48c39e2b23ff1b9b6aca985cc19c62",
+              "text_preview": "// Concurrent large model allocations exhaust address space → VirtualAlloc fatal crash.",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-005",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "server.js मध्ये AbortController सह /command एंडपॉईंट कसा कॉन्फिगर केला आहे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7bb832e402d3643f1b2d0a1b246b52aa6cd38c6271f717da286f77977ea781ae",
+              "source_content_hash": "e202b91e5406c03dca880db7d2528e872dd16ae9eda80d8e4ed85349ef2f6c2d",
+              "text_preview": "app.post(\"/command\", async (req, res) => {\r\n  const controller = new AbortController();\r\n  const { signal } = controller;\r\n\r\n  res.on('close",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-006",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "server.js Node.js मधील uncaughtException इव्हेंट्स कशा हाताळतो?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "b7cb9b4f0e36845fe270a15b69794253c274f48a0c5b8176b23d2720d5911fa9",
+              "source_content_hash": "5298c347fa5fb34a5fba7197af63aad22b98ae6b8914f4c1493f9b42ad37e389",
+              "text_preview": "process.on(\"uncaughtException\", (err) => { console.error('[UncaughtException]', err); _saveCognitiveState(); process.exit(1); });",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-007",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "server.js मधील टिप्पण्यांनुसार सामान्य चॅट हॉट-पाथ मेमरी केवळ कुठे हाताळली जाते?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+              "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "009b961046e2eb602da48b1ce53d94ac4afea3e3d820d78d1f70ae8738c4b803",
+              "source_content_hash": "4cf2eca9015513a22be625dd46ff1f3539c2617732988d8f94bde6438df00a17",
+              "text_preview": "  /* ---------- COGNITIVE MEMORY LAYER DEPRECATED IN GENERAL PATH ---------- */\r\n  // The general chat hot-path memory is now exclusively ha",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-008",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "llmPrompt.js विद्यार्थ्यांना संपूर्ण गणितीय उत्तरे देण्याची परवानगी कधी देतो?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+              "version_id": "109911b1-0bac-5bce-af3f-4d8b99b13c32",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "3077c89507278f4f600112d9fe5f3ec126cb918613fec70c495714ffa4911e0c",
+              "source_content_hash": "2393526bcf093ba38b5175f15d67e4118defe00c29b5a526f21d087399a2b91d",
+              "text_preview": "// - Mathematical solutions are provided ONLY when explicitly requested by the system or router.",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-009",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "llmPrompt.js मध्ये सूक्ष्म विनोदाबद्दल काय मार्गदर्शक तत्त्वे दिली आहेत?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+              "version_id": "109911b1-0bac-5bce-af3f-4d8b99b13c32",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "cff53a79637191985f8c151e16aa42f564a6f761de356cdec5c248d7cb0bfa7c",
+              "source_content_hash": "b17d0f11c11d76f15aa94d4bb2d7274332dcd2b3c1e78faa411a9411f742454c",
+              "text_preview": "//   ? \"- Subtle, dry wit is allowed occasionally.\\n- One line only.\\n- Never during serious topics.\"",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-010",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "llmPrompt.js मध्ये buildSystemPrompt फंक्शन कोणता डीफॉल्ट मोड स्वीकारतो?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+              "version_id": "109911b1-0bac-5bce-af3f-4d8b99b13c32",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "c651162bd8bb6deaec687710e3f47c94a4cf24e3db36262bd2d0481f9aa4e38f",
+              "source_content_hash": "e3cd61fb677f71a68c5b924724fc6d578dfb25bd080977d617818994f7b29c3f",
+              "text_preview": "function buildSystemPrompt({\r\n  mode = \"neutral\",\r\n  topic = null,\r\n  humour = false,\r\n  noQuestions = false,\r\n  stopOnDone = false\r\n}) {\r\n\r",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-011",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "llmGuard.js मध्ये LLM आउटपुट सुरक्षा गार्डचे मुख्य कार्य काय आहे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "2881c029-9625-5da1-9ce6-42dcf4301b76",
+              "version_id": "91cf98c9-4370-557d-b3bc-619f24f3f969",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "18ad1d7c0b425173eb144fe4137fa0bd318fbf162cb977dd5db2036803879b50",
+              "source_content_hash": "b51a9ca14430714ef88f0c284bce7d43d486b6b206d2460089ab7e4c206d2ef2",
+              "text_preview": "/**\r\n * 🔒 LLM OUTPUT SAFETY GUARD\r\n *\r\n * Final firewall before Arvsal speaks.\r\n *\r\n * Design principles:\r\n * - Block CLAIMS, not vocabulary",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-012",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "llmGuard.js तथ्यात्मक भ्रम आणि अनिश्चितता कशी परिभाषित आणि फ्लॅग करतो?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "2881c029-9625-5da1-9ce6-42dcf4301b76",
+              "version_id": "91cf98c9-4370-557d-b3bc-619f24f3f969",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "76d38eb6f7c02abdec77466a4380895851b3164393354d066403ed13fee39352",
+              "source_content_hash": "7b8e875f0ed0e875291f63d45b3cbc70d9061ea3a98ba23c5ad069e732d036da",
+              "text_preview": "//   /* ================= UNCERTAINTY (FACTUAL HALLUCINATION) ================= */",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-013",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "क्लास InferenceGateway चा मुख्य उद्देश आणि कन्स्ट्रक्टर काय आहे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "6ffce866-2802-5d51-9662-ca620ff51859",
+              "version_id": "1bdcc481-60c6-5bc7-9429-79c934431315",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "36b3f29e88d8be2bf2ab045a26c502932efb354ec2d7491bcd6aba74c34fc7d1",
+              "source_content_hash": "ed55041f103d40cdf88e12f99cd5e92b9b9b94a961d32239b7229e49b156f1bb",
+              "text_preview": "class InferenceGateway {\n  /**\n   * Universal chat interface for ARVSAL\n   * @param {Array} messages - Array of { role, content }\n   * @para",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-014",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "ME361 व्याख्यान 1 च्या स्लाईड 12 वर कोणते उत्पादन प्रक्रिया वर्गीकरण सादर केले आहे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7f8c575aa17984cdeaa647bfee5f581313bd8ab443520500ad020749d3aa834b",
+              "source_content_hash": "eec4a21e2fabbf68e5cffb2e47845554814e036410fa91195870f728ad2bf91f",
+              "text_preview": "Title: Slide 12\n\nWhy manufacturing? PRODUCTS and YOU https://www.youtube.com/shorts/WCLosRKOpkA iPhone 17 Pro: The Powerful A19 Pro Chip Man",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-015",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "ME361 व्याख्यान 1 च्या स्लाईड 21 वर धातू घडवण्याच्या कोणत्या संकल्पना तपशीलवार आहेत?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "9287fd60cffd2efb3efe77bc65b23050f5d74a7c7becd9d4ec2ef51b65fe59aa",
+              "source_content_hash": "734c8b6ebc8a323b2d0a7a5b864ea999351ba94b01a6526c98dde590544dfc9d",
+              "text_preview": "Title: Slide 21\n\nManufacturing Processes: Need for speed/money/lifestyle/materials/innovation/engineering",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-016",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "ME361 व्याख्यान 1 च्या स्लाईड 1 वर कोणते अभ्यासक्रम विषय सादर केले आहेत?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "16fee3e65a8ca023e7277b2904fb5f9a9d94137e40295e221b22993475186fd5",
+              "source_content_hash": "e13a712e0a325886812dd531aabfef8002bf1b43f8dd2b483cc844b260537c0f",
+              "text_preview": "Title: Slide 1\n\nIntroduction to secondary manufacturing processes (1); Conventional machining processes: Orthogonal cutting mechanics (2) ; ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-017",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "ME361 व्याख्यान 1 च्या स्लाईड 5 वर धातू कटाईच्या कोणत्या मूलभूत गोष्टी दिल्या आहेत?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "a76bdd39-f323-5f74-85bd-7c0f0bf679b0",
+              "version_id": "52de3ce8-c4a9-5338-b87b-ffafc421850e",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7c732f1b78d3dad332243527b11fe9056127c608d1f9667f1fca94dede00dc52",
+              "source_content_hash": "26b35176b5f836d60988ae84fa971c841bdc97b3a510305fd25989a4539f5bf1",
+              "text_preview": "Title: Slide 5\n\nManufacturing of a pencil American Lead Pencil Co. (28 Patents, 360 types of pencils) 5",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-018",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "समन्वयक अर्जामध्ये 3D आणि ऑप्टिकल भ्रम कला कार्यशाळेचे कोणते तपशील दिले आहेत?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+              "version_id": "71b3f1bb-3601-5963-a609-1be115e7326c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "b5ef7ff0093abf0d9f116606268b31a58ed09e15f1f3f6923234cedd45953755",
+              "source_content_hash": "e69f4d85b513f622910e675ff113c83556b84cff2a713756eee1d68520d213ae",
+              "text_preview": "Title: 3D & Optical Illusion Art Workshop\n\nConduct a workshop introducing students to 3D drawing and optical illusion art techniques . Parti",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-019",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "अथर्व पाटील यांच्या समन्वयक अर्ज 2026-27 मध्ये कोणते ध्येय विधान दिले आहे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+              "version_id": "71b3f1bb-3601-5963-a609-1be115e7326c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "8a6441f59e47631de340553adb06a0cddd4ddacbbcc39423316774605a22241b",
+              "source_content_hash": "8ffc4727bddd2cfe0821073da5ef608b84cd983c8593091ba641560d6276cdea",
+              "text_preview": "Title: MISSION\n\nOrganize creative workshops and interactive art events such as 3D illusion art, Kintsugi art, wearable art, and sculpture wo",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-020",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "समन्वयक अर्जामध्ये कोणते कार्यक्रम वेळापत्रक आणि टप्पे प्रस्तावित केले आहेत?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "819a9926-03fd-5e66-b630-4928e7454c66",
+              "version_id": "71b3f1bb-3601-5963-a609-1be115e7326c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "275d8d2a9b904bd45108a75e945d8c53f0d889481da2c80ac42bb270eca8915c",
+              "source_content_hash": "dcd2be7ea834f78ff62a96378268f568c6c44b572907952d6025f533c53cde56",
+              "text_preview": "Title: TIMELINE\n\n<<November>> • Diwali • Regular practice sessions for Inter-IIT and Audition <<December>> • Inter-IIT Cultural Meet (IICM) ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-021",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "पंच परमेश्वर कथेत बैलाच्या मृत्यूबद्दल समझूच्या जबाबदारीवर रामधनने काय युक्तिवाद केला?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+              "version_id": "32a665e7-fb65-5fd5-aebe-0b0d4ddc84b8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "7e0274f4a1c18d6c93b28e97d18fda78753761679365327fae19daa46ea96189",
+              "source_content_hash": "6b0549b731672bc2e9e8f243e3b6ec6ac1b0ba8423604bbf8cd0209edae53665",
+              "text_preview": "Ramdhan said, ‘Samjhu is responsible for killing the ox and he should be punished for this.’ Jumman said, ‘That is another issue. We have no",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-022",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "पंच परमेश्वर कथेत गोवऱ्यांच्या धुराचे दृश्य कसे वर्णन केले आहे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+              "version_id": "32a665e7-fb65-5fd5-aebe-0b0d4ddc84b8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "ca8d7e8158a9c1a7cae72a73e7c9db242b8516727c1228cd17e9aa3567fb0924",
+              "source_content_hash": "76ed99b399743328d3ddbde68fa7add4261e42c1299be94bd78b1828d108d060",
+              "text_preview": "It was impossible to decide whether the smoke rising from the burning cowdung cakes was thicker or that from the puffs exhaled by the hookah",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-023",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "पंच परमेश्वर कथेत अलगूने चांगल्या-वाईट कर्मांवर देवाच्या नजरेबद्दल कोणता विचार व्यक्त केला?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "3ae9cb8b-6798-5dcf-a340-5b2d31f4248f",
+              "version_id": "32a665e7-fb65-5fd5-aebe-0b0d4ddc84b8",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "18925e317e8d18f26968907662985be6cbe68accff8b02b974584ad24068bd53",
+              "source_content_hash": "2b016e251214d5b47854749da3e6636730fc7907dc580abe2f590565796a390e",
+              "text_preview": "One may rest content but God keeps watch on our good and bad deeds.’ Algu on the other hand began to suspect that Jumman had poisoned the ox",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-024",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "Y24 CPI तक्त्यामध्ये समर्थ अवस्थी यांचा रोल नंबर, शाखा आणि CPI काय आहे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+              "version_id": "2190addb-b826-586f-b2be-65962e520068",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "613d99c945bd1306418dcd33488ce051d3c903cae550658508ceba4530f039fd",
+              "source_content_hash": "e0eb69253441f01fe5d5bf4c89b6ad1b06867cb56676bc22becccfa65e8857a1",
+              "text_preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n275\t240917\tSAMARTH AWASTHI\t255\tME\t8.4\n276\t241005\tSHRUTI SAHU\t255\tCSE\t8.4\n277\t241039\tSPARSH PRADEEP JA",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-025",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "Y24_CPI.csv मध्ये अमन यादव यांचा रोल नंबर, रँक आणि CPI काय आहे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+              "version_id": "2190addb-b826-586f-b2be-65962e520068",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "d56b656ce480eb262a23690e9326cd6316985fb1552009c66700cffbe90cbf47",
+              "source_content_hash": "edac9ac3bdb7b1079c4fc9a892faaf710bb922638254aeb203f48e3c3503a58e",
+              "text_preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n547\t240104\tAMAN YADAV\t546\tME\t7.5\n548\t240226\tATHARV PINJARE\t546\tCE\t7.5\n549\t240285\tBRATADEEP SARKAR\t546",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-026",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "Y24_CPI.csv मध्ये राहुल रंजन या विद्यार्थ्याची शाखा आणि CPI गुण काय आहेत?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "092b9610-05e6-54f4-bb3f-ea8b4544a25f",
+              "version_id": "2190addb-b826-586f-b2be-65962e520068",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "5198a4c86c769695cc8e47d6d4e6437f0891a1dcfcf69d46c07658660927c965",
+              "source_content_hash": "4136a48168312a918cbf328a0f4d3d5a4045f619d3bbc90f3bf8974ac1bd6502",
+              "text_preview": "SERIAL NO\tROLL NO\tNAME\tRANK\tBRANCH\tCPI\n508\t240832\tRAHUL RANJAN\t485\tCE\t7.7\n509\t240839\tRAJVEER SINGH\t485\tEE\t7.7\n510\t240937\tSARTHAK AGRAWAL\t485",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-027",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "localLLM.js मध्ये लोकल LLM अ‍ॅडॉप्टर कसा परिभाषित आणि सुरू केला आहे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "d708ab34-61a3-5f4b-bc3a-c7ed0ac4478c",
+              "version_id": "7110f20d-a9e5-5d49-9b26-54e7e22d6f70",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "30f737dd8a5bb86da4e36a92fac4b915b202471c7d996dd770557ac4e7dbcf5b",
+              "source_content_hash": "81af7c8dd458d4efac1f8df2306d3303dca3a80d62023ab69d18010fff9f21c6",
+              "text_preview": "/**\r\n * Local LLM Adapter\r\n *\r\n * PURPOSE:\r\n * - Thin wrapper over llmRunner\r\n * - Optional chain-of-thought stripping ONLY\r\n * - No executi",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-028",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "localLLM.js मध्ये अमान्य किंवा नॉन-स्ट्रिंग इनपुट मिळाल्यास stripThinking फंक्शन काय करते?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "d708ab34-61a3-5f4b-bc3a-c7ed0ac4478c",
+              "version_id": "7110f20d-a9e5-5d49-9b26-54e7e22d6f70",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "aa45be8c8444cdfb2db272f7525534c5774b03427696611a5748fbe958a5e71a",
+              "source_content_hash": "36c288117bc98e4a6de1f228d2795a98cd94cc3c68a3b58215a1d3ef707273f8",
+              "text_preview": "function stripThinking(text) {\r\n  if (!text || typeof text !== \"string\") return null;\r\n\r\n  return text\r\n    // Remove <think>...</think> blo",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-029",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "प्रयोग 2 साठी ME333 प्रयोगशाळा अहवालात कोणते प्रायोगिक उद्दिष्ट आणि सेटअप वर्णन केले आहे?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+              "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "69e14ccf382f744346d617d85f9cfc6a66a17a4ae06614e4acfbd31a3ece53cb",
+              "source_content_hash": "e8d534b3ccb202db965b9e3532545021525ad3d2fe582746d49069aac0f89674",
+              "text_preview": "Experiment-2\n\nVibration transmissibility of a single-degree-of-freedom system\n\nGroup No. - B6 Date – 06/08/2006\n\nShift – 10:00-11:30………….. 1",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        },
+        {
+          "case_id": "P85-EVAL-MREN-030",
+          "direction": "mr->en",
+          "source_language": "mr",
+          "target_language": "en",
+          "cohort_classification": "STANDARD_PROVISIONAL",
+          "query_text": "SOC 473 व्याख्यान टिपणात असे का म्हटले आहे की भारतीय समाजाचा अभ्यास करताना तुलना उपयुक्त ठरते?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "68c5a259-bc38-5a7b-8279-03d27651221d",
+              "version_id": "5a459b9c-35b5-5054-91ff-e6ccbde2ee86",
+              "evidence_kind": "canonical_chunk",
+              "evidence_id": "1998cda073f51eb9c7a50a922770ae91d3694a0ccc2348741868c07ef37d3b65",
+              "source_content_hash": "c62a8731b02445dfcd59608512a6885af43aa5ce877be11503d3ffbbd5a64876",
+              "text_preview": "Although focused on Indian society, comparison is useful for clarity.\n\nConcepts like caste, religion, social hierarchy, and culture are bett",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        }
+      ]
+    },
+    "en->hi": {
+      "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+      "cases_prepared": 1,
+      "cases_blocked_by_hard_stop": 29,
+      "hard_stop_reason": "No additional coherent multi-sentence Hindi semantic chunks exist in V2 database. The remaining 139 Devanagari rows are math OCR noise from PHYSICS_JEE_ADVANCED.pdf or fragmented table headers. Artificial query duplication or querying broken OCR character soup is forbidden.",
+      "cases": [
+        {
+          "case_id": "P85-EVAL-ENHI-001",
+          "direction": "en->hi",
+          "source_language": "en",
+          "target_language": "hi",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "Who wrote the foreword to the Valmiki Ramayana and Ramakien comparative study book published by the Embassy of India in Bangkok?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "c59d2d22-66ca-52a2-93e7-9c5fa692a597",
+              "version_id": "5eb01752-1157-5250-b03b-712483cdf945",
+              "evidence_kind": "ocr_region",
+              "evidence_id": "4ceaf244-4de3-5a98-8212-f1da918d5ccf",
+              "source_content_hash": "d9c8db8ce1706d9d8cfcb1043fbff11286b34636ba721769c8d43d55be80f2c0",
+              "text_preview": "a. Jd ८! भारत का राजदूतावास, बेंकाक\r\nmbassador ermanent < Emb. ;\r\nRepresentative to ESCAP ne mbassy of India, Bangkok\r\nसत्यमेव जयते\r\nआमुख\r\nभ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        }
+      ]
+    },
+    "hi->hi": {
+      "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+      "cases_prepared": 1,
+      "cases_blocked_by_hard_stop": 29,
+      "hard_stop_reason": "No additional coherent multi-sentence Hindi semantic chunks exist in V2 database. The remaining 139 Devanagari rows are math OCR noise from PHYSICS_JEE_ADVANCED.pdf or fragmented table headers. Artificial query duplication or querying broken OCR character soup is forbidden.",
+      "cases": [
+        {
+          "case_id": "P85-EVAL-HIHI-001",
+          "direction": "hi->hi",
+          "source_language": "hi",
+          "target_language": "hi",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "भारतीय दूतावास बैंकॉक द्वारा प्रकाशित वाल्मीकि रामायण और रामकियेन तुलनात्मक अध्ययन पुस्तक का आमुख किसने लिखा था?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "c59d2d22-66ca-52a2-93e7-9c5fa692a597",
+              "version_id": "5eb01752-1157-5250-b03b-712483cdf945",
+              "evidence_kind": "ocr_region",
+              "evidence_id": "4ceaf244-4de3-5a98-8212-f1da918d5ccf",
+              "source_content_hash": "d9c8db8ce1706d9d8cfcb1043fbff11286b34636ba721769c8d43d55be80f2c0",
+              "text_preview": "a. Jd ८! भारत का राजदूतावास, बेंकाक\r\nmbassador ermanent < Emb. ;\r\nRepresentative to ESCAP ne mbassy of India, Bangkok\r\nसत्यमेव जयते\r\nआमुख\r\nभ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        }
+      ]
+    },
+    "mr->hi": {
+      "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+      "cases_prepared": 1,
+      "cases_blocked_by_hard_stop": 29,
+      "hard_stop_reason": "No additional coherent multi-sentence Hindi semantic chunks exist in V2 database. The remaining 139 Devanagari rows are math OCR noise from PHYSICS_JEE_ADVANCED.pdf or fragmented table headers. Artificial query duplication or querying broken OCR character soup is forbidden.",
+      "cases": [
+        {
+          "case_id": "P85-EVAL-MRHI-001",
+          "direction": "mr->hi",
+          "source_language": "mr",
+          "target_language": "hi",
+          "cohort_classification": "CORPUS_CONSTRAINED_CENSUS",
+          "query_text": "बँकॉक येथील भारतीय दूतावासाने प्रकाशित केलेल्या वाल्मीकी रामायण आणि रामकिएन यांच्या तुलनात्मक अभ्यास पुस्तकाचे आमुख कोणी लिहिले होते?",
+          "query_class": "semantic_retrieval_quality",
+          "target_evidence": [
+            {
+              "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+              "document_id": "c59d2d22-66ca-52a2-93e7-9c5fa692a597",
+              "version_id": "5eb01752-1157-5250-b03b-712483cdf945",
+              "evidence_kind": "ocr_region",
+              "evidence_id": "4ceaf244-4de3-5a98-8212-f1da918d5ccf",
+              "source_content_hash": "d9c8db8ce1706d9d8cfcb1043fbff11286b34636ba721769c8d43d55be80f2c0",
+              "text_preview": "a. Jd ८! भारत का राजदूतावास, बेंकाक\r\nmbassador ermanent < Emb. ;\r\nRepresentative to ESCAP ne mbassy of India, Bangkok\r\nसत्यमेव जयते\r\nआमुख\r\nभ",
+              "provisional_expected_grade": 2,
+              "review_state": "HUMAN_REVIEW_REQUIRED",
+              "adjudication_state": "NOT_ADJUDICATED"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "negative_controls": {
+    "cohort_classification": "NEGATIVE_CONTROL",
+    "cases_prepared": 30,
+    "scoring_rule": "Excluded from Recall@k, MRR, nDCG@10; scored exclusively on no_answer_false_support_rate and no_answer_publication_rate",
+    "cases": [
+      {
+        "case_id": "P85-EVAL-NEG-001",
+        "query_text": "What is the implementation of Grover's quantum search algorithm in server.js?",
+        "source_language": "en",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-002",
+        "query_text": "How does llmRouter.js connect to an IBM Quantum Experience processor?",
+        "source_language": "en",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-003",
+        "query_text": "What are the rules for filing French tax returns mentioned in ME361 Lecture 1?",
+        "source_language": "en",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-004",
+        "query_text": "Where does Atharv Patil list his Ph.D. dissertation from the University of Oxford?",
+        "source_language": "en",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-005",
+        "query_text": "What is the recipe for baking chocolate cheesecake in Panch Parmeshwar?",
+        "source_language": "en",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-006",
+        "query_text": "What are the specifications of the Boeing 787 jet engines in ME381 Lab Manual?",
+        "source_language": "en",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-007",
+        "query_text": "How is CRISPR gene editing explained in the IIT Kanpur physics problem set?",
+        "source_language": "en",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-008",
+        "query_text": "What is the submarine navigation protocol described in localLLM.js?",
+        "source_language": "en",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-009",
+        "query_text": "What are the Olympic gold medals won by the author in manuscript.pdf?",
+        "source_language": "en",
+        "target_language": "mr",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-010",
+        "query_text": "How many astronauts traveled to Mars in the Coordinator Application?",
+        "source_language": "en",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-011",
+        "query_text": "सर्वर.जेएस में क्वांटम क्रिप्टोग्राफी का उपयोग कैसे किया गया है?",
+        "source_language": "hi",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-012",
+        "query_text": "पंच परमेश्वर कहानी में अंतरिक्ष यान का निर्माण किसने किया था?",
+        "source_language": "hi",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-013",
+        "query_text": "अथर्व पाटिल के बायोडाटा में माउंट एवरेस्ट पर चढ़ने का उल्लेख कहाँ है?",
+        "source_language": "hi",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-014",
+        "query_text": "ME361 विनिर्माण व्याख्यान में न्यूरोसर्जरी के उपकरण कैसे बनाए जाते हैं?",
+        "source_language": "hi",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-015",
+        "query_text": "मराठी हस्तलिखित में लेखक ने टोक्यो यात्रा का क्या अनुभव लिखा है?",
+        "source_language": "hi",
+        "target_language": "mr",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-016",
+        "query_text": "Y24 सीपीआई तालिका में हार्वर्ड विश्वविद्यालय के छात्रों के अंक कहाँ हैं?",
+        "source_language": "hi",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-017",
+        "query_text": "llmGuard.js में सौर ऊर्जा पैनलों की स्थापना कैसे की जाती है?",
+        "source_language": "hi",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-018",
+        "query_text": "वाल्मीकि रामायण प्रस्तावना में अंटार्कटिका अनुसंधान स्टेशन का क्या विवरण है?",
+        "source_language": "hi",
+        "target_language": "hi",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-019",
+        "query_text": "समन्वयक आवेदन में जर्मन भाषा की परीक्षा उत्तीर्ण करने का प्रमाण पत्र कहाँ है?",
+        "source_language": "hi",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-020",
+        "query_text": "InferenceGateway.js में ब्लॉकचेन स्मार्ट कॉन्ट्रैक्ट का कोड कहाँ है?",
+        "source_language": "hi",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-021",
+        "query_text": "server.js मध्ये सुपर कॉम्प्युटर आर्किटेक्चरचे कॉन्फिगरेशन कुठे आहे?",
+        "source_language": "mr",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-022",
+        "query_text": "मराठी हस्तलिखितात लेखकाने मंगळ ग्रहावर जाण्याबद्दल काय लिहिले आहे?",
+        "source_language": "mr",
+        "target_language": "mr",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-023",
+        "query_text": "अथर्व पाटील यांच्या बायोडाटामध्ये ऑलिम्पिक स्पर्धेतील सहभागाची नोंद कुठे आहे?",
+        "source_language": "mr",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-024",
+        "query_text": "पंच परमेश्वर कथेत अमेरिकन संविधानाबद्दल काय चर्चा झाली आहे?",
+        "source_language": "mr",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-025",
+        "query_text": "ME361 मॅन्युफॅक्चरिंग नोट्समध्ये चंद्रावरील मातीचे परीक्षण कसे दिले आहे?",
+        "source_language": "mr",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-026",
+        "query_text": "llmPrompt.js मध्ये फ्रेंच कवींच्या कविता कशा समाविष्ट केल्या आहेत?",
+        "source_language": "mr",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-027",
+        "query_text": "Y24_CPI.csv मध्ये केंब्रिज विद्यापीठाच्या पदवीधरांची यादी कुठे आहे?",
+        "source_language": "mr",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-028",
+        "query_text": "स्थानिक एलएलएम अडॅप्टरमध्ये पाणबुडीच्या इंजिनची रचना कशी केली आहे?",
+        "source_language": "mr",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-029",
+        "query_text": "रामायण तुलनात्मक प्रस्तावनेमध्ये सहारा वाळवंटातील हवामानाचा उल्लेख कुठे आहे?",
+        "source_language": "mr",
+        "target_language": "hi",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      },
+      {
+        "case_id": "P85-EVAL-NEG-030",
+        "query_text": "समन्वयक अर्जामध्ये ऑस्ट्रेलियन क्रिकेट संघाचे प्रशिक्षण कसे दिले आहे?",
+        "source_language": "mr",
+        "target_language": "en",
+        "query_class": "unsupported_evidence_negative_control",
+        "target_evidence": [],
+        "provisional_expected_grade": 0,
+        "review_state": "HUMAN_REVIEW_REQUIRED",
+        "adjudication_state": "NOT_ADJUDICATED"
+      }
+    ]
+  }
+}

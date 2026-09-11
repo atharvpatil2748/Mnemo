@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/schemas/v2-build-authorization.schema.json",
+  "title": "Mnemo Full Multilingual V2 build authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "authorization_id",
+    "run_id",
+    "target_database_path",
+    "profile_fingerprint",
+    "corpus_digest",
+    "census_digest",
+    "generation_namespace",
+    "vector_space_identity",
+    "storage_manifest_digest",
+    "build_manifest_digest",
+    "authorization_scope",
+    "authorization_state",
+    "authorized",
+    "authority_class",
+    "decision_reference",
+    "artifact_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": "mnemo.v2-build-authorization/1"},
+    "authorization_id": {"type": "string", "format": "uuid"},
+    "run_id": {"type": "string", "format": "uuid"},
+    "target_database_path": {
+      "type": "string",
+      "pattern": "^scratch/phase8_5_full_multilingual_v2/[^/]+/mnemo\\.db$"
+    },
+    "profile_fingerprint": {"$ref": "#/$defs/sha256"},
+    "corpus_digest": {"$ref": "#/$defs/sha256"},
+    "census_digest": {"$ref": "#/$defs/sha256"},
+    "generation_namespace": {"const": "full_multilingual_v2"},
+    "vector_space_identity": {"$ref": "#/$defs/sha256"},
+    "storage_manifest_digest": {"$ref": "#/$defs/sha256"},
+    "build_manifest_digest": {"$ref": "#/$defs/sha256"},
+    "authorization_scope": {
+      "const": "create_isolated_database_and_build_generations_to_ready_only"
+    },
+    "authorization_state": {
+      "const": "authorized_for_next_controlled_build_to_ready_only"
+    },
+    "authorized": {"const": true},
+    "authority_class": {"const": "human_governance"},
+    "decision_reference": {"type": "string", "minLength": 1},
+    "artifact_digest": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

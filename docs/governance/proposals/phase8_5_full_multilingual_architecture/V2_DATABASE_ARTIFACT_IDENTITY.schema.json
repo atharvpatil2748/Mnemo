@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/contracts/v2-database-artifact-identity.schema.json",
+  "title": "V2DatabaseArtifactIdentityV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version","database_id","target_path","build_run_id","corpus_digest","census_digest","profile_fingerprint","vector_space_identity","build_manifest_digest","storage_manifest_digest","generations","database_identity"],
+  "properties": {
+    "schema_version": {"const":"mnemo.v2-database-artifact-identity/1"},
+    "database_id": {"$ref":"#/$defs/uuid"},
+    "target_path": {"type":"string","minLength":1,"pattern":"^(?!/)(?!.*\\.\\./).+$"},
+    "build_run_id": {"$ref":"#/$defs/uuid"},
+    "corpus_digest": {"$ref":"#/$defs/sha256"},
+    "census_digest": {"$ref":"#/$defs/sha256"},
+    "profile_fingerprint": {"$ref":"#/$defs/sha256"},
+    "vector_space_identity": {"$ref":"#/$defs/sha256"},
+    "build_manifest_digest": {"$ref":"#/$defs/sha256"},
+    "storage_manifest_digest": {"$ref":"#/$defs/sha256"},
+    "database_identity": {"$ref":"#/$defs/sha256"},
+    "generations": {"type":"array","minItems":4,"maxItems":4,"items":{"$ref":"#/$defs/generation"}}
+  },
+  "$defs": {
+    "sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "uuid": {"type":"string","format":"uuid"},
+    "generation": {
+      "type":"object","additionalProperties":false,
+      "required":["capability","generation_id","checksum","source_generation_ids","provider_identity","model_identity","configuration_digest","vector_space_identity","dimensions"],
+      "properties": {
+        "capability":{"enum":["representation_derivation_v2","language_text_v2","multilingual_embedding_v2","multilingual_vector_v2"]},
+        "generation_id":{"$ref":"#/$defs/uuid"},
+        "checksum":{"$ref":"#/$defs/sha256"},
+        "source_generation_ids":{"type":"array","uniqueItems":true,"items":{"$ref":"#/$defs/uuid"}},
+        "provider_identity":{"type":["string","null"]},
+        "model_identity":{"type":["string","null"]},
+        "configuration_digest":{"$ref":"#/$defs/sha256"},
+        "vector_space_identity":{"oneOf":[{"$ref":"#/$defs/sha256"},{"type":"null"}]},
+        "dimensions":{"type":["integer","null"],"minimum":1}
+      }
+    }
+  }
+}

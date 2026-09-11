@@ -1,0 +1,83 @@
+schema_version = "mnemo.model-profiles/1"
+
+[profiles.phase8_5_local_v1]
+profile_id = "phase8_5_local_v1"
+version = "1.0.0"
+mode = "phase8_5"
+trust_class = "local_trusted"
+certification = "candidate"
+certification_evidence = []
+capabilities = ["vision", "multilingual_embedding", "multilingual_reranker", "visual_embedding"]
+
+[profiles.phase8_5_local_v1.models.vision]
+provider = "ollama"
+model = "qwen2.5vl:latest"
+revision = "5ced39dfa4ba"
+license = "apache-2.0"
+preprocessing = "mnemo-vision-v1"
+modalities = ["image", "text"]
+languages = ["en", "hi", "mr"]
+scripts = ["Latn", "Deva"]
+max_context_tokens = 32768
+max_input_bytes = 8388608
+
+[profiles.phase8_5_local_v1.models.multilingual_embedding]
+provider = "sentence-transformers"
+model = "BAAI/bge-m3"
+revision = "5617a9f61b028005a4858fdac845db406aefb181"
+license = "mit"
+dimensions = 1024
+metric = "cosine"
+normalization = "l2"
+preprocessing = "bge-m3-query-v1"
+modalities = ["text"]
+languages = ["en", "hi", "mr"]
+scripts = ["Latn", "Deva"]
+max_batch = 32
+max_context_tokens = 8192
+
+[profiles.phase8_5_local_v1.models.multilingual_reranker]
+provider = "sentence-transformers"
+model = "BAAI/bge-reranker-v2-m3"
+revision = "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
+license = "apache-2.0"
+preprocessing = "bge-reranker-v2-m3-v1"
+modalities = ["text"]
+languages = ["en", "hi", "mr"]
+scripts = ["Latn", "Deva"]
+max_batch = 16
+max_context_tokens = 8192
+
+[profiles.phase8_5_local_v1.models.visual_embedding]
+provider = "transformers"
+model = "openai/clip-vit-large-patch14"
+revision = "32bd64288804d66eefd0ccbe215aa642df71cc41"
+license = "mit"
+dimensions = 768
+metric = "cosine"
+normalization = "l2"
+preprocessing = "clip-vit-l14-v1"
+modalities = ["image", "text"]
+languages = ["en"]
+scripts = ["Latn"]
+max_batch = 16
+max_input_bytes = 8388608
+max_pixels = 16777216
+
+[profiles.v1_only]
+profile_id = "v1_only"
+version = "1.0.0"
+mode = "v1_only"
+trust_class = "local_trusted"
+certification = "non_certified_default"
+certification_evidence = []
+capabilities = []
+
+[profiles.disabled]
+profile_id = "disabled"
+version = "1.0.0"
+mode = "disabled"
+trust_class = "local_sandboxed"
+certification = "non_certified_default"
+certification_evidence = []
+capabilities = []

@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/governance/proposals/full-multilingual-v2/MULTILINGUAL_EVALUATION_CONTRACT.proposed.json",
+  "title": "PROPOSED — Full Multilingual V2 EvaluationCaseRecordV2",
+  "$ref": "#/$defs/evaluationCaseRecordV2",
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "observationReference": {
+      "$ref": "REPRESENTATION_TRANSFORMATION_MODEL.proposed.json#/$defs/observationReference"
+    },
+    "queryRecordV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "query_id", "query_text", "query_hash", "query_class",
+        "grounding_state", "topic_id", "query_language_observation_references",
+        "query_script_observation_references", "include_in_ranking_metrics"
+      ],
+      "properties": {
+        "schema_version": {"const": "mnemo.multilingual-evaluation-query/2"},
+        "query_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "query_text": {"type": "string", "minLength": 1, "maxLength": 4096, "pattern": "\\S"},
+        "query_hash": {"$ref": "#/$defs/sha256"},
+        "query_class": {
+          "enum": [
+            "semantic_quality", "routing_behavioral", "security_provenance",
+            "representation_transformation", "no_answer"
+          ]
+        },
+        "grounding_state": {"enum": ["query_grounded", "query_ungrounded"]},
+        "topic_id": {"type": ["string", "null"], "minLength": 1},
+        "query_language_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        },
+        "query_script_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        },
+        "include_in_ranking_metrics": {"type": "boolean"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"query_class": {"const": "semantic_quality"}}, "required": ["query_class"]},
+          "then": {
+            "properties": {
+              "grounding_state": {"const": "query_grounded"},
+              "topic_id": {"type": "string", "minLength": 1},
+              "include_in_ranking_metrics": {"const": true}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"grounding_state": {"const": "query_ungrounded"}}, "required": ["grounding_state"]},
+          "then": {"properties": {"include_in_ranking_metrics": {"const": false}}}
+        },
+        {
+          "if": {"properties": {"query_class": {"enum": ["routing_behavioral", "security_provenance", "representation_transformation", "no_answer"]}}, "required": ["query_class"]},
+          "then": {"properties": {"include_in_ranking_metrics": {"const": false}}}
+        }
+      ]
+    },
+    "evidenceQrelV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "qrel_id", "query_id", "topic_id", "metric_scope",
+        "evidence_reference", "representation_reference", "relevance_grade",
+        "language_observation_references", "script_observation_references",
+        "authorization_expected", "provenance_expected", "adjudication_state",
+        "qrel_digest"
+      ],
+      "properties": {
+        "schema_version": {"const": "mnemo.multilingual-evaluation-qrel/2"},
+        "qrel_id": {"type": "string", "format": "uuid"},
+        "query_id": {"type": "string", "minLength": 1},
+        "topic_id": {"type": "string", "minLength": 1},
+        "metric_scope": {"enum": ["evidence", "document_labeled_non_semantic"]},
+        "evidence_reference": {"$ref": "LANGUAGE_EVIDENCE_REFERENCE_V3.proposed.json"},
+        "representation_reference": {
+          "oneOf": [
+            {"$ref": "REPRESENTATION_TRANSFORMATION_MODEL.proposed.json#/$defs/textRepresentationReferenceV1"},
+            {"type": "null"}
+          ]
+        },
+        "relevance_grade": {"type": "integer", "enum": [0, 1, 2]},
+        "language_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        },
+        "script_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        },
+        "authorization_expected": {"enum": ["authorized", "denied"]},
+        "provenance_expected": {"const": "exact"},
+        "adjudication_state": {"enum": ["pending", "agreed", "adjudicated", "rejected"]},
+        "qrel_digest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "corpusPresenceEvidenceV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "corpus_manifest_digest", "source_census_digest", "authorized_evidence_census_digest",
+        "notebook_id", "query_id", "presence_state", "relevant_evidence_reference_digests",
+        "census_algorithm_id"
+      ],
+      "properties": {
+        "corpus_manifest_digest": {"$ref": "#/$defs/sha256"},
+        "source_census_digest": {"$ref": "#/$defs/sha256"},
+        "authorized_evidence_census_digest": {"$ref": "#/$defs/sha256"},
+        "notebook_id": {"type": "string", "format": "uuid"},
+        "query_id": {"type": "string", "minLength": 1},
+        "presence_state": {"enum": ["present", "absent_proven", "unknown"]},
+        "relevant_evidence_reference_digests": {
+          "type": "array", "items": {"$ref": "#/$defs/sha256"}, "uniqueItems": true
+        },
+        "census_algorithm_id": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"presence_state": {"const": "present"}}, "required": ["presence_state"]},
+          "then": {"properties": {"relevant_evidence_reference_digests": {"minItems": 1}}}
+        },
+        {
+          "if": {"properties": {"presence_state": {"const": "absent_proven"}}, "required": ["presence_state"]},
+          "then": {"properties": {"relevant_evidence_reference_digests": {"maxItems": 0}}}
+        }
+      ]
+    },
+    "evaluationStageRecordV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage", "status", "implementation_id", "input_digest", "output_digest",
+        "examined_count", "returned_count", "failure_code", "evidence_refs",
+        "started_at", "elapsed_milliseconds"
+      ],
+      "properties": {
+        "stage": {
+          "enum": [
+            "corpus", "language_detection", "script_detection", "representation_detection",
+            "transformation", "embedding", "index", "sparse_retrieval", "dense_retrieval",
+            "fusion", "candidate_build", "reranking", "authorization", "provenance",
+            "transport", "qrels", "metrics"
+          ]
+        },
+        "status": {"enum": ["not_run", "passed", "failed", "filtered", "unavailable"]},
+        "implementation_id": {"type": "string", "minLength": 1},
+        "input_digest": {"$ref": "#/$defs/sha256"},
+        "output_digest": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "examined_count": {"type": "integer", "minimum": 0},
+        "returned_count": {"type": "integer", "minimum": 0},
+        "failure_code": {"type": ["string", "null"]},
+        "evidence_refs": {
+          "type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true
+        },
+        "started_at": {"type": "string", "format": "date-time"},
+        "elapsed_milliseconds": {"type": "number", "minimum": 0}
+      }
+    },
+    "runtimeParityEvidenceV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "application_service_id", "authorization_service_id", "retrieval_service_id",
+        "candidate_builder_id", "reranker_public_protocol_id", "query_preprocessing_identity",
+        "document_preprocessing_identity", "tokenizer_policy_id", "provenance_validator_id",
+        "direct_provider_calls", "private_runtime_access", "caller_constructed_reranker_input",
+        "parity_digest"
+      ],
+      "properties": {
+        "application_service_id": {"type": "string", "minLength": 1},
+        "authorization_service_id": {"type": "string", "minLength": 1},
+        "retrieval_service_id": {"type": "string", "minLength": 1},
+        "candidate_builder_id": {"const": "mnemo.reranker-candidate-builder/1"},
+        "reranker_public_protocol_id": {"type": "string", "minLength": 1},
+        "query_preprocessing_identity": {"type": "string", "minLength": 1},
+        "document_preprocessing_identity": {"type": "string", "minLength": 1},
+        "tokenizer_policy_id": {"const": "bge-reranker-v2-m3-pair-256-v2"},
+        "provenance_validator_id": {"type": "string", "minLength": 1},
+        "direct_provider_calls": {"const": false},
+        "private_runtime_access": {"const": false},
+        "caller_constructed_reranker_input": {"const": false},
+        "parity_digest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "evaluationFailureRecordV2": {
+      "allOf": [
+        {"$ref": "FAILURE_TAXONOMY.proposed.json"},
+        {
+          "type": "object",
+          "required": ["case_id"],
+          "properties": {"case_id": {"type": "string", "minLength": 1}}
+        }
+      ]
+    },
+    "evaluationCaseRecordV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "case_id", "manifest_digest", "query", "qrels",
+        "corpus_presence", "runtime_parity", "stage_records", "failures",
+        "raw_ranking_digest", "final_verdict"
+      ],
+      "properties": {
+        "schema_version": {"const": "mnemo.multilingual-evaluation-case/2"},
+        "case_id": {"type": "string", "minLength": 1},
+        "manifest_digest": {"$ref": "#/$defs/sha256"},
+        "query": {"$ref": "#/$defs/queryRecordV2"},
+        "qrels": {"type": "array", "items": {"$ref": "#/$defs/evidenceQrelV2"}, "uniqueItems": true},
+        "corpus_presence": {"$ref": "#/$defs/corpusPresenceEvidenceV1"},
+        "runtime_parity": {"$ref": "#/$defs/runtimeParityEvidenceV1"},
+        "stage_records": {
+          "type": "array", "minItems": 1,
+          "items": {"$ref": "#/$defs/evaluationStageRecordV2"}
+        },
+        "failures": {"type": "array", "items": {"$ref": "#/$defs/evaluationFailureRecordV2"}},
+        "raw_ranking_digest": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "final_verdict": {"enum": ["pass", "fail", "blocked", "unverified", "excluded_ungrounded"]}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "query": {"properties": {"query_class": {"const": "semantic_quality"}}, "required": ["query_class"]}
+            },
+            "required": ["query"]
+          },
+          "then": {"properties": {"qrels": {"minItems": 1}, "raw_ranking_digest": {"$ref": "#/$defs/sha256"}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "query": {"properties": {"grounding_state": {"const": "query_ungrounded"}}, "required": ["grounding_state"]}
+            },
+            "required": ["query"]
+          },
+          "then": {"properties": {"final_verdict": {"const": "excluded_ungrounded"}}}
+        }
+      ]
+    }
+  },
+  "x-mnemo-evaluator-path": [
+    "The evaluator invokes the shared application service with a real principal and scope.",
+    "The application service performs authorization, production retrieval/fusion, the shared candidate builder, the public reranker protocol and final provenance validation.",
+    "The evaluator observes retained typed outputs; it cannot access provider private runtime, construct candidate text, replace authorization, or invent provenance.",
+    "Provider conformance tests may call a provider directly but are labeled provider_conformance and never count as retrieval, transport, behavioral, verification or certification evidence."
+  ],
+  "x-mnemo-corpus-absence-rule": "CORPUS_ABSENT is valid only when presence_state=absent_proven and both source and authorized-evidence census digests are retained. A retrieval miss, empty ranking, detector failure or authorization filter is insufficient."
+}

@@ -1,0 +1,308 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/schemas/phase9-dataset-archive-provenance.proposed.schema.json",
+  "title": "Phase9DatasetArchiveProvenanceSchema",
+  "description": "Formal governance schema defining the two-tier provenance model for linguistic dataset archives and constituent source records admitted into the Phase 8.6 Multilingual Evaluation Corpus.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "amendment_id",
+    "governance_phase",
+    "status",
+    "created_at",
+    "dataset_archives",
+    "constituent_source_records"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["mnemo.phase9-dataset-archive-provenance.proposed/1"]
+    },
+    "amendment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "governance_phase": {
+      "type": "string",
+      "enum": ["Phase 8.6"]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PROPOSED",
+        "AUTHORIZED_FOR_ACQUISITION",
+        "QUALITY_GATED",
+        "FROZEN",
+        "DEPRECATED"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "dataset_archives": {
+      "type": "array",
+      "description": "Top-level immutable dataset archives acquired byte-for-byte from authoritative repositories.",
+      "items": {
+        "$ref": "#/$defs/DatasetArchiveAdmissionRecord"
+      }
+    },
+    "constituent_source_records": {
+      "type": "array",
+      "description": "Governed constituent source records extracted from dataset archives, each mapping to a canonical evaluation document.",
+      "items": {
+        "$ref": "#/$defs/ConstituentSourceRecord"
+      }
+    }
+  },
+  "$defs": {
+    "DatasetArchiveAdmissionRecord": {
+      "type": "object",
+      "description": "Immutable archive-level admission record representing the single downloaded container file.",
+      "required": [
+        "archive_id",
+        "candidate_id",
+        "dataset_title",
+        "hosting_platform",
+        "original_creator",
+        "authoritative_source",
+        "source_url",
+        "artifact_url",
+        "version",
+        "acquisition_timestamp",
+        "archive_sha256",
+        "archive_size_bytes",
+        "artifact_type",
+        "license",
+        "citation",
+        "admission_status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "archive_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Cryptographic UUID uniquely identifying this downloaded archive."
+        },
+        "candidate_id": {
+          "type": "string",
+          "pattern": "^CAND-(REP|CONT)-(HI|MR|EN|FR|DE)-[0-9]{2}$",
+          "description": "Governance candidate register identifier."
+        },
+        "dataset_title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hosting_platform": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Entity hosting the binary bitstream (e.g. CERN Zenodo, Leipzig Wortschatz)."
+        },
+        "original_creator": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Scholarly or organizational creators who compiled and authored the dataset."
+        },
+        "authoritative_source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Institutional authority backing the publication."
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Landing page or catalog URL."
+        },
+        "artifact_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Exact static binary download endpoint."
+        },
+        "doi": {
+          "type": "string",
+          "pattern": "^10\\.[0-9]{4,9}/[-._;()/:A-Za-z0-9]+$",
+          "description": "Digital Object Identifier if applicable."
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "acquisition_timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "archive_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Cryptographic SHA-256 hash of the complete, unmodified downloaded archive file."
+        },
+        "archive_size_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "artifact_type": {
+          "type": "string",
+          "enum": ["ZIP", "TAR_GZ", "TAR_BZ2", "TAR_XZ", "7Z"]
+        },
+        "license": {
+          "type": "object",
+          "required": [
+            "license_type",
+            "copyright_holder",
+            "evaluation_use_verified"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "license_type": {
+              "type": "string",
+              "enum": [
+                "CC0-1.0",
+                "CC-BY-4.0",
+                "CC-BY-SA-4.0",
+                "MIT",
+                "Apache-2.0",
+                "Public Domain",
+                "Author-Permitted Evaluation Only"
+              ]
+            },
+            "copyright_holder": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evaluation_use_verified": {
+              "type": "boolean"
+            },
+            "license_url": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "citation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "admission_status": {
+          "type": "string",
+          "enum": ["PROPOSED", "ADMITTED", "REJECTED"]
+        }
+      }
+    },
+    "ConstituentSourceRecord": {
+      "type": "object",
+      "description": "Governed record representing a single discrete constituent article or document extracted from a parent archive.",
+      "required": [
+        "source_record_id",
+        "parent_archive_id",
+        "constituent_record_identifier",
+        "document_id",
+        "source_content_hash",
+        "source_format",
+        "language",
+        "script",
+        "representation",
+        "source_locator",
+        "source_record_type",
+        "independence_group_id",
+        "extraction_metadata"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "source_record_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Cryptographic UUID uniquely identifying this constituent record extraction."
+        },
+        "parent_archive_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Foreign key reference to DatasetArchiveAdmissionRecord.archive_id."
+        },
+        "constituent_record_identifier": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Deterministic internal identifier inside the archive (e.g. relative zip path 'Politics/article_0042.txt')."
+        },
+        "document_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The canonical document_id registered in the Phase 8.6 Evaluation Corpus."
+        },
+        "source_content_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Cryptographic SHA-256 hash of the extracted constituent document content."
+        },
+        "source_format": {
+          "type": "string",
+          "enum": [
+            "text/plain",
+            "text/markdown",
+            "text/csv",
+            "application/json",
+            "application/pdf"
+          ]
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$"
+        },
+        "script": {
+          "type": "string",
+          "enum": ["Deva", "Latn", "Arab", "Cyrl", "Hans", "Hant", "Grek", "Other"]
+        },
+        "representation": {
+          "type": "string",
+          "enum": [
+            "native_unicode_utf8",
+            "scanned_clean_ocr_utf8",
+            "legacy_transcoded_utf8"
+          ]
+        },
+        "source_locator": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Exact extraction path or byte offset range within the archive container."
+        },
+        "source_record_type": {
+          "type": "string",
+          "enum": [
+            "FULL_ARTICLE",
+            "CHAPTER",
+            "SECTION",
+            "EXTRACTED_MONOGRAPH",
+            "SHUFFLED_SENTENCE_CLUSTER"
+          ]
+        },
+        "independence_group_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Cluster identifier grouping related articles from the same author, issue, or narrow event to govern concentration caps."
+        },
+        "extraction_metadata": {
+          "type": "object",
+          "required": [
+            "extracted_at",
+            "extracted_by_tool",
+            "extraction_integrity_verified"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "extracted_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "extracted_by_tool": {
+              "type": "string",
+              "minLength": 1
+            },
+            "extraction_integrity_verified": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+}

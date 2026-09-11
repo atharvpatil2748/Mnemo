@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/governance/v2-authorized-evidence-resolution-contract/1/schema",
+  "title": "AuthorizedV2EvidenceResolutionV1",
+  "type": "object",
+  "required": ["record_type", "contract_version", "resolution_identity", "request_fingerprint", "authorization_decision_fingerprint", "source_reference", "canonical_evidence_identity", "runtime_binding", "lineage", "semantic_text", "semantic_text_content_hash", "title_metadata", "provenance_digest", "resolution_fingerprint"],
+  "properties": {
+    "record_type": {"const": "AuthorizedV2EvidenceResolutionV1"},
+    "contract_version": {"const": "mnemo.v2-authorized-evidence-resolution/1"},
+    "resolution_identity": {"$ref": "#/$defs/uuid"},
+    "request_fingerprint": {"$ref": "#/$defs/sha256"},
+    "authorization_decision_fingerprint": {"$ref": "#/$defs/sha256"},
+    "source_reference": {"$ref": "#/$defs/source_reference"},
+    "canonical_evidence_identity": {"$ref": "#/$defs/sha256"},
+    "runtime_binding": {"$ref": "#/$defs/runtime_binding"},
+    "lineage": {"$ref": "#/$defs/lineage"},
+    "semantic_text": {"type": "string", "allOf": [{"pattern": ".*\\S.*"}, {"not": {"pattern": "^\\s*[Tt]itle:\\s*[^\\r\\n]+\\s*$"}}]},
+    "semantic_text_content_hash": {"$ref": "#/$defs/sha256"},
+    "title_metadata": {"type": ["string", "null"]},
+    "provenance_digest": {"$ref": "#/$defs/sha256"},
+    "resolution_fingerprint": {"$ref": "#/$defs/sha256"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "uuid": {"type": "string", "format": "uuid"},
+    "nullable_uuid": {"oneOf": [{"$ref": "#/$defs/uuid"}, {"type": "null"}]},
+    "nullable_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "source_reference": {
+      "type": "object",
+      "required": ["schema_version", "lineage_origin", "notebook_id", "source_id", "document_id", "version_id", "evidence_kind", "evidence_id", "source_content_hash", "chunk_id", "occurrence_id", "derivation_id", "source_generation_id", "parent_evidence_reference_digest"],
+      "properties": {
+        "schema_version": {"const": "mnemo.language-evidence-reference/3"},
+        "lineage_origin": {"enum": ["native_v3", "legacy_v2_upgrade"]},
+        "notebook_id": {"$ref": "#/$defs/uuid"}, "source_id": {"$ref": "#/$defs/uuid"}, "document_id": {"$ref": "#/$defs/uuid"}, "version_id": {"$ref": "#/$defs/uuid"},
+        "evidence_kind": {"enum": ["canonical_chunk", "ocr_occurrence", "ocr_region", "vision_derivation", "language_derivation", "representation_derivation"]},
+        "evidence_id": {"type": "string", "minLength": 1}, "source_content_hash": {"$ref": "#/$defs/sha256"}, "chunk_id": {"type": ["string", "null"]},
+        "occurrence_id": {"$ref": "#/$defs/nullable_uuid"}, "derivation_id": {"$ref": "#/$defs/nullable_uuid"}, "source_generation_id": {"$ref": "#/$defs/nullable_uuid"}, "parent_evidence_reference_digest": {"$ref": "#/$defs/nullable_sha256"}
+      },
+      "additionalProperties": false
+    },
+    "runtime_binding": {
+      "type": "object",
+      "required": ["active_alias_set_identity", "representation_generation_identity", "language_text_generation_identity", "embedding_generation_identity", "vector_generation_identity", "profile_identity", "profile_fingerprint", "model_identity", "vector_space_identity", "database_identity", "build_run_identity"],
+      "properties": {
+        "active_alias_set_identity": {"$ref": "#/$defs/sha256"}, "representation_generation_identity": {"$ref": "#/$defs/uuid"}, "language_text_generation_identity": {"$ref": "#/$defs/uuid"}, "embedding_generation_identity": {"$ref": "#/$defs/uuid"}, "vector_generation_identity": {"$ref": "#/$defs/uuid"},
+        "profile_identity": {"type": "string", "minLength": 1}, "profile_fingerprint": {"$ref": "#/$defs/sha256"}, "model_identity": {"type": "string", "minLength": 1}, "vector_space_identity": {"$ref": "#/$defs/sha256"}, "database_identity": {"$ref": "#/$defs/sha256"}, "build_run_identity": {"$ref": "#/$defs/uuid"}
+      },
+      "additionalProperties": false
+    },
+    "transformation": {
+      "type": "object",
+      "required": ["profile_identity", "version", "digest", "source_representation", "target_representation", "derivation_identity", "source_reference_digest", "source_generation_ids"],
+      "properties": {
+        "profile_identity": {"type": "string", "minLength": 1}, "version": {"type": "string", "minLength": 1}, "digest": {"$ref": "#/$defs/sha256"}, "source_representation": {"type": "string", "minLength": 1}, "target_representation": {"type": "string", "minLength": 1}, "derivation_identity": {"$ref": "#/$defs/uuid"}, "source_reference_digest": {"$ref": "#/$defs/sha256"}, "source_generation_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/uuid"}}
+      },
+      "additionalProperties": false
+    },
+    "lineage": {
+      "type": "object",
+      "required": ["representation_state", "language_observation_references", "script_observation_references", "representation_observation_reference", "transformation"],
+      "properties": {
+        "representation_state": {"enum": ["canonical", "derived"]},
+        "language_observation_references": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/uuid"}},
+        "script_observation_references": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/uuid"}},
+        "representation_observation_reference": {"$ref": "#/$defs/uuid"},
+        "transformation": {"oneOf": [{"$ref": "#/$defs/transformation"}, {"type": "null"}]}
+      },
+      "allOf": [{"if": {"properties": {"representation_state": {"const": "derived"}}, "required": ["representation_state"]}, "then": {"properties": {"transformation": {"$ref": "#/$defs/transformation"}}}, "else": {"properties": {"transformation": {"type": "null"}}}}],
+      "additionalProperties": false
+    }
+  }
+}

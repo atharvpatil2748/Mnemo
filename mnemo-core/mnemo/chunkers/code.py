@@ -627,6 +627,7 @@ class CodeChunker:
             text = self._node_text(node, source)
             if not text.strip() or text in existing_texts:
                 continue
+            existing_texts.add(text)
             result.append(
                 _Declaration(
                     text=text,

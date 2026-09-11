@@ -227,6 +227,32 @@ def test_oversized_table_partitions_complete_rows_and_repeats_header() -> None:
     assert all(WordCounter().count(draft.text) <= 20 for draft in drafts)
 
 
+def test_oversized_table_row_subdivides_by_columns_and_conserves_cells() -> None:
+    headers = tuple(f"column-{index}" for index in range(40))
+    values = tuple(f"value-{index}" for index in range(40))
+    document = _document(TableBlock(ordinal=0, rows=(headers, values), header_row_count=1))
+    context = _context(document, target=20, maximum=40)
+    chunker = GenericChunker()
+
+    first = chunker.chunk(document, context, WordCounter())
+    second = chunker.chunk(document, context, WordCounter())
+
+    assert first == second
+    assert len(first) > 1
+    reconstructed = ["" for _ in values]
+    for draft in first:
+        assert WordCounter().count(draft.text) <= 40
+        assert draft.source_span == BlockSpan(start_ordinal=0, end_ordinal=0)
+        assert draft.metadata["chunker.atomic.type"] == "table_row"
+        columns = draft.metadata["chunker.atomic.column_indexes"]
+        assert isinstance(columns, tuple)
+        projected_values = draft.text.splitlines()[-1].split("\t")
+        for column, value in zip(columns, projected_values, strict=True):
+            assert isinstance(column, int)
+            reconstructed[column] += value
+    assert tuple(reconstructed) == values
+
+
 def test_canonical_block_text_types_are_preserved() -> None:
     document = _document(
         TableBlock(ordinal=0, rows=(("Name", "Value"), ("alpha", "one"))),

@@ -55,13 +55,42 @@ class ChunkPosition:
     page_number: int | None = None
     start_offset: int | None = None
     end_offset: int | None = None
+    page_start: int | None = None
+    page_end: int | None = None
 
     def __post_init__(self) -> None:
         """Validate chunk navigation coordinates."""
         require_non_negative(self.section_index, "section_index")
         require_non_negative(self.chunk_index_in_section, "chunk_index_in_section")
+
+        # Harmonize page_number, page_start, and page_end
+        p_num = self.page_number
+        p_start = self.page_start
+        p_end = self.page_end
+
+        if p_start is None and p_num is not None:
+            p_start = p_num
+            object.__setattr__(self, "page_start", p_start)
+        if p_end is None and p_num is not None:
+            p_end = p_num
+            object.__setattr__(self, "page_end", p_end)
+        if p_num is None and p_start is not None:
+            p_num = p_start
+            object.__setattr__(self, "page_number", p_num)
+
         if self.page_number is not None:
             require_positive(self.page_number, "page_number")
+        if self.page_start is not None:
+            require_positive(self.page_start, "page_start")
+        if self.page_end is not None:
+            require_positive(self.page_end, "page_end")
+        if (
+            self.page_start is not None
+            and self.page_end is not None
+            and self.page_start > self.page_end
+        ):
+            raise ValueError("page_start must not exceed page_end")
+
         if (self.start_offset is None) != (self.end_offset is None):
             raise ValueError("start_offset and end_offset must both be null or present")
         if self.start_offset is not None and self.end_offset is not None:

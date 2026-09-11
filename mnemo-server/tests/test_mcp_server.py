@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import anyio
@@ -12,6 +14,7 @@ from mcp.client.session import ClientSession
 from mnemo import EngineState, KnowledgeEngine, __version__
 from mnemo_server.config import ServerConfig
 from mnemo_server.mcp.server import (
+    _install_v2_if_enabled,
     configure_stderr_logging,
     create_mcp_server,
     run_stdio_server,
@@ -37,6 +40,59 @@ def test_create_mcp_server_metadata() -> None:
     assert options.server_name == "mnemo-mcp"
     assert options.server_version == __version__
 
+    configured = ServerConfig(max_delivery_response_bytes=3210)
+    configured_server = create_mcp_server(config=configured)
+    assert configured_server._config is configured
+
+
+@pytest.mark.anyio
+async def test_mcp_v2_installer_enforces_readiness_and_activation_authority(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """MCP startup owns the same governed V2 installation boundary as HTTP startup."""
+    engine = MagicMock(spec=KnowledgeEngine)
+    engine.config.storage.sqlite.path = tmp_path / "production.db"
+    core_config = MagicMock()
+    assert await _install_v2_if_enabled(engine, ServerConfig(), core_config) is None
+
+    config = ServerConfig(
+        production_mode=True,
+        auth_mode="api-key",
+        api_key="key",
+        delivery_cursor_secret="x" * 32,
+        full_multilingual_v2_enabled=True,
+        full_multilingual_v2_model_cache=tmp_path / "models",
+        final_qa_operational_store_path=tmp_path / "operational.db",
+        mcp_stdio_principal_subject="stdio",
+    )
+    builder = MagicMock()
+    builder.build = AsyncMock(return_value=(object(), object()))
+    monkeypatch.setattr(
+        "mnemo_server.services.production_store_readiness.ProductionV2ReadinessEvidenceBuilderV1",
+        MagicMock(return_value=builder),
+    )
+    installed = SimpleNamespace(
+        close=AsyncMock(), reranker_activation=SimpleNamespace(activate=AsyncMock())
+    )
+    installer = AsyncMock(return_value=installed)
+    monkeypatch.setattr(
+        "mnemo_server.services.full_multilingual_v2_startup.install_production_full_multilingual_v2",
+        installer,
+    )
+    restore = AsyncMock()
+    monkeypatch.setattr(
+        "mnemo_server.services.durable_reranker_activation.restore_production_reranker_activation",
+        restore,
+    )
+    assert await _install_v2_if_enabled(engine, config, core_config) is installed
+    installer.assert_awaited_once()
+    restore.assert_awaited_once()
+    conflicting = config.model_copy(
+        update={"reranker_activation_state_path": tmp_path / "activation.json"}
+    )
+    with pytest.raises(RuntimeError, match="COMPETING"):
+        await _install_v2_if_enabled(engine, conflicting, core_config, object())
+
 
 @pytest.mark.anyio
 async def test_mcp_server_protocol_handshake() -> None:
@@ -60,9 +116,9 @@ async def test_mcp_server_protocol_handshake() -> None:
             assert info.name == "mnemo-mcp"
             assert info.version == __version__
 
-            # Module 8.2 lists the 6 knowledge tools
+            # The six frozen tools remain present beside four additive delivery tools.
             tools_res = await session.list_tools()
-            assert len(tools_res.tools) == 6
+            assert len(tools_res.tools) == 14
             tool_names = [t.name for t in tools_res.tools]
             assert "query_notebook" in tool_names
             assert "search_all_notebooks" in tool_names
@@ -76,7 +132,7 @@ async def test_mcp_server_protocol_handshake() -> None:
             assert prompts_res.prompts == []
 
             resources_res = await session.list_resources()
-            assert resources_res.resources == []
+            assert [str(item.uri) for item in resources_res.resources] == ["mnemo://capabilities"]
 
             tg.cancel_scope.cancel()
 

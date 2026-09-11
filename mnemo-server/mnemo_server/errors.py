@@ -17,6 +17,9 @@ from mnemo.engine import (
 from mnemo.interfaces import (
     ConflictError,
     ContractValidationError,
+    DeliveryAuthorizationError,
+    DeliveryCursorError,
+    DeliveryLimitExceededError,
     DependencyUnavailableError,
     IntegrityError,
     LifecycleError,
@@ -85,6 +88,12 @@ def _interface_error_handler(request: Request, exc: MnemoInterfaceError) -> JSON
     retryable = getattr(exc, "retryable", False)
 
     match exc:
+        case DeliveryAuthorizationError():
+            return error_response(403, code, "Resource access is forbidden")
+        case DeliveryCursorError():
+            return error_response(409, code, exc.message, details=details, retryable=retryable)
+        case DeliveryLimitExceededError():
+            return error_response(413, code, "Delivery limit exceeded")
         case ContractValidationError():
             return error_response(422, code, exc.message, details=details, retryable=retryable)
         case NotFoundError():

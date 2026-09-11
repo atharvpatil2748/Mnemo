@@ -1,0 +1,38 @@
+{
+  "alias_namespace": "full_multilingual_v2_aliases",
+  "artifact_digest": "0f34a97fd64301d86ccbe8d15dad08bb7442ff484a4e5166d8ec0056b2220ed7",
+  "census_digest": "0cf872e3822494bb0fe9c4be7f0e2adb0009d3330ef96b2461a89c5192302446",
+  "corpus_digest": "e086e48dda72b9bc38f6cb4d4f68a60bc5af7dfa38b47b49659fc3312a2efd9b",
+  "database_creation_authorization_mode": "typed_build_authorization_v1_required",
+  "database_id": "b8b855c4-98b3-5f35-bc91-92cf693e507d",
+  "disposable": true,
+  "expected_initial_state": "path_and_sidecars_absent",
+  "generation_namespace": "full_multilingual_v2",
+  "profile_fingerprint": "51eb57f1f252d4e3e771668be8a70316303ede40c97cf0d3d25f7d20ed728034",
+  "protected_path_inequality": [
+    {
+      "equal": false,
+      "protected_path": "scratch/phase8_5_wp16/eval-20260828-01/mnemo.db"
+    },
+    {
+      "equal": false,
+      "protected_path": "scratch/phase8_5_wp10_stage2/eval-20260829-01/mnemo.db"
+    },
+    {
+      "equal": false,
+      "protected_path": "scratch/phase8_5_11/eval-20260825-02/mnemo.db"
+    }
+  ],
+  "provider_artifact_digests": [
+    "2e5964567536463e20a12fc9636bb29e0a4881a9d3ffbb8748b2c25cfd24377f",
+    "034a1cb87723578800b95d2838705ca03035b2c9659d0c901099d10583a7b0cf"
+  ],
+  "rollback_namespace": "full_multilingual_v2_rollback",
+  "run_id": "0b04f05c-a3d5-5879-b878-cd5f8e84ff2f",
+  "schema_version": "mnemo.v2-disposable-database-manifest/1",
+  "shm_must_not_exist": true,
+  "target_exists": false,
+  "target_path": "scratch/phase8_5_full_multilingual_v2/build-20260831-01/mnemo.db",
+  "vector_space_profile_identity": "7dcba654e1c947145253ff65ef93e2b4ef1105cdf680b79218a446c79cc1a0d7",
+  "wal_must_not_exist": true
+}

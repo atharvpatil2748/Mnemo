@@ -70,7 +70,7 @@ def _make_mock_engine() -> MagicMock:
 
 
 def test_mcp_tool_definitions() -> None:
-    """Verify that get_mcp_tools returns the exact 6 authoritative MCP knowledge tools."""
+    """Verify the six frozen and four additive delivery tool contracts."""
     tools = get_mcp_tools()
     tool_names = [t.name for t in tools]
 
@@ -81,6 +81,14 @@ def test_mcp_tool_definitions() -> None:
         "get_notebook_summary",
         "get_source_insights",
         "get_timeline",
+        "get_document",
+        "get_document_chunk",
+        "get_asset",
+        "get_image_analysis",
+        "search_evidence",
+        "query_structured",
+        "run_final_qa_v2",
+        "get_capabilities",
     ]
 
     assert tool_names == expected_names
@@ -282,6 +290,7 @@ async def test_mcp_query_notebook_execution() -> None:
 async def test_mcp_search_all_notebooks() -> None:
     """Verify search_all_notebooks tool execution."""
     engine = _make_mock_engine()
+    nb_id = uuid4()
     chunk_id = uuid4()
     doc_id = uuid4()
     version_id = uuid4()
@@ -297,8 +306,9 @@ async def test_mcp_search_all_notebooks() -> None:
                 results=[
                     SearchResultItem(
                         chunk_id=str(chunk_id),
-                        document_id=str(doc_id),
-                        version_id=str(version_id),
+                        notebook_id=nb_id,
+                        document_id=doc_id,
+                        version_id=version_id,
                         text="Search result content",
                         score=0.95,
                         rank=1,
@@ -325,7 +335,12 @@ async def test_mcp_search_all_notebooks() -> None:
         assert data["latency_ms"] == 15
         assert len(data["results"]) == 1
         assert data["results"][0]["chunk_id"] == str(chunk_id)
+        assert data["results"][0]["notebook_id"] == str(nb_id)
+        assert data["results"][0]["document_id"] == str(doc_id)
+        assert data["results"][0]["version_id"] == str(version_id)
         assert data["results"][0]["score"] == 0.95
+        assert data["completeness"] == "bounded"
+        assert data["coverage"]["exhaustive"] is False
 
     # Test validation error on empty query
     with pytest.raises(ContractValidationError, match="query"):
@@ -569,7 +584,7 @@ async def test_mcp_server_tool_listing_and_dispatch() -> None:
 
     tools_res = await list_tools_handler(types.ListToolsRequest(method="tools/list"))
     tools_result = getattr(tools_res, "root", tools_res)
-    assert len(tools_result.tools) == 6
+    assert len(tools_result.tools) == 14
 
     # 2. Test call_tool dispatch
     call_tool_handler = server.request_handlers[types.CallToolRequest]
@@ -589,3 +604,6 @@ async def test_mcp_server_tool_listing_and_dispatch() -> None:
     assert isinstance(first_content, types.TextContent)
     data = json.loads(first_content.text)
     assert data["total"] == 0
+    assert call_result.structuredContent == data
+    assert data["operation"] == "list_notebooks"
+    assert data["completeness"] == "complete"

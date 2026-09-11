@@ -1,0 +1,157 @@
+{
+  "schema_version": "1.0",
+  "status": "WP-13_CAPABILITY_DISCOVERY_EXPOSED_RUNTIME_DERIVED",
+  "authority": "ADR-0073",
+  "transport_policy": {
+    "authoritative": "MCP structured content",
+    "json_fallback": "Canonical JSON with identical identifiers, provenance, completeness, continuation, limits, omissions, and recommended actions",
+    "binary": "Native MCP image/resource content plus a structured companion envelope; never an unlabeled or silently truncated byte prefix",
+    "stdio_sse_parity": true
+  },
+  "common_output_schema": {
+    "type": "object",
+    "required": ["schema_version", "operation", "request_id", "completeness", "coverage", "limits", "recommended_next_actions"],
+    "properties": {
+      "schema_version": {"type": "string"},
+      "operation": {"type": "string"},
+      "request_id": {"type": "string"},
+      "scope": {"type": "object", "description": "Authorized notebook/source/document/version scope; absent only when the operation has no resource scope."},
+      "items": {"type": "array"},
+      "resource": {"type": "object"},
+      "completeness": {"enum": ["complete", "partial", "bounded", "ranked", "truncated", "no_match", "empty", "unavailable", "failed", "unknown"]},
+      "coverage": {"type": "object", "description": "Requested, searched, unavailable, disabled, failed, omitted, and exhausted scopes/representations."},
+      "omissions": {"type": "array"},
+      "limits": {"type": "object", "description": "Requested/effective ceilings and consumption."},
+      "next_cursor": {"type": ["string", "null"]},
+      "recommended_next_actions": {"type": "array", "items": {"type": "object"}},
+      "error": {"type": "object", "description": "Stable typed and sanitized failure envelope."}
+    }
+  },
+  "continuation": {
+    "cursor_is": "opaque, signed, expiring, scope/query/selector/snapshot/budget-bound",
+    "format": "CursorCodecV2 (mnc2) with signed format version, domain, key ID, issued/expiry timestamps, immutable snapshot, binding, position, and effective limits",
+    "rotation": "Issue only with the active key; accept named overlap keys only while configured and before token expiry; retired/unknown keys require traversal restart.",
+    "legacy_delivery": "Delivery-v1 cursors are decode-only until the process-stable configured overlap deadline; all new delivery cursors are V2.",
+    "client_rule": "Pass next_cursor unchanged to the same operation until it is null or the requested selector is complete.",
+    "server_rule": "Reauthorize every page; reject tampering, expiry, wrong actor/notebook/version/generation/query/selector, and scope widening.",
+    "complete_rule": "complete is valid only when the declared scope and required representations are exhausted; ranked top-k is never exhaustive.",
+    "typed_errors": ["cursor.invalid", "cursor.expired", "cursor.conflict", "cursor.key_unavailable", "delivery.cursor_invalid", "delivery.cursor_expired", "delivery.cursor_conflict"]
+  },
+  "tools": [
+    {
+      "name": "list_notebooks", "kind": "retained", "registered_now": true, "responsibility": "Bounded notebook inventory for scope discovery.",
+      "use_when": ["The caller needs available notebook IDs or a notebook inventory page."], "do_not_use_when": ["Searching document content", "Retrieving a complete document"],
+      "required_inputs": [], "optional_inputs": ["limit", "cursor"], "result_items": ["notebook_id", "name", "source_count"],
+      "completeness": "Inventory page completeness with continuation.", "recommended_chain": ["Use a returned notebook_id with notebook-scoped retrieval tools."], "compatibility": "Preserve Phase 8 semantics and required inputs."
+    },
+    {
+      "name": "get_notebook_summary", "kind": "retained", "registered_now": true, "responsibility": "Return a bounded notebook summary.",
+      "use_when": ["A coarse notebook overview is sufficient."], "do_not_use_when": ["Exact evidence, exhaustive results, arithmetic, or exact location is required."],
+      "required_inputs": ["notebook_id"], "optional_inputs": [], "result_items": ["notebook_id", "summary", "source attribution"],
+      "completeness": "Summary coverage is not document or corpus completeness.", "recommended_chain": ["Use search_evidence or exact delivery for supporting evidence."], "compatibility": "Preserve Phase 8 semantics."
+    },
+    {
+      "name": "search_all_notebooks", "kind": "retained", "registered_now": true, "responsibility": "Bounded ranked canonical-text discovery across notebooks.",
+      "use_when": ["Finding relevant canonical chunks, documents, and propagated notebook/document/version IDs."],
+      "do_not_use_when": ["All/every/count guarantees", "Exact page/range/end/full traversal", "Structured numeric filtering or aggregation", "Semantic image/asset discovery"],
+      "required_inputs": ["query"], "optional_inputs": ["top_k", "notebook_id"], "result_items": ["notebook_id", "source_id", "document_id", "version_id", "chunk_id", "title", "score", "retrieval provenance"],
+      "completeness": "Always bounded ranked/unknown with respect to all matches; never complete enumeration.",
+      "recommended_chain": ["For exact location or full content, pass IDs to get_document/get_document_chunk.", "For typed/derived or exhaustive evidence, call search_evidence."], "compatibility": "Do not change V1 ranking, plan, top-k, or required inputs."
+    },
+    {
+      "name": "query_notebook", "kind": "retained", "registered_now": true, "responsibility": "Bounded V1 evidence retrieval and optional synthesis within one notebook.",
+      "use_when": ["A relevant top-k V1 text answer in one known notebook is sufficient."],
+      "do_not_use_when": ["Exact traversal", "Exhaustive enumeration", "Structured arithmetic", "Multimodal evidence", "Final-QA V2 persistence is required"],
+      "required_inputs": ["notebook_id", "question"], "optional_inputs": ["top_k", "synthesize"], "result_items": ["answer or evidence", "V1 citations", "source/document/version IDs"],
+      "completeness": "Bounded ranked V1; no exhaustive guarantee.", "recommended_chain": ["Use get_document for exact source traversal.", "Use run_final_qa_v2 only for typed V2 evidence/publication."], "compatibility": "V1 Final-QA and citation semantics remain frozen."
+    },
+    {
+      "name": "get_source_insights", "kind": "retained", "registered_now": true, "responsibility": "Return bounded persisted insights for one known source.",
+      "use_when": ["The source ID is known and persisted facts/entities are requested."], "do_not_use_when": ["Searching all content", "Claiming complete source text"],
+      "required_inputs": ["source_id"], "optional_inputs": ["insight_type", "limit"], "result_items": ["source_id", "insight ID/type/value", "provenance"],
+      "completeness": "Bounded persisted-insight inventory only.", "recommended_chain": ["Use exact delivery for original supporting content."], "compatibility": "Preserve Phase 8 semantics."
+    },
+    {
+      "name": "get_timeline", "kind": "retained", "registered_now": true, "responsibility": "Return bounded persisted chronological events in a notebook/source scope.",
+      "use_when": ["Persisted timeline events are requested."], "do_not_use_when": ["Complete document traversal or arbitrary exhaustive fact extraction"],
+      "required_inputs": ["notebook_id"], "optional_inputs": ["source_id", "limit"], "result_items": ["event", "time", "source/document/version provenance"],
+      "completeness": "Completeness applies to persisted timeline events, not all possible events in source text.", "recommended_chain": ["Retrieve cited exact evidence when needed."], "compatibility": "Preserve Phase 8 semantics."
+    },
+    {
+      "name": "get_document", "kind": "retained", "registered_now": true, "responsibility": "Bounded exact-version document traversal or original-byte delivery.",
+      "use_when": ["The exact document/version is known", "The request asks for full, page/range, first/last, from-end, or exact structural content"],
+      "do_not_use_when": ["Discovering a relevant document from natural language", "Semantic or exhaustive matching across documents"],
+      "required_inputs": ["document_id", "version_id"], "optional_inputs": ["notebook_id", "mode", "selector", "cursor", "max_bytes", "max_items"],
+      "result_items": ["notebook_id", "source/document/version IDs", "ordered blocks or original resource", "physical locators", "snapshot", "completeness", "next_cursor"],
+      "completeness": "Continue unchanged next_cursor until null for full traversal; selector scope must terminate complete or report typed limitation.",
+      "recommended_chain": ["Use search_all_notebooks/search_evidence to discover IDs.", "For full/end requests, continue until selector completion; do not answer from search snippets."], "compatibility": "Existing no-selector blocks/original modes and optional safe notebook resolution remain compatible."
+    },
+    {
+      "name": "get_document_chunk", "kind": "retained", "registered_now": true, "responsibility": "Return one exact authorized canonical chunk and ancestry.",
+      "use_when": ["A canonical chunk ID is already known and exact chunk content/context is needed."], "do_not_use_when": ["Searching for a chunk", "Retrieving all document content"],
+      "required_inputs": ["document_id", "version_id", "chunk_id"], "optional_inputs": ["notebook_id"], "result_items": ["chunk", "parent/ancestry", "notebook/source/document/version provenance"],
+      "completeness": "Complete for the one exact chunk resource only.", "recommended_chain": ["Use search to discover chunk/document/version IDs first."], "compatibility": "Preserve existing digest and output behavior; enrich provenance additively."
+    },
+    {
+      "name": "get_asset", "kind": "retained", "registered_now": true, "responsibility": "List authorized occurrences in a known scope or deliver one known original asset occurrence.",
+      "use_when": ["Document/version or occurrence ID is already known", "Original image/binary bytes are requested"],
+      "do_not_use_when": ["Finding an image from a natural-language description", "Requesting OCR/Vision interpretation"],
+      "required_inputs": ["notebook_id"], "optional_inputs": ["document_id", "version_id", "occurrence_id", "cursor", "limit", "max_bytes"],
+      "result_items": ["asset/occurrence/document/version IDs", "typed locator/order", "MIME/hash/size", "derivation availability", "binary resource when selected", "completeness", "next_cursor"],
+      "completeness": "Inventory completeness is separate from atomic binary-resource completeness.",
+      "recommended_chain": ["Use search_evidence for semantic asset discovery.", "Use get_image_analysis for derived interpretation of a returned occurrence."], "compatibility": "Retain inventory/selected-occurrence modes; do not turn asset ID into authority."
+    },
+    {
+      "name": "get_image_analysis", "kind": "retained", "registered_now": true, "responsibility": "Deliver bounded authorized OCR and/or Vision derivations for one occurrence.",
+      "use_when": ["An occurrence is known and derived text/description/entities/regions are requested."],
+      "do_not_use_when": ["Retrieving original bytes", "Discovering which image matches natural language", "Treating derived output as source truth"],
+      "required_inputs": ["notebook_id", "occurrence_id"], "optional_inputs": ["ocr_derivation_id", "vision_derivation_id", "selection", "modalities", "profile", "max_items", "max_bytes"],
+      "result_items": ["occurrence/original asset provenance", "selected derivation IDs", "provider/model/profile/generation", "OCR/Vision typed evidence", "completeness"],
+      "completeness": "Per requested analysis kind and derivation coverage; missing analysis is unavailable, not empty image content.",
+      "recommended_chain": ["Use get_asset for the original image.", "Use selection=latest_ready when explicit IDs are not known and policy permits."], "compatibility": "Existing explicit derivation IDs remain supported; deterministic selection is additive."
+    },
+    {
+      "name": "search_evidence", "kind": "additive", "registered_now": true, "responsibility": "Ranked or bounded exhaustive typed evidence discovery across requested representations and authorized scope; optional explicit document partitions preserve per-document completeness and provenance.",
+      "use_when": ["All/every matching evidence is requested", "OCR/Vision/asset metadata/compatible visual or multilingual evidence must be searched", "Evidence IDs are needed for delivery"],
+      "do_not_use_when": ["Structured numeric guarantees", "Delivering original binary bytes", "Autonomous open-ended planning"],
+      "required_inputs": ["query", "mode", "scope", "representations"], "optional_inputs": ["cursor", "candidate_budget", "evidence_budget", "max_serialized_bytes", "max_content_characters", "positional_scope", "expansion_policy", "deduplication_policy"],
+      "result_items": ["typed candidate/evidence", "all applicable provenance", "retrieval paths/scores", "coverage", "completeness", "next_cursor"],
+      "completeness": "Ranked is bounded/unknown; exhaustive can be complete only after all declared sources terminate.",
+      "recommended_chain": ["Pass document IDs to get_document, occurrence IDs to get_asset/get_image_analysis, or typed evidence to run_final_qa_v2."], "compatibility": "Additive; never changes search_all_notebooks. Derived and multilingual sources are advertised only when their active generation/provider is ready; language provenance remains in the evidence locator."
+    },
+    {
+      "name": "query_structured", "kind": "additive", "registered_now": true, "responsibility": "Discover an authorized exact-version dataset/schema or execute a typed bounded structured filter/sort/group/aggregate over an active projection.",
+      "use_when": ["Numeric comparisons, ranges, counts, averages, sorting, grouping, or deterministic structured comparison are required.", "Use operation=describe before query when the dataset identity or schema is unknown."],
+      "do_not_use_when": ["The dataset has no validated structured projection", "Free-text semantic relevance is the requested operation", "Arbitrary SQL, expressions, semantic joins, or image operations are requested"],
+      "required_inputs": ["operation", "scope"], "optional_inputs": ["dataset_ids", "select_fields", "filters", "group_by", "aggregations", "order_by", "distinct_fields", "join", "cursor", "page_size"],
+      "result_items": ["typed rows/aggregates", "cell/row/source/document/version provenance", "row universe", "coverage", "completeness", "next_cursor"],
+      "completeness": "Derived from exact row-universe exhaustion; stale/ambiguous/unavailable projection never returns complete.",
+      "recommended_chain": ["Use search_evidence first only to identify the correct dataset/projection.", "Use run_final_qa_v2 for a cited narrative over the result."], "compatibility": "Additive; no SQL string input and no V1 search changes."
+    },
+    {
+      "name": "run_final_qa_v2", "kind": "additive", "registered_now": true, "responsibility": "Persist and replay a citation-compliant Final-QA V2 answer over typed authorized evidence.",
+      "use_when": ["A grounded persisted answer over V2 typed evidence is required."],
+      "do_not_use_when": ["Evidence has not been retrieved/authorized", "V1 query semantics are required", "Provider modality/policy is unavailable"],
+      "required_inputs": ["notebook_id", "session_id", "user_turn_id", "assistant_turn_id", "question", "evidence_request_or_snapshot", "provider_profile"], "optional_inputs": ["context_budgets", "max_output_tokens", "publication_policy"],
+      "result_items": ["execution ID", "answer", "EvidenceCitationV2 mappings", "retrieval/context completeness", "immutable fingerprint", "replay state"],
+      "completeness": "Propagates evidence/context completeness; failed citation compliance publishes no assistant snapshot.",
+      "recommended_chain": ["Retrieve exact/structured/multimodal evidence first unless the accepted request contract performs deterministic retrieval."], "compatibility": "Additive and reuses ADR-0054/ADR-0056; V1 Final-QA unchanged."
+    },
+    {
+      "name": "get_capabilities", "kind": "additive", "registered_now": true, "responsibility": "Return truthful scope-aware Phase 8.5 readiness, active generation, bounds, and limitations.",
+      "use_when": ["A client needs to choose a supported tool/path or explain an unavailable modality."],
+      "do_not_use_when": ["Enumerating inaccessible resources", "Assuming declared/configured means certified"],
+      "required_inputs": [], "optional_inputs": ["notebook_id", "capability_ids"],
+      "result_items": ["capability ID", "lifecycle states", "profile/generation opaque IDs", "supported modes/languages/media", "limits", "denial/unavailable reason"],
+      "completeness": "Complete for known capabilities visible to the actor; inaccessible implementation details are intentionally omitted.",
+      "recommended_chain": ["Choose only exposed and ready capability paths; treat unavailable/disabled/policy-denied as non-searchable."], "compatibility": "Additive; replaces no static V1 capability behavior."
+    }
+  ],
+  "typed_error_codes": [
+    "invalid_request", "invalid_uuid", "unauthorized", "forbidden", "not_found",
+    "ambiguous_scope", "version_mismatch", "unsupported_capability", "unavailable",
+    "policy_denied", "budget_denied", "size_exceeded", "truncated", "stale_generation",
+    "invalid_cursor", "expired_cursor", "conflict", "malformed_resource",
+    "provider_unavailable", "citation_compliance", "cancelled", "internal_error"
+  ]
+}

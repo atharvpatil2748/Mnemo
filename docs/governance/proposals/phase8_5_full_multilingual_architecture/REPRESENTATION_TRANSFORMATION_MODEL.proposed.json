@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/governance/proposals/full-multilingual-v2/REPRESENTATION_TRANSFORMATION_MODEL.proposed.json",
+  "title": "PROPOSED — RepresentationTransformationV1",
+  "description": "Generic, authorization-bound, immutable text-representation observation and transformation. Language, script and representation are independent.",
+  "$ref": "#/$defs/representationTransformationV1",
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "representationType": {
+      "type": "string",
+      "enum": [
+        "unicode_semantic_text", "legacy_font_encoded_text", "pdf_encoding_anomaly",
+        "ocr_text", "vision_text", "transliterated_text",
+        "normalized_unicode_text", "unknown"
+      ],
+      "description": "Additional future values require a governed schema revision; filenames, paths, documents, languages and scripts are never representation values."
+    },
+    "observationReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observation_id", "observation_kind", "observation_digest"],
+      "properties": {
+        "observation_id": {"type": "string", "format": "uuid"},
+        "observation_kind": {"enum": ["language", "script"]},
+        "observation_digest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "authorizationScopeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor_scope_digest", "notebook_id", "source_id", "document_id", "version_id",
+        "occurrence_id", "derivation_id", "authorization_policy_id",
+        "authorization_policy_revision"
+      ],
+      "properties": {
+        "actor_scope_digest": {"$ref": "#/$defs/sha256"},
+        "notebook_id": {"type": "string", "format": "uuid"},
+        "source_id": {"type": "string", "format": "uuid"},
+        "document_id": {"type": "string", "format": "uuid"},
+        "version_id": {"type": "string", "format": "uuid"},
+        "occurrence_id": {"type": ["string", "null"], "format": "uuid"},
+        "derivation_id": {"type": ["string", "null"], "format": "uuid"},
+        "authorization_policy_id": {"type": "string", "minLength": 1},
+        "authorization_policy_revision": {"type": "string", "minLength": 1}
+      },
+      "description": "Sanitized server-computed authorization binding. It contains no credential and cannot grant access."
+    },
+    "representationObservationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "observation_id", "source_reference", "representation_type",
+        "detector_id", "detector_revision", "configuration_digest", "input_content_hash",
+        "confidence", "calibrated", "authority_class", "language_observation_references",
+        "script_observation_references", "created_at"
+      ],
+      "properties": {
+        "schema_version": {"const": "mnemo.representation-observation/1"},
+        "observation_id": {"type": "string", "format": "uuid"},
+        "source_reference": {"$ref": "LANGUAGE_EVIDENCE_REFERENCE_V3.proposed.json"},
+        "representation_type": {"$ref": "#/$defs/representationType"},
+        "detector_id": {"type": "string", "minLength": 1},
+        "detector_revision": {"type": "string", "minLength": 1},
+        "configuration_digest": {"$ref": "#/$defs/sha256"},
+        "input_content_hash": {"$ref": "#/$defs/sha256"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "calibrated": {"type": "boolean"},
+        "authority_class": {
+          "enum": [
+            "authoritative_source_metadata", "adjudicated", "parser_metadata",
+            "provider_metadata", "governed_detector", "unknown"
+          ]
+        },
+        "language_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        },
+        "script_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        },
+        "created_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "transformationProfileV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile_id", "provider_id", "provider_revision", "configuration_digest",
+        "allowed_source_representations", "target_representation", "deterministic",
+        "offline_only", "authorization_required", "failure_policy"
+      ],
+      "properties": {
+        "profile_id": {"type": "string", "minLength": 1},
+        "provider_id": {"type": "string", "minLength": 1},
+        "provider_revision": {"type": "string", "minLength": 1},
+        "configuration_digest": {"$ref": "#/$defs/sha256"},
+        "allowed_source_representations": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"$ref": "#/$defs/representationType"}
+        },
+        "target_representation": {"$ref": "#/$defs/representationType"},
+        "deterministic": {"const": true},
+        "offline_only": {"const": true},
+        "authorization_required": {"const": true},
+        "failure_policy": {"const": "fail_closed_no_output"}
+      }
+    },
+    "textRepresentationReferenceV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "reference_id", "evidence_reference", "representation_type",
+        "representation_authority", "content_hash", "representation_observation_id",
+        "representation_derivation_id", "source_generation_ids",
+        "language_observation_references", "script_observation_references"
+      ],
+      "properties": {
+        "schema_version": {"const": "mnemo.text-representation-reference/1"},
+        "reference_id": {"type": "string", "format": "uuid"},
+        "evidence_reference": {"$ref": "LANGUAGE_EVIDENCE_REFERENCE_V3.proposed.json"},
+        "representation_type": {"$ref": "#/$defs/representationType"},
+        "representation_authority": {"enum": ["original", "existing_derived", "representation_derived"]},
+        "content_hash": {"$ref": "#/$defs/sha256"},
+        "representation_observation_id": {"type": "string", "format": "uuid"},
+        "representation_derivation_id": {"type": ["string", "null"], "format": "uuid"},
+        "source_generation_ids": {
+          "type": "array", "items": {"type": "string", "format": "uuid"}, "uniqueItems": true
+        },
+        "language_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        },
+        "script_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"representation_authority": {"const": "representation_derived"}}, "required": ["representation_authority"]},
+          "then": {
+            "properties": {
+              "representation_derivation_id": {"type": "string", "format": "uuid"},
+              "source_generation_ids": {"minItems": 1}
+            }
+          },
+          "else": {"properties": {"representation_derivation_id": {"type": "null"}}}
+        }
+      ]
+    },
+    "transformationProvenanceV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_reference_digest", "source_representation_reference_id",
+        "source_representation_observation_id", "profile_id", "profile_configuration_digest",
+        "input_content_hash", "output_content_hash", "generation_id",
+        "authorization_scope_digest"
+      ],
+      "properties": {
+        "source_reference_digest": {"$ref": "#/$defs/sha256"},
+        "source_representation_reference_id": {"type": "string", "format": "uuid"},
+        "source_representation_observation_id": {"type": "string", "format": "uuid"},
+        "profile_id": {"type": "string", "minLength": 1},
+        "profile_configuration_digest": {"$ref": "#/$defs/sha256"},
+        "input_content_hash": {"$ref": "#/$defs/sha256"},
+        "output_content_hash": {"$ref": "#/$defs/sha256"},
+        "generation_id": {"type": "string", "format": "uuid"},
+        "authorization_scope_digest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "representationTransformationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "transformation_id", "source_representation", "source_observation",
+        "transformation_profile", "target_representation_type", "input_content_hash",
+        "output_content_hash", "output_reference", "generation_id", "source_generation_ids",
+        "authorization_scope", "language_observation_references",
+        "script_observation_references", "provenance", "created_at"
+      ],
+      "properties": {
+        "schema_version": {"const": "mnemo.representation-transformation/1"},
+        "transformation_id": {"type": "string", "format": "uuid"},
+        "source_representation": {"$ref": "#/$defs/textRepresentationReferenceV1"},
+        "source_observation": {"$ref": "#/$defs/representationObservationV1"},
+        "transformation_profile": {"$ref": "#/$defs/transformationProfileV1"},
+        "target_representation_type": {"$ref": "#/$defs/representationType"},
+        "input_content_hash": {"$ref": "#/$defs/sha256"},
+        "output_content_hash": {"$ref": "#/$defs/sha256"},
+        "output_reference": {"$ref": "#/$defs/textRepresentationReferenceV1"},
+        "generation_id": {"type": "string", "format": "uuid"},
+        "source_generation_ids": {
+          "type": "array", "items": {"type": "string", "format": "uuid"}, "uniqueItems": true
+        },
+        "authorization_scope": {"$ref": "#/$defs/authorizationScopeV1"},
+        "language_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        },
+        "script_observation_references": {
+          "type": "array", "items": {"$ref": "#/$defs/observationReference"}, "uniqueItems": true
+        },
+        "provenance": {"$ref": "#/$defs/transformationProvenanceV1"},
+        "created_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "transformationRegistryEntryV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "implementation_id", "configured", "provider_ready", "enabled", "reason_code"],
+      "properties": {
+        "profile": {"$ref": "#/$defs/transformationProfileV1"},
+        "implementation_id": {"type": "string", "minLength": 1},
+        "configured": {"type": "boolean"},
+        "provider_ready": {"type": "boolean"},
+        "enabled": {"type": "boolean"},
+        "reason_code": {"type": ["string", "null"]}
+      }
+    }
+  },
+  "x-mnemo-identities": {
+    "observation_id": "UUIDv5 of canonical JSON: source-reference digest, detector ID/revision/configuration digest, input hash and representation type.",
+    "transformation_id": "UUIDv5 of canonical JSON: source-reference digest, source representation reference ID, profile ID/revision/configuration digest, input hash, target representation and generation ID.",
+    "output_reference_id": "UUIDv5 of canonical JSON: transformation ID, output hash and target representation."
+  },
+  "x-mnemo-registry-contract": [
+    "TransformationRegistryV1 is an adapter over configured profiles/provider readiness and is not a lifecycle authority.",
+    "Selection uses exact source representation plus governed profile compatibility; it never branches on filename, path, document identity, language or script.",
+    "Authorization succeeds before detector or transformer receives source content.",
+    "Unknown, ambiguous, unavailable or failed transformations produce no derived output and fail closed.",
+    "Canonical source text is never rewritten; outputs are immutable derived evidence.",
+    "representationType describes text encoding/derivation state and is intentionally distinct from the transport-facing EvidenceRepresentation retrieval vocabulary. A governed mapping binds a text representation reference to the transport value multilingual_text; the namespaces are never interchanged implicitly."
+  ]
+}

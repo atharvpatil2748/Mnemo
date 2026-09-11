@@ -92,6 +92,7 @@ _MIME_EXTENSIONS: dict[str, str] = {
     "image/gif": ".gif",
     "image/webp": ".webp",
     "image/svg+xml": ".svg",
+    "image/vnd.ms-photo": ".wdp",
     "image/tiff": ".tiff",
     "image/bmp": ".bmp",
     "audio/mpeg": ".mp3",
@@ -530,6 +531,35 @@ class FilesystemBlobStore:
 
         return data
 
+    async def get_asset_record(self, asset_id: UUID) -> Asset | None:
+        """Return immutable asset metadata without exposing a filesystem path."""
+        self._require_open()
+        if not isinstance(asset_id, UUID):
+            raise TypeError("asset_id must be a UUID")
+        index_path = self._asset_index_path(asset_id)
+        if not index_path.exists():
+            return None
+        try:
+            raw = json.loads(index_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise StorageError(f"could not read asset index {index_path}: {exc}") from exc
+        if raw.get("schema_version") != _ASSET_INDEX_SCHEMA_VERSION:
+            raise IntegrityError(f"asset index for {asset_id} has unsupported schema version")
+        if raw.get("asset_id") != str(asset_id):
+            raise IntegrityError(f"asset index identity mismatch for {asset_id}")
+        content_hash = raw.get("content_hash")
+        mime_type = raw.get("mime_type")
+        storage_uri = raw.get("storage_uri")
+        try:
+            return Asset(
+                asset_id=asset_id,
+                mime_type=mime_type,
+                content_hash=content_hash,
+                storage_uri=storage_uri,
+            )
+        except (TypeError, ValueError) as exc:
+            raise IntegrityError(f"asset index for {asset_id} is invalid") from exc
+
     async def delete_asset(self, asset_id: UUID) -> bool:
         """Delete one asset; returns True if it existed, False otherwise."""
         self._require_open()
@@ -632,6 +662,20 @@ class FilesystemBlobStore:
             raise StorageError(f"could not read IR {ir_path}: {exc}") from exc
 
         return _deserialize_parsed_document(data)
+
+    async def delete_parsed_document(self, version_id: UUID) -> bool:
+        """Delete one version-scoped parsed IR during a document cascade."""
+        self._require_open()
+        if not isinstance(version_id, UUID):
+            raise TypeError("version_id must be a UUID")
+        ir_path = self._ir_path(version_id)
+        try:
+            ir_path.unlink()
+        except FileNotFoundError:
+            return False
+        except OSError as exc:
+            raise StorageError(f"could not delete parsed IR {ir_path}: {exc}") from exc
+        return True
 
     # ------------------------------------------------------------------
     # Lifecycle inspection

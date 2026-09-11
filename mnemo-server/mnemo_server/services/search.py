@@ -10,6 +10,7 @@ from mnemo.engine import KnowledgeEngine
 from mnemo.interfaces import (
     ContractValidationError,
     NotFoundError,
+    PrincipalContextV1,
     UnsupportedError,
 )
 from mnemo.models import (
@@ -80,11 +81,36 @@ class SearchService:
         retriever = MultiSourceRetriever(self._engine.registry, self._engine.embedding_provider)
         fusion_result = await retriever.execute(plan, global_limit=request.limit)
 
-        # 5. Optional Reranking & Result Assembly
-        results: list[SearchResultItem] = []
+        # 5. Optional Reranking
+        rerank_result = None
         if request.enable_reranking:
             reranker = RerankingModule(self._engine.registry)
             rerank_result = await reranker.execute(request.query, fusion_result)
+
+        # Resolve parent notebook IDs for all retrieved chunks
+        candidate_chunks = (
+            [r.fused_result.chunk for r in rerank_result.results]
+            if rerank_result is not None
+            else [r.chunk for r in fusion_result.results]
+        )
+        doc_ids = {c.document_id for c in candidate_chunks}
+        doc_to_notebook: dict[UUID, UUID | None] = {}
+        for doc_id in doc_ids:
+            try:
+                candidate = next(item for item in candidate_chunks if item.document_id == doc_id)
+                resolved = await self._engine.document_scope_resolver.resolve_document_scope(
+                    PrincipalContextV1(UUID(int=0), False),
+                    doc_id,
+                    candidate.version_id,
+                    request.notebook_id,
+                )
+                doc_to_notebook[doc_id] = resolved.notebook_id
+            except Exception:
+                doc_to_notebook[doc_id] = None
+
+        # 6. Result Assembly
+        results: list[SearchResultItem] = []
+        if rerank_result is not None:
             for reranked_item in rerank_result.results:
                 chunk = reranked_item.fused_result.chunk
                 source_mode = (
@@ -100,6 +126,7 @@ class SearchService:
                 results.append(
                     SearchResultItem(
                         chunk_id=chunk.id,
+                        notebook_id=doc_to_notebook.get(chunk.document_id, request.notebook_id),
                         document_id=chunk.document_id,
                         version_id=chunk.version_id,
                         text=chunk.text,
@@ -108,6 +135,8 @@ class SearchService:
                         retrieval_mode=source_mode,
                         heading_path=list(chunk.heading_path),
                         page_number=chunk.position.page_number,
+                        page_start=chunk.position.page_start,
+                        page_end=chunk.position.page_end,
                         metadata=thaw_metadata(chunk.metadata),
                     )
                 )
@@ -120,6 +149,7 @@ class SearchService:
                 results.append(
                     SearchResultItem(
                         chunk_id=chunk.id,
+                        notebook_id=doc_to_notebook.get(chunk.document_id, request.notebook_id),
                         document_id=chunk.document_id,
                         version_id=chunk.version_id,
                         text=chunk.text,
@@ -128,6 +158,8 @@ class SearchService:
                         retrieval_mode=source_mode,
                         heading_path=list(chunk.heading_path),
                         page_number=chunk.position.page_number,
+                        page_start=chunk.position.page_start,
+                        page_end=chunk.position.page_end,
                         metadata=thaw_metadata(chunk.metadata),
                     )
                 )

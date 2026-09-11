@@ -40,6 +40,14 @@ from mnemo.models.final_qa_execution import (
     FinalQAExecutionState,
 )
 from mnemo.retrieval import FinalQAOrchestrator
+from mnemo.retrieval.final_qa import (
+    _canonical_model_configuration,
+    _initial_user_turn,
+    _intersection,
+    _merge_filter,
+    _required_user_turn,
+    _validate_clock,
+)
 from mnemo.retrieval.final_qa_snapshot import SNAPSHOT_SCHEMA_VERSION
 from test_citation_engine import _answer, _chunks, _context, _no_context
 
@@ -222,6 +230,46 @@ def _session(*, assistant: Turn | None = None) -> Session:
         updated_at=assistant.created_at if assistant else _NOW,
         turns=(user,) if assistant is None else (user, assistant),
     )
+
+
+def test_final_qa_helper_boundaries_preserve_filter_and_turn_integrity() -> None:
+    """Pure orchestration helpers reject filter widening and invalid persisted turn state."""
+    request = _request()
+    session = _session()
+    assert _canonical_model_configuration({"z": 1, "a": "x"}) == '{"a":"x","z":1}'
+    assert _initial_user_turn(session, request).turn_id == _USER
+    assert _required_user_turn(session, request).turn_id == _USER
+    assert _intersection((), (DocType.BOOK,), "types") == (DocType.BOOK,)
+    assert _intersection((DocType.BOOK,), (), "types") == (DocType.BOOK,)
+    with pytest.raises(ContractValidationError, match="intersection"):
+        _intersection((DocType.BOOK,), (DocType.PAPER,), "types")
+    with pytest.raises(ContractValidationError, match="conflicts"):
+        _merge_filter(
+            MetadataFilter(notebook_id=UUID(int=1)), MetadataFilter(notebook_id=UUID(int=2))
+        )
+    with pytest.raises(ContractValidationError, match="inverted"):
+        _merge_filter(
+            MetadataFilter(date_after=date(2026, 2, 1)),
+            MetadataFilter(date_before=date(2026, 1, 1)),
+        )
+    with pytest.raises(ContractValidationError, match="final persisted"):
+        _required_user_turn(
+            _session(
+                assistant=Turn(
+                    turn_id=UUID(int=4),
+                    session_id=_SESSION,
+                    sequence=1,
+                    role=TurnRole.ASSISTANT,
+                    content="answer",
+                    created_at=_NOW,
+                )
+            ),
+            request,
+        )
+    with pytest.raises(ContractValidationError, match="timezone-aware"):
+        _validate_clock(datetime(2026, 1, 1), session.turns[0])
+    with pytest.raises(ContractValidationError, match="precedes"):
+        _validate_clock(_NOW - timedelta(seconds=1), session.turns[0])
 
 
 def _storage(session: Session) -> Mock:

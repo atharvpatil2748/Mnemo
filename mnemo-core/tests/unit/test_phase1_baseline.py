@@ -37,11 +37,15 @@ def test_release_versions_are_synchronized() -> None:
 
 
 def test_top_level_core_exports_are_intentional() -> None:
-    """The composition package exposes only its frozen Phase 1 convenience API."""
+    """The composition package exposes the reviewed core and Phase 8.5 API."""
     assert set(mnemo.__all__) == {
         "PLUGIN_ENTRY_POINT_GROUP",
         "PLUGIN_INTERFACE_VERSION",
+        "ActiveModelProfileSnapshot",
         "CapabilityKind",
+        "CapabilityLifecycleStage",
+        "CapabilityState",
+        "CapabilityStatus",
         "EmbeddingConfig",
         "EngineInitializationError",
         "EngineLifecycleError",
@@ -52,6 +56,20 @@ def test_top_level_core_exports_are_intentional() -> None:
         "LLMConfig",
         "LLMRoleConfig",
         "MnemoConfig",
+        "ModelProfileCertification",
+        "ModelProfileComponent",
+        "ModelProfileDefinition",
+        "ModelProfileDocument",
+        "ModelProfileMode",
+        "ModelProfileRegistry",
+        "ModelProfileState",
+        "ModelProfileStatus",
+        "ModelProfileTrustClass",
+        "Phase85FeatureConfig",
+        "Phase85ProfileConfig",
+        "Phase85ProviderRegistration",
+        "Phase85Runtime",
+        "Phase85ServiceRegistration",
         "PluginCompatibilityError",
         "PluginConfig",
         "PluginDescriptor",
@@ -62,6 +80,7 @@ def test_top_level_core_exports_are_intentional() -> None:
         "PluginRegistry",
         "PluginSource",
         "PluginValidationError",
+        "ProviderReadinessResult",
         "QdrantStorageConfig",
         "RegistrationConflictError",
         "RegistrationDescriptor",
@@ -69,6 +88,7 @@ def test_top_level_core_exports_are_intentional() -> None:
         "RegistryFrozenError",
         "RegistryState",
         "RerankerConfig",
+        "RuntimeReadiness",
         "SQLiteStorageConfig",
         "StorageConfig",
         "SurrealDBStorageConfig",
@@ -106,7 +126,7 @@ def test_core_has_no_infrastructure_or_reverse_layer_imports() -> None:
             assert forbidden_roots.isdisjoint(imported_roots), source
 
     assert _internal_imports(_CORE / "registry.py") <= {"mnemo.interfaces", "mnemo.models"}
-    assert _internal_imports(_CORE / "config.py") == set()
+    assert _internal_imports(_CORE / "config.py") == {"mnemo.phase85"}
     assert _internal_imports(_CORE / "engine.py") <= {
         "mnemo._version",
         "mnemo.chunkers",
@@ -116,6 +136,7 @@ def test_core_has_no_infrastructure_or_reverse_layer_imports() -> None:
         "mnemo.llms",
         "mnemo.models",
         "mnemo.parsers",
+        "mnemo.phase85",
         "mnemo.registry",
         "mnemo.retrieval",
         "mnemo.storage",

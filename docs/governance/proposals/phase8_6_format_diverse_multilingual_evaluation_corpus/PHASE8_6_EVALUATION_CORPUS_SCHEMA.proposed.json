@@ -1,0 +1,402 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mnemo.local/schemas/phase9-evaluation-corpus.proposed.schema.json",
+  "title": "Phase9EvaluationCorpusSchema",
+  "description": "Formal governance schema defining the Phase 8.6 Multilingual Evaluation Corpus Expansion manifest, source provenance, licensing metadata, linguistic validation, and evidence quality admission gates.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "corpus_id",
+    "corpus_namespace",
+    "governance_phase",
+    "status",
+    "created_at",
+    "corpus_digest",
+    "licensing_policy_id",
+    "target_languages",
+    "documents"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["mnemo.phase9-evaluation-corpus.proposed/1"]
+    },
+    "corpus_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "corpus_namespace": {
+      "type": "string",
+      "enum": ["evaluationDataset/Phase 8.6 Format-Diverse Multilingual Evaluation Corpus"]
+    },
+    "governance_phase": {
+      "type": "string",
+      "enum": ["Phase 8.6"]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PROPOSED",
+        "AUTHORIZED_FOR_ACQUISITION",
+        "ACQUISITION_IN_PROGRESS",
+        "QUALITY_GATED",
+        "FROZEN",
+        "DEPRECATED"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "corpus_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "licensing_policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_languages": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/EvaluationDocumentAdmissionRecord"
+      }
+    }
+  },
+  "$defs": {
+    "EvaluationDocumentAdmissionRecord": {
+      "type": "object",
+      "required": [
+        "document_id",
+        "version_id",
+        "relative_path",
+        "file_byte_size",
+        "file_sha256",
+        "mime_type",
+        "acquisition_metadata",
+        "licensing_metadata",
+        "linguistic_metadata",
+        "quality_and_evidence_gates",
+        "independence_grouping"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "version_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "relative_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file_byte_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "file_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "mime_type": {
+          "type": "string",
+          "enum": [
+            "application/pdf",
+            "text/plain",
+            "text/markdown",
+            "text/html",
+            "text/csv"
+          ]
+        },
+        "page_count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Optional total page count for paginated document formats (e.g. PDF)."
+        },
+        "transformation_lineage": {
+          "type": "array",
+          "description": "Optional lineage record of representation transformations applied to this document.",
+          "items": {
+            "$ref": "#/$defs/TransformationStepRecord"
+          }
+        },
+        "acquisition_metadata": {
+          "type": "object",
+          "required": [
+            "source_url",
+            "publisher_or_author",
+            "retrieved_at",
+            "retrieved_by_actor_id",
+            "acquisition_method",
+            "original_filename"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "source_url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "publisher_or_author": {
+              "type": "string",
+              "minLength": 1
+            },
+            "retrieved_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "retrieved_by_actor_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "acquisition_method": {
+              "type": "string",
+              "enum": [
+                "manual_curated_download",
+                "authorized_open_repository_api",
+                "direct_author_submission",
+                "public_domain_archive_retrieval"
+              ]
+            },
+            "original_filename": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "licensing_metadata": {
+          "type": "object",
+          "required": [
+            "license_type",
+            "copyright_holder",
+            "evaluation_use_verified",
+            "verification_officer_id",
+            "verification_timestamp"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "license_type": {
+              "type": "string",
+              "enum": [
+                "Public Domain",
+                "CC0-1.0",
+                "CC-BY-4.0",
+                "CC-BY-SA-4.0",
+                "MIT",
+                "Apache-2.0",
+                "Author-Permitted Evaluation Only"
+              ]
+            },
+            "copyright_holder": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evaluation_use_verified": {
+              "type": "boolean"
+            },
+            "verification_officer_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "verification_timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "license_url": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "linguistic_metadata": {
+          "type": "object",
+          "required": [
+            "primary_language",
+            "secondary_languages",
+            "script",
+            "encoding_format",
+            "mixed_language",
+            "language_validation_state"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "primary_language": {
+              "type": "string",
+              "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$"
+            },
+            "secondary_languages": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$"
+              }
+            },
+            "script": {
+              "type": "string",
+              "enum": ["Deva", "Latn", "Arab", "Cyrl", "Hans", "Hant", "Grek", "Other"]
+            },
+            "encoding_format": {
+              "type": "string",
+              "enum": [
+                "native_unicode_utf8",
+                "scanned_clean_ocr_utf8",
+                "legacy_transcoded_utf8"
+              ]
+            },
+            "mixed_language": {
+              "type": "boolean"
+            },
+            "language_validation_state": {
+              "type": "string",
+              "enum": [
+                "unverified",
+                "heuristically_detected",
+                "linguistically_validated",
+                "rejected_wrong_language",
+                "rejected_unintelligible_ocr"
+              ]
+            }
+          }
+        },
+        "quality_and_evidence_gates": {
+          "type": "object",
+          "required": [
+            "ocr_applied",
+            "contains_formula_noise",
+            "contains_table_fragment_noise",
+            "has_substantive_semantic_prose",
+            "estimated_semantic_chunks",
+            "admission_status"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "ocr_applied": {
+              "type": "boolean"
+            },
+            "ocr_engine_version": {
+              "type": "string"
+            },
+            "contains_formula_noise": {
+              "type": "boolean"
+            },
+            "contains_table_fragment_noise": {
+              "type": "boolean"
+            },
+            "has_substantive_semantic_prose": {
+              "type": "boolean"
+            },
+            "estimated_semantic_chunks": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "admission_status": {
+              "type": "string",
+              "enum": [
+                "PENDING_REVIEW",
+                "ADMITTED",
+                "EXCLUDED_OCR_NOISE",
+                "EXCLUDED_INSUFFICIENT_PROSE",
+                "EXCLUDED_UNRESOLVED_LICENSE",
+                "EXCLUDED_WRONG_LANGUAGE",
+                "EXCLUDED_METADATA_SUBSTITUTION"
+              ]
+            },
+            "exclusion_reason": {
+              "type": "string"
+            }
+          }
+        },
+        "independence_grouping": {
+          "type": "object",
+          "required": [
+            "domain",
+            "topic_id",
+            "author_id",
+            "cohort_max_target_allocation"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "domain": {
+              "type": "string",
+              "minLength": 1
+            },
+            "topic_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "author_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cohort_max_target_allocation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            }
+          }
+        }
+      }
+    },
+    "TransformationStepRecord": {
+      "type": "object",
+      "required": [
+        "step_index",
+        "transformation_type",
+        "input_representation",
+        "output_representation",
+        "operator_identity"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "step_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "transformation_type": {
+          "type": "string",
+          "enum": [
+            "encoding_transcode",
+            "ocr_derivation",
+            "text_normalization",
+            "legacy_font_remediation"
+          ]
+        },
+        "input_representation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "output_representation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operator_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "output_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "parameters": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}
