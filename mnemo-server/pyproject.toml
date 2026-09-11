@@ -13,6 +13,13 @@ dependencies = [
     "uvicorn[standard]>=0.30,<1",
 ]
 
+[project.optional-dependencies]
+evaluation = [
+    "pillow>=10.4,<13",
+    "sentence-transformers>=5.1,<6",
+    "torch>=2.2,<3",
+]
+
 [project.scripts]
 mnemo = "mnemo_server.cli:main"
 mnemo-mcp = "mnemo_server.mcp.cli:main"
