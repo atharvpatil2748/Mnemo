@@ -49,3 +49,8 @@ scratch/
 
 # Local read-only study repositories; never vendor third-party sources.
 /references/
+
+# Intentionally local protected evaluation datasets and databases
+/data/manual-gita-qa/mnemo.db
+/evaluationDataset/
+/goldenDataset/

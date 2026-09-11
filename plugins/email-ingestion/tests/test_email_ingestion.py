@@ -602,3 +602,113 @@ def test_parser_has_no_network_filesystem_uuid_clock_or_storage_access(
     with patch("time.time", forbidden):
         result = _parse(_eml("Pure parser"))
     assert result.blocks
+
+
+def test_parser_helpers_and_mime_edge_cases() -> None:
+    from email.message import Message
+
+    from email_ingestion.parser import (
+        _canonical_message_id,
+        _remove_comments,
+        _SemanticHTMLExtractor,
+        _timestamp,
+    )
+
+    # _remove_comments escaped and nested
+    assert _remove_comments("hello (comment (nested)) world") == "hello  world"
+    assert _remove_comments(r"user\(escaped\)@domain") == r"user\(escaped\)@domain"
+    assert _remove_comments(r"(comment \(nested-escaped\))text") == "text"
+
+    # _canonical_message_id invalid cases
+    assert _canonical_message_id("not-an-id") is None
+    assert _canonical_message_id("<missing-at>") is None
+    assert _canonical_message_id("<valid@domain.COM>") == "valid@domain.com"
+
+    # _timestamp error handling
+    m_bad_date = Message()
+    m_bad_date["Date"] = "Invalid Date String"
+    assert _timestamp(m_bad_date) is None
+    m_no_date = Message()
+    assert _timestamp(m_no_date) is None
+
+    # _SemanticHTMLExtractor startend tag and endtag mismatch
+    parser = _SemanticHTMLExtractor()
+    parser.feed("<div>Hello<br /><span class='quote'>Quoted</span></div>")
+    parser.close()
+    assert len(parser.events) > 0
+
+    parser2 = _SemanticHTMLExtractor()
+    parser2.feed("<p><b><i>italic</b></p>")
+    parser2.close()
+    assert len(parser2.events) > 0
+
+
+def test_parser_handles_mbox_leading_blank_lines() -> None:
+    data = b"\n\n\r\n" + _mbox(_eml("Message in mbox"))
+    result = _parse(data, "inbox.mbox", "application/mbox")
+    assert len(_messages(result)) == 1
+
+
+def test_parser_handles_attached_message_rfc822() -> None:
+    inner = _eml("Nested message content")
+    outer = (
+        b"From: outer@example.com\r\n"
+        b"To: dest@example.com\r\n"
+        b"Subject: Forwarded\r\n"
+        b"Content-Type: multipart/mixed; boundary=mixedboundary\r\n\r\n"
+        b"--mixedboundary\r\n"
+        b"Content-Type: text/plain\r\n\r\n"
+        b"Please see attached mail\r\n"
+        b"--mixedboundary\r\n"
+        b"Content-Type: message/rfc822\r\n\r\n" + inner + b"--mixedboundary--\r\n"
+    )
+    result = _parse(outer)
+    messages = _messages(result)
+    assert len(messages) == 1
+    attachments = cast(list[dict[str, object]], messages[0]["attachments"])
+    assert len(attachments) == 1
+    assert attachments[0]["mime_type"] == "message/rfc822"
+
+
+def test_parser_handles_multipart_mixed_with_only_attachments() -> None:
+    data = (
+        b"From: outer@example.com\r\n"
+        b"To: dest@example.com\r\n"
+        b"Subject: Only attachments\r\n"
+        b"Content-Type: multipart/mixed; boundary=mix\r\n\r\n"
+        b"--mix\r\n"
+        b"Content-Type: application/octet-stream\r\n"
+        b"Content-Disposition: attachment; filename=doc.bin\r\n\r\n"
+        b"binary\r\n"
+        b"--mix--\r\n"
+    )
+    result = _parse(data)
+    messages = _messages(result)
+    assert len(messages) == 1
+    attachments = cast(list[dict[str, object]], messages[0]["attachments"])
+    assert len(attachments) == 1
+    assert attachments[0]["filename"] == "doc.bin"
+
+
+def test_parser_handles_multipart_related_with_start_param() -> None:
+    data = (
+        b"From: sender@example.com\r\n"
+        b"To: dest@example.com\r\n"
+        b"Subject: Related with start\r\n"
+        b'Content-Type: multipart/related; boundary=rel; start="<root@example.com>"\r\n\r\n'
+        b"--rel\r\n"
+        b"Content-Type: image/png\r\n"
+        b"Content-ID: <image@example.com>\r\n"
+        b"Content-Disposition: inline\r\n"
+        b"Content-Transfer-Encoding: base64\r\n\r\n"
+        b"aW1hZ2U=\r\n"
+        b"--rel\r\n"
+        b"Content-Type: text/plain\r\n"
+        b"Content-ID: <root@example.com>\r\n\r\n"
+        b"Root text\r\n"
+        b"--rel--\r\n"
+    )
+    result = _parse(data)
+    assert any(
+        "Root text" in block.text for block in result.blocks if isinstance(block, RawTextBlock)
+    )

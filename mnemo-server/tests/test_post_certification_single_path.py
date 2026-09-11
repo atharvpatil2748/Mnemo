@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
 from mnemo.config import MnemoConfig
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +22,8 @@ def _json(path: Path) -> dict[str, Any]:
 
 
 def test_canonical_manifest_matches_signed_active_certified_state() -> None:
+    if not (ACTIVATION.exists() and CERTIFICATION.exists()):
+        pytest.skip("Operational certification artifacts not present in environment")
     manifest = _json(MANIFEST)
     activation = _json(ACTIVATION)
     certification = _json(CERTIFICATION)

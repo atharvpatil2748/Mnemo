@@ -113,6 +113,9 @@ async def _compose() -> None:
         workspace_root=ROOT,
         identity_manifest=MANIFEST,
     )
+    target = (ROOT / verifier.artifact.target_path).resolve()
+    if not target.exists():
+        pytest.skip("Governed V2 production database not present in environment")
     artifact = verifier.artifact
     identity = V2RuntimeIdentityV1(
         profile_id="full_multilingual_v2_local_prebuild",

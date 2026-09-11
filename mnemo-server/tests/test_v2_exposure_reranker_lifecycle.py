@@ -21,6 +21,7 @@ from mnemo_server.services.v2_reranker_lifecycle import (
     GovernedV2RerankerRouterV1,
     RerankerActivationAuthorityV1,
     RerankerActivationEvidenceV1,
+    V2ExposureAuthorityV1,
     V2RerankerMode,
 )
 
@@ -324,3 +325,103 @@ def test_router_and_runtime_authority_fail_closed_on_invalid_transitions() -> No
     router._delegate = cast(Any, object())
     with pytest.raises(RuntimeError, match="ROLLBACK_CLOSE_MISSING"):
         asyncio.run(authority.rollback())
+
+
+def test_v2_exposure_authority_guard_boundaries() -> None:
+    authority = V2ExposureAuthorityV1()
+    router = GovernedV2RerankerRouterV1()
+
+    # 1. readiness.v2_active is False
+    readiness_inactive = SimpleNamespace(v2_active=False, v2_exposed=False)
+    with pytest.raises(RuntimeError, match="V2_EXPOSURE_READINESS_INCOMPLETE"):
+        asyncio.run(
+            authority.expose(
+                engine=cast(Any, None),
+                source=cast(Any, None),
+                readiness=cast(Any, readiness_inactive),
+                reranker=router,
+            )
+        )
+
+    # 2. readiness.v2_exposed is True
+    readiness_already_exposed = SimpleNamespace(v2_active=True, v2_exposed=True)
+    with pytest.raises(RuntimeError, match="V2_EXPOSURE_READINESS_INCOMPLETE"):
+        asyncio.run(
+            authority.expose(
+                engine=cast(Any, None),
+                source=cast(Any, None),
+                readiness=cast(Any, readiness_already_exposed),
+                reranker=router,
+            )
+        )
+
+    # 3. reranker.mode != PASS_THROUGH
+    router._mode = V2RerankerMode.BGE_V2_M3
+    readiness_valid = SimpleNamespace(v2_active=True, v2_exposed=False)
+    with pytest.raises(RuntimeError, match="V2_EXPOSURE_REQUIRES_PASS_THROUGH"):
+        asyncio.run(
+            authority.expose(
+                engine=cast(Any, None),
+                source=cast(Any, None),
+                readiness=cast(Any, readiness_valid),
+                reranker=router,
+            )
+        )
+
+    # 4. reranker.activation_record is not None
+    router._mode = V2RerankerMode.PASS_THROUGH
+    router._activation = cast(Any, SimpleNamespace())
+    with pytest.raises(RuntimeError, match="V2_EXPOSURE_CANNOT_ACTIVATE_BGE"):
+        asyncio.run(
+            authority.expose(
+                engine=cast(Any, None),
+                source=cast(Any, None),
+                readiness=cast(Any, readiness_valid),
+                reranker=router,
+            )
+        )
+
+
+def test_durable_authority_state_path_desired_state_and_failure_modes(tmp_path: Path) -> None:
+    state_path = tmp_path / "reranker-activation.json"
+    actor_id = uuid4()
+    principal = PrincipalContextV1(actor_id=actor_id, authenticated=True)
+    authority, router = _durable_authority(path=state_path, fake=_FakeBGE(), actor_id=actor_id)
+
+    # state_path property
+    assert authority.state_path == state_path
+
+    # router activation_record property
+    assert router.activation_record is None
+
+    # desired_state()
+    initial_state = authority.desired_state()
+    assert initial_state.desired_mode == V2RerankerMode.PASS_THROUGH
+
+    # restore when desired_mode is PASS_THROUGH but router._mode is BGE_V2_M3
+    router._mode = V2RerankerMode.BGE_V2_M3
+    with pytest.raises(RuntimeError, match="DURABLE_BGE_RESTORE_RUNTIME_NOT_PASS_THROUGH"):
+        asyncio.run(authority.restore())
+    router._mode = V2RerankerMode.PASS_THROUGH
+
+    # restore when desired_mode is BGE_V2_M3 but activation_evidence is None
+    authority._store.load = lambda: cast(  # type: ignore[method-assign]
+        Any, SimpleNamespace(desired_mode=V2RerankerMode.BGE_V2_M3, activation_evidence=None)
+    )
+    with pytest.raises(RuntimeError, match="DURABLE_BGE_ACTIVATION_STATE_MALFORMED"):
+        asyncio.run(authority.restore())
+
+    # activate failure on commit rolls back runtime
+    def failing_commit(**kwargs: object) -> None:
+        raise OSError("disk write failed")
+
+    authority._store.commit = failing_commit  # type: ignore[method-assign]
+    with pytest.raises(OSError, match="disk write failed"):
+        asyncio.run(authority.activate(principal=principal, evidence=_evidence()))
+    assert router.mode == V2RerankerMode.PASS_THROUGH
+
+    # rollback failure on commit raises DURABLE_BGE_ROLLBACK_STATE_COMMIT_FAILED
+    router._mode = V2RerankerMode.BGE_V2_M3
+    router._delegate = _FakeBGE()
+    with pytest.raises(RuntimeError, match="DURABLE_BGE_ROLLBACK_STATE_COMMIT_FAILED"):
+        asyncio.run(authority.rollback(principal=principal))

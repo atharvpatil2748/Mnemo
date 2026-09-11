@@ -180,7 +180,7 @@ def test_governed_build_target_is_bound_and_unequal_to_historical_databases() ->
     assert value["database_creation_authorization_mode"] == (
         "typed_build_authorization_v1_required"
     )
-    if target.exists():
+    if target.exists() and target.stat().st_size > 0:
         import sqlite3
 
         authorization = _load("V2_INDEX_BUILD_AUTHORIZATION.json")

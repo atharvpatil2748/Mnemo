@@ -37,7 +37,15 @@ def test_v2_build_artifacts_are_digest_valid_and_ready_only() -> None:
     assert artifacts.storage["alias_namespace"] == "full_multilingual_v2_aliases"
 
 
+def _require_operator_environment() -> None:
+    source_database = ROOT / "scratch/phase8_5_wp16/eval-20260828-01/mnemo.db"
+    corpus_root = ROOT / "goldenDataset/Phase 8.5 Evaluation Corpus"
+    if not source_database.exists() or not corpus_root.exists():
+        pytest.skip("Governed WP16 source database or evaluation corpus not present in environment")
+
+
 def test_v2_operator_preflight_is_manifest_bound_and_non_mutating() -> None:
+    _require_operator_environment()
     operator = FullMultilingualV2IndexBuildOperator(
         workspace_root=ROOT,
         proposal_root=PROPOSALS,
@@ -57,6 +65,7 @@ def test_v2_operator_preflight_is_manifest_bound_and_non_mutating() -> None:
 
 def test_v2_operator_loads_all_governed_evidence_kinds_without_mutation() -> None:
     """The identity-bound census resolves canonical, OCR, and Vision evidence."""
+    _require_operator_environment()
     operator = FullMultilingualV2IndexBuildOperator(
         workspace_root=ROOT,
         proposal_root=PROPOSALS,
@@ -292,6 +301,7 @@ async def test_v2_build_stages_persist_governed_evidence_and_vectors(
     tmp_path: Path,
 ) -> None:
     """Each build family persists identity-bound rows and completes its generation."""
+    _require_operator_environment()
     operator = FullMultilingualV2IndexBuildOperator(
         workspace_root=ROOT,
         proposal_root=PROPOSALS,
@@ -435,6 +445,7 @@ async def test_v2_execute_marks_failed_and_closes_store_on_evidence_mismatch(
 
 @pytest.mark.anyio
 async def test_generation_start_is_restart_safe_and_contract_bound() -> None:
+    _require_operator_environment()
     operator = FullMultilingualV2IndexBuildOperator(
         workspace_root=ROOT,
         proposal_root=PROPOSALS,
@@ -480,6 +491,7 @@ async def test_generation_start_is_restart_safe_and_contract_bound() -> None:
 
 @pytest.mark.anyio
 async def test_generation_completion_rejects_partial_and_failed_ready_transition() -> None:
+    _require_operator_environment()
     operator = FullMultilingualV2IndexBuildOperator(
         workspace_root=ROOT,
         proposal_root=PROPOSALS,
@@ -527,6 +539,7 @@ async def test_generation_completion_rejects_partial_and_failed_ready_transition
 
 @pytest.mark.anyio
 async def test_build_stages_skip_completed_generations_without_writes() -> None:
+    _require_operator_environment()
     operator = FullMultilingualV2IndexBuildOperator(
         workspace_root=ROOT,
         proposal_root=PROPOSALS,

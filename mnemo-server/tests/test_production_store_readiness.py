@@ -25,6 +25,9 @@ MANIFEST = (
 
 def test_http_and_mcp_shared_config_resolves_governed_44_document_store() -> None:
     config = resolve_mnemo_runtime_config(config_path=ROOT / "mnemo.toml")
+    store_path = (ROOT / config.storage.sqlite.path).resolve()
+    if not store_path.exists():
+        pytest.skip("Governed production database not present in environment")
     result = asyncio.run(
         validate_production_v2_serving_readiness(
             workspace_root=ROOT,
@@ -81,6 +84,10 @@ def test_explicit_config_has_precedence_for_both_transport_processes() -> None:
 
 
 def test_production_owned_builder_proves_ready_but_not_exposed() -> None:
+    config = resolve_mnemo_runtime_config(config_path=ROOT / "mnemo.toml")
+    store_path = (ROOT / config.storage.sqlite.path).resolve()
+    if not store_path.exists():
+        pytest.skip("Governed production database not present in environment")
     server = ServerConfig(
         production_mode=True,
         auth_mode="api-key",
@@ -94,7 +101,7 @@ def test_production_owned_builder_proves_ready_but_not_exposed() -> None:
     evidence, snapshot = asyncio.run(
         ProductionV2ReadinessEvidenceBuilderV1(
             workspace_root=ROOT,
-            mnemo_config=resolve_mnemo_runtime_config(config_path=ROOT / "mnemo.toml"),
+            mnemo_config=config,
             server_config=server,
             identity_manifest=MANIFEST,
         ).build()

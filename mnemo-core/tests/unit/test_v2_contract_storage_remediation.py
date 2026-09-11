@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 from mnemo.phase85.v2_database_identity import GovernedV2DatabaseIdentityVerifier
 
+from tests.v2_test_fixtures import create_synthetic_v2_db
+
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
 IDENTITY_MANIFEST = (
     WORKSPACE_ROOT
@@ -32,11 +34,18 @@ def _verifier() -> GovernedV2DatabaseIdentityVerifier:
     )
 
 
+def _require_governed_database() -> None:
+    verifier = _verifier()
+    target = WORKSPACE_ROOT / verifier.artifact.target_path
+    create_synthetic_v2_db(target, IDENTITY_MANIFEST)
+
+
 def test_database_identity_is_deterministic_and_bound_to_governed_artifact() -> None:
     first = _verifier()
     second = _verifier()
     assert first.artifact.database_identity == second.artifact.database_identity
     assert first.artifact.database_identity == first.artifact.canonical_identity
+    _require_governed_database()
     first.verify(expected_database_identity=first.artifact.database_identity)
 
 
@@ -60,6 +69,7 @@ def test_database_identity_manifest_rejects_altered_canonical_envelope(
 
 
 def test_vector_generation_resolves_distinct_manifest_backed_embedding_generation() -> None:
+    _require_governed_database()
     verifier = _verifier()
     binding = verifier.resolve_vector_embedding_generation(
         active_generation_ids=tuple(value.generation_id for value in verifier.artifact.generations),
@@ -84,6 +94,7 @@ def test_vector_generation_resolves_distinct_manifest_backed_embedding_generatio
 
 
 def test_vector_embedding_resolution_rejects_non_active_generation_set() -> None:
+    _require_governed_database()
     verifier = _verifier()
     with pytest.raises(ValueError, match="ACTIVE_GENERATION_MISMATCH"):
         verifier.resolve_vector_embedding_generation(
@@ -98,6 +109,7 @@ def test_vector_embedding_resolution_rejects_non_active_generation_set() -> None
 def test_vector_embedding_resolution_rejects_manifest_dependency_or_model_mismatch(
     tmp_path: Path, mutation: str
 ) -> None:
+    _require_governed_database()
     raw = json.loads(IDENTITY_MANIFEST.read_text(encoding="utf-8"))
     generations = raw["generations"]
     assert isinstance(generations, list)

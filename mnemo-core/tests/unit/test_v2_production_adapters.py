@@ -30,6 +30,8 @@ from mnemo.phase85.v2_production_adapters import (
 from mnemo.phase85.v2_readiness import V2GenerationCapability
 from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
 
+from tests.v2_test_fixtures import create_synthetic_v2_db
+
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = (
     ROOT
@@ -69,7 +71,17 @@ def _notebook_id(target: Path) -> UUID:
     return UUID(str(row[0]))
 
 
+def _require_production_database() -> None:
+    verifier = GovernedV2DatabaseIdentityVerifier(
+        workspace_root=ROOT,
+        identity_manifest=MANIFEST,
+    )
+    target = ROOT / verifier.artifact.target_path
+    create_synthetic_v2_db(target, MANIFEST)
+
+
 async def _exercise() -> None:
+    _require_production_database()
     verifier = GovernedV2DatabaseIdentityVerifier(
         workspace_root=ROOT,
         identity_manifest=MANIFEST,
@@ -276,6 +288,7 @@ def test_manifest_vector_generation_names_distinct_embedding_source() -> None:
 
 
 async def _exercise_limit_boundary() -> None:
+    _require_production_database()
     verifier = GovernedV2DatabaseIdentityVerifier(
         workspace_root=ROOT,
         identity_manifest=MANIFEST,

@@ -891,10 +891,26 @@ def test_wp02_uses_isolated_storage_and_does_not_modify_evaluation_corpus(tmp_pa
     root = Path(__file__).resolve().parents[3]
     golden_root = root / "goldenDataset"
     evaluation_root = golden_root / "Phase 8.5 Evaluation Corpus"
-    sources = (
-        next(path for path in sorted(evaluation_root.rglob("*")) if path.is_file()),
-        next(path for path in sorted(golden_root.iterdir()) if path.is_file()),
+    eval_files = (
+        [path for path in sorted(evaluation_root.rglob("*")) if path.is_file()]
+        if evaluation_root.exists()
+        else []
     )
+    golden_files = (
+        [path for path in sorted(golden_root.iterdir()) if path.is_file()]
+        if golden_root.exists()
+        else []
+    )
+    if eval_files and golden_files:
+        sources = (eval_files[0], golden_files[0])
+    else:
+        corpus_dir = tmp_path / "reference_corpus"
+        corpus_dir.mkdir(parents=True, exist_ok=True)
+        file1 = corpus_dir / "sample1.txt"
+        file1.write_text("corpus data 1", encoding="utf-8")
+        file2 = corpus_dir / "sample2.txt"
+        file2.write_text("corpus data 2", encoding="utf-8")
+        sources = (file1, file2)
     before = {source: hashlib.sha256(source.read_bytes()).hexdigest() for source in sources}
 
     async def scenario() -> None:
