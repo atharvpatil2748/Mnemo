@@ -30,6 +30,8 @@ from mnemo.phase85.v2_production_adapters import (
 from mnemo.phase85.v2_readiness import V2GenerationCapability
 from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
 
+from tests.v2_test_fixtures import create_synthetic_v2_db
+
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = (
     ROOT
@@ -75,8 +77,7 @@ def _require_production_database() -> None:
         identity_manifest=MANIFEST,
     )
     target = ROOT / verifier.artifact.target_path
-    if not target.exists():
-        pytest.skip("Governed V2 production database not present in environment")
+    create_synthetic_v2_db(target, MANIFEST)
 
 
 async def _exercise() -> None:
