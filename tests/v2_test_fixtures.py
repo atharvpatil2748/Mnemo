@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from pathlib import Path
@@ -215,10 +216,11 @@ def create_synthetic_v2_db(target: Path, manifest_path: Path) -> None:
                 separators=(",", ":"),
             )
             _mcm_ts = "2026-09-01T05:07:22+00:00"
+            payload_hash = hashlib.sha256(payload.encode()).hexdigest()
             cur.execute(
                 """INSERT INTO multilingual_coverage_manifests_v2 VALUES (
                     ?, ?, ?, 'dep', 'cov', ?,
-                    3019, 3019, 0, 0, 1, 1, 'roll', ?, 'hash', ?
+                    3019, 3019, 0, 0, 1, 1, 'roll', ?, ?, ?
                 )""",
                 (
                     g["generation_id"],
@@ -226,6 +228,7 @@ def create_synthetic_v2_db(target: Path, manifest_path: Path) -> None:
                     manifest["profile_fingerprint"],
                     g["checksum"],
                     payload,
+                    payload_hash,
                     _mcm_ts,
                 ),
             )
