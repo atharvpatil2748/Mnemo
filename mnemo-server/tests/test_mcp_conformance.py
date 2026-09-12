@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import anyio
@@ -132,13 +134,17 @@ async def test_mcp_invalid_tool_invocation_error_format() -> None:
 
 
 @pytest.mark.anyio
-async def test_mcp_real_stdio_subprocess_handshake() -> None:
+async def test_mcp_real_stdio_subprocess_handshake(tmp_path: Path) -> None:
     """Verify that a real child process running mnemo-mcp stdio performs clean handshake."""
     from mcp.client.stdio import StdioServerParameters, stdio_client
+
+    env = dict(os.environ)
+    env["MNEMO_STORAGE_SQLITE_PATH"] = str(tmp_path / "isolated.db")
 
     server_params = StdioServerParameters(
         command="uv",
         args=["run", "mnemo-mcp", "--log-level", "error", "stdio"],
+        env=env,
     )
 
     async with (
