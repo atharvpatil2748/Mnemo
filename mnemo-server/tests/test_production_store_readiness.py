@@ -43,6 +43,7 @@ def _require_full_production_database(store_path: Path) -> None:
         )
 
 
+@pytest.mark.local_database
 def test_http_and_mcp_shared_config_resolves_governed_44_document_store() -> None:
     config = resolve_mnemo_runtime_config(config_path=ROOT / "mnemo.toml")
     store_path = (ROOT / config.storage.sqlite.path).resolve()
@@ -102,6 +103,7 @@ def test_explicit_config_has_precedence_for_both_transport_processes() -> None:
     assert resolve_mnemo_runtime_config(config) is config
 
 
+@pytest.mark.local_database
 def test_production_owned_builder_proves_ready_but_not_exposed() -> None:
     config = resolve_mnemo_runtime_config(config_path=ROOT / "mnemo.toml")
     store_path = (ROOT / config.storage.sqlite.path).resolve()

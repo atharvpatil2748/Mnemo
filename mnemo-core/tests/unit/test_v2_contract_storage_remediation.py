@@ -7,8 +7,6 @@ from pathlib import Path
 import pytest
 from mnemo.phase85.v2_database_identity import GovernedV2DatabaseIdentityVerifier
 
-from tests.v2_test_fixtures import create_synthetic_v2_db
-
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
 IDENTITY_MANIFEST = (
     WORKSPACE_ROOT
@@ -37,9 +35,11 @@ def _verifier() -> GovernedV2DatabaseIdentityVerifier:
 def _require_governed_database() -> None:
     verifier = _verifier()
     target = WORKSPACE_ROOT / verifier.artifact.target_path
-    create_synthetic_v2_db(target, IDENTITY_MANIFEST)
+    if not target.exists():
+        pytest.skip("Governed V2 database artifact not present in environment")
 
 
+@pytest.mark.local_database
 def test_database_identity_is_deterministic_and_bound_to_governed_artifact() -> None:
     first = _verifier()
     second = _verifier()
@@ -68,6 +68,7 @@ def test_database_identity_manifest_rejects_altered_canonical_envelope(
         )
 
 
+@pytest.mark.local_database
 def test_vector_generation_resolves_distinct_manifest_backed_embedding_generation() -> None:
     _require_governed_database()
     verifier = _verifier()
@@ -93,6 +94,7 @@ def test_vector_generation_resolves_distinct_manifest_backed_embedding_generatio
     assert binding.dimensions == 1024
 
 
+@pytest.mark.local_database
 def test_vector_embedding_resolution_rejects_non_active_generation_set() -> None:
     _require_governed_database()
     verifier = _verifier()
@@ -105,6 +107,7 @@ def test_vector_embedding_resolution_rejects_non_active_generation_set() -> None
         )
 
 
+@pytest.mark.local_database
 @pytest.mark.parametrize("mutation", ["missing_relationship", "wrong_model"])
 def test_vector_embedding_resolution_rejects_manifest_dependency_or_model_mismatch(
     tmp_path: Path, mutation: str

@@ -38,6 +38,8 @@ from mnemo.storage import (
 )
 from mnemo_server.mcp.tools import execute_mcp_tool, get_mcp_tools
 
+pytestmark = pytest.mark.local_database
+
 GOLDEN_DB_PATH = Path("data/manual-gita-qa/mnemo.db").resolve()
 GOLDEN_FILES_PATH = Path("data/manual-gita-qa/files").resolve()
 GOLDEN_NOTEBOOK_ID = UUID("d83b0c9e-5813-56ed-a03e-c7adc2f2241e")

@@ -44,6 +44,7 @@ def _require_operator_environment() -> None:
         pytest.skip("Governed WP16 source database or evaluation corpus not present in environment")
 
 
+@pytest.mark.local_database
 def test_v2_operator_preflight_is_manifest_bound_and_non_mutating() -> None:
     _require_operator_environment()
     operator = FullMultilingualV2IndexBuildOperator(
@@ -63,6 +64,7 @@ def test_v2_operator_preflight_is_manifest_bound_and_non_mutating() -> None:
     ]
 
 
+@pytest.mark.local_database
 def test_v2_operator_loads_all_governed_evidence_kinds_without_mutation() -> None:
     """The identity-bound census resolves canonical, OCR, and Vision evidence."""
     _require_operator_environment()
@@ -296,6 +298,7 @@ async def test_v2_execute_runs_governed_stage_order_and_closes_resources(
     ]
 
 
+@pytest.mark.local_database
 @pytest.mark.anyio
 async def test_v2_build_stages_persist_governed_evidence_and_vectors(
     tmp_path: Path,
@@ -443,6 +446,7 @@ async def test_v2_execute_marks_failed_and_closes_store_on_evidence_mismatch(
     assert events == ["open", "failed", "close"]
 
 
+@pytest.mark.local_database
 @pytest.mark.anyio
 async def test_generation_start_is_restart_safe_and_contract_bound() -> None:
     _require_operator_environment()
@@ -489,6 +493,7 @@ async def test_generation_start_is_restart_safe_and_contract_bound() -> None:
     assert await operator._begin_generation(store, spec) is True  # type: ignore[arg-type]
 
 
+@pytest.mark.local_database
 @pytest.mark.anyio
 async def test_generation_completion_rejects_partial_and_failed_ready_transition() -> None:
     _require_operator_environment()
@@ -537,6 +542,7 @@ async def test_generation_completion_rejects_partial_and_failed_ready_transition
     await operator._complete_generation(store, spec, complete, evidence)  # type: ignore[arg-type]
 
 
+@pytest.mark.local_database
 @pytest.mark.anyio
 async def test_build_stages_skip_completed_generations_without_writes() -> None:
     _require_operator_environment()

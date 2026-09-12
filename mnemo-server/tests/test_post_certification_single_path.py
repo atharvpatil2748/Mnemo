@@ -21,6 +21,7 @@ def _json(path: Path) -> dict[str, Any]:
     return value
 
 
+@pytest.mark.local_database
 def test_canonical_manifest_matches_signed_active_certified_state() -> None:
     if not (ACTIVATION.exists() and CERTIFICATION.exists()):
         pytest.skip("Operational certification artifacts not present in environment")

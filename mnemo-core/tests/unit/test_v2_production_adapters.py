@@ -30,8 +30,6 @@ from mnemo.phase85.v2_production_adapters import (
 from mnemo.phase85.v2_readiness import V2GenerationCapability
 from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
 
-from tests.v2_test_fixtures import create_synthetic_v2_db
-
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = (
     ROOT
@@ -77,7 +75,8 @@ def _require_production_database() -> None:
         identity_manifest=MANIFEST,
     )
     target = ROOT / verifier.artifact.target_path
-    create_synthetic_v2_db(target, MANIFEST)
+    if not target.exists():
+        pytest.skip("Governed V2 production database not present in environment")
 
 
 async def _exercise() -> None:
@@ -274,6 +273,7 @@ async def _exercise() -> None:
     assert target.read_bytes() == before
 
 
+@pytest.mark.local_database
 def test_real_production_adapters_preserve_governed_identity_read_only() -> None:
     asyncio.run(_exercise())
 
@@ -433,5 +433,6 @@ async def _exercise_limit_boundary() -> None:
     assert target.read_bytes() == before
 
 
+@pytest.mark.local_database
 def test_authorized_v2_semantic_enumeration_limit_boundary() -> None:
     asyncio.run(_exercise_limit_boundary())

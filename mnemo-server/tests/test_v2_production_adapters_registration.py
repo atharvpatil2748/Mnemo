@@ -178,6 +178,7 @@ async def _compose() -> None:
         await assembler.close()
 
 
+@pytest.mark.local_database
 def test_server_owned_registration_composes_real_production_adapters() -> None:
     asyncio.run(_compose())
 
