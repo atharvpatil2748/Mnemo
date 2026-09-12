@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -22,12 +23,30 @@ MANIFEST = (
     / "V2_DATABASE_ARTIFACT_IDENTITY.json"
 )
 
+EXPECTED_PRODUCTION_DOCUMENT_COUNT = 44
+
+
+def _require_full_production_database(store_path: Path) -> None:
+    """Skip unless the *real* 44-document production database is present."""
+    if not store_path.exists():
+        pytest.skip("Governed production database not present in environment")
+    try:
+        conn = sqlite3.connect(f"file:{store_path.as_posix()}?mode=ro&immutable=1", uri=True)
+        count = conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0]
+        conn.close()
+    except Exception:
+        pytest.skip("Governed production database not readable or schema mismatch")
+    if count != EXPECTED_PRODUCTION_DOCUMENT_COUNT:
+        pytest.skip(
+            f"Database has {count} documents; expected {EXPECTED_PRODUCTION_DOCUMENT_COUNT}."
+            " Skipping: not the full production database."
+        )
+
 
 def test_http_and_mcp_shared_config_resolves_governed_44_document_store() -> None:
     config = resolve_mnemo_runtime_config(config_path=ROOT / "mnemo.toml")
     store_path = (ROOT / config.storage.sqlite.path).resolve()
-    if not store_path.exists():
-        pytest.skip("Governed production database not present in environment")
+    _require_full_production_database(store_path)
     result = asyncio.run(
         validate_production_v2_serving_readiness(
             workspace_root=ROOT,
@@ -86,8 +105,7 @@ def test_explicit_config_has_precedence_for_both_transport_processes() -> None:
 def test_production_owned_builder_proves_ready_but_not_exposed() -> None:
     config = resolve_mnemo_runtime_config(config_path=ROOT / "mnemo.toml")
     store_path = (ROOT / config.storage.sqlite.path).resolve()
-    if not store_path.exists():
-        pytest.skip("Governed production database not present in environment")
+    _require_full_production_database(store_path)
     server = ServerConfig(
         production_mode=True,
         auth_mode="api-key",

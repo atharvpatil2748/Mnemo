@@ -23,18 +23,28 @@ def create_synthetic_v2_db(target: Path, manifest_path: Path) -> None:
     try:
         cur = conn.cursor()
 
-        # 1. v2_build_runs
+        # 1. v2_build_runs  (schema matches production V2 DB)
         cur.execute(
             """CREATE TABLE v2_build_runs (
-                run_id TEXT, target_database_path TEXT, corpus_digest TEXT,
-                census_digest TEXT, profile_fingerprint TEXT, vector_space_identity TEXT,
-                build_manifest_digest TEXT, storage_manifest_digest TEXT, state TEXT
+                run_id TEXT PRIMARY KEY,
+                authorization_id TEXT NOT NULL,
+                target_database_path TEXT NOT NULL,
+                corpus_digest TEXT NOT NULL,
+                census_digest TEXT NOT NULL,
+                profile_fingerprint TEXT NOT NULL,
+                vector_space_identity TEXT NOT NULL,
+                build_manifest_digest TEXT NOT NULL,
+                storage_manifest_digest TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                completed_at TEXT,
+                state TEXT NOT NULL CHECK(state IN ('building','ready','failed'))
             )"""
         )
         cur.execute(
-            """INSERT INTO v2_build_runs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            """INSERT INTO v2_build_runs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 manifest["build_run_id"],
+                "0d7a1648-b585-54e8-b80a-129e6409b6d6",  # authorization_id
                 manifest["target_path"],
                 manifest["corpus_digest"],
                 manifest["census_digest"],
@@ -42,6 +52,8 @@ def create_synthetic_v2_db(target: Path, manifest_path: Path) -> None:
                 manifest["vector_space_identity"],
                 manifest["build_manifest_digest"],
                 manifest["storage_manifest_digest"],
+                "2026-09-01T05:07:22.126096+00:00",
+                "2026-09-01T09:45:54.280131+00:00",
                 "ready",
             ),
         )
@@ -101,18 +113,20 @@ def create_synthetic_v2_db(target: Path, manifest_path: Path) -> None:
             (emb["generation_id"], manifest["vector_space_identity"]),
         )
 
-        # 5. index_generation_coverage
+        # 5. index_generation_coverage  (schema matches production V2 DB)
         cur.execute(
             """CREATE TABLE index_generation_coverage (
-                generation_id TEXT PRIMARY KEY,
-                expected_count INTEGER,
-                succeeded_count INTEGER,
-                failed_count INTEGER,
-                skipped_count INTEGER,
-                completeness TEXT,
-                checksum TEXT,
-                failure_reasons TEXT,
-                created_at TEXT
+                generation_id TEXT PRIMARY KEY
+                    REFERENCES index_generations(generation_id) ON DELETE CASCADE,
+                expected_count INTEGER NOT NULL CHECK(expected_count >= 0),
+                succeeded_count INTEGER NOT NULL CHECK(succeeded_count >= 0),
+                failed_count INTEGER NOT NULL CHECK(failed_count >= 0),
+                skipped_count INTEGER NOT NULL CHECK(skipped_count >= 0),
+                completeness TEXT NOT NULL CHECK(completeness IN ('complete','partial')),
+                checksum TEXT NOT NULL,
+                failure_digest TEXT,
+                updated_at TEXT NOT NULL,
+                CHECK(expected_count = succeeded_count + failed_count + skipped_count)
             )"""
         )
         _ts = "2026-09-01T05:07:22+00:00"
@@ -249,6 +263,31 @@ def create_synthetic_v2_db(target: Path, manifest_path: Path) -> None:
             "INSERT INTO multilingual_v2_alias_sets VALUES"
             " (?, ?, ?, 'rollback', '[]', '2026-09-01T11:07:21+00:00')",
             (alias_digest, manifest["profile_fingerprint"], gen_ids_json),
+        )
+
+        # 7b. multilingual_v2_activation_records  (matches production schema)
+        cur.execute(
+            """CREATE TABLE multilingual_v2_activation_records (
+                alias_set_digest TEXT PRIMARY KEY
+                    REFERENCES multilingual_v2_alias_sets(alias_set_digest),
+                activation_mode TEXT NOT NULL CHECK(
+                    activation_mode IN ('first_v2_activation','v2_upgrade')
+                ),
+                recovery_mode TEXT NOT NULL CHECK(
+                    recovery_mode IN ('deactivate_v2_alias_set','prior_v2_alias_set')
+                ),
+                authorization_id TEXT NOT NULL,
+                authorization_digest TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )"""
+        )
+        cur.execute(
+            "INSERT INTO multilingual_v2_activation_records VALUES"
+            " (?, 'first_v2_activation', 'deactivate_v2_alias_set',"
+            " '3d8e50f6-1dda-5abf-89b9-c04f2ffd6a43',"
+            " '52ae49cbf5958e6d3760a60846ab98cfaf90174ef4558f1f2441288fd83b8521',"
+            " '2026-09-01T11:07:21.244709+00:00')",
+            (alias_digest,),
         )
 
         # 8. notebooks, documents, document_versions, chunks
