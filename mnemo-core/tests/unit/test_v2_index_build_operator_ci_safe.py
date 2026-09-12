@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,6 +13,7 @@ from mnemo.phase85.projections import (
     ProjectionGenerationSpec,
 )
 from mnemo.phase85.v2_index_build import (
+    _BUILD_TABLES,
     FullMultilingualV2IndexBuildOperator,
     V2BuildArtifacts,
     _complete_result,
@@ -23,24 +23,28 @@ ROOT = Path(__file__).resolve().parents[3]
 PROPOSALS = ROOT / "docs/governance/proposals/phase8_5_full_multilingual_architecture"
 
 
-def _operator_and_specs() -> tuple[
-    FullMultilingualV2IndexBuildOperator, tuple[ProjectionGenerationSpec, ...]
-]:
+def _operator_and_specs(
+    tmp_path: Path,
+) -> tuple[FullMultilingualV2IndexBuildOperator, tuple[ProjectionGenerationSpec, ...]]:
     artifacts = V2BuildArtifacts.load(PROPOSALS)
     specs = tuple(
         ProjectionGenerationSpec.from_manifest_payload(item)
         for item in artifacts.build["generation_specifications"]
     )
     operator = object.__new__(FullMultilingualV2IndexBuildOperator)
-    operator._root = ROOT
+    operator._root = tmp_path
     operator._artifacts = artifacts
     operator._run_started_at = lambda: datetime(2026, 1, 1, tzinfo=UTC)
+    target_db = tmp_path / "target.db"
+    operator._authorized_target = lambda: target_db
+    with sqlite3.connect(target_db) as conn:
+        conn.executescript(_BUILD_TABLES)
     return operator, specs
 
 
 @pytest.mark.anyio
-async def test_ci_safe_generation_start_is_restart_safe_and_contract_bound() -> None:
-    operator, specs = _operator_and_specs()
+async def test_ci_safe_generation_start_is_restart_safe_and_contract_bound(tmp_path: Path) -> None:
+    operator, specs = _operator_and_specs(tmp_path)
     spec = specs[0]
     from dataclasses import replace
 
@@ -83,10 +87,12 @@ async def test_ci_safe_generation_start_is_restart_safe_and_contract_bound() -> 
 
 
 @pytest.mark.anyio
-async def test_ci_safe_generation_completion_rejects_partial_and_failed_ready_transition() -> None:
+async def test_ci_safe_generation_completion_rejects_partial_and_failed_ready_transition(
+    tmp_path: Path,
+) -> None:
     from dataclasses import replace
 
-    operator, specs = _operator_and_specs()
+    operator, specs = _operator_and_specs(tmp_path)
     spec = specs[0]
     mock_item = SimpleNamespace(
         language=LanguageCode("en"),
@@ -137,8 +143,10 @@ async def test_ci_safe_generation_completion_rejects_partial_and_failed_ready_tr
 
 
 @pytest.mark.anyio
-async def test_ci_safe_build_stages_skip_completed_generations_without_writes() -> None:
-    operator, specs = _operator_and_specs()
+async def test_ci_safe_build_stages_skip_completed_generations_without_writes(
+    tmp_path: Path,
+) -> None:
+    operator, specs = _operator_and_specs(tmp_path)
 
     async def already_ready(*_args: object) -> bool:
         return False
@@ -161,7 +169,7 @@ async def test_ci_safe_build_stages_persist_governed_evidence_and_vectors(
     import sqlite3
     from dataclasses import replace
 
-    operator, specs_tuple = _operator_and_specs()
+    operator, specs_tuple = _operator_and_specs(tmp_path)
     rec = operator._artifacts.census["records"][0]
 
     source_db = tmp_path / "source.db"
@@ -325,7 +333,7 @@ async def test_ci_safe_build_representation_with_exclusion(tmp_path: Path) -> No
 
     from mnemo.phase85.v2_index_build import _BUILD_TABLES
 
-    operator, specs_tuple = _operator_and_specs()
+    operator, specs_tuple = _operator_and_specs(tmp_path)
     specs = {item.capability: item for item in specs_tuple}
 
     target_db = tmp_path / "target.db"
@@ -398,7 +406,7 @@ async def test_ci_safe_build_vector_validation_errors(tmp_path: Path) -> None:
     import json
     import sqlite3
 
-    operator, specs_tuple = _operator_and_specs()
+    operator, specs_tuple = _operator_and_specs(tmp_path)
     specs = {item.capability: item for item in specs_tuple}
 
     async def begin_gen(*_a: object) -> bool:

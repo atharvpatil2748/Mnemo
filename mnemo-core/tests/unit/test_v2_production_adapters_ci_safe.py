@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import sqlite3
 from dataclasses import replace
 from pathlib import Path
@@ -35,20 +37,30 @@ MANIFEST = (
 
 def _setup_synthetic_store(
     tmp_path: Path,
-) -> tuple[SQLiteV2ReadOnlyRuntimeStore, Path, GovernedV2DatabaseIdentityVerifier]:
+) -> tuple[
+    SQLiteV2ReadOnlyRuntimeStore, Path, GovernedV2DatabaseIdentityVerifier, V2RuntimeIdentityV1
+]:
+    raw = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    raw["target_path"] = "synthetic_v2.db"
+    payload = {k: v for k, v in raw.items() if k != "database_identity"}
+    new_db_identity = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    raw["database_identity"] = new_db_identity
+
+    manifest_path = tmp_path / "identity.json"
+    manifest_path.write_text(json.dumps(raw, indent=2), encoding="utf-8")
+
     db_path = tmp_path / "synthetic_v2.db"
-    create_synthetic_v2_db(db_path, MANIFEST)
+    create_synthetic_v2_db(db_path, manifest_path)
+
     verifier = GovernedV2DatabaseIdentityVerifier(
-        workspace_root=WORKSPACE_ROOT,
-        identity_manifest=MANIFEST,
+        workspace_root=tmp_path,
+        identity_manifest=manifest_path,
     )
     store = SQLiteV2ReadOnlyRuntimeStore(db_path)
-    return store, db_path, verifier
-
-
-def _runtime_identity(verifier: GovernedV2DatabaseIdentityVerifier) -> V2RuntimeIdentityV1:
     artifact = verifier.artifact
-    return V2RuntimeIdentityV1(
+    identity = V2RuntimeIdentityV1(
         profile_id="full_multilingual_v2_local_prebuild",
         profile_fingerprint=artifact.profile_fingerprint,
         vector_space_identity=artifact.vector_space_identity,
@@ -62,11 +74,12 @@ def _runtime_identity(verifier: GovernedV2DatabaseIdentityVerifier) -> V2Runtime
         reranker_public_protocol_id="multilingual-reranker/3",
         provider_identity="sentence-transformers",
     )
+    return store, db_path, verifier, identity
 
 
 @pytest.mark.anyio
 async def test_synthetic_store_lifecycle_and_lookup_operations(tmp_path: Path) -> None:
-    store, db_path, _verifier = _setup_synthetic_store(tmp_path)
+    store, db_path, _verifier, _identity = _setup_synthetic_store(tmp_path)
     await store.open()
     try:
         alias = await store.resolve_active_multilingual_v2_alias_digest()
@@ -96,8 +109,7 @@ async def test_synthetic_store_lifecycle_and_lookup_operations(tmp_path: Path) -
 
 @pytest.mark.anyio
 async def test_synthetic_generation_inspector_and_enumerator(tmp_path: Path) -> None:
-    store, _db_path, verifier = _setup_synthetic_store(tmp_path)
-    identity = _runtime_identity(verifier)
+    store, _db_path, verifier, identity = _setup_synthetic_store(tmp_path)
     await store.open()
     try:
         active = await store.resolve_active_multilingual_v2_generation_set()
