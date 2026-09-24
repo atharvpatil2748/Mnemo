@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import ast
+import asyncio
 import sqlite3
 from contextlib import closing
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+
+import pytest
 
 
 def test_wp17_evaluator_passes_governed_production_config_to_installer() -> None:
@@ -68,3 +71,19 @@ def test_wp17_evaluator_immutable_database_probe_creates_no_sidecars(tmp_path: P
     assert database.read_bytes() == before
     assert not database.with_name(database.name + "-wal").exists()
     assert not database.with_name(database.name + "-shm").exists()
+
+
+def test_wp17_evaluator_requires_explicit_operator_model_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_path = (
+        Path(__file__).resolve().parents[1]
+        / "scratch/run_mnemo_v2_production_parity_bge_evaluation.py"
+    )
+    spec = spec_from_file_location("wp17_evaluation_model_cache_regression", source_path)
+    assert spec is not None and spec.loader is not None
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.delenv("MNEMO_SERVER_FULL_MULTILINGUAL_V2_MODEL_CACHE", raising=False)
+    with pytest.raises(RuntimeError, match="WP17_REHEARSAL_MODEL_CACHE_MISSING"):
+        asyncio.run(module.execute())
