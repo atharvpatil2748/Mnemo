@@ -1,5 +1,9 @@
 # Mnemo Pre-Phase-8.8 Coverage Completion
 
+> **Historical notice (2026-09-22):** Manual Gita database references below
+> record this checkpoint. ADR-0077 Phase 8.8.14a certification subsequently
+> deprecated and removed that fixture from the active governed/test surface.
+
 Status: **PASSED — configured 90.00% coverage gate satisfied**
 
 Date: 2026-09-11 (Asia/Calcutta)

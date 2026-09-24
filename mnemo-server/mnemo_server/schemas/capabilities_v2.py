@@ -144,6 +144,20 @@ class ActiveModelProfileResponse(BaseModel):
     mcp_enabled: bool
 
 
+class CapabilityStorageResponse(BaseModel):
+    """Redacted effective storage-boundary capabilities."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    certified_read_available: bool
+    certified_storage_mode: Literal["immutable_query_only", "unavailable"]
+    workspace_mode: Literal["mutable", "read_only", "development"]
+    workspace_available: bool
+    mutation_available: bool
+    read_only_fallback: bool
+    reason: str
+
+
 class CapabilityRuntimeResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -154,6 +168,7 @@ class CapabilityRuntimeResponse(BaseModel):
     unavailable_optional: tuple[str, ...]
     configuration_fingerprint: str
     active_profile: ActiveModelProfileResponse
+    storage: CapabilityStorageResponse
 
 
 class CapabilityDocument(BaseModel):

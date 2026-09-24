@@ -1,20 +1,18 @@
 {
   "schema_version": "mnemo.full-multilingual-v2-production-manifest/1",
   "lifecycle": {
-    "active_generation_alias": true,
-    "v2_transport_exposed": true,
-    "bge_reranker_activated": true,
+    "active_generation_alias": false,
+    "v2_transport_exposed": false,
+    "bge_reranker_activated": false,
     "evaluated": true,
-    "verified": true,
-    "certified": true
+    "verified": false,
+    "certified": false
   },
   "configuration_authority": {
     "status": "CANONICAL_PRODUCTION_CONFIGURATION",
     "core_runtime": "mnemo.toml",
     "model_profile": "config/model_profiles/full_multilingual_v2_profiles.toml",
-    "durable_activation_state": "scratch/phase8_5_full_multilingual_v2/operational/reranker_activation.json",
-    "certified_lifecycle_state": "scratch/phase8_5_full_multilingual_v2/operational/certification.json",
-    "final_certification_evidence": "scratch/mnemo-v2-final-certification.json"
+    "credential_registry": "scratch/phase8_5_full_multilingual_v2/operational/credentials.json"
   },
   "pre_bge_exposure": {
     "status": "HISTORICAL_TRANSITION_CONTRACT",
@@ -79,14 +77,14 @@
   "reranker_activation": {
     "authority": "DurableRerankerActivationAuthorityV1",
     "runtime_authority": "RerankerActivationAuthorityV1",
-    "state_path": "scratch/phase8_5_full_multilingual_v2/operational/reranker_activation.json",
+    "state_path": "scratch/phase8_5_full_multilingual_v2/operational/activation-fc85192e-f672-4cc0-9539-b4b063bb8f41.json",
     "state_role": "mutable_server_owned_activation_state",
     "state_authentication": "hmac-sha256-domain-separated-server-secret",
     "operator_subject_source": "MNEMO_SERVER_RERANKER_ACTIVATION_OPERATOR_SUBJECT",
     "restart_restore": true,
     "corpus_storage_prohibited": true,
     "final_qa_storage_prohibited": true,
-    "currently_activated": true,
+    "currently_activated": false,
     "active_mode": "BGE_V2_M3"
   },
   "context_builder": {
@@ -103,6 +101,10 @@
     ]
   },
   "answer": "FinalQA via governed ContextBuilder",
-  "interfaces": ["HTTP", "MCP stdio", "MCP SSE"],
+  "interfaces": [
+    "HTTP",
+    "MCP stdio",
+    "MCP SSE"
+  ],
   "store_invariant": "retrieval == authorization == evidence == production corpus"
 }

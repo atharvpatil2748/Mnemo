@@ -18,6 +18,11 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 
 import httpx
 import numpy as np
+
+try:
+    from scripts.governed_database_safety import reject_current_governed_database_write
+except ModuleNotFoundError:
+    from governed_database_safety import reject_current_governed_database_write
 from mnemo.models import FrozenMetadata
 from mnemo.models.advanced_retrieval import RetrievalCompleteness
 from mnemo.models.multimodal import (
@@ -151,7 +156,9 @@ class EvaluationAuthorizer:
         self, actor_id: UUID, notebook_id: UUID, candidate: EvidenceCandidateV2
     ) -> bool:
         del actor_id
-        connection = sqlite3.connect(f"file:{self.database.as_posix()}?mode=ro", uri=True)
+        connection = sqlite3.connect(
+            f"file:{self.database.as_posix()}?mode=ro&immutable=1", uri=True
+        )
         try:
             scoped = connection.execute(
                 "SELECT 1 FROM sources WHERE source_id=? AND notebook_id=? AND document_id=?",
@@ -187,7 +194,9 @@ class EvaluationAuthorizer:
     async def generation_is_active(self, candidate: EvidenceCandidateV2) -> bool:
         if candidate.generation_id is None:
             return True
-        connection = sqlite3.connect(f"file:{self.database.as_posix()}?mode=ro", uri=True)
+        connection = sqlite3.connect(
+            f"file:{self.database.as_posix()}?mode=ro&immutable=1", uri=True
+        )
         try:
             for table in ("ocr_results", "vision_results", "visual_embeddings"):
                 if (
@@ -228,7 +237,9 @@ class GemmaFinalQAProvider:
         self, request: MultimodalGenerationRequestV1
     ) -> MultimodalGenerationResultV1:
         images: list[str] = []
-        connection = sqlite3.connect(f"file:{self.database.as_posix()}?mode=ro", uri=True)
+        connection = sqlite3.connect(
+            f"file:{self.database.as_posix()}?mode=ro&immutable=1", uri=True
+        )
         try:
             for handle in request.resource_handles[:2]:
                 occurrence_id = handle.rsplit("/", 1)[-1]
@@ -293,7 +304,7 @@ class ApproximateTokenCounter:
 
 
 def _load_documents(database: Path) -> tuple[list[str], list[str]]:
-    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
     connection.row_factory = sqlite3.Row
     try:
         rows = connection.execute(
@@ -561,7 +572,7 @@ def _retrieval(query: str, candidates: list[EvidenceCandidateV2]) -> MultimodalR
 
 
 async def _run(args: argparse.Namespace) -> None:
-    database = args.database.resolve(strict=True)
+    database = reject_current_governed_database_write(args.database)
     rankings = _rank_documents(database, args.embedding.resolve(strict=True))
     store = SQLiteStore(database)
     blobs = FilesystemBlobStore(args.blobs.resolve(strict=True))
@@ -577,7 +588,7 @@ async def _run(args: argparse.Namespace) -> None:
         token_counter=counter,
         authorizer=authorizer,
     )
-    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
     notebook_id = UUID(
         connection.execute("SELECT notebook_id FROM notebooks LIMIT 1").fetchone()[0]
     )

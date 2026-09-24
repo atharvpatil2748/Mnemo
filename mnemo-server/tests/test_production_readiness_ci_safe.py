@@ -253,6 +253,50 @@ async def test_builder_authentication_and_reranker_preconditions(tmp_path: Path)
         )
         with pytest.raises(RuntimeError, match="PRE_BGE_EXPOSURE_REQUIRES_PASS_THROUGH"):
             await builder_wrong_reranker.build()
+
+        # The restricted observer has already verified the staged generation and
+        # signed activation at admission. Its BGE mode must reach corpus readiness,
+        # while the ordinary production pre-exposure gate above remains unchanged.
+        observer_builder = ProductionV2ReadinessEvidenceBuilderV1(
+            workspace_root=ROOT,
+            mnemo_config=mnemo_config,
+            server_config=server_wrong_reranker,
+            identity_manifest=MANIFEST,
+            pre_certification_observation=True,
+        )
+
+        certified_builder = ProductionV2ReadinessEvidenceBuilderV1(
+            workspace_root=ROOT,
+            mnemo_config=mnemo_config,
+            server_config=server_wrong_reranker,
+            identity_manifest=MANIFEST,
+            certified_production_binding_verified=True,
+        )
+
+        def reached_corpus_readiness(**_kwargs: Any) -> Any:
+            raise RuntimeError("OBSERVER_REACHED_CORPUS_READINESS")
+
+        original_verifier = subject.GovernedV2DatabaseIdentityVerifier
+        subject.GovernedV2DatabaseIdentityVerifier = reached_corpus_readiness  # type: ignore[assignment]
+        try:
+            with pytest.raises(RuntimeError, match="OBSERVER_REACHED_CORPUS_READINESS"):
+                await observer_builder.build()
+            with pytest.raises(RuntimeError, match="OBSERVER_REACHED_CORPUS_READINESS"):
+                await certified_builder.build()
+        finally:
+            subject.GovernedV2DatabaseIdentityVerifier = original_verifier  # type: ignore[assignment]
+
+        wrong_observer_mode = ProductionV2ReadinessEvidenceBuilderV1(
+            workspace_root=ROOT,
+            mnemo_config=mnemo_config,
+            server_config=server_wrong_reranker.model_copy(
+                update={"full_multilingual_v2_reranker_mode": "PASS_THROUGH"}
+            ),
+            identity_manifest=MANIFEST,
+            pre_certification_observation=True,
+        )
+        with pytest.raises(RuntimeError, match="PRE_BGE_EXPOSURE_REQUIRES_PASS_THROUGH"):
+            await wrong_observer_mode.build()
     finally:
         subject.validate_production_v2_serving_readiness = orig_validate  # type: ignore[assignment]
 

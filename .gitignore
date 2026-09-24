@@ -34,14 +34,7 @@ Thumbs.db
 .env.*
 !.env.example
 data/*
-!data/manual-gita-qa/
-data/manual-gita-qa/*.db-shm
-data/manual-gita-qa/*.db-wal
-data/manual-gita-qa/embedding-cache.db
-# Local database backups retained outside the repository baseline.
-data/manual-gita-qa/mnemo.db.7-source
-data/manual-gita-qa/mnemo.db.before-15doc-switch
-# Default-path runtime database; the tracked manual fixture above is explicit.
+# Default-path runtime database.
 /mnemo.db
 qdrant_storage/
 surrealdb_data/
@@ -51,6 +44,5 @@ scratch/
 /references/
 
 # Intentionally local protected evaluation datasets and databases
-/data/manual-gita-qa/mnemo.db
 /evaluationDataset/
 /goldenDataset/

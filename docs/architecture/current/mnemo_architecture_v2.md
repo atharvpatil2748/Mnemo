@@ -7,7 +7,7 @@
 > [single-production-path audit](../../reports/architecture/mnemo-v2-single-production-path-audit.md)
 > and governed by [ADR-0076](../../adr/active/ADR-0076-project-owner-engineering-certification-standard.md).
 > Earlier baseline examples below are historical unless that audit incorporates them.
-> Phase 8.8 is the next bounded hardening phase; Phase 9 implementation is gated
+> Phase 8.8 is the current bounded hardening phase; Phase 9 implementation is gated
 > on Phase 8.8 verification.
 
 **Document Type:** Design Specification  
@@ -991,7 +991,7 @@ boundary.
 
 ### 5.3 WebSocket (Streaming)
 
-For the UI's chat experience, Mnemo-server exposes a WebSocket endpoint at `/ws/query`. It streams:
+The retained V1 UI preview exposes a WebSocket endpoint at `/ws/query`. It streams:
 
 1. `{ event: "retrieval_start" }` — retrieval beginning.
 2. `{ event: "chunk_retrieved", data: { chunk_id, score } }` — as each chunk is retrieved.
@@ -1000,11 +1000,11 @@ For the UI's chat experience, Mnemo-server exposes a WebSocket endpoint at `/ws/
 5. `{ event: "done" }` — stream complete.
 
 This endpoint is the retained V1 streaming contract. It is not the authenticated
-certified V2 FinalQA transport. Before Phase 9 chat is connected to production,
-Phase 8.8 must choose and verify either authenticated HTTP FinalQA V2 or a new
-authenticated/certified V2 streaming contract. The first Phase 9 release may
-instead be explicitly read-only; it must not silently use the unauthenticated V1
-socket as certified V2 chat.
+certified V2 FinalQA transport. Phase 8.8.14b selected authenticated HTTP
+FinalQA V2 for production chat. Phase 9 may use that HTTP path after the full
+Phase 8.8 GO gate, or remain explicitly read-only; it must not silently use the
+unauthenticated V1 socket as certified V2 chat. A V2 streaming contract would
+require a separate future design and certification.
 
 ### 5.4 Authentication
 
@@ -1028,7 +1028,10 @@ exposed retained tool and preserves not-found/unauthorized non-disclosure.
 
 ### Purpose and Constraints
 
-`mnemo-ui` is a React frontend. It communicates with `mnemo-server` **only** via the REST API and WebSocket. It never imports or calls `mnemo-core` directly. It has no knowledge of how retrieval works.
+`mnemo-ui` is a React frontend. It communicates with `mnemo-server` **only** via
+versioned HTTP APIs for production chat and application operations. The
+retained V1 WebSocket is not its production FinalQA path. It never imports or
+calls `mnemo-core` directly and has no knowledge of how retrieval works.
 
 This constraint is important: the UI must remain functional even if the entire backend is replaced with a different implementation that exposes the same API contract.
 
@@ -1051,7 +1054,9 @@ This constraint is important: the UI must remain functional even if the entire b
 ### Design Constraints
 
 - The UI handles no LLM logic. It is a view over data returned by the API.
-- Streaming responses are consumed via WebSocket and rendered token-by-token.
+- Production chat consumes authenticated HTTP FinalQA V2 responses, including
+  execution identity, replay state, and citations. Token streaming would
+  require a separately designed and certified V2 contract.
 - Citations are rendered as interactive footnotes that link to the source location.
 - The UI must be functional without JavaScript-heavy dependencies — it must work in low-resource environments.
 
@@ -1816,6 +1821,14 @@ adapters and are outside the certified production path. Canonical identity,
 authorization, provenance, and evidence remain anchored outside optional derived
 indexes.
 
+The FinalQA store is purpose-specific `GOVERNED_OPERATIONAL` state, not a user
+workspace. ADR-0077 accepts an additional, separately governed
+`MUTABLE_WORKSPACE` filesystem + SQLite role from explicit absolute server
+configuration. That role is not implemented or certified yet; until it is,
+production workspace mutations are server-enforced read-only. It must never be
+derived from or colocated with the certified corpus, evaluation artifacts,
+operational state, user caches, or process CWD.
+
 #### Qdrant — Optional Derived Vector Store
 
 Qdrant is a functional V1 vector adapter and a future scale path. It is not used
@@ -1922,9 +1935,12 @@ intersect. Empty filters retain the direct vector-search path. Qdrant never
 becomes authoritative for type, publication date, source, or notebook state;
 collections may be rebuilt from parsed IR and relational records.
 
-Mutable source and notebook operations synchronously refresh affected vector
-payloads through `CompositeStorage` and use explicit compensation on failure.
-Historical v0.20.1 collections predate this projection and remain unmodified.
+In generic/historical writable profiles, mutable source and notebook operations
+synchronously refresh affected vector payloads through `CompositeStorage` and
+use explicit compensation on failure. They are not authorized to run against
+the certified corpus. Future production mutation requires ADR-0077's separately
+typed workspace composition. Historical v0.20.1 collections predate this
+projection and remain unmodified.
 
 ---
 
@@ -1933,6 +1949,7 @@ Historical v0.20.1 collections predate this projection and remain unmodified.
 | Question | Answer |
 |---|---|
 | What is the current certified topology? | Content-addressed filesystem + immutable SQLite corpus + separate operational SQLite. |
+| Where may future UI/user writes go? | Only to ADR-0077's explicit absolute `MUTABLE_WORKSPACE` after validation and certification; otherwise production is read-only for workspace mutations. |
 | Must every file exist in all four adapters? | No. No accepted ADR establishes a four-copy invariant. |
 | Is Qdrant required by Phase 8.8 or Phase 9? | No. It remains an optional derived scale path, presently disabled. |
 | Is SurrealDB required by Phase 8.8 or Phase 9? | No. Its graph role is partial and deferred to later graph work. |
@@ -2267,7 +2284,13 @@ This is the deployment model for ARVSAL running Mnemo as an embedded library rat
 
 ### Minimal Stack (Single Container)
 
-For users with minimal resources or simple needs:
+For users with minimal resources or simple needs, the following is a
+generic/historical deployment sketch. It is not a certified Phase 8.8/Phase 9
+write topology: it has no ADR-0077 workspace-role configuration and must not
+expose production mutations against a certified corpus. A future compliant
+deployment must mount an operator-selected workspace separately and pass its
+explicit absolute container path through the not-yet-implemented governed
+workspace setting; absent or invalid configuration remains read-only.
 
 ```yaml
 # docker-compose.minimal.yml
@@ -2300,9 +2323,10 @@ profile and must not be enabled without its own V2 lifecycle and certification.
 > **Historical/optional reference deployment — not the current certified V2
 > topology.** The current certified V2 deployment is content-addressed
 > filesystem storage plus an immutable SQLite corpus and a separate mutable
-> operational SQLite store. Qdrant is an optional derived vector-scale path;
-> SurrealDB is a partial future graph path. Neither is required for Phase 8.8 or
-> Phase 9.
+> operational SQLite store. It does not yet show ADR-0077's separately mounted,
+> explicit absolute mutable workspace and therefore is not a Phase 9 write
+> deployment. Qdrant is an optional derived vector-scale path; SurrealDB is a
+> partial future graph path. Neither is required for Phase 8.8 or Phase 9.
 
 ```yaml
 # docker-compose.yml
@@ -2523,7 +2547,7 @@ As the plugin ecosystem grows, users will face incompatibility between plugin ve
 | 8.5 | **COMPLETED / CERTIFIED** | Full Multilingual V2, BGE-M3 + FTS5 + RRF, BGE-reranker-v2-m3, identity-bound authorization/evidence, provenance, FinalQA operational-store separation, durable reranker activation/rollback, and HTTP/stdio/SSE parity | Certification applies to the exact immutable 44-document production identity; the historical 94.4% evaluation is not identity-equivalent to the 83.3% production-parity result |
 | 8.6 | **COMPLETED / VALIDATED EVALUATION NOTEBOOK** | 24 governed sources across PDF, HTML, DOCX, PPTX, XLSX, CSV, JSON, and Markdown; Hindi, Marathi, and English; structure-aware chunking; 5,843 FTS rows and BGE-M3 embeddings; 161 image occurrences with complete OCR, Vision, and CLIP derivations; canonical manifest and transport validation | Evaluation-only; not merged into or exposed as the certified production corpus |
 | 8.7 | **COMPLETED CAPABILITY MILESTONE; HARDENING FOLLOW-UP REQUIRED** | Expanded MCP surface to 14 registered tools, additive retrieval/delivery contracts, notebook/asset identity propagation, FinalQA exposure, and real client exercises | The later audits found historical tunnel composition, retained-tool authorization, immutable-schema reader, metadata, capability, and parity defects; Phase 8.8 owns those corrections |
-| 8.8 | **DESIGNED / NOT IMPLEMENTED** | MCP production convergence, contract correctness, semantic image discovery, and Phase 9 architectural preparation | No Phase 9 implementation, no Phase 8.6 promotion, and no Qdrant/SurrealDB production integration |
+| 8.8 | **IN PROGRESS / NOT VERIFIED** | 8.8.14a and 8.8.14b accepted; Module 8.8.1 server-owned runtime convergence certified; tool-contract correctness, behavioral parity, semantic image discovery, and Phase 9 preparation remain pending | No Phase 9 implementation, no Phase 8.6 promotion, and no Qdrant/SurrealDB production integration |
 
 The authoritative evidence is ADR-0070, ADR-0071, ADR-0073 through ADR-0076,
 the current V2 certification report, the single-production-path audit, the
@@ -2561,7 +2585,202 @@ production DB, both current evaluation notebooks, production configuration,
 models, and certification state; their reports are the operational evidence and
 are not duplicated here.
 
-### 21.2 Phase 8.8 certified runtime convergence
+### 21.2 Canonical Phase 8.8 execution order
+
+Module numbers are stable ownership identifiers, **not implementation order**.
+The dependency tables remain binding, but this staged sequence is the canonical
+execution order when module numbering, the dependency graph, or older planning
+text appears to imply a different sequence. Tasks grouped in one stage may
+proceed in parallel only where their recorded dependencies permit it. Completing
+one task never marks a sibling or downstream task complete without its own
+implementation and evidence.
+
+1. **8.8.14a — Govern mutable workspace boundary.** Implement the ADR-0077
+   separately governed mutable filesystem + SQLite workspace from explicit
+   absolute server configuration. Until it validates and is certified,
+   production is server-enforced read-only for workspace mutations; no write may
+   target the certified corpus.
+2. **8.8.14b — Govern authenticated V2 chat.** Authenticated HTTP FinalQA V2
+   is the accepted production chat path. V2 streaming is not implemented or
+   required for the current contract; legacy V1 WebSocket/query streaming is
+   non-production.
+3. **8.8.14c — Reconcile current documentation.** After 8.8.14a and 8.8.14b
+   are accepted, align storage optionality, phase status, routes, backends, and
+   dependencies. Pre-decision documentation cleanup does not by itself complete
+   8.8.14c.
+4. **Complete Module 8.8.1 — Certified MCP Runtime Convergence, in dependency
+   order:** 8.8.1a define one production startup binding; 8.8.1b reject
+   configuration forks; 8.8.1c bind the tunnel to server-owned startup after
+   8.8.1a; and 8.8.1d capture convergence evidence after 8.8.1b.
+5. **Close the first prerequisite branches permitted by 8.8.1:**
+   - Module 8.8.2 reader work: 8.8.2a reproduce and pin the confirmed failure;
+     8.8.2b introduce one compatible read-model boundary; then 8.8.2c preserve
+     truthful locators, 8.8.2d route every affected reader, 8.8.2e add
+     schema-compatibility regression tests, and 8.8.2g prove corpus immutability.
+     Task 8.8.2f remains pending until Module 8.8.7 supplies typed errors.
+   - Module 8.8.3 authorization work: 8.8.3a require a
+     transport-authenticated principal; 8.8.3b apply central authorization to
+     all 14 tools; then 8.8.3c preserve non-disclosure and 8.8.3d reject client
+     policy overrides.
+   - Module 8.8.6 capability work: 8.8.6a expand lifecycle semantics; then
+     8.8.6b bind effective identity and 8.8.6c separate image capabilities.
+6. **Complete contracts unlocked by the prerequisite branches:**
+   - Module 8.8.5: 8.8.5a define one authorized metadata envelope; then
+     8.8.5b build one bounded resolver and 8.8.5c preserve identity semantics.
+   - Module 8.8.7: 8.8.7a define the safe error taxonomy; then 8.8.7b preserve
+     originating safe codes and 8.8.7c prevent leakage.
+   - Return to **8.8.2f** and preserve the originating safe reader/retrieval
+     error through the Module 8.8.7 taxonomy.
+   - Module 8.8.4, only after Modules 8.8.2 and 8.8.3 are complete: 8.8.4a
+     freeze each tool route; then 8.8.4b test valid requests and 8.8.4c test
+     invalid/unavailable requests; then 8.8.4d test provenance and transports.
+   - Module 8.8.8, only after Module 8.8.4: 8.8.8a inventory and freeze routes;
+     then 8.8.8b prevent historical fallback and 8.8.8c verify frozen
+     compatibility.
+7. **Verify the bounded isolation and structured-contract branches:**
+   - Module 8.8.10: 8.8.10a enforce evaluation-only selection; then 8.8.10b
+     specify the future promotion gate and 8.8.10c test Phase 8.5/8.6 isolation.
+   - Module 8.8.11: 8.8.11a validate the existing authorized typed contract;
+     then 8.8.11b return truthful unavailability and 8.8.11c keep activation out
+     of scope.
+8. **Complete Module 8.8.12 — Dedicated Semantic Image Search:** 8.8.12a
+   define discovery request/result contracts; then 8.8.12b implement OCR mode,
+   8.8.12c implement caption mode, 8.8.12d implement visual mode, and 8.8.12f
+   connect discovery to `get_asset`; after 8.8.12b–d, 8.8.12e implements
+   deterministic hybrid mode; after 8.8.12b–e, 8.8.12g proves authorization
+   before disclosure.
+9. **Certify transports and complete provenance:**
+   - Module 8.8.9, only after Modules 8.8.1–8.8.8: 8.8.9a execute the
+     HTTP/stdio/SSE/tunnel matrix; then 8.8.9b compare semantic evidence and
+     8.8.9c diagnose the long FinalQA call.
+   - Module 8.8.13: after Modules 8.8.4, 8.8.5, and 8.8.12, 8.8.13a preserve
+     the full identity chain and 8.8.13b validate citation/evidence resolution;
+     after Module 8.8.9, 8.8.13c compares transport provenance.
+10. **Run the complete Phase 8.8 acceptance gate.** Exercise all 14 existing
+    tools plus `search_images`, verify runtime identity, readers, authorization,
+    metadata, capabilities, typed errors, FinalQA, isolation, dynamic public
+    `requested_k`, image-mode no-result/partial/unavailable/multilingual behavior,
+    provenance, storage safety, and unchanged protected hashes. Qdrant,
+    SurrealDB, Phase 8.6 promotion, and Phase 9 implementation remain out of
+    scope.
+11. **8.8.14d — Issue Phase 9 readiness evidence.** Bind Modules 8.8.1–8.8.13,
+    the accepted and tested 8.8.14a–c decisions, every acceptance gate, and the
+    protected hashes into one GO/NO-GO result. Only
+    `PHASE_8_8_VERIFIED → Phase 9 GO` permits Phase 9 implementation.
+
+#### Phase 8.8.14a — implemented, certified, and accepted
+
+[ADR-0077](../../adr/active/ADR-0077-governed-mutable-workspace-boundary.md)
+accepts Option A as the target architecture: an explicitly configured,
+absolute, server-owned mutable filesystem + SQLite workspace. Its conceptual
+root owns `workspace.db`, `blobs/`, `parsed/`, `caches/`, and `generated/`.
+There is no implicit or CWD-derived production workspace and no client may
+select a database, blob root, child path, or storage role.
+
+Option B is mandatory fail-closed behavior. If the workspace is absent,
+invalid, unresolved, or overlaps/aliases protected storage, production exposes
+no workspace mutation route or tool. Validation must occur before directory
+creation, SQLite connection, WAL activation, migrations, embedding-cache or
+blob-store initialization, and route exposure. It rejects equality,
+ancestor/descendant overlap, symlink/junction aliases, Windows case aliases,
+`..` traversal, relative/CWD-dependent paths, and client-selected paths.
+
+The storage roles `CERTIFIED_CORPUS`, `EVALUATION_ARTIFACT`,
+`GOVERNED_OPERATIONAL`, `MUTABLE_WORKSPACE`, and `USER_CACHE` remain distinct.
+Certified corpus readers and mutable workspace writers are separate typed
+dependencies; no generic writable object may address both. The certified corpus
+and canonical blobs remain immutable. FinalQA operational storage,
+activation/certification state, evaluation artifacts, and tokenizer/model caches
+remain separate from the workspace. Qdrant and SurrealDB remain disabled and
+out of scope.
+
+The ADR-0077 boundary is **IMPLEMENTED / CERTIFIED / ACCEPTED**. Production
+composition validates storage roles before storage I/O, uses immutable
+certified readers, creates writable storage only beneath a validated workspace,
+and gates mutation routes and capabilities when the workspace is unavailable.
+Certification covered path aliases and overlap rejection, no-side-effect
+startup failures, workspace-only notebook/source/note/session writes, governed
+reader immutability, and HTTP/MCP startup. The CI-mode suite completed with
+2,341 passed, 18 intentionally skipped, and 90.05% coverage while both current
+governed databases retained identical hashes, sizes, timestamps, and no
+WAL/SHM/journal sidecars.
+
+8.8.14b selects authenticated `POST /v2/notebooks/{notebook_id}/final-qa`
+as the production chat path. API-key or JWT middleware supplies the server-owned
+principal; central notebook-scope authorization and principal-aware retrieval
+apply before evidence disclosure. The current central policy verifies canonical
+notebook membership, not actor ownership (no actor-to-notebook relation exists
+yet). A bounded full-operation deadline, separate FinalQA operational store,
+execution/replay identity, and citation publication are required. Legacy V1
+WebSocket/query streaming is not production V2 chat; V2 streaming is not a
+prerequisite for the current gate. 8.8.14b is **IMPLEMENTED / CERTIFIED /
+ACCEPTED** with CI-mode 2,346 passed, 18 skipped, 90.03% coverage and
+unchanged protected database bytes, timestamps, and sidecar state.
+
+8.8.14c is **COMPLETED** after reconciling current authority and preserving
+historical evidence. Phase 8.8 remains **IN PROGRESS / NOT VERIFIED**; Module
+8.8.1 is **CERTIFIED** for the shared server-owned binding and exact signed
+post-promotion HTTP/stdio/SSE/external-tunnel convergence. The evidence is
+`scratch/phase8_8_1_runtime_convergence/convergence.json`; see the Module 8.8.1
+certification report. Individual capability readiness remains separately gated.
+Modules 8.8.2–8.8.13 and the complete acceptance gate remain open, and 8.8.14d
+remains **PENDING**. Phase 9 is blocked until
+`PHASE_8_8_VERIFIED → Phase 9 GO`.
+
+The 8.8.1 configuration contract derives the certified BGE mode, activation
+path, and FinalQA operational-store path from the existing production manifest.
+The local model-cache location is operator-selected and excluded from the
+certified runtime identity; model revisions remain bound. Authentication policy,
+its credential, the new generation-bound signing secret, and trusted
+operator/stdio subjects are server-owned. Missing values fail closed. This
+configuration reconciliation alone did not certify Module 8.8.1; later signed
+post-promotion transport convergence did.
+
+#### Generation-aware server credentials (ADR-0078)
+
+ADR-0078 accepts a governed recovery design for the unavailable original
+delivery-cursor signing secret. The original activation, WP-17 certificate, and
+final evidence remain historical and must not be overwritten or represented as
+verifiable under a replacement key. A new production generation requires an
+OS-backed Mnemo-only secret bundle, a non-secret credential registry, new
+generation-bound activation/certificate/final-evidence records, independent
+WP-17 verification, and fail-closed promotion. Tunnel-client and provider
+credentials remain separate. Operator and service principals are represented
+without adding a multi-user ACL or changing canonical notebook membership.
+
+The credential registry is governed operational metadata; it is not a secret
+store, certified corpus, or mutable user workspace. Provisioning alone never
+activates a generation. The new evidence chain, live tunnel cutover, and exact
+four-transport identity equality have now passed for generation
+`fc85192e-f672-4cc0-9539-b4b063bb8f41`; Module 8.8.1 is **CERTIFIED** while
+Phase 8.8 remains **NOT VERIFIED**.
+
+The new generation's five fresh, signed WP-17 rehearsal records prove measured
+production parity, activation and security checks, isolated rollback/reactivation,
+and the rehearsal's final BGE state. That isolated final state did **not** assert
+global production activation. The generation-specific `/3` certificate authorized
+promotion with `ACTIVE` and `EXPOSED` false; historical `/1` certificate semantics
+remain unchanged. Generation-bound final evidence was verified before atomic
+promotion. The registry now selects one `ACTIVE` generation, and certified
+startup verifies the complete chain before exposure. Post-promotion signed
+startup observations from HTTP, MCP stdio, MCP SSE, and the existing tunnel
+share one binding identity. The external client's successful read-only calls
+correlate operationally with the tunnel process; they are not per-request signed
+attestations. See the [8.8.1 forensic audit](../../reports/operations/mnemo-module-8-8-1-forensic-audit.md).
+
+The pre-certification observer breaks the WP-17 evidence/startup cycle without
+altering certified startup. One registry-staged generation with a verified signed
+activation may launch an authenticated, read-only HTTP/MCP observation-only
+composition. It exposes no production chat, workspace mutation, or ordinary MCP
+tools. Real ready-runtime calls produce generation-signed HTTP, stdio, SSE, and
+external-tunnel observations; exact four-way signed convergence is required by
+new WP-17 certification and final-evidence verification. This is
+`PRE_CERTIFICATION_OBSERVATION`, **not** `CERTIFIED`. The initial restricted
+observations were followed by separate signed WP-17 evidence, promotion, certified
+restart, and post-promotion four-transport convergence. The pre-certification
+observations were not relabeled as certified production evidence.
+
+### 21.3 Phase 8.8 certified runtime convergence
 
 Phase 8.8 converges every production transport on one server-owned composition:
 
@@ -2592,7 +2811,7 @@ must agree. Startup fails closed before tool exposure when any binding diverges.
 An external tunnel is a transport to this composition, not permission to create
 a second configuration.
 
-### 21.3 Immutable corpus and compatible read model
+### 21.4 Immutable corpus and compatible read model
 
 The certified corpus is immutable and must not be migrated to satisfy newer
 generic readers. Phase 8.8 introduces one shared compatibility/read-model
@@ -2607,7 +2826,7 @@ It must never invent page ranges or mutate the certified database. The separate
 mutable FinalQA operational store remains the only destination for execution,
 snapshot, transition, and citation records.
 
-### 21.4 Authorization and non-disclosure
+### 21.5 Authorization and non-disclosure
 
 Every remote tool follows:
 
@@ -2624,7 +2843,7 @@ unknown resources retain the repository's non-disclosure contract. Phase 8.8
 must test the boundary for every tool rather than infer safety from shared class
 existence.
 
-### 21.5 Tool and routing declarations
+### 21.6 Tool and routing declarations
 
 | Tool | Route after Phase 8.8 | Availability rule |
 |---|---|---|
@@ -2648,7 +2867,7 @@ Retained V1 contracts are not blindly rewritten as V2. They remain explicit,
 compatible, and authorized. V2 operations cannot fall back to the historical V1
 database or model profile.
 
-### 21.6 Source metadata and provenance envelope
+### 21.7 Source metadata and provenance envelope
 
 Stable IDs remain identity. Presentation metadata is additive and authorized.
 One reusable envelope supplies, where truthfully persisted:
@@ -2666,7 +2885,7 @@ resolver where their result refers to a source. A filename is nullable presentat
 metadata: it is never canonical identity, authorization scope, or a uniqueness
 assumption. Filesystem paths are never exposed.
 
-### 21.7 Capability and error state
+### 21.8 Capability and error state
 
 Capability responses distinguish:
 
@@ -2687,7 +2906,7 @@ MCP errors use safe typed categories: `invalid_input`, `unauthorized`,
 `server_failure`. Responses preserve a stable machine code and correlation ID
 without stack traces or unauthorized existence leakage.
 
-### 21.8 Dedicated semantic image search
+### 21.9 Dedicated semantic image search
 
 The Phase 8.8 tool is named `search_images`, matching the existing verb-object
 tool style and distinguishing discovery from `get_asset` delivery.
@@ -2733,7 +2952,7 @@ No modality may disclose an unauthorized occurrence. An unavailable requested
 modality returns a typed scope-qualified capability result. Hybrid behavior must
 state whether it used all requested paths or a governed permitted subset.
 
-### 21.9 Phase 8.6 exposure boundary
+### 21.10 Phase 8.6 exposure boundary
 
 ```text
 Phase 8.5 production identity → certified → exposed
@@ -2747,16 +2966,21 @@ authorization memberships, compatible read model, lifecycle/capability binding,
 and fresh transport/provenance certification. Promotion never means merging the
 evaluation corpus into the certified production database.
 
-### 21.10 Phase 9 preparation and gate
+### 21.11 Phase 9 preparation and gate
 
 Phase 8.8 resolves three prerequisite classes before Phase 9 implementation:
 
-1. **Mutable workspace boundary.** Choose a separately governed mutable workspace
-   for notebook creation/uploads, or declare the first Phase 9 release read-only.
-   UI writes cannot target the immutable hash-bound certified corpus.
-2. **Authenticated V2 chat.** Choose authenticated HTTP FinalQA V2 or design and
-   certify an authenticated V2 streaming contract. The legacy V1 WebSocket is
-   not silently promoted.
+1. **Mutable workspace boundary.** ADR-0077 accepts a separately governed
+   mutable filesystem + SQLite workspace from explicit absolute server
+   configuration. Missing, invalid, or protected-path-overlapping workspace
+   configuration forces server-enforced read-only behavior. The storage-role
+   boundary must be validated before any filesystem/SQLite/cache/blob side
+   effect or mutation-route exposure. UI writes can never target the immutable
+   hash-bound certified corpus. This boundary is implemented and certified.
+2. **Authenticated V2 chat.** Authenticated HTTP FinalQA V2 is the selected,
+   implemented, and certified production chat path. The legacy V1 WebSocket is
+   non-production; authenticated V2 streaming is optional future work, not a
+   Phase 9 entry dependency.
 3. **Documentation consistency.** Keep current topology, phase status, V1/V2
    routing, optional Qdrant, deferred SurrealDB, and Phase 9 dependencies aligned
    across the living architecture and engineering roadmap.
@@ -2778,7 +3002,7 @@ Phase 9 implementation begins
 Phase 9 is the next implementation phase, but it must not begin before these
 gates pass.
 
-### 21.11 Explicit deferrals and future seams
+### 21.12 Explicit deferrals and future seams
 
 Phase 8.8 does not integrate Qdrant, complete SurrealDB graph persistence, promote
 Phase 8.6, add arbitrary graph retrieval/graph UI, perform Phase 13 scale work,

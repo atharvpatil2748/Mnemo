@@ -201,6 +201,8 @@ class KnowledgeEngine:
         full_multilingual_v2_readiness: V2ReadinessSnapshot | None = None,
         language_capability_records: tuple[LanguageCapabilityRecordV3, ...] = (),
         final_qa_v2: FinalQAInterfaceV2 | None = None,
+        certified_read_only: bool = False,
+        embedding_cache_path: Path | None = None,
     ) -> None:
         """Create an uninitialized runtime without performing discovery or I/O."""
         if not isinstance(config, MnemoConfig):
@@ -222,6 +224,8 @@ class KnowledgeEngine:
         if final_qa_v2 is not None and not isinstance(final_qa_v2, FinalQAInterfaceV2):
             raise TypeError("final_qa_v2 must implement FinalQAInterfaceV2")
         self._final_qa_v2 = final_qa_v2
+        self._certified_read_only = certified_read_only
+        self._embedding_cache_path = embedding_cache_path
         self._final_qa: FinalQAInterfaceV1 | None = None
         self._phase85: Phase85Runtime | None = None
         self._advanced_retrieval: AdvancedRetrievalInterfaceV1 | None = None
@@ -237,6 +241,11 @@ class KnowledgeEngine:
     def config(self) -> MnemoConfig:
         """Return the exact frozen runtime configuration."""
         return self._config
+
+    @property
+    def certified_read_only(self) -> bool:
+        """Whether primary storage is physically constrained to certified reads."""
+        return self._certified_read_only
 
     @property
     def registry(self) -> PluginRegistry:
@@ -782,7 +791,13 @@ class KnowledgeEngine:
 
     def _compose_runtime(self) -> None:
         results: list[PluginLoadResult] = []
-        builtins = self._registry.load_plugins(_builtin_plugins(self._config))
+        builtins = self._registry.load_plugins(
+            _builtin_plugins(
+                self._config,
+                certified_read_only=self._certified_read_only,
+                embedding_cache_path=self._embedding_cache_path,
+            )
+        )
         self._log_failures("built-in", builtins)
         results.extend(builtins)
         entry_points = self._registry.discover_and_load_entry_points()
@@ -929,7 +944,12 @@ class KnowledgeEngine:
                 )
 
 
-def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
+def _builtin_plugins(
+    config: MnemoConfig,
+    *,
+    certified_read_only: bool = False,
+    embedding_cache_path: Path | None = None,
+) -> tuple[PluginInterfaceV1, ...]:
     """Return built-in candidates supplied by their designated roadmap modules."""
     primary_storage: StorageInterfaceV1 | None = None
 
@@ -946,13 +966,25 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
             from mnemo.storage import (
                 CompositeStorage,
                 FilesystemBlobStore,
+                ImmutableFilesystemBlobStore,
                 QdrantStore,
                 SQLiteStore,
                 SurrealDBStore,
             )
+            from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
 
-            filesystem = FilesystemBlobStore(config.storage.filesystem.root)
-            sqlite = SQLiteStore(config.storage.sqlite.path)
+            filesystem: ImmutableFilesystemBlobStore | FilesystemBlobStore
+            sqlite: SQLiteV2ReadOnlyRuntimeStore | SQLiteStore
+            if certified_read_only:
+                if config.storage.qdrant.enabled or config.storage.surrealdb.enabled:
+                    raise EngineInitializationError(
+                        "certified read-only storage forbids Qdrant and SurrealDB"
+                    )
+                filesystem = ImmutableFilesystemBlobStore(config.storage.filesystem.root)
+                sqlite = SQLiteV2ReadOnlyRuntimeStore(config.storage.sqlite.path)
+            else:
+                filesystem = FilesystemBlobStore(config.storage.filesystem.root)
+                sqlite = SQLiteStore(config.storage.sqlite.path)
             qdrant = QdrantStore(
                 config.storage.qdrant,
                 vector_dimensions=config.embedding.dimensions,
@@ -1151,7 +1183,6 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
             from mnemo.embeddings.cached import CachedEmbeddingProvider
             from mnemo.storage.cache import SQLiteEmbeddingCache
 
-            cache = SQLiteEmbeddingCache(config.storage.sqlite.path.parent / "embedding-cache.db")
             provider: EmbeddingProviderV1
             if config.embedding.provider == "sentence-transformers":
                 from mnemo.embeddings.sentence_transformers import SentenceTransformersEmbedder
@@ -1164,9 +1195,16 @@ def _builtin_plugins(config: MnemoConfig) -> tuple[PluginInterfaceV1, ...]:
             else:
                 raise ValueError(f"Unsupported embedding provider: {config.embedding.provider}")
 
-            cached = CachedEmbeddingProvider(provider, cache)
-            registry.register_embedding_provider("primary", cached, priority=0)
-            registry.register_startup_hook(cache.initialize)
+            if certified_read_only:
+                registry.register_embedding_provider("primary", provider, priority=0)
+            else:
+                cache_path = embedding_cache_path or (
+                    config.storage.sqlite.path.parent / "embedding-cache.db"
+                )
+                cache = SQLiteEmbeddingCache(cache_path)
+                cached = CachedEmbeddingProvider(provider, cache)
+                registry.register_embedding_provider("primary", cached, priority=0)
+                registry.register_startup_hook(cache.initialize)
             registry.register_startup_hook(provider.initialize)
 
     class CoreLLMPlugin:

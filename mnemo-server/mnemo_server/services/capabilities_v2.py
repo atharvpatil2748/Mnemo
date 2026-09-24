@@ -8,7 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Final
 
-from mnemo.engine import KnowledgeEngine
+from mnemo.engine import EngineState, KnowledgeEngine
 from mnemo.interfaces import ContractValidationError
 from mnemo.phase85 import CapabilityStatus
 
@@ -24,9 +24,11 @@ from mnemo_server.schemas.capabilities_v2 import (
     CapabilityProfileResponse,
     CapabilityResponse,
     CapabilityRuntimeResponse,
+    CapabilityStorageResponse,
     CapabilityTaskGuidanceResponse,
     CapabilityTransportResponse,
 )
+from mnemo_server.services.mutable_workspace import MutableWorkspaceDecision
 
 
 @dataclass(frozen=True, slots=True)
@@ -248,9 +250,15 @@ _TASKS: Final = (
 class CapabilityDiscoveryService:
     """Project the single Phase85RuntimeV1 state into a redacted public document."""
 
-    def __init__(self, engine: KnowledgeEngine, config: ServerConfig) -> None:
+    def __init__(
+        self,
+        engine: KnowledgeEngine,
+        config: ServerConfig,
+        workspace_decision: MutableWorkspaceDecision | None = None,
+    ) -> None:
         self._engine = engine
         self._config = config
+        self._workspace_decision = workspace_decision
 
     def document(self, request: CapabilityDiscoveryRequest | None = None) -> CapabilityDocument:
         query = request or CapabilityDiscoveryRequest()
@@ -293,6 +301,7 @@ class CapabilityDiscoveryService:
                     http_enabled=active_profile.http_enabled,
                     mcp_enabled=active_profile.mcp_enabled,
                 ),
+                storage=self._storage_capabilities(),
             ),
             capabilities=items,
             task_guidance=task_guidance,
@@ -307,6 +316,41 @@ class CapabilityDiscoveryService:
             json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
         return base.model_copy(update={"snapshot_identity": identity})
+
+    def _storage_capabilities(self) -> CapabilityStorageResponse:
+        engine_ready = self._engine.state is EngineState.READY
+        if not self._config.production_mode:
+            return CapabilityStorageResponse(
+                certified_read_available=False,
+                certified_storage_mode="unavailable",
+                workspace_mode="development",
+                workspace_available=True,
+                mutation_available=True,
+                read_only_fallback=False,
+                reason="NON_PRODUCTION_STORAGE",
+            )
+
+        decision = self._workspace_decision
+        mutable = decision is not None and decision.mutable
+        reason = (
+            decision.reason if decision is not None else "MUTABLE_WORKSPACE_DECISION_UNAVAILABLE"
+        )
+        v2_status = self._engine.phase85.capabilities().get("multilingual_retrieval_v2")
+        certified_read_available = engine_ready and (
+            bool(getattr(self._engine, "certified_read_only", False))
+            or bool(v2_status and v2_status.state.exposed)
+        )
+        return CapabilityStorageResponse(
+            certified_read_available=certified_read_available,
+            certified_storage_mode=(
+                "immutable_query_only" if certified_read_available else "unavailable"
+            ),
+            workspace_mode="mutable" if mutable else "read_only",
+            workspace_available=mutable,
+            mutation_available=mutable,
+            read_only_fallback=not mutable,
+            reason=reason,
+        )
 
     def _capability(self, status: CapabilityStatus) -> CapabilityResponse:
         semantics = _SEMANTICS.get(status.capability_id, _PublicSemantics("runtime"))
@@ -437,6 +481,19 @@ class CapabilityDiscoveryService:
         )
 
     def _limits(self, capability_id: str) -> dict[str, int | str | bool]:
+        if capability_id == "final_qa_v2":
+            return {
+                "production_chat_transport": (
+                    "authenticated_http_final_qa_v2"
+                    if self._config.production_mode
+                    else "not_production"
+                ),
+                "authentication_required": True,
+                "v1_streaming_production": False,
+                "v2_streaming_required": False,
+                "governed_operational_store_required": True,
+                "max_elapsed_milliseconds": self._config.max_final_qa_elapsed_milliseconds,
+            }
         if capability_id in {
             "exhaustive_retrieval",
             "multimodal_retrieval",

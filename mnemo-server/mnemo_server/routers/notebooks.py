@@ -12,7 +12,7 @@ from mnemo.engine import KnowledgeEngine
 from mnemo.interfaces.errors import NotFoundError
 from mnemo.models import FrozenMetadata, InsightType, Notebook
 
-from ..dependencies import get_engine
+from ..dependencies import get_engine, require_mutable_workspace
 from ..schemas.common import PageResponse
 from ..schemas.graph import EntityGraphResponse, GraphNodeResponse
 from ..schemas.notebooks import (
@@ -62,6 +62,7 @@ def _notebook_to_dto(notebook: Notebook) -> NotebookResponse:
     response_model=NotebookResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new notebook",
+    dependencies=[Depends(require_mutable_workspace)],
 )
 async def create_notebook(
     body: CreateNotebookRequest,
@@ -126,6 +127,7 @@ async def get_notebook(
     response_model=NotebookResponse,
     status_code=status.HTTP_200_OK,
     summary="Update notebook metadata",
+    dependencies=[Depends(require_mutable_workspace)],
 )
 async def update_notebook(
     body: UpdateNotebookRequest,
@@ -160,6 +162,7 @@ async def update_notebook(
     "/{notebook_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a notebook",
+    dependencies=[Depends(require_mutable_workspace)],
 )
 async def delete_notebook(
     notebook_id: NotebookIdPath,

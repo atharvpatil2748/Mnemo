@@ -28,6 +28,7 @@ class FinalQAExecutionState(StrEnum):
     ASSISTANT_PUBLISHED = "assistant_published"
     PUBLISHED = "published"
     REJECTED_CITATION_COMPLIANCE = "rejected_citation_compliance"
+    TIMED_OUT = "timed_out"
 
 
 class FinalQAExecutionSnapshotPhase(StrEnum):

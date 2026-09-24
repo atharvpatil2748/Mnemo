@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from mnemo import EngineState, KnowledgeEngine, __version__
+from mnemo import EngineState, KnowledgeEngine, MnemoConfig, __version__
 from mnemo_server.config import ServerConfig
 from mnemo_server.mcp.server import create_sse_app, run_sse_server
 
@@ -20,6 +20,25 @@ def mock_engine() -> MagicMock:
     engine.initialize = AsyncMock()
     engine.shutdown = AsyncMock()
     return engine
+
+
+def _synthetic_config(tmp_path: Path) -> MnemoConfig:
+    """Keep lifecycle tests away from the repository's certified DB."""
+    repository = Path(__file__).resolve().parents[2]
+    source = repository / "mnemo.toml"
+    document = source.read_text(encoding="utf-8")
+    document = document.replace(
+        "scratch/phase8_5_full_multilingual_v2/build-20260831-01/mnemo.db",
+        "synthetic/mnemo.db",
+    ).replace("data/canonical_production/blobs", "synthetic/blobs")
+    target = tmp_path / "mnemo.toml"
+    target.write_text(document, encoding="utf-8")
+    profile = tmp_path / "config/model_profiles/full_multilingual_v2_profiles.toml"
+    profile.parent.mkdir(parents=True, exist_ok=True)
+    profile.write_bytes(
+        (repository / "config/model_profiles/full_multilingual_v2_profiles.toml").read_bytes()
+    )
+    return MnemoConfig.from_file(target)
 
 
 @pytest.mark.anyio
@@ -64,7 +83,7 @@ async def test_mcp_sse_auth_protection(mock_engine: MagicMock) -> None:
         assert authed_resp.status_code in (400, 404, 202)
 
 
-def test_mcp_sse_lifespan_lifecycle() -> None:
+def test_mcp_sse_lifespan_lifecycle(tmp_path: Path) -> None:
     """Lifespan manages initialization when engine is provided uninitialized."""
     from starlette.testclient import TestClient
 
@@ -78,7 +97,7 @@ def test_mcp_sse_lifespan_lifecycle() -> None:
 
     engine.initialize.side_effect = _init
 
-    app = create_sse_app(engine=engine)
+    app = create_sse_app(engine=engine, mnemo_config=_synthetic_config(tmp_path))
 
     with TestClient(app) as client:
         resp = client.get("/health")
@@ -98,6 +117,16 @@ def test_mcp_sse_lifespan_publishes_and_closes_v2_runtime(
     installed = SimpleNamespace(close=AsyncMock())
     installer = AsyncMock(return_value=installed)
     monkeypatch.setattr("mnemo_server.mcp.server._install_v2_if_enabled", installer)
+    synthetic_config = _synthetic_config(tmp_path)
+    monkeypatch.setattr(
+        "mnemo_server.services.production_runtime_binding.resolve_certified_production_binding",
+        lambda **_kwargs: (synthetic_config, SimpleNamespace(binding_id="synthetic-test-binding")),
+    )
+    monkeypatch.setattr(
+        "mnemo_server.services.production_runtime_binding.record_certified_transport_startup",
+        lambda **_kwargs: tmp_path / "synthetic-observation.json",
+    )
+    engine.certified_read_only = True
     config = ServerConfig(
         production_mode=True,
         auth_mode="api-key",
@@ -108,14 +137,14 @@ def test_mcp_sse_lifespan_publishes_and_closes_v2_runtime(
         final_qa_operational_store_path=tmp_path / "operational.db",
         mcp_stdio_principal_subject="stdio",
     )
-    app = create_sse_app(config=config, engine=engine)
+    app = create_sse_app(config=config, engine=engine, mnemo_config=synthetic_config)
     with TestClient(app) as client:
         assert client.get("/health").json()["engine_state"] == "ready"
         assert app.state.full_multilingual_v2_runtime is installed
     installed.close.assert_awaited_once()
 
 
-def test_mcp_sse_lifespan_creates_engine_from_config() -> None:
+def test_mcp_sse_lifespan_creates_engine_from_config(tmp_path: Path) -> None:
     """Lifespan creates and shuts down default engine when engine is None."""
     from starlette.testclient import TestClient
 
@@ -130,11 +159,10 @@ def test_mcp_sse_lifespan_creates_engine_from_config() -> None:
     mock_engine.initialize.side_effect = _init
 
     with (
-        patch("mnemo_server.mcp.server.MnemoConfig.from_env", return_value=MagicMock()),
         patch("mnemo_server.mcp.server.KnowledgeEngine", return_value=mock_engine),
         patch("mnemo_server.mcp.server.provision_tokenizer", side_effect=RuntimeError("skip")),
     ):
-        app = create_sse_app()
+        app = create_sse_app(mnemo_config=_synthetic_config(tmp_path))
         with TestClient(app) as client:
             resp = client.get("/health")
             assert resp.status_code == 200

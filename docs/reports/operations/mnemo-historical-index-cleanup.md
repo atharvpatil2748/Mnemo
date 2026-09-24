@@ -1,5 +1,9 @@
 # Mnemo Historical Index and Embedding Cleanup
 
+> **Historical notice (2026-09-22):** Manual Gita database references below
+> record this checkpoint. ADR-0077 Phase 8.8.14a certification subsequently
+> deprecated and removed that fixture from the active governed/test surface.
+
 Status: `MNEMO_HISTORICAL_INDEX_CLEANUP_PASS`.
 
 ## Current protected state

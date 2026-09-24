@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from mnemo import __version__
+from mnemo_server.config import ServerConfig
 from mnemo_server.mcp.cli import create_parser, main
 
 
@@ -57,6 +59,148 @@ def test_cli_main_runs_stdio() -> None:
         exit_code = main(["stdio"])
         assert exit_code == 0
         assert mock_stdio.called
+
+
+def test_certified_tunnel_refuses_unconfigured_production(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("MNEMO_SERVER_PRODUCTION_MODE", raising=False)
+    with (
+        patch(
+            "mnemo_server.mcp.cli.ServerConfig.from_env",
+            side_effect=RuntimeError("CERTIFIED_CONFIGURATION_UNAVAILABLE"),
+        ),
+        patch("mnemo_server.mcp.cli.run_stdio_server", new_callable=AsyncMock) as runner,
+    ):
+        assert main(["certified-tunnel-stdio"]) == 1
+    runner.assert_not_called()
+    assert "CERTIFIED_PRODUCTION_BINDING_REJECTED" in capsys.readouterr().err
+
+
+def test_certified_tunnel_forbids_transport_identity_overrides(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("MNEMO_SERVER_PRODUCTION_MODE", raising=False)
+    assert main(["--auth-mode", "none", "certified-tunnel-stdio"]) == 1
+    assert "CERTIFIED_PRODUCTION_BINDING_REJECTED" in capsys.readouterr().err
+
+
+def test_production_cli_preserves_server_owned_authentication(tmp_path: Path) -> None:
+    base = ServerConfig(
+        production_mode=True,
+        full_multilingual_v2_enabled=True,
+        auth_mode="api-key",
+        api_key="synthetic-test-credential",
+        delivery_cursor_secret="synthetic-test-signing-secret-material-123456",
+        full_multilingual_v2_model_cache=tmp_path / "models",
+        final_qa_operational_store_path=tmp_path / "final-qa.db",
+        mcp_stdio_principal_subject="local-test-operator",
+    )
+    with (
+        patch("mnemo_server.mcp.cli.ServerConfig.from_env", return_value=base),
+        patch("mnemo_server.mcp.cli.run_stdio_server", new_callable=AsyncMock) as runner,
+    ):
+        assert main(["certified-tunnel-stdio"]) == 0
+        effective = runner.call_args.kwargs["config"]
+        assert effective.auth_mode == base.auth_mode
+        assert effective.api_key == base.api_key
+        assert effective.mcp_stdio_principal_subject == base.mcp_stdio_principal_subject
+        assert runner.call_args.kwargs["transport_label"] == "external_tunnel"
+        runner.reset_mock()
+        assert main(["certified-stdio"]) == 0
+        assert runner.call_args.kwargs["transport_label"] == "mcp_stdio"
+        runner.reset_mock()
+        assert main(["--api-key", "client-selected", "stdio"]) == 1
+        runner.assert_not_called()
+
+
+def test_certified_sse_uses_governed_configuration(tmp_path: Path) -> None:
+    base = ServerConfig(
+        production_mode=True,
+        full_multilingual_v2_enabled=True,
+        auth_mode="api-key",
+        api_key="synthetic-test-authentication-key",
+        delivery_cursor_secret="synthetic-test-signing-secret-material-123456",
+        full_multilingual_v2_model_cache=tmp_path / "models",
+        final_qa_operational_store_path=tmp_path / "final-qa.db",
+        mcp_stdio_principal_subject="local-test-operator",
+    )
+    with (
+        patch("mnemo_server.mcp.cli.ServerConfig.from_env", return_value=base),
+        patch("mnemo_server.mcp.cli.run_sse_server") as runner,
+    ):
+        assert main(["certified-sse"]) == 0
+        effective = runner.call_args.kwargs["config"]
+        assert effective.auth_mode == base.auth_mode
+        assert effective.api_key == base.api_key
+        assert effective.credential_generation_id == base.credential_generation_id
+        assert runner.call_args.kwargs["pre_certification_observation"] is False
+        runner.reset_mock()
+        assert main(["--api-key", "client-selected", "certified-sse"]) == 1
+        runner.assert_not_called()
+
+
+def test_observation_cli_rejects_missing_staged_configuration(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("MNEMO_SERVER_PRODUCTION_MODE", raising=False)
+    with (
+        patch(
+            "mnemo_server.mcp.cli.ServerConfig.from_env",
+            side_effect=RuntimeError("STAGED_CONFIGURATION_UNAVAILABLE"),
+        ),
+        patch("mnemo_server.mcp.cli.run_stdio_server", new_callable=AsyncMock) as runner,
+    ):
+        assert main(["observe-tunnel-stdio"]) == 1
+    runner.assert_not_called()
+    assert "CERTIFIED_PRODUCTION_BINDING_REJECTED" in capsys.readouterr().err
+
+
+def test_observation_cli_selects_transport_only(tmp_path: Path) -> None:
+    base = ServerConfig(
+        production_mode=True,
+        full_multilingual_v2_enabled=True,
+        auth_mode="api-key",
+        api_key="synthetic-observer-credential",
+        delivery_cursor_secret="synthetic-observer-signing-material-123456",
+        full_multilingual_v2_model_cache=tmp_path / "models",
+        final_qa_operational_store_path=tmp_path / "final-qa.db",
+        mcp_stdio_principal_subject="local-test-operator",
+    )
+    with (
+        patch("mnemo_server.mcp.cli.ServerConfig.from_env", return_value=base) as config_reader,
+        patch("mnemo_server.mcp.cli.run_stdio_server", new_callable=AsyncMock) as runner,
+    ):
+        assert main(["observe-tunnel-stdio"]) == 0
+        assert config_reader.call_args.kwargs["pre_certification_observation"] is True
+        assert runner.call_args.kwargs["pre_certification_observation"] is True
+        assert runner.call_args.kwargs["transport_label"] == "external_tunnel"
+        runner.reset_mock()
+        assert main(["--api-key", "client-selected", "observe-stdio"]) == 1
+        runner.assert_not_called()
+
+
+def test_observation_sse_startup_error_is_safe(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    base = ServerConfig(
+        production_mode=True,
+        full_multilingual_v2_enabled=True,
+        auth_mode="api-key",
+        api_key="synthetic-observer-credential",
+        delivery_cursor_secret="synthetic-observer-signing-material-123456",
+        full_multilingual_v2_model_cache=tmp_path / "models",
+        final_qa_operational_store_path=tmp_path / "final-qa.db",
+        mcp_stdio_principal_subject="local-test-operator",
+    )
+    with (
+        patch("mnemo_server.mcp.cli.ServerConfig.from_env", return_value=base),
+        patch("mnemo_server.mcp.cli.run_sse_server", side_effect=RuntimeError("private path")),
+    ):
+        assert main(["observe-sse"]) == 1
+    error = capsys.readouterr().err
+    assert "CERTIFIED_PRODUCTION_STARTUP_FAILED" in error
+    assert "private path" not in error
 
 
 def test_cli_main_runs_sse() -> None:

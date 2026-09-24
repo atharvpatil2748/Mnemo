@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, Request
+from fastapi import APIRouter, Depends, HTTPException, Path, Request
 from mnemo.engine import KnowledgeEngine
 
 from ..dependencies import get_engine, get_server_config
@@ -26,6 +26,8 @@ async def final_qa_v2_endpoint(
 ) -> FinalQAV2Response:
     config = get_server_config(request)
     principal = principal_from_claims(getattr(request.state, "auth", None))
+    if not principal.authenticated:
+        raise HTTPException(status_code=401, detail="Authentication required")
     return await FinalQAV2ApplicationService(engine, config).execute(
         notebook_id, payload, principal
     )

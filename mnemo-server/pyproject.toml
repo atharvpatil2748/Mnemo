@@ -7,6 +7,7 @@ license = "Apache-2.0"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115,<1",
+    "keyring>=25,<26",
     "mcp>=1.9.4,<2",
     "mnemo-core",
     "python-multipart>=0.0.18,<1",
@@ -17,7 +18,8 @@ dependencies = [
 evaluation = [
     "pillow>=10.4,<13",
     "sentence-transformers>=5.1,<6",
-    "torch>=2.2,<3",
+    "torch==2.13.0+cu130; sys_platform == 'win32'",
+    "torch>=2.2,<3; sys_platform != 'win32'",
 ]
 
 [project.scripts]

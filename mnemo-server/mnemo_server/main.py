@@ -13,6 +13,8 @@ app = create_app()
 def run() -> None:
     """Run the Uvicorn ASGI server with resolved ServerConfig."""
     config = ServerConfig.from_env()
+    if config.production_mode and not config.full_multilingual_v2_enabled:
+        raise RuntimeError("CERTIFIED_PRODUCTION_BINDING_REJECTED")
     uvicorn.run(
         "mnemo_server.main:app",
         host=config.host,

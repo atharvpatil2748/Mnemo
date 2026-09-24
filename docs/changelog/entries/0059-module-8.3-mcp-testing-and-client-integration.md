@@ -1,5 +1,10 @@
 # 0059: Module 8.3 — MCP Testing & Client Integration
 
+> **Historical notice (2026-09-22):** Manual Gita database and Golden Corpus
+> integration-test references below describe this release checkpoint. ADR-0077
+> Phase 8.8.14a certification later deprecated and removed them from the active
+> governed/test surface.
+
 - **Date:** 2026-08-17
 - **Module:** Phase 8, Module 8.3 (MCP Testing & Client Integration)
 - **Milestone:** Milestone M8 (MCP Server & Antigravity Integration)

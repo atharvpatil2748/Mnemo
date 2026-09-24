@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -10,12 +11,13 @@ from uuid import uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from mnemo import __version__
+from mnemo import MnemoConfig, __version__
 from mnemo.engine import EngineInitializationError, EngineState, KnowledgeEngine
 from mnemo.interfaces import ConflictError, ContractValidationError, NotFoundError
 from mnemo.models import Notebook, Session, Turn, TurnRole
 from mnemo_server.app import create_app
 from mnemo_server.config import ServerConfig
+from mnemo_server.dependencies import require_mutable_workspace
 from mnemo_server.schemas.final_qa import FinalQARequestBody
 from mnemo_server.schemas.query import QueryFilters
 from mnemo_server.services.final_qa import FinalQAService, _filters
@@ -64,6 +66,47 @@ def _make_mock_engine(
     engine.initialize = AsyncMock(side_effect=mock_initialize)
     engine.shutdown = AsyncMock(side_effect=mock_shutdown)
     return engine
+
+
+def _write_core_config(root: Path) -> MnemoConfig:
+    config_path = root / "mnemo.toml"
+    config_path.write_text(
+        """
+[storage.filesystem]
+enabled = true
+root = "certified/blobs"
+[storage.sqlite]
+enabled = true
+path = "certified/corpus.db"
+[storage.qdrant]
+enabled = false
+[storage.surrealdb]
+enabled = false
+[plugins]
+directory = "plugins"
+[llm.planner]
+provider = "ollama"
+model = "planner"
+[llm.synthesizer]
+provider = "ollama"
+model = "synthesizer"
+[llm.extractor]
+provider = "ollama"
+model = "extractor"
+[llm.classifier]
+provider = "ollama"
+model = "classifier"
+[embedding]
+provider = "ollama"
+model = "embedder"
+dimensions = 8
+[reranker]
+provider = "v2-owned-pass-through"
+model = "none"
+""",
+        encoding="utf-8",
+    )
+    return MnemoConfig.from_file(config_path)
 
 
 @pytest.mark.anyio
@@ -130,12 +173,198 @@ async def test_app_lifespan_rejects_engine_that_does_not_reach_ready() -> None:
 
 
 @pytest.mark.anyio
+async def test_production_without_workspace_is_read_only_for_mutation_routes() -> None:
+    engine = _make_mock_engine()
+    engine.config = MagicMock()
+    engine.certified_read_only = True
+    engine.storage.upsert_notebook = AsyncMock()
+    api_key = "workspace-boundary-test-key"
+    config = ServerConfig(
+        production_mode=True,
+        auth_mode="api-key",
+        api_key=api_key,
+        delivery_cursor_secret="w" * 32,
+    )
+    app = create_app(
+        server_config=config,
+        engine=engine,
+        provision_tokenizer_on_startup=False,
+    )
+
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client,
+    ):
+        response = await client.post(
+            "/v1/notebooks",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"title": "must not persist"},
+        )
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "contract.dependency_unavailable"
+    engine.storage.upsert_notebook.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_production_rejects_injected_writable_certified_engine() -> None:
+    engine = _make_mock_engine()
+    engine.config = MagicMock()
+    engine.certified_read_only = False
+    app = create_app(
+        server_config=ServerConfig(
+            production_mode=True,
+            delivery_cursor_secret="w" * 32,
+        ),
+        engine=engine,
+        provision_tokenizer_on_startup=False,
+    )
+
+    with pytest.raises(RuntimeError, match="UNSAFE_INJECTED_PRODUCTION_STORAGE"):
+        async with app.router.lifespan_context(app):
+            pass
+
+    engine.initialize.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_rejected_workspace_startup_creates_no_storage_artifacts(tmp_path: Path) -> None:
+    application = tmp_path / "application"
+    application.mkdir()
+    core_config = _write_core_config(application)
+    engine = _make_mock_engine()
+    engine.config = core_config
+    engine.certified_read_only = True
+    app = create_app(
+        server_config=ServerConfig(
+            production_mode=True,
+            delivery_cursor_secret="w" * 32,
+            mutable_workspace_root=core_config.storage.sqlite.path.parent,
+        ),
+        mnemo_config=core_config,
+        engine=engine,
+        provision_tokenizer_on_startup=False,
+    )
+
+    async with app.router.lifespan_context(app):
+        assert app.state.mutable_workspace_decision.mutable is False
+
+    governed = core_config.storage.sqlite.path.parent
+    assert not governed.exists()
+    assert not core_config.storage.sqlite.path.exists()
+    assert not Path(f"{core_config.storage.sqlite.path}-wal").exists()
+    assert not Path(f"{core_config.storage.sqlite.path}-shm").exists()
+    assert not (governed / "embedding-cache.db").exists()
+
+
+@pytest.mark.anyio
+async def test_valid_production_workspace_binds_mutations_to_workspace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    application = tmp_path / "application"
+    application.mkdir()
+    core_config = _write_core_config(application)
+    core_config.storage.sqlite.path.parent.mkdir()
+    core_config.storage.sqlite.path.write_bytes(b"synthetic-certified-http-database")
+    core_config.storage.filesystem.root.mkdir(parents=True)
+    certified_blob = core_config.storage.filesystem.root / "manifest.json"
+    certified_blob.write_bytes(b"synthetic-certified-http-blob")
+    database_hash = hashlib.sha256(core_config.storage.sqlite.path.read_bytes()).hexdigest()
+    blob_hash = hashlib.sha256(certified_blob.read_bytes()).hexdigest()
+    workspace = tmp_path / "operator-workspace"
+    engine = _make_mock_engine()
+    engine.storage.upsert_notebook = AsyncMock()
+    engine_factory = MagicMock(return_value=engine)
+    monkeypatch.setattr("mnemo_server.app.KnowledgeEngine", engine_factory)
+    api_key = "workspace-boundary-test-key"
+    config = ServerConfig(
+        production_mode=True,
+        auth_mode="api-key",
+        api_key=api_key,
+        delivery_cursor_secret="w" * 32,
+        mutable_workspace_root=workspace,
+    )
+    app = create_app(
+        server_config=config,
+        mnemo_config=core_config,
+        provision_tokenizer_on_startup=False,
+    )
+
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client,
+    ):
+        response = await client.post(
+            "/v1/notebooks",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={
+                "title": "workspace notebook",
+                "workspace_root": str(application / "certified"),
+                "database_path": str(core_config.storage.sqlite.path),
+                "storage_role": "CERTIFIED_CORPUS",
+            },
+        )
+
+    runtime_config = engine_factory.call_args.args[0]
+    assert runtime_config.storage.sqlite.path == workspace / "workspace.db"
+    assert runtime_config.storage.filesystem.root == workspace / "blobs"
+    assert engine_factory.call_args.kwargs["embedding_cache_path"] == (
+        workspace / "caches" / "embedding-cache.db"
+    )
+    assert response.status_code == 201
+    engine.storage.upsert_notebook.assert_awaited_once()
+    assert hashlib.sha256(core_config.storage.sqlite.path.read_bytes()).hexdigest() == database_hash
+    assert hashlib.sha256(certified_blob.read_bytes()).hexdigest() == blob_hash
+    assert not Path(f"{core_config.storage.sqlite.path}-wal").exists()
+    assert not Path(f"{core_config.storage.sqlite.path}-shm").exists()
+
+
+def test_every_workspace_mutation_route_is_gated() -> None:
+    from mnemo_server.routers import (
+        notebooks_router,
+        notes_router,
+        sessions_router,
+        sources_router,
+    )
+
+    expected = {
+        ("POST", "/v1/notebooks"),
+        ("PATCH", "/v1/notebooks/{notebook_id}"),
+        ("DELETE", "/v1/notebooks/{notebook_id}"),
+        ("POST", "/v1/notebooks/{notebook_id}/sources"),
+        ("DELETE", "/v1/notebooks/{notebook_id}/sources/{source_id}"),
+        ("POST", "/v1/notebooks/{notebook_id}/notes"),
+        ("PATCH", "/v1/notebooks/{notebook_id}/notes/{note_id}"),
+        ("DELETE", "/v1/notebooks/{notebook_id}/notes/{note_id}"),
+        ("POST", "/v1/notebooks/{notebook_id}/sessions"),
+        ("POST", "/v1/notebooks/{notebook_id}/sessions/{session_id}/turns"),
+        ("DELETE", "/v1/notebooks/{notebook_id}/sessions/{session_id}"),
+    }
+    actual: set[tuple[str, str]] = set()
+    for router in (notebooks_router, sources_router, notes_router, sessions_router):
+        for route in router.routes:
+            dependencies = getattr(route, "dependencies", ())
+            if any(item.dependency is require_mutable_workspace for item in dependencies):
+                actual.update((method, f"/v1{route.path}") for method in route.methods)
+    assert actual == expected
+
+
+@pytest.mark.anyio
 async def test_app_lifespan_installs_and_closes_governed_v2_runtime(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """The V2 application path publishes readiness, activation authority, and closes cleanly."""
     engine = _make_mock_engine()
     engine.config = MagicMock()
+    engine.certified_read_only = True
+    monkeypatch.setattr(
+        "mnemo_server.services.production_runtime_binding.resolve_certified_production_binding",
+        lambda **_kwargs: (engine.config, SimpleNamespace(binding_id="synthetic-test-binding")),
+    )
+    monkeypatch.setattr(
+        "mnemo_server.services.production_runtime_binding.record_certified_transport_startup",
+        lambda **_kwargs: tmp_path / "synthetic-observation.json",
+    )
     readiness_evidence = object()
     readiness = object()
     installed = SimpleNamespace(

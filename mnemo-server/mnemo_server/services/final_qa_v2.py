@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, cast
 from uuid import UUID
 
 from mnemo.engine import KnowledgeEngine
@@ -11,7 +12,10 @@ from mnemo.interfaces import (
     ContractValidationError,
     DependencyUnavailableError,
     FinalQAExecutionStoreV2,
+    IntegrityError,
+    NotFoundError,
     OperationTimeoutError,
+    StorageError,
 )
 from mnemo.interfaces.advanced_retrieval import PrincipalAwareAdvancedRetrievalInterfaceV2
 from mnemo.models import FrozenMetadata
@@ -21,6 +25,7 @@ from mnemo.models.multimodal import (
     FinalQARequestV2,
     MultimodalRetrievalDiagnosticsV2,
     MultimodalRetrievalResultV2,
+    final_qa_v2_execution_id,
 )
 from mnemo.retrieval import candidates_from_retrieval
 
@@ -38,6 +43,15 @@ from .authorization import (
 )
 
 
+@dataclass(slots=True)
+class _ExecutionProgress:
+    authorized: bool = False
+    store: FinalQAExecutionStoreV2 | None = None
+
+
+_TIMEOUT_RECONCILIATION_SECONDS = 5.0
+
+
 class FinalQAV2ApplicationService:
     """Compile, authorize, retrieve, and delegate to the canonical V2 orchestrator."""
 
@@ -51,6 +65,44 @@ class FinalQAV2ApplicationService:
         body: FinalQAV2RequestBody,
         principal: ServerPrincipalV1,
     ) -> FinalQAV2Response:
+        if self._config.production_mode and not principal.authenticated:
+            raise PermissionError("authenticated Final-QA V2 principal is required")
+        progress = _ExecutionProgress()
+        try:
+            async with asyncio.timeout(self._config.max_final_qa_elapsed_milliseconds / 1000):
+                return await self._execute_once(notebook_id, body, principal, progress)
+        except (TimeoutError, OperationTimeoutError) as error:
+            details = (
+                FrozenMetadata(
+                    {"execution_id": str(final_qa_v2_execution_id(body.assistant_turn_id))}
+                )
+                if progress.authorized
+                else FrozenMetadata()
+            )
+            if progress.authorized:
+                try:
+                    async with asyncio.timeout(_TIMEOUT_RECONCILIATION_SECONDS):
+                        await self._record_timeout(body, principal, progress.store)
+                except (
+                    TimeoutError,
+                    StorageError,
+                    DependencyUnavailableError,
+                ) as reconciliation_error:
+                    raise DependencyUnavailableError(
+                        "Final-QA V2 timeout state could not be confirmed",
+                        details=details,
+                    ) from reconciliation_error
+            raise OperationTimeoutError(
+                "Final-QA V2 operation exceeded deadline", details=details
+            ) from error
+
+    async def _execute_once(
+        self,
+        notebook_id: UUID,
+        body: FinalQAV2RequestBody,
+        principal: ServerPrincipalV1,
+        progress: _ExecutionProgress,
+    ) -> FinalQAV2Response:
         if body.notebook_id != notebook_id:
             raise ContractValidationError("request notebook does not match transport scope")
         if body.evidence_request_or_snapshot.scope.notebook_id != notebook_id:
@@ -59,21 +111,21 @@ class FinalQAV2ApplicationService:
         await authorization.authorize_notebook(
             principal, notebook_id, AuthorizationOperationV1.FINAL_QA
         )
+        progress.authorized = True
         store = (
             self._engine.final_qa_v2_execution_store
-            if type(self._engine) is KnowledgeEngine
+            if self._config.production_mode or type(self._engine) is KnowledgeEngine
             else self._engine.storage
         )
         if not isinstance(store, FinalQAExecutionStoreV2):
             raise DependencyUnavailableError("Final-QA V2 execution persistence is unavailable")
-        if (
-            type(self._engine) is KnowledgeEngine
-            and id(store) == id(self._engine.storage)
-            and self._config.production_mode
+        if self._config.production_mode and cast(object, store) is cast(
+            object, self._engine.storage
         ):
             raise DependencyUnavailableError(
                 "production Final-QA operational persistence must be separate from corpus storage"
             )
+        progress.store = store
         profile = getattr(self._engine.final_qa_v2, "capabilities", None)
         if not callable(profile):
             raise DependencyUnavailableError("Final-QA V2 provider capabilities are unavailable")
@@ -123,7 +175,16 @@ class FinalQAV2ApplicationService:
             await authorization.authorize_notebook(
                 principal, notebook_id, AuthorizationOperationV1.REPLAY
             )
-        final = await self._engine.final_qa_v2.execute(request)
+        try:
+            final = await self._engine.final_qa_v2.execute(request)
+        except IntegrityError as error:
+            if self._config.production_mode and error.message in {
+                "multimodal evidence authorization denied",
+                "multimodal evidence notebook scope mismatch",
+                "Final-QA V2 replay authorization scope changed",
+            }:
+                raise NotFoundError("authorized resource was not found") from error
+            raise
         snapshot = await store.get_final_qa_v2_snapshot(
             final.execution_id, FinalQAExecutionSnapshotPhase.PUBLISHED
         )
@@ -144,6 +205,52 @@ class FinalQAV2ApplicationService:
             omissions=tuple(item.reason.value for item in final.context_result.omissions),
             recommended_next_actions=(),
         )
+
+    @staticmethod
+    async def _record_timeout(
+        body: FinalQAV2RequestBody,
+        principal: ServerPrincipalV1,
+        store: FinalQAExecutionStoreV2 | None,
+    ) -> None:
+        if store is None:
+            return
+        execution = await store.get_final_qa_v2_execution(body.assistant_turn_id)
+        if execution is None or (
+            execution.actor_id != principal.actor_id or execution.notebook_id != body.notebook_id
+        ):
+            return
+        if execution.state in {
+            FinalQAExecutionState.PUBLISHED,
+            FinalQAExecutionState.REJECTED_CITATION_COMPLIANCE,
+            FinalQAExecutionState.TIMED_OUT,
+        }:
+            return
+        if execution.state is FinalQAExecutionState.ASSISTANT_PUBLISHED:
+            published = await store.get_final_qa_v2_snapshot(
+                execution.execution_id, FinalQAExecutionSnapshotPhase.PUBLISHED
+            )
+            if published is not None:
+                transitioned = await store.transition_final_qa_v2_execution(
+                    execution.execution_id,
+                    FinalQAExecutionState.ASSISTANT_PUBLISHED,
+                    FinalQAExecutionState.PUBLISHED,
+                )
+                if transitioned:
+                    return
+        transitioned = await store.transition_final_qa_v2_execution(
+            execution.execution_id,
+            execution.state,
+            FinalQAExecutionState.TIMED_OUT,
+            failure_classification="operation_timeout",
+        )
+        if not transitioned:
+            current = await store.get_final_qa_v2_execution(body.assistant_turn_id)
+            if current is None or current.state not in {
+                FinalQAExecutionState.PUBLISHED,
+                FinalQAExecutionState.REJECTED_CITATION_COMPLIANCE,
+                FinalQAExecutionState.TIMED_OUT,
+            }:
+                raise DependencyUnavailableError("Final-QA V2 timeout state could not be confirmed")
 
     async def _retrieval_result(
         self, question: str, request: EvidenceSearchRequest

@@ -109,3 +109,37 @@ def test_evaluation_lease_rejects_active_bge_before_model_load(
             )
         )
     assert loads == 0
+
+
+def test_staged_evaluation_lease_preserves_active_rehearsal_router(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_bge = _FakeBGE()
+    monkeypatch.setattr(target, "BGEMultilingualReranker", lambda *a, **k: fake_bge)
+    monkeypatch.setattr(target, "ServerOwnedFullMultilingualV2RegistrationV1", _FakeRegistration)
+    monkeypatch.setattr(
+        target.ModelProfileDocument,
+        "from_file",
+        lambda _: SimpleNamespace(
+            select=lambda __: SimpleNamespace(components={"multilingual_reranker": object()})
+        ),
+    )
+    monkeypatch.setattr(target, "profile_snapshot", lambda value: value)
+    activation = object()
+    router = SimpleNamespace(mode=V2RerankerMode.BGE_V2_M3, activation_record=activation)
+    installed = SimpleNamespace(reranker=router, assembler=_FakeAssembler())
+    lease = asyncio.run(
+        target.ProductionParityBGEEvaluationLeaseV1.open(
+            engine=cast(Any, object()),
+            installed=cast(Any, installed),
+            workspace_root=Path.cwd(),
+            model_cache=Path("unused"),
+            pre_certification_observation=True,
+        )
+    )
+    assert lease.expected_mode is V2RerankerMode.BGE_V2_M3
+    assert router.activation_record is activation
+    asyncio.run(lease.close())
+    assert fake_bge.closed is True
+    assert router.mode is V2RerankerMode.BGE_V2_M3
+    assert router.activation_record is activation

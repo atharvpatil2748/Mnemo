@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -11,7 +12,7 @@ import anyio
 import mcp.types as types
 import pytest
 from mcp.client.session import ClientSession
-from mnemo import EngineState, KnowledgeEngine, __version__
+from mnemo import EngineState, KnowledgeEngine, MnemoConfig, __version__
 from mnemo_server.config import ServerConfig
 from mnemo_server.mcp.server import (
     _install_v2_if_enabled,
@@ -19,6 +20,116 @@ from mnemo_server.mcp.server import (
     create_mcp_server,
     run_stdio_server,
 )
+
+
+def _write_core_config(root: Path) -> MnemoConfig:
+    config_path = root / "mnemo.toml"
+    config_path.write_text(
+        """
+[storage.filesystem]
+enabled = true
+root = "certified/blobs"
+[storage.sqlite]
+enabled = true
+path = "certified/corpus.db"
+[storage.qdrant]
+enabled = false
+[storage.surrealdb]
+enabled = false
+[plugins]
+directory = "plugins"
+[llm.planner]
+provider = "ollama"
+model = "planner"
+[llm.synthesizer]
+provider = "ollama"
+model = "synthesizer"
+[llm.extractor]
+provider = "ollama"
+model = "extractor"
+[llm.classifier]
+provider = "ollama"
+model = "classifier"
+[embedding]
+provider = "ollama"
+model = "embedder"
+dimensions = 8
+[reranker]
+provider = "v2-owned-pass-through"
+model = "none"
+""",
+        encoding="utf-8",
+    )
+    return MnemoConfig.from_file(config_path)
+
+
+@pytest.mark.anyio
+async def test_certified_stdio_rejects_fork_before_tool_exposure(tmp_path: Path) -> None:
+    """A synthetic historical profile cannot reach the MCP protocol stream."""
+    config = ServerConfig(
+        production_mode=True,
+        full_multilingual_v2_enabled=True,
+        full_multilingual_v2_reranker_mode="BGE_V2_M3",
+        full_multilingual_v2_model_cache=tmp_path / "models",
+        reranker_activation_state_path=tmp_path / "activation.json",
+        reranker_activation_operator_subject="operator",
+        final_qa_operational_store_path=tmp_path / "finalqa.db",
+        mcp_stdio_principal_subject="stdio",
+        auth_mode="api-key",
+        api_key="synthetic-key",
+        delivery_cursor_secret="x" * 32,
+    )
+    with (
+        patch("mnemo_server.mcp.server.stdio_server") as stream,
+        pytest.raises(RuntimeError, match="CERTIFIED_PRODUCTION_BINDING_REJECTED"),
+    ):
+        await run_stdio_server(config=config, mnemo_config=_write_core_config(tmp_path))
+    stream.assert_not_called()
+    assert not (tmp_path / "activation.json").exists()
+    assert not (tmp_path / "finalqa.db").exists()
+
+
+@pytest.mark.anyio
+async def test_certified_stdio_records_binding_only_after_transport_starts(
+    tmp_path: Path,
+) -> None:
+    """The actual stdio startup path records its server-owned binding after readiness."""
+    core_config = _write_core_config(tmp_path)
+    config = ServerConfig(
+        production_mode=True,
+        full_multilingual_v2_enabled=True,
+        full_multilingual_v2_reranker_mode="BGE_V2_M3",
+        full_multilingual_v2_model_cache=tmp_path / "models",
+        final_qa_operational_store_path=tmp_path / "operational.db",
+        mcp_stdio_principal_subject="stdio",
+        auth_mode="api-key",
+        api_key="synthetic-key",
+        delivery_cursor_secret="x" * 32,
+    )
+    engine = MagicMock(spec=KnowledgeEngine)
+    engine.state = EngineState.READY
+    engine.certified_read_only = True
+    engine.shutdown = AsyncMock()
+    binding = SimpleNamespace(binding_id="synthetic-binding")
+    installed = SimpleNamespace(close=AsyncMock())
+    with (
+        patch(
+            "mnemo_server.services.production_runtime_binding.resolve_certified_production_binding",
+            return_value=(core_config, binding),
+        ),
+        patch(
+            "mnemo_server.services.production_runtime_binding.record_certified_transport_startup"
+        ) as record,
+        patch("mnemo_server.mcp.server._install_v2_if_enabled", new_callable=AsyncMock) as install,
+        patch("mnemo_server.mcp.server.stdio_server") as stdio,
+        patch("mnemo_server.mcp.server.Server.run", new_callable=AsyncMock),
+    ):
+        install.return_value = installed
+        stdio.return_value.__aenter__.return_value = (MagicMock(), MagicMock())
+        await run_stdio_server(config=config, mnemo_config=core_config, engine=engine)
+    assert record.call_args.kwargs["binding"] is binding
+    assert record.call_args.kwargs["transport"] == "mcp_stdio"
+    installed.close.assert_awaited_once()
 
 
 def test_create_mcp_server_metadata() -> None:
@@ -160,7 +271,7 @@ async def test_mcp_server_call_unknown_tool_returns_error_result() -> None:
 
 
 @pytest.mark.anyio
-async def test_run_stdio_server_lifecycle() -> None:
+async def test_run_stdio_server_lifecycle(tmp_path: Path) -> None:
     """run_stdio_server initializes and shuts down engine cleanly."""
     mock_engine = MagicMock(spec=KnowledgeEngine)
     mock_engine.state = EngineState.UNINITIALIZED
@@ -185,7 +296,9 @@ async def test_run_stdio_server_lifecycle() -> None:
 
             mock_engine.initialize.side_effect = _init
 
-            await run_stdio_server(config=config, engine=mock_engine)
+            await run_stdio_server(
+                config=config, engine=mock_engine, mnemo_config=_write_core_config(tmp_path)
+            )
 
             assert mock_engine.initialize.called
             assert mock_run.called
@@ -194,7 +307,61 @@ async def test_run_stdio_server_lifecycle() -> None:
 
 
 @pytest.mark.anyio
-async def test_run_stdio_server_owns_engine_cancellation() -> None:
+async def test_production_stdio_binds_workspace_and_preserves_certified_artifacts(
+    tmp_path: Path,
+) -> None:
+    application = tmp_path / "application"
+    application.mkdir()
+    core_config = _write_core_config(application)
+    core_config.storage.sqlite.path.parent.mkdir()
+    core_config.storage.sqlite.path.write_bytes(b"synthetic-certified-mcp-database")
+    core_config.storage.filesystem.root.mkdir(parents=True)
+    certified_blob = core_config.storage.filesystem.root / "manifest.json"
+    certified_blob.write_bytes(b"synthetic-certified-mcp-blob")
+    before_database = hashlib.sha256(core_config.storage.sqlite.path.read_bytes()).hexdigest()
+    before_blob = hashlib.sha256(certified_blob.read_bytes()).hexdigest()
+    workspace = tmp_path / "operator-workspace"
+    config = ServerConfig(
+        production_mode=True,
+        delivery_cursor_secret="w" * 32,
+        mutable_workspace_root=workspace,
+    )
+    mock_engine = MagicMock(spec=KnowledgeEngine)
+    mock_engine.state = EngineState.UNINITIALIZED
+    mock_engine.initialize = AsyncMock()
+    mock_engine.shutdown = AsyncMock()
+
+    async def initialize() -> None:
+        mock_engine.state = EngineState.READY
+
+    mock_engine.initialize.side_effect = initialize
+    engine_factory = MagicMock(return_value=mock_engine)
+    with (
+        patch("mnemo_server.mcp.server.KnowledgeEngine", engine_factory),
+        patch("mnemo_server.mcp.server.provision_tokenizer", return_value=Path("tokenizer")),
+        patch("mnemo_server.mcp.server.stdio_server") as stdio,
+        patch("mnemo_server.mcp.server.Server.run", new_callable=AsyncMock),
+    ):
+        stdio.return_value.__aenter__.return_value = (MagicMock(), MagicMock())
+        stdio.return_value.__aexit__.return_value = False
+        await run_stdio_server(config=config, mnemo_config=core_config)
+
+    runtime_config = engine_factory.call_args.kwargs["config"]
+    assert runtime_config.storage.sqlite.path == workspace / "workspace.db"
+    assert runtime_config.storage.filesystem.root == workspace / "blobs"
+    assert engine_factory.call_args.kwargs["embedding_cache_path"] == (
+        workspace / "caches" / "embedding-cache.db"
+    )
+    assert (
+        hashlib.sha256(core_config.storage.sqlite.path.read_bytes()).hexdigest() == before_database
+    )
+    assert hashlib.sha256(certified_blob.read_bytes()).hexdigest() == before_blob
+    assert not Path(f"{core_config.storage.sqlite.path}-wal").exists()
+    assert not Path(f"{core_config.storage.sqlite.path}-shm").exists()
+
+
+@pytest.mark.anyio
+async def test_run_stdio_server_owns_engine_cancellation(tmp_path: Path) -> None:
     """run_stdio_server handles Cancellation and shuts down owned engine."""
     config = ServerConfig(log_level="debug")
 
@@ -209,7 +376,6 @@ async def test_run_stdio_server_owns_engine_cancellation() -> None:
     mock_engine.initialize.side_effect = _init
 
     with (
-        patch("mnemo_server.mcp.server.MnemoConfig.from_env", return_value=MagicMock()),
         patch("mnemo_server.mcp.server.KnowledgeEngine", return_value=mock_engine),
         patch(
             "mnemo_server.mcp.server.provision_tokenizer", side_effect=RuntimeError("tokenizer err")
@@ -220,7 +386,7 @@ async def test_run_stdio_server_owns_engine_cancellation() -> None:
         mock_stdio.return_value.__aenter__.return_value = (MagicMock(), MagicMock())
         mock_stdio.return_value.__aexit__.return_value = False
 
-        await run_stdio_server(config=config)
+        await run_stdio_server(config=config, mnemo_config=_write_core_config(tmp_path))
 
         assert mock_engine.initialize.called
         assert mock_engine.shutdown.called

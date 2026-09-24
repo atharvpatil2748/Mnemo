@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Path, Query, Response, status
 from mnemo.engine import KnowledgeEngine
 
-from ..dependencies import get_engine
+from ..dependencies import get_engine, require_mutable_workspace
 from ..schemas.common import PageResponse
 from ..schemas.notes import CreateNoteRequest, NoteResponse, UpdateNoteRequest
 from ..services.notes import NoteService
@@ -42,6 +42,7 @@ async def list_notes(
     response_model=NoteResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a note in a notebook",
+    dependencies=[Depends(require_mutable_workspace)],
 )
 async def create_note(
     notebook_id: NotebookIdPath,
@@ -74,6 +75,7 @@ async def get_note(
     response_model=NoteResponse,
     status_code=status.HTTP_200_OK,
     summary="Update a note",
+    dependencies=[Depends(require_mutable_workspace)],
 )
 async def update_note(
     notebook_id: NotebookIdPath,
@@ -91,6 +93,7 @@ async def update_note(
     status_code=status.HTTP_204_NO_CONTENT,
     response_class=Response,
     summary="Delete a note",
+    dependencies=[Depends(require_mutable_workspace)],
 )
 async def delete_note(
     notebook_id: NotebookIdPath,

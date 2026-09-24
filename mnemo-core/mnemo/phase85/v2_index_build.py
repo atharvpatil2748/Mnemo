@@ -325,7 +325,9 @@ class FullMultilingualV2IndexBuildOperator:
 
     @staticmethod
     def _clone_source(source: Path, target: Path) -> None:
-        source_connection = sqlite3.connect(f"file:{source.as_posix()}?mode=ro", uri=True)
+        source_connection = sqlite3.connect(
+            f"file:{source.as_posix()}?mode=ro&immutable=1", uri=True
+        )
         target_connection = sqlite3.connect(target)
         try:
             source_connection.backup(target_connection)
@@ -338,7 +340,7 @@ class FullMultilingualV2IndexBuildOperator:
 
     def _validate_existing_target(self, target: Path) -> None:
         """Admit only a checkpoint owned by the same typed authorization."""
-        connection = sqlite3.connect(f"file:{target.as_posix()}?mode=ro", uri=True)
+        connection = sqlite3.connect(f"file:{target.as_posix()}?mode=ro&immutable=1", uri=True)
         try:
             if (
                 connection.execute(

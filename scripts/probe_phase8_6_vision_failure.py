@@ -34,7 +34,7 @@ def _blob_path(root: Path, content_hash: str, mime_type: str) -> Path:
 
 def _request(runtime: Path, occurrence: UUID) -> tuple[VisionRequest, Path]:
     database = (runtime / "mnemo.db").resolve(strict=True)
-    uri = database.as_uri() + "?mode=ro"
+    uri = database.as_uri() + "?mode=ro&immutable=1"
     with sqlite3.connect(uri, uri=True) as connection:
         row = connection.execute(
             "SELECT j.manifest,a.content_hash,a.mime_type "

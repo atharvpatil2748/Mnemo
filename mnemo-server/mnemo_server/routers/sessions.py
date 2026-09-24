@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Path, Query, Response, status
 from mnemo.engine import KnowledgeEngine
 
-from ..dependencies import get_engine
+from ..dependencies import get_engine, require_mutable_workspace
 from ..schemas.common import PageResponse
 from ..schemas.sessions import (
     CreateSessionRequest,
@@ -48,6 +48,7 @@ async def list_sessions(
     response_model=SessionSummaryResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new conversation session",
+    dependencies=[Depends(require_mutable_workspace)],
 )
 async def create_session(
     notebook_id: NotebookIdPath,
@@ -80,6 +81,7 @@ async def get_session(
     response_model=TurnResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Append a turn to a session",
+    dependencies=[Depends(require_mutable_workspace)],
 )
 async def append_turn(
     notebook_id: NotebookIdPath,
@@ -97,6 +99,7 @@ async def append_turn(
     status_code=status.HTTP_204_NO_CONTENT,
     response_class=Response,
     summary="Delete a conversation session",
+    dependencies=[Depends(require_mutable_workspace)],
 )
 async def delete_session(
     notebook_id: NotebookIdPath,

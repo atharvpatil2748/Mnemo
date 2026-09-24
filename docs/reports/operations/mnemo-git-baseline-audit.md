@@ -1,5 +1,9 @@
 # Mnemo pre-Phase-8.8 Git baseline audit
 
+> **Historical notice (2026-09-22):** Manual Gita database references below
+> record this checkpoint. ADR-0077 Phase 8.8.14a certification subsequently
+> deprecated and removed that fixture from the active governed/test surface.
+
 Status: **PRE_PHASE_8_8_GIT_BASELINE_AUDIT_COMPLETE**  
 Scope: Git forensics and baseline planning only  
 Audit timestamp: 2026-09-08T18:54:28.3825080Z

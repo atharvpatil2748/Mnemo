@@ -1,7 +1,12 @@
+import argparse
 import asyncio
 from pathlib import Path
 from uuid import UUID
 
+try:
+    from scripts.governed_database_safety import reject_current_governed_database_write
+except ModuleNotFoundError:
+    from governed_database_safety import reject_current_governed_database_write
 from mnemo.ocr import OCRProcessingOperation
 from mnemo.processing import ProcessingAdmissionProfile, ProcessingWorker
 from mnemo.storage.filesystem import FilesystemBlobStore
@@ -60,16 +65,20 @@ async def _worker_loop(store, blobs, tess, vision, clip, notebook_id, worker_id)
 
 
 async def main():
-    db_path = Path("scratch/phase8_5_wp16/eval-20260828-01/mnemo.db")
-    blobs_path = Path("scratch/phase8_5_wp16/eval-20260828-01/files")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--blobs", type=Path, required=True)
+    args = parser.parse_args()
+    db_path = reject_current_governed_database_write(args.database)
+    blobs_path = args.blobs.resolve(strict=True)
     tessdata = Path("D:/Mnemo/phase8.5.11-models/tessdata")
     clip_path = Path(
         "D:/Mnemo/phase8.5.11-models/huggingface/hub/models--openai--clip-vit-large-patch14/snapshots/32bd64288804d66eefd0ccbe215aa642df71cc41"
     )
     notebook_id = UUID("df9c20cf-85fe-529c-902e-2e9e68193fbe")
 
-    store = SQLiteStore(db_path.resolve())
-    blobs = FilesystemBlobStore(blobs_path.resolve())
+    store = SQLiteStore(db_path)
+    blobs = FilesystemBlobStore(blobs_path)
     await store.open()
     await blobs.open()
 

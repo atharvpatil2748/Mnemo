@@ -7,6 +7,8 @@ evidence unless explicitly identified as current authority.
 
 - [Final Mnemo V2 certification](certification/current/mnemo-v2-final-certification.md)
 - [Single production path audit](architecture/mnemo-v2-single-production-path-audit.md)
+- [Module 8.8.1 certified runtime convergence](operations/mnemo-module-8-8-1-certification.md)
+- [Module 8.8.1 independent forensic audit](operations/mnemo-module-8-8-1-forensic-audit.md)
 
 Earlier certification stages are retained under
 [certification/historical](certification/historical/).

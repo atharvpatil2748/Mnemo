@@ -706,3 +706,48 @@ class FilesystemBlobStore:
             supports_transactions=False,
             supports_health_checks=True,
         )
+
+
+class ImmutableFilesystemBlobStore(FilesystemBlobStore):
+    """Content-addressed corpus reader that cannot initialize or mutate storage."""
+
+    async def open(self) -> None:
+        """Open an existing readable root without creating any directory."""
+        if not self._root.is_dir():
+            raise StorageError("immutable blob root does not exist")
+        if not os.access(self._root, os.R_OK):
+            raise StorageError("immutable blob root is not readable")
+        self._open = True
+
+    async def put_asset(
+        self,
+        data: bytes,
+        mime_type: str,
+        metadata: FrozenMetadata,
+    ) -> Asset:
+        raise StorageError("CERTIFIED_CORPUS_IS_IMMUTABLE")
+
+    async def delete_asset(self, asset_id: UUID) -> bool:
+        raise StorageError("CERTIFIED_CORPUS_IS_IMMUTABLE")
+
+    async def put_parsed_document(
+        self,
+        version_id: UUID,
+        document: ParsedDocument,
+    ) -> None:
+        raise StorageError("CERTIFIED_CORPUS_IS_IMMUTABLE")
+
+    async def delete_parsed_document(self, version_id: UUID) -> bool:
+        raise StorageError("CERTIFIED_CORPUS_IS_IMMUTABLE")
+
+    async def health_check(self) -> tuple[HealthStatus, ...]:
+        checked_at = datetime.now(UTC)
+        healthy = self._open and self._root.is_dir() and os.access(self._root, os.R_OK)
+        return (
+            HealthStatus(
+                healthy=healthy,
+                component="storage.filesystem",
+                checked_at=checked_at,
+                detail=None if healthy else "immutable filesystem root is unavailable",
+            ),
+        )

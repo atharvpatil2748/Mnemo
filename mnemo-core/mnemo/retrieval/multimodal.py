@@ -14,6 +14,7 @@ from mnemo.interfaces.errors import (
     ConflictError,
     ContractValidationError,
     IntegrityError,
+    NotFoundError,
 )
 from mnemo.interfaces.multimodal import (
     EvidenceAuthorizerV2,
@@ -548,10 +549,10 @@ class FinalQAV2Orchestrator:
     async def _resume(
         self, execution: FinalQAExecutionV2, fingerprint: str, request: FinalQARequestV2
     ) -> FinalQAResultV2:
+        if execution.actor_id != request.actor_id or execution.notebook_id != request.notebook_id:
+            raise NotFoundError("authorized resource was not found")
         if execution.request_fingerprint != fingerprint:
             raise ConflictError("assistant turn identity conflicts with Final-QA V2 request")
-        if execution.actor_id != request.actor_id or execution.notebook_id != request.notebook_id:
-            raise IntegrityError("Final-QA V2 replay authorization scope changed")
         if execution.state is FinalQAExecutionState.PUBLISHED:
             snapshot = await self._store.get_final_qa_v2_snapshot(
                 execution.execution_id, FinalQAExecutionSnapshotPhase.PUBLISHED
@@ -561,6 +562,8 @@ class FinalQAV2Orchestrator:
             return decode_published_v2_snapshot(snapshot.payload)
         if execution.state is FinalQAExecutionState.REJECTED_CITATION_COMPLIANCE:
             raise IntegrityError("citation_compliance: final publication is non-compliant")
+        if execution.state is FinalQAExecutionState.TIMED_OUT:
+            raise ConflictError("final_qa_v2.execution_timed_out")
         validated = await self._store.get_final_qa_v2_snapshot(
             execution.execution_id, FinalQAExecutionSnapshotPhase.VALIDATED
         )

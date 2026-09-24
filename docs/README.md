@@ -14,10 +14,14 @@ is separated from point-in-time historical evidence.
 
 Current state: Phase 8.5 is completed/certified; Phase 8.6 is a validated,
 isolated evaluation notebook; Phase 8.7 is the retrospective 14-tool MCP
-capability milestone; and Phase 8.8 is designed but not implemented. Phase 9 is
+capability milestone; and Phase 8.8 is in progress but not verified. Phase 9 is
 the next implementation phase only after `Phase 8.8 VERIFIED → Phase 9 GO`.
 The planned `search_images` tool becomes the fifteenth MCP tool only after its
-Phase 8.8 implementation and verification.
+Phase 8.8 implementation and verification. ADR-0077's 8.8.14a mutable-workspace
+boundary and mandatory read-only fallback are implemented, certified, and
+accepted. 8.8.14b has selected and certified authenticated HTTP FinalQA V2 as
+production chat; 8.8.14c has reconciled current documentation. Module 8.8.1
+server-owned runtime convergence is certified; later Phase 8.8 gates remain pending.
 
 ## Architecture decisions
 
@@ -25,6 +29,8 @@ Phase 8.8 implementation and verification.
 - [Active ADRs](adr/active/)
 - [Superseded ADRs](adr/superseded/)
 - [ADR-0076 certification standard](adr/active/ADR-0076-project-owner-engineering-certification-standard.md)
+- [ADR-0077 governed mutable workspace boundary](adr/active/ADR-0077-governed-mutable-workspace-boundary.md)
+- [ADR-0078 generation-aware production credentials](adr/active/ADR-0078-generation-aware-production-credential-lifecycle.md)
 
 ## Governance
 
@@ -38,6 +44,8 @@ Phase 8.8 implementation and verification.
 
 - [Report index](reports/README.md)
 - [Current final certification](reports/certification/current/mnemo-v2-final-certification.md)
+- [Module 8.8.1 certification](reports/operations/mnemo-module-8-8-1-certification.md)
+- [Module 8.8.1 forensic audit](reports/operations/mnemo-module-8-8-1-forensic-audit.md)
 - [Evaluation reports](reports/evaluation/)
 - [Audit reports](reports/audits/)
 - [Performance reports](reports/performance/)

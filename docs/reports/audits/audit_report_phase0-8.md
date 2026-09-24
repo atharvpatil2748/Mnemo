@@ -1,5 +1,10 @@
 # MNEMO — Phase 0–8 Full Repository / Architecture / Governance / Golden Corpus Audit
 
+> **Historical notice (2026-09-22):** Manual Gita database findings below are
+> preserved as point-in-time audit evidence. ADR-0077 Phase 8.8.14a
+> certification subsequently deprecated and removed that fixture from the
+> active governed/test surface.
+
 > **Date:** 2026-08-17 · **Branch:** `main` @ `f1b621e` · **Auditor mode:** INDEPENDENT, READ-ONLY (no production code, tests, ADRs, docs, or databases were modified by this audit)
 > **Test baseline verified locally:** `1370 passed, 1 skipped, 90.46% coverage` (67s) — matches the claimed CI baseline.
 > **Companion note:** `docs/audit_report.md` (untracked, earlier today) is a *repair* audit performed against a pre-`f46bed0` state; several of its claims are now stale and are assessed in §14.4.

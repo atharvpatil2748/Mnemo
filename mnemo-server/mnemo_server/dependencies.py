@@ -45,6 +45,23 @@ def get_server_config(request: Request) -> ServerConfig:
     return server_config
 
 
+def require_mutable_workspace(request: Request) -> None:
+    """Fail closed for production mutations without an accepted workspace."""
+    server_config = get_server_config(request)
+    if not server_config.production_mode:
+        return
+    from mnemo_server.services.mutable_workspace import MutableWorkspaceDecision
+
+    decision: MutableWorkspaceDecision | None = getattr(
+        request.app.state, "mutable_workspace_decision", None
+    )
+    if decision is None or not decision.mutable:
+        raise DependencyUnavailableError(
+            "Mutable workspace is unavailable; production is read-only",
+            retryable=False,
+        )
+
+
 def get_system_service(request: Request) -> SystemService:
     """Obtain SystemService with engine and token counter from application state."""
     engine: KnowledgeEngine | None = getattr(request.app.state, "engine", None)

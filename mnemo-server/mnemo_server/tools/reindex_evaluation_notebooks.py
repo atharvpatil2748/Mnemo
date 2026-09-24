@@ -202,7 +202,7 @@ def _inventory(source: Path) -> list[dict[str, Any]]:
 
 
 def _database_state(database: Path) -> dict[str, Any]:
-    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
     try:
 
         def count(table: str) -> int:
@@ -593,7 +593,7 @@ def _embed(*, database: Path, root: Path, spec: NotebookSpec, log: RunLog) -> di
 
 
 def _retrieval_validation(database: Path, semantic_probe: dict[str, Any]) -> dict[str, Any]:
-    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
     try:
         seed = connection.execute(
             "SELECT text FROM chunks WHERE length(trim(text))>40 ORDER BY id LIMIT 1"
@@ -727,7 +727,7 @@ def _free_port() -> int:
 
 
 def _transport_request(database: Path, notebook_id: str, requested_k: int) -> dict[str, Any]:
-    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
     try:
         row = connection.execute(
             "SELECT text FROM chunks WHERE length(trim(text))>40 ORDER BY id LIMIT 1"
@@ -1194,7 +1194,7 @@ def _load_managed_manifests(managed_root: Path) -> dict[str, Any]:
 
 
 def _retained_embedding_audit(database: Path) -> dict[str, Any]:
-    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
     try:
         rows = connection.execute(
             "SELECT e.chunk_id,e.document_id,e.version_id,e.model_identity,"

@@ -56,29 +56,20 @@ def _resolve_path(value: Path | str, info: ValidationInfo) -> Path:
 
 
 def _prepare_directory(value: Path | str, info: ValidationInfo) -> Path:
-    """Normalize, create, and verify a configured writable directory."""
+    """Normalize a directory path without performing filesystem writes."""
     path = _resolve_path(value, info)
     if path.exists() and not path.is_dir():
         raise ValueError(f"configured directory is not a directory: {path}")
-    try:
-        path.mkdir(parents=True, exist_ok=True)
-    except OSError as error:
-        raise ValueError(f"could not create directory {path}: {error}") from error
-    if not path.is_dir():
-        raise ValueError(f"configured directory is not a directory: {path}")
-    if not os.access(path, os.W_OK):
-        raise ValueError(f"configured directory is not writable: {path}")
     return path
 
 
 def _prepare_file_path(value: Path | str, info: ValidationInfo) -> Path:
-    """Normalize a file path and prepare its writable parent directory."""
+    """Normalize a file path without creating its parent directory."""
     path = _resolve_path(value, info)
     if path.exists() and path.is_dir():
         raise ValueError(f"configured file path is a directory: {path}")
-    _prepare_directory(path.parent, info)
-    if path.exists() and not os.access(path, os.W_OK):
-        raise ValueError(f"configured file is not writable: {path}")
+    if path.parent.exists() and not path.parent.is_dir():
+        raise ValueError(f"configured file parent is not a directory: {path.parent}")
     return path
 
 

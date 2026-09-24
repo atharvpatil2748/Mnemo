@@ -41,6 +41,24 @@ def _digest(value: object) -> str:
     ).hexdigest()
 
 
+def _database_file_state(target: Path) -> tuple[str, int, int]:
+    stat = target.stat()
+    return hashlib.sha256(target.read_bytes()).hexdigest(), stat.st_size, stat.st_mtime_ns
+
+
+def _sqlite_sidecars(target: Path) -> tuple[Path, ...]:
+    return tuple(Path(f"{target}{suffix}") for suffix in ("-wal", "-shm", "-journal"))
+
+
+def _connect_governed_immutable(target: Path):  # type: ignore[no-untyped-def]
+    import sqlite3
+
+    return sqlite3.connect(
+        f"file:{target.resolve(strict=True).as_posix()}?mode=ro&immutable=1",
+        uri=True,
+    )
+
+
 def test_configuration_artifact_schema_and_self_digests() -> None:
     schema = _load("V2_CONFIGURATION_ARTIFACT.schema.json")
     Draft202012Validator.check_schema(schema)
@@ -181,10 +199,11 @@ def test_governed_build_target_is_bound_and_unequal_to_historical_databases() ->
         "typed_build_authorization_v1_required"
     )
     if target.exists() and target.stat().st_size > 0:
-        import sqlite3
-
+        before = _database_file_state(target)
+        sidecars = _sqlite_sidecars(target)
+        assert all(not path.exists() for path in sidecars)
         authorization = _load("V2_INDEX_BUILD_AUTHORIZATION.json")
-        connection = sqlite3.connect(f"file:{target.as_posix()}?mode=ro", uri=True)
+        connection = _connect_governed_immutable(target)
         try:
             row = connection.execute(
                 """SELECT authorization_id,target_database_path,profile_fingerprint,
@@ -204,9 +223,10 @@ def test_governed_build_target_is_bound_and_unequal_to_historical_databases() ->
             ).fetchone() == (1,)
         finally:
             connection.close()
+        assert _database_file_state(target) == before
+        assert all(not path.exists() for path in sidecars)
     else:
-        assert not Path(str(target) + "-wal").exists()
-        assert not Path(str(target) + "-shm").exists()
+        assert all(not path.exists() for path in _sqlite_sidecars(target))
     assert all(item["equal"] is False for item in value["protected_path_inequality"])
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from unittest.mock import patch
@@ -17,6 +18,7 @@ def test_server_config_defaults() -> None:
     assert config.port == 8000
     assert config.cors_origins == ("http://localhost:3000", "http://127.0.0.1:3000")
     assert config.log_level == "info"
+    assert config.mutable_workspace_root is None
 
 
 def test_server_config_custom_values() -> None:
@@ -53,6 +55,7 @@ def test_server_config_from_env_custom() -> None:
         "MNEMO_SERVER_PORT": "8080",
         "MNEMO_SERVER_CORS_ORIGINS": "https://example.com, https://test.com",
         "MNEMO_SERVER_LOG_LEVEL": "WARNING",
+        "MNEMO_SERVER_MUTABLE_WORKSPACE_ROOT": "C:/mnemo-workspace",
     }
     with patch.dict(os.environ, env, clear=True):
         config = ServerConfig.from_env()
@@ -60,6 +63,7 @@ def test_server_config_from_env_custom() -> None:
         assert config.port == 8080
         assert config.cors_origins == ("https://example.com", "https://test.com")
         assert config.log_level == "warning"
+        assert config.mutable_workspace_root == Path("C:/mnemo-workspace")
 
 
 def test_server_config_from_env_json_cors() -> None:
@@ -108,7 +112,21 @@ def test_durable_reranker_activation_configuration_is_atomic() -> None:
     assert config.reranker_activation_state_path == Path("reranker.json")
 
 
-def test_durable_reranker_activation_environment_binding() -> None:
+def test_durable_reranker_activation_environment_binding(tmp_path: Path) -> None:
+    # Exercise the historical single-activation configuration in isolation; the
+    # live manifest now selects the staged credential registry instead.
+    manifest_path = tmp_path / "config/production/full_multilingual_v2.production.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "reranker_activation": {"active_mode": "BGE_V2_M3"},
+                "configuration_authority": {"durable_activation_state": "reranker.json"},
+                "final_qa_operational_store": {"path": "operational.db"},
+            }
+        ),
+        encoding="utf-8",
+    )
     env = {
         "MNEMO_SERVER_PRODUCTION_MODE": "true",
         "MNEMO_SERVER_AUTH_MODE": "api-key",
@@ -122,6 +140,6 @@ def test_durable_reranker_activation_environment_binding() -> None:
         "MNEMO_SERVER_RERANKER_ACTIVATION_OPERATOR_SUBJECT": "production-operator",
     }
     with patch.dict(os.environ, env, clear=True):
-        config = ServerConfig.from_env()
+        config = ServerConfig.from_env(certified_root=tmp_path)
     assert config.reranker_activation_state_path == Path("reranker.json")
     assert config.reranker_activation_operator_subject == "production-operator"

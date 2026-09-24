@@ -15,6 +15,10 @@ Current starting points:
 - [Single production path audit](../reports/architecture/mnemo-v2-single-production-path-audit.md)
 
 The current certified topology is content-addressed filesystem storage plus an
-immutable SQLite corpus and a separate mutable operational SQLite store.
+immutable SQLite corpus and separate purpose-specific governed operational
+state. ADR-0077 accepts an explicit absolute, separately governed mutable
+filesystem + SQLite user workspace with mandatory server-enforced read-only
+fallback; its implementation and certification are accepted. Authenticated HTTP
+FinalQA V2 is the accepted production chat path; legacy V1 WebSocket is not.
 Qdrant is an optional derived vector-scale path; SurrealDB is a partial future
-graph path. Phase 8.8 is designed but unimplemented and gates Phase 9.
+graph path. Phase 8.8 is in progress but not verified and still gates Phase 9.

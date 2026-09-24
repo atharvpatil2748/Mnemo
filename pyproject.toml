@@ -16,6 +16,14 @@ dev = [
 [tool.uv]
 package = false
 
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu130", marker = "sys_platform == 'win32'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
 [tool.uv.workspace]
 members = ["mnemo-core", "mnemo-server", "plugins/email-ingestion"]
 

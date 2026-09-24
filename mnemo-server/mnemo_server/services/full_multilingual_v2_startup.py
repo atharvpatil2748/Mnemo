@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
+from mnemo.config import MnemoConfig
 from mnemo.engine import KnowledgeEngine
 from mnemo.interfaces.advanced_retrieval import MultilingualAdvancedStoreV1
 from mnemo.models.multilingual import LanguageCode
@@ -104,6 +105,7 @@ class InstalledFullMultilingualV2RuntimeV1:
 async def install_production_full_multilingual_v2(
     *,
     engine: KnowledgeEngine,
+    production_config: MnemoConfig,
     workspace_root: Path,
     model_cache: Path,
     readiness: V2ReadinessSnapshot,
@@ -113,7 +115,7 @@ async def install_production_full_multilingual_v2(
     manifest = (root / IDENTITY_MANIFEST).resolve()
     verifier = GovernedV2DatabaseIdentityVerifier(workspace_root=root, identity_manifest=manifest)
     artifact = verifier.artifact
-    if engine.config.storage.sqlite.path.resolve() != (root / artifact.target_path).resolve():
+    if production_config.storage.sqlite.path.resolve() != (root / artifact.target_path).resolve():
         raise RuntimeError("PRODUCTION_STORE_CONFIGURATION_MISMATCH")
     profile_document = ModelProfileDocument.from_file(root / PROFILE_PATH)
     snapshot = profile_snapshot(profile_document.select(PROFILE_NAME))

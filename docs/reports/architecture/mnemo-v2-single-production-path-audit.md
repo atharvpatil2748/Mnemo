@@ -109,7 +109,7 @@ Evaluation profiles and the 67-document database are non-production.
 | Phase 8.5/8.6 identity-bound harnesses | evaluation-only | No | retained |
 | PASS_THROUGH V2 router mode | governed rollback state | only via authenticated durable rollback | retained |
 | 67-document canonical database | evaluation-only | rejected by same-store readiness | retained, never promoted |
-| `scripts/manual_gita_qa.py` ms-marco constant | historical manual script | No | retained |
+| `scripts/manual_gita_qa.py` ms-marco constant | historical manual script | No | superseded by ADR-0077 certification; deprecated script and fixture removed from the active surface |
 
 Clients cannot choose the outer provider, reranker model, revision, pair policy,
 or internal K. The model-free outer slot exists only because the legacy core

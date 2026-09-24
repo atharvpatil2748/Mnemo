@@ -19,6 +19,11 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 
 import httpx
 import torch
+
+try:
+    from scripts.governed_database_safety import reject_current_governed_database_write
+except ModuleNotFoundError:
+    from governed_database_safety import reject_current_governed_database_write
 from mnemo.models import (
     FrozenMetadata,
     OCRCapability,
@@ -562,7 +567,7 @@ class CLIPVisualProvider:
 
 
 def _selected_assets(database: Path, all_assets: bool = False) -> list[dict[str, str]]:
-    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
     connection.row_factory = sqlite3.Row
     try:
         rows = connection.execute(
@@ -632,11 +637,12 @@ def _estimate(raw_bytes: int) -> ProcessingEstimate:
 
 
 async def _run(args: argparse.Namespace) -> None:
-    store = SQLiteStore(args.database.resolve(strict=True))
+    database = reject_current_governed_database_write(args.database)
+    store = SQLiteStore(database)
     blobs = FilesystemBlobStore(args.blobs.resolve(strict=True))
     await store.open()
     await blobs.open()
-    selected = _selected_assets(args.database.resolve(strict=True), all_assets=args.all_assets)
+    selected = _selected_assets(database, all_assets=args.all_assets)
     if not selected:
         raise RuntimeError("no evaluation assets were selected")
     notebook_id = UUID(selected[0]["notebook_id"])
@@ -801,7 +807,7 @@ async def _run(args: argparse.Namespace) -> None:
     while await worker.run_once():
         processed += 1
         failure_connection = sqlite3.connect(
-            f"file:{args.database.resolve().as_posix()}?mode=ro", uri=True
+            f"file:{args.database.resolve().as_posix()}?mode=ro&immutable=1", uri=True
         )
         try:
             failed = failure_connection.execute(
@@ -817,7 +823,7 @@ async def _run(args: argparse.Namespace) -> None:
             )
         if processed % 10 == 0 or processed == len(selected) * 3:
             progress_connection = sqlite3.connect(
-                f"file:{args.database.resolve().as_posix()}?mode=ro", uri=True
+                f"file:{args.database.resolve().as_posix()}?mode=ro&immutable=1", uri=True
             )
             try:
                 progress_states = dict(
@@ -833,7 +839,9 @@ async def _run(args: argparse.Namespace) -> None:
                 f"{json.dumps(progress_states, sort_keys=True)}",
                 flush=True,
             )
-    connection = sqlite3.connect(f"file:{args.database.resolve().as_posix()}?mode=ro", uri=True)
+    connection = sqlite3.connect(
+        f"file:{args.database.resolve().as_posix()}?mode=ro&immutable=1", uri=True
+    )
     try:
         counts = {
             table: int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])

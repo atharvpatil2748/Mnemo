@@ -48,7 +48,7 @@ Knowledge doesn't live in silos. If you maintain multiple notebooks—like *Mach
 
 Users shouldn't be forced into a "10 documents per notebook" mental model.
 
-Mnemo's **architectural target** is to support **100,000 documents and 20 million chunks**. The current certified V2 topology uses a content-addressed filesystem, an immutable SQLite corpus (FTS5 plus governed BGE-M3 vectors), and a separate mutable operational SQLite store. Qdrant is an optional future vector-scale path, and SurrealDB is a partial future graph path; neither is a current production prerequisite.
+Mnemo's **architectural target** is to support **100,000 documents and 20 million chunks**. The current certified V2 topology uses a content-addressed filesystem, an immutable SQLite corpus (FTS5 plus governed BGE-M3 vectors), and a separate mutable FinalQA operational SQLite store. ADR-0077's separately governed mutable filesystem + SQLite user workspace and mandatory read-only fallback are implemented and certified. Qdrant is an optional future vector-scale path, and SurrealDB is a partial future graph path; neither is a current production prerequisite.
 
 *(Note: These scale benchmarks are an architectural target, not a currently benchmarked capability. Formal benchmarking will occur during Phase 13 production hardening.)*
 
@@ -64,8 +64,10 @@ server-derived authorization → BGE-M3 and SQLite FTS5 retrieval → RRF → th
 top 50 fused candidates → BGE-reranker-v2-m3 → governed ContextBuilder →
 FinalQA. The caller's `requested_k` remains dynamic and is distinct from the
 internal 50-candidate reranking pool. Mutable FinalQA records live in a separate
-operational database. Ollama supplies local FinalQA and vision roles; its model
-storage is external to Mnemo's reranker lifecycle.
+purpose-specific operational database; it is not the future user workspace.
+Without a valid, separately governed ADR-0077 workspace configuration,
+production workspace mutations remain server-enforced read-only. Ollama supplies local FinalQA and vision roles; its
+model storage is external to Mnemo's reranker lifecycle.
 
 The canonical declarative configuration is
 [`config/production/full_multilingual_v2.production.json`](config/production/full_multilingual_v2.production.json),
@@ -105,8 +107,10 @@ User / AI Assistant / Antigravity / Client
      │      │        │
      └──────┼────────┘
             ▼
-       Certified Storage (content-addressed FS + immutable SQLite corpus
-                          + separate mutable operational SQLite)
+       Certified Storage (content-addressed FS + immutable SQLite corpus)
+       Governed Operational (separate mutable FinalQA/activation/certification)
+       Planned ADR-0077 Workspace (separate mutable FS + SQLite;
+                                  read-only fallback until valid/certified)
        Optional/Future (Qdrant vector scale + SurrealDB graph)
 ```
 
@@ -141,17 +145,17 @@ Mnemo is in active engineering development. Every module is rigorously tested be
 | Typed Domain Model | 🧊 Frozen | Core schemas and contracts (Phases 0–1) |
 | Configuration System | ✅ Implemented | Immutable configuration authority (Phase 1) |
 | Plugin Registry | ✅ Implemented | Discovers and injects providers (Phase 1) |
-| Local Storage Layer | ✅ Implemented | Certified V2: content-addressed filesystem + immutable SQLite corpus + separate operational SQLite. Qdrant is optional V1/future scale; SurrealDB is a partial future graph adapter. |
+| Local Storage Layer | ✅ Certified reads/operational state and governed workspace boundary | Certified V2 uses content-addressed filesystem + immutable SQLite corpus + separate purpose-specific operational state. ADR-0077's mutable user workspace and mandatory read-only fallback are implemented and certified. Qdrant is optional V1/future scale; SurrealDB is a partial future graph adapter. |
 | Document Parsing | ✅ Implemented | PDF, DOCX, PPTX, XLSX, Markdown, HTML, plain text/source code, JSON, CSV (Phase 3) |
 | Ingestion Canonicalization | ✅ Complete | Canonical `ParsedDocument` bridge (Phase 3.9) |
 | Chunking Engine | ✅ Complete | Modules 4.1–4.10: dispatcher plus all nine document-aware V2 strategies (Phase 4) |
 | Embedding Pipeline | ✅ Released | Content-addressed embedding cache and batch vector generation (Phase 5) |
 | Hybrid Retrieval & Grounded QA | ✅ Implemented and validated | Title-aware sparse retrieval, optional dense retrieval, fusion/reranking, strict persisted Final QA, citation correction, immutable replay (ADRs 0052–0057). |
-| REST API & Streaming | ✅ Released; Phase 8.8 hardening planned | Milestone M7 REST and legacy V1 WebSocket/SSE exist. Phase 9 chat requires authenticated FinalQA V2 or a separately certified authenticated V2 streaming contract. |
-| Native MCP Integration | ✅ 14 tools registered; Phase 8.8 hardening planned | Six retained knowledge tools, four bounded delivery tools, and four V2 evidence/capability/FinalQA tools over stdio/SSE. Runtime convergence, authorization, compatible readers, metadata, capability truth, errors, and tunnel parity remain Phase 8.8 work. |
+| REST API & Streaming | ✅ Released; Phase 8.8 hardening in progress | Milestone M7 REST and legacy V1 WebSocket/SSE exist. Authenticated HTTP FinalQA V2 is the accepted production chat path; V1 streaming is non-production and V2 streaming is optional future work. |
+| Native MCP Integration | ✅ 14 tools registered; 8.8.1 runtime convergence certified | Six retained knowledge tools, four bounded delivery tools, and four V2 evidence/capability/FinalQA tools over stdio/SSE. Server-owned HTTP/stdio/SSE/external-tunnel runtime identity converges; authorization across all tools, compatible readers, metadata, capability truth, errors, and behavioral parity remain Phase 8.8 work. |
 | Advanced Retrieval & Multimodal Foundation | ✅ Implemented & evaluated | Phase 8.5 is certified for its exact 44-document production identity. OCR, Vision, CLIP, and BGE-M3 foundations are validated; dedicated semantic image discovery through MCP is not currently exposed and is planned as `search_images` in Phase 8.8. |
 | Phase 8.6 evaluation notebook | ✅ Validated; evaluation-only | Format-diverse multilingual corpus with structure-aware chunking, OCR, Vision, CLIP, BGE-M3, provenance, canonical manifests, isolation, and transport validation; not production-exposed. |
-| Phase 8.8 | 📋 Designed, not implemented | Final MCP/runtime convergence and Phase 9 readiness gates, including planned `search_images`. |
+| Phase 8.8 | 🚧 In progress, not verified | 8.8.14a workspace and 8.8.14b authenticated HTTP chat are implemented, certified, and accepted; 8.8.14c documentation is reconciled. Module 8.8.1 runtime convergence is certified; later MCP contracts, behavioral parity, and planned `search_images` remain pending. |
 | Web UI | 📋 Planned after Phase 8.8 verification | Phase 9 is the next implementation phase, but has not started. |
 | Cross-Doc Reasoning | 📋 Planned | Phase 11 |
 
@@ -288,7 +292,7 @@ Mnemo's roadmap is structured to ensure every phase produces a runnable, testabl
 * **COMPLETED/CERTIFIED (Phase 8.5):** Exact 44-document V2 production composition, production-parity evaluation, durable BGE activation/rollback, authenticated FinalQA, and transport parity. Historical Golden evaluation and later production-parity evaluation remain distinct evidence identities.
 * **COMPLETED/VALIDATED (Phase 8.6):** Isolated 24-document format-diverse multilingual evaluation notebook; not production-exposed.
 * **COMPLETED CAPABILITY MILESTONE (Phase 8.7):** 14 registered MCP tools and real client exercises. Defects discovered by the later audits are Phase 8.8 inputs, not retroactive Phase 8.7 claims.
-* **NEXT HARDENING (Phase 8.8):** Designed, not implemented. Converges certified MCP runtime/contracts and establishes the mutable-workspace and authenticated-V2-chat gates.
+* **CURRENT HARDENING (Phase 8.8):** In progress, not verified. The mutable-workspace and authenticated HTTP FinalQA V2 chat gates are accepted; Module 8.8.1 server-owned runtime convergence is certified, while MCP tool-contract and behavioral parity gates remain pending. See the [8.8.1 forensic audit](docs/reports/operations/mnemo-module-8-8-1-forensic-audit.md).
 * **NEXT IMPLEMENTATION AFTER VERIFICATION (Phase 9):** Web UI React frontend. Phase 9 starts only after `Phase 8.8 VERIFIED → Phase 9 GO`.
 * **FUTURE (Phases 10–13):** Notebook features, cross-document reasoning, plugin ecosystem, and production hardening.
 

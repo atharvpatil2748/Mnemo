@@ -4,19 +4,26 @@
 
 `mnemo-server` provides HTTP/REST, legacy V1 WebSocket/SSE, and **Model Context Protocol (MCP)** transport adapters for `mnemo-core`. Built with **FastAPI**, **Uvicorn**, and the standard **Model Context Protocol SDK**, it also contains the server-owned certified V2 composition, principal/authorization boundary, capability reporting, delivery adapters, and separate FinalQA operational-store wiring. Phase 8.8 must converge every externally exposed transport and tunnel on that certified composition; code registration alone is not readiness or certification evidence.
 
+ADR-0077 accepts a separately governed mutable filesystem + SQLite workspace
+from explicit absolute server configuration, with mandatory server-enforced
+read-only fallback. That boundary is not implemented or certified yet. The
+current generic writable engine and its notebook/source/session/note routes must
+not be treated as permission to mutate the certified V2 corpus, and the FinalQA
+operational store is not a substitute user workspace.
+
 ---
 
 ## Capabilities
 
 - **REST API (`/v1`):**
-  - **Notebooks:** CRUD operations, activity timeline events, entity graph queries, and persisted summaries.
-  - **Sources:** Multipart document ingestion with automatic deduplication, keyset pagination, deletion, and status polling.
+  - **Notebooks:** CRUD operations, activity timeline events, entity graph queries, and persisted summaries. Production mutations require a valid, explicitly configured ADR-0077 workspace; otherwise they fail closed.
+  - **Sources:** Multipart document ingestion with automatic deduplication, keyset pagination, deletion, and status polling. Production upload/delete operations require that same governed workspace.
   - **Query & Search:** Transient preview retrieval/synthesis (`POST /v1/query`), persisted citation-strict publication (`POST /v1/notebooks/{id}/final-qa`), and configured sparse/optional-dense search (`POST /v1/search`).
-  - **Sessions & Notes:** Multi-turn conversation history, turn appending with citation retention, and note management with Last-Write-Wins timestamps.
+  - **Sessions & Notes:** Multi-turn conversation history, turn appending with citation retention, and note management with Last-Write-Wins timestamps. Production persistence is workspace-bound and unavailable in read-only fallback.
   - **System:** Subsystem health checks (`/health` and `/v1/health`), model inventory (`/v1/config/models`), and secret-redacted configuration introspection/reload (`/v1/config`).
   - **Bounded delivery (`/v2`):** Exact-version document blocks, original bytes, chunks, asset occurrences/content, OCR/vision evidence, Final-QA V2 snapshot evidence, and capability discovery.
 - **Streaming Protocols:**
-  - **Legacy V1 WebSocket (`/ws/query`):** Real-time 5-event streaming query protocol (`retrieval_start`, `chunk_retrieved`, `synthesis_token`, `citations_ready`, `done`) with ping/pong heartbeat. It is not silently treated as the authenticated V2 chat contract required before Phase 9.
+  - **Legacy V1 WebSocket (`/ws/query`):** Real-time 5-event streaming query protocol (`retrieval_start`, `chunk_retrieved`, `synthesis_token`, `citations_ready`, `done`) with ping/pong heartbeat. It is not the production chat path; authenticated HTTP FinalQA V2 is. V2 streaming is not implemented or required for the current contract.
   - **Server-Sent Events (`POST /v1/query/stream`):** Standard HTTP SSE event streaming.
 - **Model Context Protocol (MCP) Server:**
   - Registers six retained knowledge tools for AI assistants:
@@ -60,9 +67,12 @@
 - Phase 8.5: completed and certified for the exact 44-document V2 production identity.
 - Phase 8.6: validated evaluation notebook; not production-exposed.
 - Phase 8.7: completed retrospective 14-tool capability milestone.
-- Phase 8.8: designed, not implemented; owns runtime convergence, compatible
-  readers, authorization, metadata, capability/error truth, tunnel parity,
-  `search_images`, and Phase 9 readiness.
+- Phase 8.8: in progress, not verified. ADR-0077's 8.8.14a
+  workspace/read-only boundary and 8.8.14b authenticated HTTP FinalQA V2 are
+  implemented, certified, and accepted; 8.8.14c documentation is reconciled.
+  Runtime convergence, compatible readers, authorization, metadata,
+  capability/error truth, tunnel parity, `search_images`, and the other Phase 9
+  readiness work also remain pending.
 - Phase 9: planned and blocked until `Phase 8.8 VERIFIED → Phase 9 GO`.
 
 See the [current architecture](../docs/architecture/current/mnemo_architecture_v2.md)
@@ -110,6 +120,27 @@ curl -s http://127.0.0.1:8000/health
 ## Configuration
 
 `mnemo-server` is configured via `MNEMO_SERVER_*` environment variables:
+
+For certified Full Multilingual V2 startup, the production manifest and its
+referenced core configuration, profile, activation, and certification artifacts
+own the corpus/model identity. The server derives the certified reranker mode,
+activation-state path, and FinalQA operational-store path from that manifest;
+explicit conflicting environment values fail the production binding check.
+`mnemo-mcp certified-tunnel-stdio` selects this certified lifecycle without
+accepting a client-selected database or model graph. HTTP and other MCP
+entrypoints use the same server-owned binding when certified V2 is selected.
+
+The model-cache directory is an operator-controlled location, not part of the
+certified model revision or binding digest. The operator still supplies an
+absolute local model-cache path, the activation
+operator and trusted stdio subjects, an authenticated API-key or JWT policy and
+its credential, and the existing delivery-cursor signing secret. The signing
+secret must verify the durable activation state; the tunnel-client API key is
+not a Mnemo server credential. Missing or conflicting required values fail
+closed. No production credential source is currently provisioned by the
+repository launcher. The optional ADR-0077 mutable workspace root remains
+explicit and absolute; when missing or invalid, workspace mutation is
+server-enforced read-only.
 
 | Variable | Default | Description |
 |---|---|---|

@@ -74,6 +74,7 @@ class RerankerActivationRecordV1:
 
 
 _DURABLE_STATE_SCHEMA = "mnemo.v2-reranker-activation-state/1"
+_GENERATION_STATE_SCHEMA = "mnemo.v2-reranker-activation-state/2"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -86,6 +87,8 @@ class DurableRerankerActivationStateV1:
     updated_by_actor_id: UUID | None
     activation_evidence: RerankerActivationEvidenceV1 | None
     signature: str
+    credential_generation_id: UUID | None = None
+    activation_generation_id: UUID | None = None
 
     def __post_init__(self) -> None:
         if self.sequence < 0:
@@ -99,7 +102,13 @@ class DurableRerankerActivationStoreV1:
     """Atomic HMAC-authenticated state file; never stores corpus data."""
 
     def __init__(
-        self, *, path: Path, signing_key: bytes, prohibited_paths: tuple[Path, ...]
+        self,
+        *,
+        path: Path,
+        signing_key: bytes,
+        prohibited_paths: tuple[Path, ...],
+        credential_generation_id: UUID | None = None,
+        activation_generation_id: UUID | None = None,
     ) -> None:
         if len(signing_key) < 32:
             raise ValueError("durable activation signing key must contain at least 32 bytes")
@@ -108,6 +117,10 @@ class DurableRerankerActivationStoreV1:
             raise ValueError("durable activation state cannot use a protected database path")
         self._path = resolved
         self._key = bytes(signing_key)
+        self._credential_generation_id = credential_generation_id
+        if (credential_generation_id is None) is not (activation_generation_id is None):
+            raise ValueError("DURABLE_BGE_GENERATION_BINDING_INCOMPLETE")
+        self._activation_generation_id = activation_generation_id
 
     @property
     def path(self) -> Path:
@@ -122,13 +135,28 @@ class DurableRerankerActivationStoreV1:
                 updated_by_actor_id=None,
                 activation_evidence=None,
                 signature="",
+                credential_generation_id=self._credential_generation_id,
+                activation_generation_id=self._activation_generation_id,
             )
         try:
             raw = json.loads(self._path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as error:
             raise RuntimeError("DURABLE_BGE_ACTIVATION_STATE_MALFORMED") from error
-        if not isinstance(raw, dict) or raw.get("schema_version") != _DURABLE_STATE_SCHEMA:
+        expected_schema = (
+            _GENERATION_STATE_SCHEMA
+            if self._credential_generation_id is not None
+            else _DURABLE_STATE_SCHEMA
+        )
+        if not isinstance(raw, dict) or raw.get("schema_version") != expected_schema:
             raise RuntimeError("DURABLE_BGE_ACTIVATION_STATE_MALFORMED")
+        if self._credential_generation_id is not None and raw.get(
+            "credential_generation_id"
+        ) != str(self._credential_generation_id):
+            raise RuntimeError("DURABLE_BGE_ACTIVATION_CREDENTIAL_GENERATION_MISMATCH")
+        if self._activation_generation_id is not None and raw.get(
+            "activation_generation_id"
+        ) != str(self._activation_generation_id):
+            raise RuntimeError("DURABLE_BGE_ACTIVATION_GENERATION_MISMATCH")
         signature = raw.pop("signature", None)
         if not isinstance(signature, str) or not hmac.compare_digest(signature, self._sign(raw)):
             raise RuntimeError("DURABLE_BGE_ACTIVATION_STATE_SIGNATURE_INVALID")
@@ -145,6 +173,8 @@ class DurableRerankerActivationStoreV1:
                 updated_by_actor_id=None if actor_raw is None else UUID(str(actor_raw)),
                 activation_evidence=evidence,
                 signature=signature,
+                credential_generation_id=self._credential_generation_id,
+                activation_generation_id=self._activation_generation_id,
             )
         except (KeyError, TypeError, ValueError) as error:
             raise RuntimeError("DURABLE_BGE_ACTIVATION_STATE_MALFORMED") from error
@@ -158,13 +188,20 @@ class DurableRerankerActivationStoreV1:
     ) -> DurableRerankerActivationStateV1:
         previous = self.load()
         unsigned: dict[str, Any] = {
-            "schema_version": _DURABLE_STATE_SCHEMA,
+            "schema_version": (
+                _GENERATION_STATE_SCHEMA
+                if self._credential_generation_id is not None
+                else _DURABLE_STATE_SCHEMA
+            ),
             "sequence": previous.sequence + 1,
             "desired_mode": desired_mode.value,
             "updated_at": datetime.now(UTC).isoformat(),
             "updated_by_actor_id": str(principal.actor_id),
             "activation_evidence": None if evidence is None else asdict(evidence),
         }
+        if self._credential_generation_id is not None:
+            unsigned["credential_generation_id"] = str(self._credential_generation_id)
+            unsigned["activation_generation_id"] = str(self._activation_generation_id)
         signature = self._sign(unsigned)
         payload = {**unsigned, "signature": signature}
         self._path.parent.mkdir(parents=True, exist_ok=True)
@@ -188,6 +225,8 @@ class DurableRerankerActivationStoreV1:
             updated_by_actor_id=principal.actor_id,
             activation_evidence=evidence,
             signature=signature,
+            credential_generation_id=self._credential_generation_id,
+            activation_generation_id=self._activation_generation_id,
         )
 
     def _sign(self, value: dict[str, Any]) -> str:

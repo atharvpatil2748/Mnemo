@@ -35,6 +35,11 @@ from mnemo_server.mcp.tools import execute_mcp_tool, get_mcp_tools, structured_c
 from mnemo_server.routers.capabilities_v2 import router
 from mnemo_server.schemas.capabilities_v2 import CapabilityDiscoveryRequest, CapabilityDocument
 from mnemo_server.services.capabilities_v2 import CapabilityDiscoveryService
+from mnemo_server.services.mutable_workspace import (
+    MutableWorkspaceDecision,
+    MutableWorkspaceLayout,
+    WorkspaceMode,
+)
 
 
 @dataclass(slots=True)
@@ -206,6 +211,26 @@ async def test_capability_document_is_strict_deterministic_and_runtime_derived(
 
 
 @pytest.mark.anyio
+async def test_final_qa_capability_reports_http_v2_contract_not_legacy_streaming(
+    tmp_path: Path,
+) -> None:
+    engine = await _engine(tmp_path)
+    config = ServerConfig(
+        production_mode=True,
+        auth_mode="api-key",
+        api_key="test-key",
+        delivery_cursor_secret="independent-chat-cursor-secret-32-bytes",
+    )
+    document = CapabilityDiscoveryService(engine, config).document()
+    capability = next(item for item in document.capabilities if item.capability_id == "final_qa_v2")
+    assert capability.limits["production_chat_transport"] == "authenticated_http_final_qa_v2"
+    assert capability.limits["authentication_required"] is True
+    assert capability.limits["v1_streaming_production"] is False
+    assert capability.limits["v2_streaming_required"] is False
+    assert capability.limits["governed_operational_store_required"] is True
+
+
+@pytest.mark.anyio
 async def test_blind_agent_guidance_limits_and_no_secret_leakage(tmp_path: Path) -> None:
     engine = await _engine(tmp_path)
     config = ServerConfig(
@@ -350,3 +375,57 @@ async def test_profile_transport_flags_are_runtime_derived(tmp_path: Path) -> No
     assert advanced.transports.callable
     assert document.runtime.active_profile.http_enabled is False
     assert document.runtime.active_profile.mcp_enabled is True
+
+
+@pytest.mark.anyio
+async def test_production_capabilities_report_read_only_fallback(tmp_path: Path) -> None:
+    engine = await _engine(tmp_path)
+    engine.certified_read_only = True
+    config = ServerConfig(
+        production_mode=True,
+        auth_mode="api-key",
+        api_key="test-key",
+        delivery_cursor_secret="production-capability-test-secret",
+    )
+    decision = MutableWorkspaceDecision(
+        mode=WorkspaceMode.READ_ONLY,
+        reason="MUTABLE_WORKSPACE_CONFIGURATION_MISSING",
+    )
+
+    storage = CapabilityDiscoveryService(engine, config, decision).document().runtime.storage
+
+    assert storage.certified_read_available
+    assert storage.certified_storage_mode == "immutable_query_only"
+    assert storage.workspace_mode == "read_only"
+    assert storage.workspace_available is False
+    assert storage.mutation_available is False
+    assert storage.read_only_fallback is True
+    assert storage.reason == "MUTABLE_WORKSPACE_CONFIGURATION_MISSING"
+
+
+@pytest.mark.anyio
+async def test_production_capabilities_report_accepted_workspace_without_paths(
+    tmp_path: Path,
+) -> None:
+    engine = await _engine(tmp_path)
+    config = ServerConfig(
+        production_mode=True,
+        auth_mode="api-key",
+        api_key="test-key",
+        delivery_cursor_secret="production-capability-test-secret",
+    )
+    workspace = tmp_path / "operator-workspace"
+    decision = MutableWorkspaceDecision(
+        mode=WorkspaceMode.MUTABLE,
+        reason="MUTABLE_WORKSPACE_ACCEPTED",
+        layout=MutableWorkspaceLayout.from_root(workspace),
+    )
+
+    document = CapabilityDiscoveryService(engine, config, decision).document()
+    storage = document.runtime.storage
+
+    assert storage.workspace_mode == "mutable"
+    assert storage.workspace_available is True
+    assert storage.mutation_available is True
+    assert storage.read_only_fallback is False
+    assert str(workspace) not in document.model_dump_json()

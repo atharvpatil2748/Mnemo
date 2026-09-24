@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 from pathlib import Path
+from uuid import UUID
 
 from mnemo_server.config import ServerConfig
 from mnemo_server.services.authorization import principal_from_claims
@@ -24,6 +26,21 @@ def _signing_key(config: ServerConfig) -> bytes:
         b"mnemo.v2-reranker-activation-state/1",
         hashlib.sha256,
     ).digest()
+
+
+def _activation_generation_for_restore(config: ServerConfig, state_path: Path) -> UUID | None:
+    """Select the signed generation carried by an active registry-bound state."""
+    if config.credential_generation_id is None:
+        return None
+    try:
+        raw = json.loads(state_path.read_text(encoding="utf-8"))
+        if not isinstance(raw, dict) or raw.get("credential_generation_id") != str(
+            config.credential_generation_id
+        ):
+            raise ValueError("generation mismatch")
+        return UUID(str(raw["activation_generation_id"]))
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise RuntimeError("DURABLE_BGE_ACTIVATION_GENERATION_UNAVAILABLE") from exc
 
 
 async def restore_production_reranker_activation(
@@ -59,6 +76,8 @@ async def restore_production_reranker_activation(
                 else ()
             ),
         ),
+        credential_generation_id=config.credential_generation_id,
+        activation_generation_id=_activation_generation_for_restore(config, state_path),
     )
     authority = DurableRerankerActivationAuthorityV1(
         runtime_authority=installed.reranker_activation,

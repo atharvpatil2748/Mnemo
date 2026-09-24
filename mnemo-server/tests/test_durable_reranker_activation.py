@@ -5,15 +5,18 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 from typing import Any, cast
+from uuid import uuid4
 
 from mnemo.interfaces import PrincipalContextV1
 from mnemo.phase85.profiles import ModelProfileComponent
 from mnemo_server.config import ServerConfig
 from mnemo_server.services.authorization import principal_from_claims
 from mnemo_server.services.durable_reranker_activation import (
+    _signing_key,
     restore_production_reranker_activation,
 )
 from mnemo_server.services.v2_reranker_lifecycle import (
+    DurableRerankerActivationStoreV1,
     GovernedV2RerankerRouterV1,
     RerankerActivationAuthorityV1,
     RerankerActivationEvidenceV1,
@@ -120,6 +123,42 @@ def test_production_composition_restores_durable_state_after_restart(tmp_path: P
     )
     assert restarted_authority is not None
     assert restarted.reranker.mode is V2RerankerMode.BGE_V2_M3
+
+
+def test_production_composition_restores_signed_generation_state(tmp_path: Path) -> None:
+    generation_id = uuid4()
+    activation_id = uuid4()
+    config = _config(tmp_path).model_copy(update={"credential_generation_id": generation_id})
+    operator = principal_from_claims({"sub": "production-operator"})
+    store = DurableRerankerActivationStoreV1(
+        path=tmp_path / "reranker.json",
+        signing_key=_signing_key(config),
+        prohibited_paths=(tmp_path / "mnemo.db",),
+        credential_generation_id=generation_id,
+        activation_generation_id=activation_id,
+    )
+    store.commit(
+        desired_mode=V2RerankerMode.BGE_V2_M3,
+        principal=operator,
+        evidence=RerankerActivationEvidenceV1(
+            v2_exposed=True,
+            production_evaluation_passed=True,
+            production_store_identity=STORE_ID,
+            expected_production_store_identity=STORE_ID,
+        ),
+    )
+    installed = _installed()
+    result = asyncio.run(
+        restore_production_reranker_activation(
+            installed=installed,
+            config=config,
+            workspace_root=tmp_path,
+            production_store_path=tmp_path / "mnemo.db",
+        )
+    )
+    assert result is not None
+    assert installed.reranker.mode is V2RerankerMode.BGE_V2_M3
+    assert store.load().credential_generation_id == generation_id
 
 
 def test_production_composition_rejects_state_in_operational_or_corpus_store(

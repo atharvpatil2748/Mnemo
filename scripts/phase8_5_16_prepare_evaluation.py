@@ -18,6 +18,10 @@ from pathlib import Path
 from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid5
 
+try:
+    from scripts.governed_database_safety import reject_current_governed_database_write
+except ModuleNotFoundError:
+    from governed_database_safety import reject_current_governed_database_write
 from mnemo.config import MnemoConfig
 from mnemo.models import IndexGeneration, IndexGenerationState
 from mnemo.phase85.profiles import ModelProfileRegistry
@@ -42,7 +46,7 @@ def _sha256(path: Path) -> str:
 
 
 def _rows(database: Path, query: str) -> tuple[tuple[str, ...], ...]:
-    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
     try:
         return tuple(tuple(str(value) for value in row) for row in connection.execute(query))
     finally:
@@ -209,7 +213,7 @@ async def _build_source_projection(
 
 
 async def _prepare(args: argparse.Namespace) -> dict[str, Any]:
-    database = args.database.resolve(strict=True)
+    database = reject_current_governed_database_write(args.database)
     files = args.files.resolve(strict=True)
     config_path = args.config.resolve(strict=True)
     initial_hash = _sha256(database)

@@ -371,11 +371,17 @@ class ProductionV2ReadinessEvidenceBuilderV1:
         mnemo_config: MnemoConfig,
         server_config: ServerConfig,
         identity_manifest: Path,
+        pre_certification_observation: bool = False,
+        certified_production_binding_verified: bool = False,
     ) -> None:
         self._root = workspace_root.resolve()
         self._mnemo_config = mnemo_config
         self._server_config = server_config
         self._manifest = identity_manifest.resolve()
+        self._pre_certification_observation = pre_certification_observation
+        if pre_certification_observation and certified_production_binding_verified:
+            raise RuntimeError("COMPETING_PRODUCTION_LIFECYCLE_STATES")
+        self._certified_production_binding_verified = certified_production_binding_verified
 
     async def build(self) -> tuple[ProductionV2ServingReadinessV1, V2ReadinessSnapshot]:
         evidence = await validate_production_v2_serving_readiness(
@@ -394,7 +400,12 @@ class ProductionV2ReadinessEvidenceBuilderV1:
         authenticated_sse = authenticated_http
         if not (authenticated_http and authenticated_stdio and authenticated_sse):
             raise RuntimeError("PRODUCTION_TRANSPORT_AUTHENTICATION_CAPABILITY_MISSING")
-        if config.full_multilingual_v2_reranker_mode != "PASS_THROUGH":
+        expected_mode = (
+            "BGE_V2_M3"
+            if self._pre_certification_observation or self._certified_production_binding_verified
+            else "PASS_THROUGH"
+        )
+        if config.full_multilingual_v2_reranker_mode != expected_mode:
             raise RuntimeError("PRE_BGE_EXPOSURE_REQUIRES_PASS_THROUGH")
 
         artifact = GovernedV2DatabaseIdentityVerifier(

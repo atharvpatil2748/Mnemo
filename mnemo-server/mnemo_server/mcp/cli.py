@@ -87,6 +87,34 @@ def create_parser() -> argparse.ArgumentParser:
         "stdio",
         help="Run MCP server over standard input/output (for local desktop/IDE clients).",
     )
+    subparsers.add_parser(
+        "certified-tunnel-stdio",
+        help="Run the external tunnel through the server-owned certified stdio startup.",
+    )
+    subparsers.add_parser(
+        "certified-stdio",
+        help="Run local MCP stdio through the server-owned certified startup.",
+    )
+    subparsers.add_parser(
+        "certified-sse",
+        help="Run local MCP SSE through the server-owned certified startup.",
+    )
+    subparsers.add_parser(
+        "certified-evidence",
+        help="Verify four signed transport observations against current production authority.",
+    )
+    subparsers.add_parser(
+        "observe-stdio",
+        help="Authenticated, read-only pre-certification MCP observation only.",
+    )
+    subparsers.add_parser(
+        "observe-tunnel-stdio",
+        help="External tunnel transport for the staged observation-only runtime.",
+    )
+    subparsers.add_parser(
+        "observe-sse",
+        help="Authenticated, read-only pre-certification MCP SSE observation only.",
+    )
 
     # sse subcommand
     sse_parser = subparsers.add_parser(
@@ -119,9 +147,31 @@ def main(argv: list[str] | None = None) -> int:
     # Determine transport
     command = args.command
     transport = args.transport
+    supplied = argv if argv is not None else sys.argv[1:]
+    identity_options = {
+        "--auth-mode",
+        "--api-key",
+        "--jwt-secret",
+        "--stdio-principal-subject",
+    }
+    observation_mode = command in {"observe-stdio", "observe-tunnel-stdio", "observe-sse"}
+    governed_command = command in {
+        "certified-tunnel-stdio",
+        "certified-stdio",
+        "certified-sse",
+        "certified-evidence",
+    } or (observation_mode)
+    if governed_command:
+        forbidden = {
+            "--transport",
+            *identity_options,
+        }
+        if any(item.split("=", 1)[0] in forbidden for item in supplied):
+            print("CERTIFIED_PRODUCTION_BINDING_REJECTED", file=sys.stderr)
+            return 1
 
     selected_transport = "stdio"
-    if command == "sse" or transport == "sse":
+    if command in {"sse", "certified-sse", "observe-sse"} or transport == "sse":
         selected_transport = "sse"
     elif command == "stdio" or transport == "stdio":
         selected_transport = "stdio"
@@ -131,38 +181,98 @@ def main(argv: list[str] | None = None) -> int:
     raw_port = getattr(args, "sse_port", None) or getattr(args, "port", None)
     port: int = int(raw_port if raw_port is not None else os.getenv("MNEMO_MCP_PORT", "8001"))
 
-    base_config = ServerConfig.from_env()
-    config = ServerConfig.model_validate(
-        {
-            **base_config.model_dump(),
-            "host": host,
-            "port": port,
-            "log_level": args.log_level,
+    try:
+        base_config = ServerConfig.from_env(
+            certified_production=governed_command,
+            pre_certification_observation=observation_mode,
+        )
+    except Exception:
+        if governed_command:
+            print("CERTIFIED_PRODUCTION_BINDING_REJECTED", file=sys.stderr)
+            return 1
+        raise
+    if base_config.production_mode and not base_config.full_multilingual_v2_enabled:
+        print("CERTIFIED_PRODUCTION_BINDING_REJECTED", file=sys.stderr)
+        return 1
+    if base_config.production_mode and any(
+        item.split("=", 1)[0] in identity_options for item in supplied
+    ):
+        print("CERTIFIED_PRODUCTION_BINDING_REJECTED", file=sys.stderr)
+        return 1
+    transport_overrides = {"host": host, "port": port, "log_level": args.log_level}
+    identity_overrides = (
+        {}
+        if base_config.production_mode
+        else {
             "auth_mode": args.auth_mode,
             "api_key": args.api_key,
             "jwt_secret": args.jwt_secret,
             "mcp_stdio_principal_subject": args.stdio_principal_subject,
         }
     )
+    config = ServerConfig.model_validate(
+        {
+            **base_config.model_dump(),
+            **transport_overrides,
+            **identity_overrides,
+        }
+    )
+    if governed_command and not (config.production_mode and config.full_multilingual_v2_enabled):
+        print("CERTIFIED_PRODUCTION_BINDING_REJECTED", file=sys.stderr)
+        return 1
+
+    if command == "certified-evidence":
+        from mnemo_server.services.production_runtime_binding import (
+            write_certified_convergence,
+        )
+
+        try:
+            artifact = write_certified_convergence(server_config=config)
+        except Exception:
+            print("CERTIFIED_CONVERGENCE_EVIDENCE_REJECTED", file=sys.stderr)
+            return 1
+        print(artifact)
+        return 0
 
     if selected_transport == "stdio":
         try:
-            asyncio.run(run_stdio_server(config=config))
+            asyncio.run(
+                run_stdio_server(
+                    config=config,
+                    transport_label=(
+                        "external_tunnel"
+                        if command in {"certified-tunnel-stdio", "observe-tunnel-stdio"}
+                        else "mcp_stdio"
+                    ),
+                    pre_certification_observation=observation_mode,
+                )
+            )
             return 0
         except KeyboardInterrupt:
             return 0
         except Exception as exc:
-            print(f"Error in stdio MCP server: {exc}", file=sys.stderr)
+            if governed_command:
+                print("CERTIFIED_PRODUCTION_STARTUP_FAILED", file=sys.stderr)
+            else:
+                print(f"Error in stdio MCP server: {exc}", file=sys.stderr)
             return 1
 
     if selected_transport == "sse":
         try:
-            run_sse_server(host=host, port=port, config=config)
+            run_sse_server(
+                host=host,
+                port=port,
+                config=config,
+                pre_certification_observation=observation_mode,
+            )
             return 0
         except KeyboardInterrupt:
             return 0
         except Exception as exc:
-            print(f"Error in SSE MCP server: {exc}", file=sys.stderr)
+            if governed_command:
+                print("CERTIFIED_PRODUCTION_STARTUP_FAILED", file=sys.stderr)
+            else:
+                print(f"Error in SSE MCP server: {exc}", file=sys.stderr)
             return 1
 
     parser.print_help(file=sys.stderr)

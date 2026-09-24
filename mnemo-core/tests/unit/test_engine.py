@@ -89,6 +89,7 @@ class Providers:
 
 def make_config(tmp_path: Path, *, dimensions: int = 3) -> MnemoConfig:
     """Build one frozen configuration without reading environment state."""
+    (tmp_path / "plugins").mkdir(exist_ok=True)
     role = LLMRoleConfig(provider="test", model="model", max_context_tokens=128)
     return MnemoConfig(
         storage=StorageConfig(),
@@ -166,7 +167,7 @@ def install_builtins(
     *plugins: PluginInterfaceV1,
 ) -> None:
     """Supply deterministic built-in candidates to the composition root."""
-    monkeypatch.setattr("mnemo.engine._builtin_plugins", lambda config: plugins)
+    monkeypatch.setattr("mnemo.engine._builtin_plugins", lambda config, **_kwargs: plugins)
     monkeypatch.setattr(
         PluginRegistry,
         "discover_and_load_entry_points",
@@ -191,6 +192,36 @@ def test_construction_is_inert_and_public_metadata_is_read_only(tmp_path: Path) 
         _ = engine.phase85
     with pytest.raises(TypeError):
         KnowledgeEngine(object())  # type: ignore[arg-type]
+
+
+def test_certified_read_only_composition_never_registers_writable_primary_storage(
+    tmp_path: Path,
+) -> None:
+    from mnemo.storage import CompositeStorage, ImmutableFilesystemBlobStore
+    from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
+
+    base = make_config(tmp_path)
+    config = base.model_copy(
+        update={
+            "storage": base.storage.model_copy(
+                update={
+                    "qdrant": base.storage.qdrant.model_copy(update={"enabled": False}),
+                    "surrealdb": base.storage.surrealdb.model_copy(update={"enabled": False}),
+                }
+            )
+        }
+    )
+    registry = PluginRegistry(core_version=__version__)
+    results = registry.load_plugins(_builtin_plugins(config, certified_read_only=True))
+    storage = registry.resolve_storage("primary")
+
+    assert next(
+        result for result in results if result.descriptor.name == "mnemo-core-storage"
+    ).loaded
+    assert isinstance(storage, CompositeStorage)
+    assert isinstance(storage._fs, ImmutableFilesystemBlobStore)
+    assert isinstance(storage._sql, SQLiteV2ReadOnlyRuntimeStore)
+    assert KnowledgeEngine(config, certified_read_only=True).certified_read_only is True
 
 
 def test_phase85_runtime_is_composed_by_knowledge_engine(

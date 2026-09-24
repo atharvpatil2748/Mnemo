@@ -219,6 +219,7 @@ class SQLiteMultimodalMixin:
             in {
                 FinalQAExecutionState.PUBLISHED,
                 FinalQAExecutionState.REJECTED_CITATION_COMPLIANCE,
+                FinalQAExecutionState.TIMED_OUT,
             }
             else None
         )

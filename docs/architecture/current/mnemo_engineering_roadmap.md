@@ -12,7 +12,9 @@ production identity. Phase 8.6 is complete as a validated 24-document,
 production-exposed. Phase 8.7 is the retrospective completed capability
 milestone for the expanded 14-tool MCP surface and real client exercises; later
 audits identified production-composition and contract hardening that Phase 8.8
-must correct. Phase 8.8 is designed below and not yet implemented. Phase 9 is
+must correct. Phase 8.8 is in progress (8.8.14a and 8.8.14b accepted;
+Module 8.8.1 certified) but not
+verified. Phase 9 is
 the next implementation phase, gated on Phase 8.8 verification, the mutable
 workspace boundary, and authenticated V2 chat/FinalQA transport.
 
@@ -216,7 +218,8 @@ the discovered correction and certification work.
 
 ### Phase 8.8 — MCP Production Convergence and Contract Correctness
 
-**Status:** **DESIGNED / NOT IMPLEMENTED**
+**Status:** **IN PROGRESS / NOT VERIFIED** — Module 8.8.1 is certified; later
+tool-contract, behavioral-parity, and phase-wide gates remain open.
 **Goal:** Converge every MCP/HTTP transport on the certified production
 composition, complete all 14 existing tool contracts, add dedicated authorized
 semantic image discovery, and close the two architectural prerequisites for
@@ -225,14 +228,175 @@ Phase 9.
 Phase 8.8 is bounded hardening and integration. It does not implement Phase 9,
 promote Phase 8.6, or enable Qdrant/SurrealDB production persistence.
 
-Phase 8.8 execution order is explicit:
+#### Canonical Phase 8.8 execution order
 
-1. Govern the mutable workspace versus immutable certified corpus boundary.
-2. Govern authenticated V2 chat/FinalQA transport.
-3. Reconcile contradictory architecture and engineering roadmap statements.
-4. Complete and verify the 14 current MCP tools plus dedicated semantic image
-   search across the certified production composition and real tunnel.
-5. Produce the final Phase 9 readiness decision.
+Module numbers are stable ownership identifiers, **not implementation order**.
+The dependency tables remain binding, but this staged sequence is the canonical
+execution order when module numbering, the dependency graph, or older planning
+text appears to imply a different sequence. Tasks grouped in one stage may
+proceed in parallel only where their recorded dependencies permit it. Completing
+one task never marks a sibling or downstream task complete without its own
+implementation and evidence.
+
+1. **8.8.14a — Govern mutable workspace boundary.** Implement the ADR-0077
+   separately governed mutable filesystem + SQLite workspace from explicit
+   absolute server configuration. Until it validates and is certified,
+   production is server-enforced read-only for workspace mutations; no write may
+   target the certified corpus.
+2. **8.8.14b — Govern authenticated V2 chat.** Authenticated HTTP FinalQA V2
+   is the accepted production chat path. V2 streaming is not implemented or
+   required for the current contract; legacy V1 WebSocket/query streaming is
+   non-production.
+3. **8.8.14c — Reconcile current documentation.** After 8.8.14a and 8.8.14b
+   are accepted, align storage optionality, phase status, routes, backends, and
+   dependencies. Pre-decision documentation cleanup does not by itself complete
+   8.8.14c.
+4. **Complete Module 8.8.1 — Certified MCP Runtime Convergence, in dependency
+   order:** 8.8.1a define one production startup binding; 8.8.1b reject
+   configuration forks; 8.8.1c bind the tunnel to server-owned startup after
+   8.8.1a; and 8.8.1d capture convergence evidence after 8.8.1b.
+5. **Close the first prerequisite branches permitted by 8.8.1:**
+   - Module 8.8.2 reader work: 8.8.2a reproduce and pin the confirmed failure;
+     8.8.2b introduce one compatible read-model boundary; then 8.8.2c preserve
+     truthful locators, 8.8.2d route every affected reader, 8.8.2e add
+     schema-compatibility regression tests, and 8.8.2g prove corpus immutability.
+     Task 8.8.2f remains pending until Module 8.8.7 supplies typed errors.
+   - Module 8.8.3 authorization work: 8.8.3a require a
+     transport-authenticated principal; 8.8.3b apply central authorization to
+     all 14 tools; then 8.8.3c preserve non-disclosure and 8.8.3d reject client
+     policy overrides.
+   - Module 8.8.6 capability work: 8.8.6a expand lifecycle semantics; then
+     8.8.6b bind effective identity and 8.8.6c separate image capabilities.
+6. **Complete contracts unlocked by the prerequisite branches:**
+   - Module 8.8.5: 8.8.5a define one authorized metadata envelope; then
+     8.8.5b build one bounded resolver and 8.8.5c preserve identity semantics.
+   - Module 8.8.7: 8.8.7a define the safe error taxonomy; then 8.8.7b preserve
+     originating safe codes and 8.8.7c prevent leakage.
+   - Return to **8.8.2f** and preserve the originating safe reader/retrieval
+     error through the Module 8.8.7 taxonomy.
+   - Module 8.8.4, only after Modules 8.8.2 and 8.8.3 are complete: 8.8.4a
+     freeze each tool route; then 8.8.4b test valid requests and 8.8.4c test
+     invalid/unavailable requests; then 8.8.4d test provenance and transports.
+   - Module 8.8.8, only after Module 8.8.4: 8.8.8a inventory and freeze routes;
+     then 8.8.8b prevent historical fallback and 8.8.8c verify frozen
+     compatibility.
+7. **Verify the bounded isolation and structured-contract branches:**
+   - Module 8.8.10: 8.8.10a enforce evaluation-only selection; then 8.8.10b
+     specify the future promotion gate and 8.8.10c test Phase 8.5/8.6 isolation.
+   - Module 8.8.11: 8.8.11a validate the existing authorized typed contract;
+     then 8.8.11b return truthful unavailability and 8.8.11c keep activation out
+     of scope.
+8. **Complete Module 8.8.12 — Dedicated Semantic Image Search:** 8.8.12a
+   define discovery request/result contracts; then 8.8.12b implement OCR mode,
+   8.8.12c implement caption mode, 8.8.12d implement visual mode, and 8.8.12f
+   connect discovery to `get_asset`; after 8.8.12b–d, 8.8.12e implements
+   deterministic hybrid mode; after 8.8.12b–e, 8.8.12g proves authorization
+   before disclosure.
+9. **Certify transports and complete provenance:**
+   - Module 8.8.9, only after Modules 8.8.1–8.8.8: 8.8.9a execute the
+     HTTP/stdio/SSE/tunnel matrix; then 8.8.9b compare semantic evidence and
+     8.8.9c diagnose the long FinalQA call.
+   - Module 8.8.13: after Modules 8.8.4, 8.8.5, and 8.8.12, 8.8.13a preserve
+     the full identity chain and 8.8.13b validate citation/evidence resolution;
+     after Module 8.8.9, 8.8.13c compares transport provenance.
+10. **Run the complete Phase 8.8 acceptance gate.** Exercise all 14 existing
+    tools plus `search_images`, verify runtime identity, readers, authorization,
+    metadata, capabilities, typed errors, FinalQA, isolation, dynamic public
+    `requested_k`, image-mode no-result/partial/unavailable/multilingual behavior,
+    provenance, storage safety, and unchanged protected hashes. Qdrant,
+    SurrealDB, Phase 8.6 promotion, and Phase 9 implementation remain out of
+    scope.
+11. **8.8.14d — Issue Phase 9 readiness evidence.** Bind Modules 8.8.1–8.8.13,
+    the accepted and tested 8.8.14a–c decisions, every acceptance gate, and the
+    protected hashes into one GO/NO-GO result. Only
+    `PHASE_8_8_VERIFIED → Phase 9 GO` permits Phase 9 implementation.
+
+#### Phase 8.8.14a — implemented, certified, and accepted
+
+[ADR-0077](../../adr/active/ADR-0077-governed-mutable-workspace-boundary.md)
+accepts Option A as the target architecture: an explicitly configured,
+absolute, server-owned mutable filesystem + SQLite workspace. Its conceptual
+root owns `workspace.db`, `blobs/`, `parsed/`, `caches/`, and `generated/`.
+There is no implicit or CWD-derived production workspace and no client may
+select a database, blob root, child path, or storage role.
+
+Option B is mandatory fail-closed behavior. If the workspace is absent,
+invalid, unresolved, or overlaps/aliases protected storage, production exposes
+no workspace mutation route or tool. Validation must occur before directory
+creation, SQLite connection, WAL activation, migrations, embedding-cache or
+blob-store initialization, and route exposure. It rejects equality,
+ancestor/descendant overlap, symlink/junction aliases, Windows case aliases,
+`..` traversal, relative/CWD-dependent paths, and client-selected paths.
+
+The storage roles `CERTIFIED_CORPUS`, `EVALUATION_ARTIFACT`,
+`GOVERNED_OPERATIONAL`, `MUTABLE_WORKSPACE`, and `USER_CACHE` remain distinct.
+Certified corpus readers and mutable workspace writers are separate typed
+dependencies; no generic writable object may address both. The certified corpus
+and canonical blobs remain immutable. FinalQA operational storage,
+activation/certification state, evaluation artifacts, and tokenizer/model caches
+remain separate from the workspace. Qdrant and SurrealDB remain disabled and
+out of scope.
+
+The ADR-0077 boundary is **IMPLEMENTED / CERTIFIED / ACCEPTED**. Production
+composition validates storage roles before storage I/O, uses immutable
+certified readers, creates writable storage only beneath a validated workspace,
+and gates mutation routes and capabilities when the workspace is unavailable.
+Certification covered path aliases and overlap rejection, no-side-effect
+startup failures, workspace-only notebook/source/note/session writes, governed
+reader immutability, and HTTP/MCP startup. The CI-mode suite completed with
+2,341 passed, 18 intentionally skipped, and 90.05% coverage while both current
+governed databases retained identical hashes, sizes, timestamps, and no
+WAL/SHM/journal sidecars.
+
+8.8.14b selects authenticated `POST /v2/notebooks/{notebook_id}/final-qa`
+as the production chat path. API-key or JWT middleware supplies the server-owned
+principal; central notebook-scope authorization and principal-aware retrieval
+apply before evidence disclosure. The current central policy verifies canonical
+notebook membership, not actor ownership (no actor-to-notebook relation exists
+yet). A bounded full-operation deadline, separate FinalQA operational store,
+execution/replay identity, and citation publication are required. Legacy V1
+WebSocket/query streaming is not production V2 chat; V2 streaming is not a
+prerequisite for the current gate. 8.8.14b is **IMPLEMENTED / CERTIFIED /
+ACCEPTED** with CI-mode 2,346 passed, 18 skipped, 90.03% coverage and
+unchanged protected database bytes, timestamps, and sidecar state.
+
+8.8.14c is **COMPLETED** after reconciling current authority and preserving
+historical evidence. Phase 8.8 remains **IN PROGRESS / NOT VERIFIED**; Module
+8.8.1 is **CERTIFIED** for one server-owned runtime binding and exact
+HTTP/stdio/SSE/external-tunnel convergence. The signed post-promotion evidence
+is `scratch/phase8_8_1_runtime_convergence/convergence.json`; see
+`docs/reports/operations/mnemo-module-8-8-1-certification.md`. Individual
+capability readiness is not certified by tool registration. Modules 8.8.2–8.8.13
+and the complete acceptance gate remain open, and 8.8.14d remains **PENDING**. Phase 9 is blocked until
+`PHASE_8_8_VERIFIED → Phase 9 GO`.
+
+The 8.8.1 configuration contract derives the certified BGE mode, activation
+path, and FinalQA operational-store path from the existing production manifest.
+The local model-cache location is operator-selected and excluded from the
+certified runtime identity; model revisions remain bound. Authentication policy,
+its credential, the new generation-bound signing secret, and trusted
+operator/stdio subjects are server-owned. Missing values fail closed. The
+configuration reconciliation alone was not four-transport evidence; the later
+signed live observations and governed verifier established that evidence.
+
+ADR-0078 governs recovery from the unavailable original server signing
+credential. Its OS-backed Mnemo-only credential generation and non-secret
+registry preserve the original activation, certificate, and final evidence as
+historical. Fresh generation-bound WP-17 evidence was independently verified
+before promotion and 8.8.1c/8.8.1d live convergence. Provisioning or an accepted
+design alone did not certify 8.8.1. Future multi-user owner/scope metadata is
+designed, not a present ACL implementation. The canonical Phase 8.8 execution
+order is unchanged.
+
+The WP-17 pre-certification observation boundary is implemented as a separate,
+authenticated, read-only HTTP/MCP process. It admits only one registry-staged
+generation with signed activation, emits generation-signed real-runtime
+observations, and requires exact four-transport signed convergence before a new
+WP-17 certificate or final evidence can verify. Observation is not certification
+or active serving; normal certified startup still requires final evidence.
+Generation `fc85192e-f672-4cc0-9539-b4b063bb8f41` subsequently completed
+the separate signed evidence, promotion, tunnel cutover, and post-promotion
+four-transport convergence gates. Module 8.8.1 is **CERTIFIED**.
 
 ---
 
@@ -1084,12 +1248,19 @@ makes Phase 8.8 the corrective hardening phase.
 
 ### Phase 8.8 — MCP Production Composition, Contract Correctness, and Phase 9 Preparation
 
-**Status:** Designed; not implemented  
+**Status:** In progress; 8.8.14a and 8.8.14b accepted, 8.8.14c documentation
+reconciliation completed, Module 8.8.1 certified; Phase 8.8 not verified.
 **Entry:** Phase 8.5 certified, Phase 8.6 validated and isolated, Phase 8.7 MCP
 capability work complete, both MCP audits accepted as implementation input.  
 **Exit:** `PHASE_8_8_VERIFIED`; only then may Phase 9 begin.
 
 **Module 8.8.1 — Certified MCP Runtime Convergence**
+
+**Status:** 8.8.1a, 8.8.1b, 8.8.1c, and 8.8.1d **CERTIFIED** for the active
+generation. The signed post-promotion four-transport verifier returned PASS;
+see the [certification report](../../reports/operations/mnemo-module-8-8-1-certification.md)
+and [independent forensic audit](../../reports/operations/mnemo-module-8-8-1-forensic-audit.md). This does not
+certify the 14 tools' individual capability stages or complete Phase 8.8.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
@@ -1244,12 +1415,12 @@ identity-deduplication architecture.
 
 **Module 8.8.14 — Phase 9 Architectural Preparation**
 
-| Task | Notes | Difficulty | Dependency |
-|---|---|---|---|
-| Govern mutable workspace boundary | Select separate mutable workspace or explicitly read-only initial UI; never write into certified corpus | High | Architecture decision |
-| Govern authenticated V2 chat | Select authenticated HTTP FinalQA V2 or design/certify V2 streaming; never reuse unauthenticated V1 socket silently | High | Architecture decision |
-| Reconcile current documentation | Align storage optionality, phase status, routes, backends, and dependencies | Medium | 8.8.14a–b |
-| Issue Phase 9 readiness evidence | Bind all Phase 8.8 gates and protected hashes to one GO/NO-GO result | High | 8.8.1–8.8.13 |
+| Task | Notes | Difficulty | Dependency | Status |
+|---|---|---|---|---|
+| Govern mutable workspace boundary | ADR-0077's explicit absolute separately governed mutable filesystem + SQLite workspace; invalid/absent/overlapping configuration forces server-enforced read-only behavior | High | Phase 8.7 | **8.8.14a implemented / certified / accepted** |
+| Govern authenticated V2 chat | Authenticated HTTP FinalQA V2 is the production chat path; V1 WebSocket/query streaming is non-production and V2 streaming is not required | High | Canonical order after 8.8.14a | **8.8.14b implemented / certified / accepted** |
+| Reconcile current documentation | Align storage optionality, phase status, routes, backends, dependencies, and current indexes without rewriting historical evidence | Medium | Accepted 8.8.14a and 8.8.14b | **8.8.14c completed** |
+| Issue Phase 9 readiness evidence | Bind all Phase 8.8 gates and protected hashes to one GO/NO-GO result | High | 8.8.1–8.8.13, accepted and tested 8.8.14a–c, complete acceptance gate | **8.8.14d pending** |
 
 #### Phase 8.8 Test and Acceptance Matrix
 
@@ -1262,8 +1433,8 @@ identity-deduplication architecture.
 | Metadata | Source-oriented results carry stable IDs and truthful authorized display metadata where persisted |
 | FinalQA | Authenticated certified V2 FinalQA succeeds through the actual external tunnel with correlated duration/deadline evidence |
 | Isolation | Phase 8.5 production and Phase 8.6 evaluation remain distinct; no cross-notebook or unauthorized discovery |
-| Storage safety | Mutable workspace/operational writes cannot enter the immutable corpus; protected DB hashes remain unchanged |
-| Phase 9 prerequisites | Mutable workspace choice and authenticated V2 chat choice are accepted and machine-tested |
+| Storage safety | Before any side effect or mutation-route exposure, the absolute server-owned workspace passes canonical equality, overlap, traversal, symlink/junction, and Windows case-alias checks; typed certified/workspace roles remain disjoint; protected hashes remain unchanged |
+| Phase 9 prerequisites | ADR-0077's mutable workspace plus mandatory read-only fallback and the authenticated V2 chat choice are implemented, accepted, and machine-tested |
 
 Protected hashes at entry and exit:
 
@@ -1298,7 +1469,7 @@ redesign, and certified V2 retrieval redesign.
 | Define design tokens | Colors, typography (Inter/Geist), spacing, radii | Medium | Phase 8.8 VERIFIED |
 | Set up React Router v7 | Routes per architecture §6 | Low | 9.1a |
 | Implement API client layer | All HTTP calls in `src/api/`, using `@tanstack/query` | High | 9.1a |
-| Implement WebSocket client | Reconnection, event parsing, streaming state | High | 9.1a |
+| Implement authenticated V2 HTTP FinalQA client | Bind identity, execution/replay correlation, deadline and citation rendering; V2 streaming is optional future work | High | 9.1a, 8.8.14b |
 
 **Module 9.2 — Dashboard Page**
 
@@ -1313,7 +1484,7 @@ redesign, and certified V2 retrieval redesign.
 |---|---|---|---|
 | Notebook detail header | Title, source count, last updated | Low | 9.1 |
 | Sources tab | File list, upload via multipart, ingestion progress polling | High | 9.1 |
-| Chat tab | WebSocket streaming chat with citation rendering | High | 9.1 |
+| Chat tab | Authenticated HTTP FinalQA V2 with citation rendering; never use the V1 socket as production chat | High | 9.1, 8.8.14b |
 | Notes tab | Note CRUD | Medium | 9.1 |
 | Implement citation rendering | Inline footnotes, click → source location | High | 9.3d |
 
@@ -1322,7 +1493,7 @@ redesign, and certified V2 retrieval redesign.
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
 | Message history | Session turns rendered chronologically | Medium | 9.3 |
-| Token streaming | Render tokens as they arrive from WebSocket | High | 9.3 |
+| Chat progress and terminal result | Show bounded HTTP V2 operation progress, timeout/error, replay and terminal citations; token streaming requires a separate certified V2 contract | High | 9.3 |
 | Citation footnotes | `[1]`, `[2]` → interactive source cards | High | 9.3 |
 | Retrieval metadata display | Show which chunks were retrieved, scores | Medium | 9.3 |
 
@@ -1869,7 +2040,7 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 | **Parity** | Four transports agree on retrieval identities/ranking, citations, source metadata, capability state, and safe errors |
 | **FinalQA** | Authenticated certified V2 FinalQA completes through the real tunnel with correlated server/client timeout evidence |
 | **Isolation** | Phase 8.5 production and Phase 8.6 evaluation remain separate; no cross-notebook discovery |
-| **Phase 9 gate** | Separate mutable workspace or explicit read-only UI and authenticated V2 chat/FinalQA decision are accepted and tested |
+| **Phase 9 gate** | ADR-0077's explicit absolute mutable workspace and mandatory server-enforced read-only fallback, plus authenticated V2 chat/FinalQA, are implemented and tested |
 | **Protected state** | Production, Phase 8.5, and Phase 8.6 database hashes remain unchanged |
 
 ---
@@ -2105,7 +2276,7 @@ mnemo/
 │   │   │   ├── sources.ts
 │   │   │   ├── query.ts
 │   │   │   ├── sessions.ts
-│   │   │   └── ws.ts            ← WebSocket client
+│   │   │   └── final_qa_v2.ts   ← Authenticated HTTP production chat client
 │   │   │
 │   │   ├── pages/
 │   │   │   ├── Dashboard.tsx
@@ -2344,14 +2515,47 @@ EPIC 8: mnemo-server — MCP Server
     ISSUE: mnemo-mcp CLI entrypoint
 
   FEATURE 8.2: MCP Tools
+    ISSUE: Original Phase 8 six-tool MCP contract
     ISSUE: query_notebook tool
     ISSUE: search_all_notebooks tool
     ISSUE: list_notebooks, get_notebook_summary, get_source_insights, get_timeline tools
     ISSUE: MCP spec conformance testing
 
+EPIC 8.8: MCP Production Convergence and Contract Correctness
+  FEATURE 8.8.A: Phase 9 Boundary Decisions and Documentation
+    COMPLETE: 8.8.14a governed mutable workspace boundary — implemented, certified, accepted
+    COMPLETE: 8.8.14b authenticated HTTP FinalQA V2 — implemented, certified, accepted
+    COMPLETE: 8.8.14c current documentation reconciled after both decisions
+
+  FEATURE 8.8.B: Certified Runtime and Contract Foundations
+    COMPLETE: 8.8.1 certified runtime convergence across HTTP, stdio, SSE, and tunnel
+    ISSUE: 8.8.2 immutable-schema-compatible readers
+    ISSUE: 8.8.3 central authorization for all 14 existing tools
+    ISSUE: 8.8.5 source metadata contract
+    ISSUE: 8.8.6 truthful capability reporting
+    ISSUE: 8.8.7 typed MCP error semantics
+
+  FEATURE 8.8.C: Existing Tool, Routing, and Isolation Completion
+    ISSUE: 8.8.4 complete all 14 existing tool contracts
+    ISSUE: 8.8.8 freeze V1/V2 routing
+    ISSUE: 8.8.10 preserve Phase 8.6 evaluation-only isolation
+    ISSUE: 8.8.11 validate structured retrieval availability contract
+
+  FEATURE 8.8.D: Image Discovery, Provenance, and Transport Certification
+    ISSUE: 8.8.12 implement authorized OCR/caption/CLIP/hybrid search_images
+    ISSUE: 8.8.9 certify HTTP, stdio, SSE, and existing tunnel parity
+    ISSUE: 8.8.13 verify end-to-end MCP provenance
+
+  FEATURE 8.8.E: Acceptance and Phase 9 Readiness
+    ISSUE: Run the complete 15-tool Phase 8.8 acceptance gate
+    ISSUE: 8.8.14d issue Phase 9 readiness evidence
+
+  EXECUTION NOTE: Follow the canonical Phase 8.8 execution order above; module
+    numbers and this project grouping do not override task dependencies or order.
+
 EPIC 9: mnemo-ui — Web Interface
   FEATURE 9.1: Foundation
-    ISSUE: Design tokens, routing, API client, WebSocket client
+    ISSUE: Design tokens, routing, authenticated V2 HTTP API client
 
   FEATURE 9.2: Pages
     ISSUE: Dashboard page
@@ -2722,7 +2926,10 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 
 ### Phase 8.8 — MCP Production Convergence and Contract Correctness
 
-- □ Converge HTTP, stdio, SSE, and existing tunnel on certified V2 composition
+This checklist is grouped by module for coverage tracking; it is **not** an
+execution-order list. Execute it only in the canonical Phase 8.8 sequence above.
+
+- ☑ Converge HTTP, stdio, SSE, and existing tunnel on certified V2 composition
 - □ Add immutable certified-schema-compatible shared readers
 - □ Apply authenticated principal and central authorization to all remote tools
 - □ Complete valid/invalid/unavailable/error/provenance contracts for all 14 tools
@@ -2735,8 +2942,11 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - □ Make structured retrieval truthfully available or unavailable by scope
 - □ Implement and verify `search_images` OCR/caption/CLIP/hybrid discovery
 - □ Verify end-to-end identity/provenance chains
-- □ Govern mutable workspace versus immutable certified corpus
-- □ Govern authenticated V2 HTTP FinalQA or V2 streaming for Phase 9 chat
+- ☑ Implement and certify ADR-0077's explicit absolute mutable workspace,
+  typed storage-role separation, and mandatory server-enforced read-only fallback
+- ☑ Govern authenticated HTTP FinalQA V2 for Phase 9 production chat; V1
+  WebSocket/query streaming remains non-production and V2 streaming is optional
+- ☑ Reconcile current documentation after accepted 8.8.14a and 8.8.14b
 - □ Verify protected production/Phase 8.5/Phase 8.6 hashes unchanged
 - □ **[MILESTONE M8.8] PHASE_8_8_VERIFIED and Phase 9 GO issued**
 
@@ -2746,12 +2956,12 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 - □ Design tokens + typography
 - □ React Router v7 routes
 - □ API client layer (`@tanstack/query`)
-- □ WebSocket client (reconnection + streaming state)
+- □ Authenticated V2 HTTP FinalQA client (execution/replay, deadline, citations)
 - □ Dashboard page
 - □ Notebooks list page
 - □ Notebook detail page (tabs)
 - □ Sources tab (upload + progress polling)
-- □ Chat tab (streaming + citations)
+- □ Chat tab (authenticated HTTP FinalQA V2 + citations)
 - □ Notes tab (CRUD)
 - □ Settings page (model config + plugins + health)
 - □ Global search page

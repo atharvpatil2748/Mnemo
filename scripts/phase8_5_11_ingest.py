@@ -64,7 +64,7 @@ def _inventory(corpus: Path, includes: tuple[str, ...] = ()) -> list[dict[str, A
 
 
 def _database_evidence(database: Path, ingestions: list[dict[str, Any]]) -> dict[str, Any]:
-    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
     try:
 
         def scalar(sql: str, values: tuple[object, ...] = ()) -> int:

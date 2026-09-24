@@ -161,10 +161,18 @@ def test_file_loading_applies_defaults_and_resolves_paths(tmp_path: Path) -> Non
     assert config.llm.synthesizer.max_context_tokens == 16384
     assert config.llm.extractor.max_context_tokens == 8192
     assert config.llm.classifier.max_context_tokens == 4096
-    assert (tmp_path / "data" / "files").is_dir()
-    assert (tmp_path / "data").is_dir()
-    assert (tmp_path / "plugins").is_dir()
+    assert not (tmp_path / "data" / "files").exists()
+    assert not (tmp_path / "data").exists()
+    assert not (tmp_path / "plugins").exists()
     assert not (tmp_path / "data" / "mnemo.db").exists()
+
+
+def test_configuration_parsing_has_no_storage_side_effects(tmp_path: Path) -> None:
+    """Parsing resolves paths but creates no storage, cache, or plugin artifacts."""
+    config = MnemoConfig.from_file(_write_config(tmp_path))
+
+    assert config.storage.sqlite.path == tmp_path / "data" / "mnemo.db"
+    assert tuple(path.name for path in tmp_path.iterdir()) == ("mnemo.toml",)
 
 
 def test_all_approved_file_fields_are_loaded(tmp_path: Path) -> None:

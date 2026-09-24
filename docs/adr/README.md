@@ -55,8 +55,10 @@ does not advertise an implemented capability.
 | [ADR-0074](active/ADR-0074-phase-8-5-runtime-and-profile-activation.md) | Phase 8.5 runtime and profile activation |
 | [ADR-0075](active/ADR-0075-additive-document-scope-resolution.md) | Additive document scope resolution; supersedes ADR-0072 mechanism |
 | [ADR-0076](active/ADR-0076-project-owner-engineering-certification-standard.md) | Accepted project-owner engineering certification standard for the exact Mnemo V2 production snapshot |
+| [ADR-0077](active/ADR-0077-governed-mutable-workspace-boundary.md) | Accepted, implemented, and certified separately governed mutable filesystem + SQLite workspace, with mandatory server-enforced read-only fallback |
+| [ADR-0078](active/ADR-0078-generation-aware-production-credential-lifecycle.md) | Accepted generation-aware Mnemo server credential lifecycle; implemented and certified for Module 8.8.1, with historical signed state preserved |
 
-The next available ADR number is **ADR-0077**.
+The next available ADR number is **ADR-0079**.
 
 ## Phase 8.5 references
 

@@ -5,6 +5,22 @@
 **Date:** 2026-09-08  
 **Method:** Read-only repository, ADR, roadmap, Git-history, configuration, database, test, and runtime inspection
 
+> **Forward-implementation status (2026-09-23):** This report remains a
+> point-in-time audit and evidence source. Its recommendation to proceed to
+> Phase 9 after only the mutable-workspace and authenticated-chat preparations
+> is superseded for forward implementation by the current authoritative
+> architecture and engineering roadmap. Those two decisions are now tasks
+> 8.8.14a and 8.8.14b at the start of the canonical Phase 8.8 sequence; Phase 9
+> remains blocked until the complete `PHASE_8_8_VERIFIED` gate and 8.8.14d
+> GO/NO-GO evidence. ADR-0077 subsequently accepted a separately governed,
+> explicitly configured absolute mutable filesystem + SQLite workspace with
+> mandatory server-enforced read-only fallback. The undecided either/or language
+> in this historical report is preserved as the finding at the time; it is not
+> the forward implementation authority. The workspace boundary (8.8.14a) and
+> authenticated HTTP FinalQA V2 chat choice (8.8.14b) are now implemented and
+> certified; 8.8.14c has reconciled current documentation. Module 8.8.1 and
+> the full Phase 8.8 gate remain pending.
+
 ## 1. Executive Verdict
 
 Mnemo should **not implement full four-store persistence now**. Qdrant and SurrealDB are not Phase 9 dependencies, no accepted ADR mandates four-way replication, and enabling them would add synchronization, lifecycle, infrastructure, and recertification work without serving the Phase 9 browser workflow.

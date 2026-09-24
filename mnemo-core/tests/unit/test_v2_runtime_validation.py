@@ -130,6 +130,7 @@ async def test_read_only_runtime_open_is_absent_safe_and_idempotent(tmp_path) ->
 
     sqlite3.connect(database).close()
     store = SQLiteV2ReadOnlyRuntimeStore(database)
+    before = database.read_bytes()
     await store.open()
     connection = store._db
     await store.open()
@@ -137,3 +138,6 @@ async def test_read_only_runtime_open_is_absent_safe_and_idempotent(tmp_path) ->
     with pytest.raises(Exception, match=r"readonly|read-only"):
         await store._db.execute("CREATE TABLE forbidden(value TEXT)")  # type: ignore[union-attr]
     await store.close()
+    assert database.read_bytes() == before
+    assert not (tmp_path / "runtime.db-wal").exists()
+    assert not (tmp_path / "runtime.db-shm").exists()

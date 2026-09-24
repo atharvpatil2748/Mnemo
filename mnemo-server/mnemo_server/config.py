@@ -7,11 +7,48 @@ import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 _VALID_LOG_LEVELS = frozenset({"critical", "error", "warning", "info", "debug", "trace"})
 _VALID_AUTH_MODES = frozenset({"none", "api-key", "jwt"})
+
+
+def _certified_manifest_defaults(root: Path) -> tuple[str, Path | None, Path, Path | None]:
+    """Read non-secret process defaults from the single certified V2 manifest."""
+    try:
+        manifest = json.loads(
+            (root / "config/production/full_multilingual_v2.production.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        mode = manifest["reranker_activation"]["active_mode"]
+        authority = manifest["configuration_authority"]
+        registry = authority.get("credential_registry")
+        activation = authority.get("durable_activation_state")
+        operational = manifest["final_qa_operational_store"]["path"]
+        if mode not in {"BGE_V2_M3"}:
+            raise ValueError("invalid certified reranker mode")
+        if (activation is None) == (registry is None):
+            raise ValueError("certified operational authority is ambiguous")
+        paths = tuple(value for value in (activation, operational, registry) if value is not None)
+        if any(
+            not isinstance(value, str)
+            or not value
+            or Path(value).is_absolute()
+            or ".." in Path(value).parts
+            for value in paths
+        ):
+            raise ValueError("invalid certified operational path")
+        return (
+            mode,
+            None if activation is None else Path(activation),
+            Path(operational),
+            None if registry is None else Path(registry),
+        )
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        raise ValueError("CERTIFIED_PRODUCTION_CONFIGURATION_UNAVAILABLE") from exc
 
 
 class ServerConfig(BaseModel):
@@ -47,6 +84,7 @@ class ServerConfig(BaseModel):
     max_advanced_response_bytes: int = Field(default=1_000_000, ge=256, le=10_000_000)
     max_advanced_content_characters: int = Field(default=200_000, ge=1, le=2_000_000)
     max_advanced_elapsed_milliseconds: int = Field(default=30_000, ge=1, le=60_000)
+    max_final_qa_elapsed_milliseconds: int = Field(default=180_000, ge=1, le=600_000)
     max_structured_rows_scanned: int = Field(default=50_000, ge=1, le=99_999)
     max_structured_rows_returned: int = Field(default=1_000, ge=1, le=10_000)
     max_structured_groups: int = Field(default=1_000, ge=1, le=50_000)
@@ -79,6 +117,13 @@ class ServerConfig(BaseModel):
         description="Server-owned subject authorized to change durable reranker state.",
     )
     final_qa_operational_store_path: Path | None = None
+    mutable_workspace_root: Path | None = Field(
+        default=None,
+        description=(
+            "Explicit absolute operator-owned mutable workspace root. Missing or invalid "
+            "configuration selects server-enforced read-only workspace behavior."
+        ),
+    )
     mcp_stdio_principal_subject: str | None = Field(
         default=None,
         description="Server-owned authenticated subject for the trusted local MCP stdio process.",
@@ -99,6 +144,8 @@ class ServerConfig(BaseModel):
         default=("HS256",),
         description="Allowed JWT signing algorithms.",
     )
+    credential_registry_path: Path | None = None
+    credential_generation_id: UUID | None = None
 
     @model_validator(mode="after")
     def _secure_cursor_configuration(self) -> ServerConfig:
@@ -158,8 +205,102 @@ class ServerConfig(BaseModel):
         return self
 
     @classmethod
-    def from_env(cls) -> ServerConfig:
+    def from_env(
+        cls,
+        *,
+        certified_production: bool = False,
+        certified_root: Path | None = None,
+        pre_certification_observation: bool = False,
+    ) -> ServerConfig:
         """Load server configuration from MNEMO_SERVER_* environment variables."""
+        if pre_certification_observation and not certified_production:
+            raise ValueError("PRE_CERTIFICATION_OBSERVATION_REQUIRES_PRODUCTION")
+        production_enabled = os.environ.get("MNEMO_SERVER_PRODUCTION_MODE", "false").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        v2_enabled = os.environ.get(
+            "MNEMO_SERVER_FULL_MULTILINGUAL_V2_ENABLED", "false"
+        ).lower() in {"1", "true", "yes"}
+        if certified_production:
+            if ("MNEMO_SERVER_PRODUCTION_MODE" in os.environ and not production_enabled) or (
+                "MNEMO_SERVER_FULL_MULTILINGUAL_V2_ENABLED" in os.environ and not v2_enabled
+            ):
+                raise ValueError("CERTIFIED_PRODUCTION_BINDING_REJECTED")
+            production_enabled = True
+            v2_enabled = True
+        authority_root = certified_root or Path(__file__).resolve().parents[2]
+        certified_defaults = (
+            _certified_manifest_defaults(authority_root)
+            if production_enabled and v2_enabled
+            else None
+        )
+        registry_record = None
+        registry_secret: dict[str, str] = {}
+        registry_path = certified_defaults[3] if certified_defaults else None
+        if registry_path is not None:
+            from mnemo_server.services.production_credentials import (
+                CredentialKind,
+                ProductionCredentialRegistry,
+                WindowsCredentialStore,
+            )
+
+            forbidden = (
+                "MNEMO_SERVER_AUTH_MODE",
+                "MNEMO_SERVER_API_KEY",
+                "MNEMO_SERVER_JWT_SECRET",
+                "MNEMO_SERVER_DELIVERY_CURSOR_SECRET",
+                "MNEMO_SERVER_RERANKER_ACTIVATION_OPERATOR_SUBJECT",
+                "MNEMO_SERVER_MCP_STDIO_PRINCIPAL_SUBJECT",
+                "MNEMO_SERVER_RERANKER_ACTIVATION_STATE_PATH",
+            )
+            if any(name in os.environ for name in forbidden):
+                raise ValueError("CERTIFIED_PRODUCTION_CREDENTIAL_FORK_REJECTED")
+            registry = ProductionCredentialRegistry(
+                path=(authority_root / registry_path).resolve(),
+                secret_store=WindowsCredentialStore(),
+            )
+            if pre_certification_observation:
+                from mnemo_server.services.production_credentials import CredentialState
+
+                staged = [
+                    item
+                    for item in registry.load().generations
+                    if item.state is CredentialState.PROVISIONED
+                    and item.observation_campaign_id is not None
+                ]
+                if len(staged) != 1:
+                    raise ValueError("PRE_CERTIFICATION_GENERATION_UNAVAILABLE")
+                registry_record = staged[0]
+                registry_secret["delivery"] = registry.retrieve(
+                    registry_record.generation_id, CredentialKind.DELIVERY_CURSOR
+                )
+            else:
+                registry_record, registry_secret["delivery"] = registry.retrieve_active(
+                    CredentialKind.DELIVERY_CURSOR
+                )
+            kinds = {item.kind for item in registry_record.secrets}
+            if CredentialKind.API_KEY in kinds and CredentialKind.JWT_SECRET not in kinds:
+                registry_secret["auth_mode"] = "api-key"
+                if pre_certification_observation:
+                    registry_secret["api_key"] = registry.retrieve(
+                        registry_record.generation_id, CredentialKind.API_KEY
+                    )
+                else:
+                    _, registry_secret["api_key"] = registry.retrieve_active(CredentialKind.API_KEY)
+            elif CredentialKind.JWT_SECRET in kinds and CredentialKind.API_KEY not in kinds:
+                registry_secret["auth_mode"] = "jwt"
+                if pre_certification_observation:
+                    registry_secret["jwt_secret"] = registry.retrieve(
+                        registry_record.generation_id, CredentialKind.JWT_SECRET
+                    )
+                else:
+                    _, registry_secret["jwt_secret"] = registry.retrieve_active(
+                        CredentialKind.JWT_SECRET
+                    )
+            else:
+                raise ValueError("CERTIFIED_PRODUCTION_AUTH_CREDENTIAL_INVALID")
         host = os.environ.get("MNEMO_SERVER_HOST", "127.0.0.1")
         port_raw = os.environ.get("MNEMO_SERVER_PORT", "8000")
         try:
@@ -217,15 +358,17 @@ class ServerConfig(BaseModel):
                 raise ValueError(f"{name} must be a positive integer, got: {raw!r}")
             return value
 
-        auth_mode_raw = os.environ.get("MNEMO_SERVER_AUTH_MODE", "none").lower()
+        auth_mode_raw = registry_secret.get(
+            "auth_mode", os.environ.get("MNEMO_SERVER_AUTH_MODE", "none").lower()
+        )
         if auth_mode_raw not in _VALID_AUTH_MODES:
             valid_auth = sorted(_VALID_AUTH_MODES)
             raise ValueError(
                 f"MNEMO_SERVER_AUTH_MODE must be one of {valid_auth}, got: {auth_mode_raw!r}"
             )
 
-        api_key = os.environ.get("MNEMO_SERVER_API_KEY")
-        jwt_secret = os.environ.get("MNEMO_SERVER_JWT_SECRET")
+        api_key = registry_secret.get("api_key", os.environ.get("MNEMO_SERVER_API_KEY"))
+        jwt_secret = registry_secret.get("jwt_secret", os.environ.get("MNEMO_SERVER_JWT_SECRET"))
 
         rotation_raw = os.environ.get("MNEMO_SERVER_DELIVERY_CURSOR_ROTATION_KEYS", "{}")
         try:
@@ -288,6 +431,9 @@ class ServerConfig(BaseModel):
             max_advanced_elapsed_milliseconds=_positive_env(
                 "MNEMO_SERVER_MAX_ADVANCED_ELAPSED_MILLISECONDS", 30_000
             ),
+            max_final_qa_elapsed_milliseconds=_positive_env(
+                "MNEMO_SERVER_MAX_FINAL_QA_ELAPSED_MILLISECONDS", 180_000
+            ),
             max_structured_rows_scanned=_positive_env(
                 "MNEMO_SERVER_MAX_STRUCTURED_ROWS_SCANNED", 50_000
             ),
@@ -304,8 +450,9 @@ class ServerConfig(BaseModel):
                 "MNEMO_SERVER_MAX_STRUCTURED_ELAPSED_MILLISECONDS", 5_000
             ),
             max_structured_page_size=_positive_env("MNEMO_SERVER_MAX_STRUCTURED_PAGE_SIZE", 500),
-            delivery_cursor_secret=os.environ.get(
-                "MNEMO_SERVER_DELIVERY_CURSOR_SECRET", "mnemo-local-delivery-v1"
+            delivery_cursor_secret=registry_secret.get(
+                "delivery",
+                os.environ.get("MNEMO_SERVER_DELIVERY_CURSOR_SECRET", "mnemo-local-delivery-v1"),
             ),
             delivery_cursor_key_id=os.environ.get(
                 "MNEMO_SERVER_DELIVERY_CURSOR_KEY_ID", "delivery-v2"
@@ -317,14 +464,11 @@ class ServerConfig(BaseModel):
             delivery_cursor_legacy_v1_overlap_seconds=legacy_overlap,
             delivery_cursor_legacy_v1_accept_until=datetime.now(UTC)
             + timedelta(seconds=legacy_overlap),
-            production_mode=os.environ.get("MNEMO_SERVER_PRODUCTION_MODE", "false").lower()
-            in {"1", "true", "yes"},
-            full_multilingual_v2_enabled=os.environ.get(
-                "MNEMO_SERVER_FULL_MULTILINGUAL_V2_ENABLED", "false"
-            ).lower()
-            in {"1", "true", "yes"},
+            production_mode=production_enabled,
+            full_multilingual_v2_enabled=v2_enabled,
             full_multilingual_v2_reranker_mode=os.environ.get(
-                "MNEMO_SERVER_FULL_MULTILINGUAL_V2_RERANKER_MODE", "PASS_THROUGH"
+                "MNEMO_SERVER_FULL_MULTILINGUAL_V2_RERANKER_MODE",
+                certified_defaults[0] if certified_defaults else "PASS_THROUGH",
             ),  # type: ignore[arg-type]
             full_multilingual_v2_model_cache=(
                 Path(value)
@@ -333,20 +477,53 @@ class ServerConfig(BaseModel):
             ),
             reranker_activation_state_path=(
                 Path(value)
-                if (value := os.environ.get("MNEMO_SERVER_RERANKER_ACTIVATION_STATE_PATH"))
+                if (
+                    value := os.environ.get(
+                        "MNEMO_SERVER_RERANKER_ACTIVATION_STATE_PATH",
+                        (
+                            registry_record.activation_path
+                            if registry_record is not None
+                            else str(certified_defaults[1])
+                            if certified_defaults
+                            else None
+                        ),
+                    )
+                )
                 else None
             ),
-            reranker_activation_operator_subject=os.environ.get(
-                "MNEMO_SERVER_RERANKER_ACTIVATION_OPERATOR_SUBJECT"
+            reranker_activation_operator_subject=(
+                registry_record.owner_subject
+                if registry_record is not None
+                else os.environ.get("MNEMO_SERVER_RERANKER_ACTIVATION_OPERATOR_SUBJECT")
             ),
             final_qa_operational_store_path=(
                 Path(value)
-                if (value := os.environ.get("MNEMO_SERVER_FINAL_QA_OPERATIONAL_STORE_PATH"))
+                if (
+                    value := os.environ.get(
+                        "MNEMO_SERVER_FINAL_QA_OPERATIONAL_STORE_PATH",
+                        str(certified_defaults[2]) if certified_defaults else None,
+                    )
+                )
                 else None
             ),
-            mcp_stdio_principal_subject=os.environ.get("MNEMO_SERVER_MCP_STDIO_PRINCIPAL_SUBJECT"),
+            mutable_workspace_root=(
+                Path(value)
+                if (value := os.environ.get("MNEMO_SERVER_MUTABLE_WORKSPACE_ROOT"))
+                else None
+            ),
+            mcp_stdio_principal_subject=(
+                registry_record.service_subject
+                if registry_record is not None
+                else os.environ.get("MNEMO_SERVER_MCP_STDIO_PRINCIPAL_SUBJECT")
+            ),
             auth_mode=auth_mode_raw,  # type: ignore[arg-type]
             api_key=api_key,
             jwt_secret=jwt_secret,
             jwt_algorithms=jwt_algorithms,
+            credential_registry_path=(
+                (authority_root / registry_path).resolve() if registry_path is not None else None
+            ),
+            credential_generation_id=(
+                registry_record.generation_id if registry_record is not None else None
+            ),
         )

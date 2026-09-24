@@ -1,5 +1,9 @@
 # Mnemo pre-Phase-8.8 Git checkpoint
 
+> **Historical notice (2026-09-22):** Manual Gita database references below
+> record this checkpoint. ADR-0077 Phase 8.8.14a certification subsequently
+> deprecated and removed that fixture from the active governed/test surface.
+
 **Status:** `PRE_PHASE_8_8_COVERAGE_SATISFIED__AWAITING_OWNER_COMMITTAL_SCOPE`
 
 **Date:** 2026-09-11 (Asia/Calcutta) — updated following 90.06% coverage verification

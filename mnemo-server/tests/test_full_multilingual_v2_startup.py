@@ -203,6 +203,7 @@ def test_install_production_runtime_binds_identity_and_exposure(
     installed = asyncio.run(
         subject.install_production_full_multilingual_v2(
             engine=engine,  # type: ignore[arg-type]
+            production_config=engine.config,  # type: ignore[arg-type]
             workspace_root=tmp_path,
             model_cache=tmp_path / "models",
             readiness=readiness,  # type: ignore[arg-type]
@@ -229,6 +230,7 @@ def test_install_rejects_wrong_production_database_before_opening(
         asyncio.run(
             subject.install_production_full_multilingual_v2(
                 engine=engine,  # type: ignore[arg-type]
+                production_config=engine.config,  # type: ignore[arg-type]
                 workspace_root=tmp_path,
                 model_cache=tmp_path,
                 readiness=SimpleNamespace(),  # type: ignore[arg-type]

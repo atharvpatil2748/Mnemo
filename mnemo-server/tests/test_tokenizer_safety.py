@@ -60,6 +60,7 @@ async def test_tokenizer_provisioning_runs_off_event_loop(tmp_path: Path) -> Non
         patch("mnemo_server.app.asyncio.to_thread", side_effect=mock_to_thread),
         patch("mnemo_server.app.O200KBaseTokenCounter") as mock_counter_cls,
         patch("mnemo_server.app.KnowledgeEngine", return_value=mock_engine),
+        patch("mnemo_server.services.production_runtime_binding.reject_uncertified_corpus_startup"),
     ):
         mock_counter_cls.return_value = MagicMock()
         mock_config = MagicMock(spec=MnemoConfig)

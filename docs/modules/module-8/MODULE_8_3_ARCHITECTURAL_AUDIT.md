@@ -1,5 +1,10 @@
 # Module 8.3 — Architectural Audit: MCP Testing & Client Integration
 
+> **Historical notice (2026-09-22):** References below to the Manual Gita
+> database and its Golden Corpus test describe this checkpoint only. ADR-0077
+> Phase 8.8.14a certification deprecated and removed that fixture, script, and
+> writable integration test from the active governed/test surface.
+
 - **MODULE:** Phase 8, Module 8.3 (MCP Testing & Client Integration)
 - **STATUS:** AUDIT COMPLETE / READY FOR INTEGRATION VALIDATION
 - **GOVERNING DOCUMENTS:**

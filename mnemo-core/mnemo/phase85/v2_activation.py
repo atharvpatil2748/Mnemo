@@ -136,7 +136,7 @@ class FullMultilingualV2ActivationOperator:
 
     @staticmethod
     def _validate_ready_database(target: Path, authorization: V2ActivationAuthorizationV1) -> None:
-        connection = sqlite3.connect(f"file:{target.as_posix()}?mode=ro", uri=True)
+        connection = sqlite3.connect(f"file:{target.as_posix()}?mode=ro&immutable=1", uri=True)
         try:
             run = connection.execute(
                 """SELECT state,profile_fingerprint,vector_space_identity,
@@ -210,7 +210,7 @@ class FullMultilingualV2ActivationOperator:
     def _validate_active_database(
         target: Path, authorization: V2ActivationAuthorizationV1, alias_set_digest: str
     ) -> None:
-        connection = sqlite3.connect(f"file:{target.as_posix()}?mode=ro", uri=True)
+        connection = sqlite3.connect(f"file:{target.as_posix()}?mode=ro&immutable=1", uri=True)
         try:
             active = connection.execute(
                 "SELECT alias_set_digest FROM active_multilingual_v2_alias_set WHERE singleton=1"

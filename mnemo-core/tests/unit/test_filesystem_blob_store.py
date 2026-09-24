@@ -55,6 +55,7 @@ from mnemo.models import (
 from mnemo.models.blocks import Block
 from mnemo.storage.filesystem import (
     FilesystemBlobStore,
+    ImmutableFilesystemBlobStore,
     _asset_id_for_hash,
     _compute_sha256,
     _deserialize_parsed_document,
@@ -840,6 +841,24 @@ def test_asset_id_for_hash_deterministic() -> None:
 def test_asset_id_for_hash_differs_for_different_hashes() -> None:
     """_asset_id_for_hash produces different UUIDs for different hashes."""
     assert _asset_id_for_hash("a" * 64) != _asset_id_for_hash("b" * 64)
+
+
+def test_immutable_filesystem_store_never_creates_or_mutates(tmp_path: Path) -> None:
+    missing = tmp_path / "missing"
+    with pytest.raises(StorageError, match="does not exist"):
+        _run(ImmutableFilesystemBlobStore(missing).open())
+    assert not missing.exists()
+
+    root = tmp_path / "certified"
+    root.mkdir()
+    store = ImmutableFilesystemBlobStore(root)
+    _run(store.open())
+    with pytest.raises(StorageError, match="IMMUTABLE"):
+        _run(store.put_asset(b"bytes", "text/plain", FrozenMetadata()))
+    with pytest.raises(StorageError, match="IMMUTABLE"):
+        _run(store.delete_asset(uuid4()))
+    assert tuple(root.iterdir()) == ()
+    _run(store.close())
 
 
 def test_asset_record_fails_closed_for_each_corrupt_sidecar_field(

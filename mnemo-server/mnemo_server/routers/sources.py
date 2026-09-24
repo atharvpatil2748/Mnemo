@@ -23,7 +23,12 @@ from mnemo.engine import KnowledgeEngine
 from mnemo.interfaces import TokenCounterInterfaceV1
 
 from ..config import ServerConfig
-from ..dependencies import get_engine, get_server_config, get_token_counter
+from ..dependencies import (
+    get_engine,
+    get_server_config,
+    get_token_counter,
+    require_mutable_workspace,
+)
 from ..schemas.common import PageResponse
 from ..schemas.sources import SourceResponse, SourceStatusResponse
 from ..services.ingestion import IngestionService
@@ -42,6 +47,7 @@ SourceIdPath = Annotated[UUID, FastPath(description="The unique source ID")]
     response_model=SourceResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Ingest a source file into a notebook",
+    dependencies=[Depends(require_mutable_workspace)],
 )
 async def ingest_source(
     notebook_id: NotebookIdPath,
@@ -142,6 +148,7 @@ async def get_source(
     "/{notebook_id}/sources/{source_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a source from a notebook",
+    dependencies=[Depends(require_mutable_workspace)],
 )
 async def delete_source(
     notebook_id: NotebookIdPath,

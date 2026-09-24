@@ -3,16 +3,21 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import hashlib
+import hmac
 import json
+import time
 from dataclasses import replace
 from datetime import UTC, datetime
+from pathlib import Path
 from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import httpx
 import pytest
 from fastapi import FastAPI, Request
+from mnemo.config import MnemoConfig
 from mnemo.engine import EngineState
 from mnemo.interfaces import ConflictError, IntegrityError, OperationTimeoutError
 from mnemo.models import FrozenMetadata
@@ -33,12 +38,15 @@ from mnemo.models.multimodal import (
     evidence_candidate_v2_id,
 )
 from mnemo.retrieval import FinalQAV2Orchestrator, MultimodalContextBuilder
+from mnemo.storage import SQLiteFinalQAOperationalStore
+from mnemo_server.app import create_app
 from mnemo_server.config import ServerConfig
 from mnemo_server.dependencies import get_engine, get_server_config
 from mnemo_server.errors import register_error_handlers
 from mnemo_server.mcp.tools import execute_mcp_tool
 from mnemo_server.routers.final_qa_v2 import router
 from mnemo_server.schemas.retrieval_v2 import EvidenceSearchRequest
+from mnemo_server.services.authorization import principal_from_claims
 from mnemo_server.services.final_qa_v2 import FinalQAV2ApplicationService
 
 NOTEBOOK_ID = UUID(int=10)
@@ -336,7 +344,8 @@ async def test_http_and_mcp_replay_zero_provider_calls_and_conflict(monkeypatch)
             f"/v2/notebooks/{NOTEBOOK_ID}/final-qa",
             json={**body, "principal_id": str(uuid4())},
         )
-    assert unauthorized.status_code == 409
+    assert unauthorized.status_code == 404
+    assert unauthorized.json()["error"]["message"] == "authorized resource was not found"
     assert forged.status_code == 422
     assert len(provider.requests) == 1
     http_execution = store.executions[turn_id]
@@ -558,3 +567,320 @@ async def test_transport_rejects_two_invalid_citation_attempts_without_replay_ge
     with pytest.raises(IntegrityError, match="citation_compliance"):
         await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
     assert len(provider.requests) == 2
+
+
+def _jwt(subject: str, secret: str, *, expires_at: int) -> str:
+    header = base64.urlsafe_b64encode(b'{"alg":"HS256","typ":"JWT"}').rstrip(b"=").decode()
+    claims = (
+        base64.urlsafe_b64encode(json.dumps({"sub": subject, "exp": expires_at}).encode())
+        .rstrip(b"=")
+        .decode()
+    )
+    signature = (
+        base64.urlsafe_b64encode(
+            hmac.new(secret.encode(), f"{header}.{claims}".encode(), hashlib.sha256).digest()
+        )
+        .rstrip(b"=")
+        .decode()
+    )
+    return f"{header}.{claims}.{signature}"
+
+
+def _production_chat_app(
+    tmp_path: Path,
+    operational: SQLiteFinalQAOperationalStore,
+    provider: Provider,
+    *,
+    auth_mode: str = "api-key",
+    timeout_ms: int = 180_000,
+):  # type: ignore[no-untyped-def]
+    class NotebookReader:
+        async def get_notebook(self, notebook_id: UUID):  # type: ignore[no-untyped-def]
+            return object() if notebook_id == NOTEBOOK_ID else None
+
+    reader = NotebookReader()
+    authorizer = Authorizer()
+    engine = SimpleNamespace(
+        state=EngineState.READY,
+        certified_read_only=True,
+        storage=reader,
+        final_qa_v2_execution_store=operational,
+        final_qa_v2=FinalQAV2Orchestrator(
+            operational,
+            provider,
+            MultimodalContextBuilder(authorizer, Counter()),
+            Counter(),
+            authorizer,
+        ),
+    )
+
+    async def lifecycle() -> None:
+        return None
+
+    engine.initialize = lifecycle
+    engine.shutdown = lifecycle
+    core = MnemoConfig.from_file(Path("mnemo.toml"))
+    core = core.model_copy(
+        update={
+            "storage": core.storage.model_copy(
+                update={
+                    "sqlite": core.storage.sqlite.model_copy(
+                        update={"path": tmp_path / "certified" / "corpus.db"}
+                    ),
+                    "filesystem": core.storage.filesystem.model_copy(
+                        update={"root": tmp_path / "certified" / "blobs"}
+                    ),
+                }
+            )
+        }
+    )
+    engine.config = core
+    config = ServerConfig(
+        production_mode=True,
+        auth_mode=auth_mode,
+        api_key="chat-key" if auth_mode == "api-key" else None,
+        jwt_secret="chat-jwt-secret-32-bytes-minimum-long" if auth_mode == "jwt" else None,
+        delivery_cursor_secret="cursor-secret-32-bytes-minimum-long",
+        final_qa_operational_store_path=operational.path,
+        max_final_qa_elapsed_milliseconds=timeout_ms,
+    )
+    return create_app(
+        server_config=config,
+        mnemo_config=core,
+        engine=engine,
+        provision_tokenizer_on_startup=False,
+    ), engine
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("auth_mode", ["api-key", "jwt"])
+async def test_production_http_chat_authentication_replay_and_isolated_store(
+    tmp_path: Path, monkeypatch, auth_mode: str
+) -> None:  # type: ignore[no-untyped-def]
+    operational = SQLiteFinalQAOperationalStore(tmp_path / "operational" / "final_qa_v2.db")
+    await operational.open()
+    provider = Provider(["Grounded [source:1]"])
+    app, engine = _production_chat_app(tmp_path, operational, provider, auth_mode=auth_mode)
+    question = "What is stated?"
+    seen_principals = []
+
+    class AuthorizedRetrieval:
+        async def execute_authorized(self, *, principal, plan, cursor=None):  # type: ignore[no-untyped-def]
+            del cursor
+            seen_principals.append(principal)
+            assert plan.scope.notebook_id == NOTEBOOK_ID
+            return SimpleNamespace(
+                query_fingerprint=hashlib.sha256(question.encode()).hexdigest(),
+                snapshot_identity=hashlib.sha256(b"authorized-snapshot").hexdigest(),
+                completeness=RetrievalCompleteness.COMPLETE,
+                examined_count=1,
+                diagnostics=SimpleNamespace(elapsed_milliseconds=1),
+            )
+
+    engine.advanced_retrieval = AuthorizedRetrieval()
+    monkeypatch.setattr(
+        "mnemo_server.services.final_qa_v2.candidates_from_retrieval",
+        lambda raw: (candidate(),),
+    )
+    body = payload(question, uuid4())
+    credentials = (
+        {"Authorization": "Bearer chat-key"}
+        if auth_mode == "api-key"
+        else {
+            "Authorization": "Bearer "
+            + _jwt(
+                "chat-user",
+                "chat-jwt-secret-32-bytes-minimum-long",
+                expires_at=int(time.time()) + 60,
+            )
+        }
+    )
+    try:
+        async with (
+            app.router.lifespan_context(app),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client,
+        ):
+            path = f"/v2/notebooks/{NOTEBOOK_ID}/final-qa"
+            missing = await client.post(path, json=body)
+            invalid = await client.post(
+                path, json=body, headers={"Authorization": "Bearer invalid"}
+            )
+            assert missing.status_code == invalid.status_code == 401
+            if auth_mode == "jwt":
+                expired = await client.post(
+                    path,
+                    json=body,
+                    headers={
+                        "Authorization": "Bearer "
+                        + _jwt(
+                            "chat-user",
+                            "chat-jwt-secret-32-bytes-minimum-long",
+                            expires_at=int(time.time()) - 100,
+                        )
+                    },
+                )
+                assert expired.status_code == 401
+            for key in ("principal_id", "storage_role", "workspace_root", "database_path"):
+                rejected = await client.post(
+                    path, json={**body, key: "client-value"}, headers=credentials
+                )
+                assert rejected.status_code == 422
+            wrong_path = await client.post(
+                f"/v2/notebooks/{UUID(int=999)}/final-qa", json=body, headers=credentials
+            )
+            assert wrong_path.status_code == 422
+            unknown = await client.post(
+                f"/v2/notebooks/{UUID(int=999)}/final-qa",
+                json={
+                    **body,
+                    "notebook_id": str(UUID(int=999)),
+                    "evidence_request_or_snapshot": {
+                        **body["evidence_request_or_snapshot"],
+                        "scope": {"notebook_id": str(UUID(int=999))},
+                    },
+                },
+                headers=credentials,
+            )
+            assert unknown.status_code == 404
+            assert unknown.json()["error"]["message"] == "authorized resource was not found"
+            first = await client.post(path, json=body, headers=credentials)
+            replay = await client.post(path, json=body, headers=credentials)
+            assert first.status_code == replay.status_code == 200
+            assert first.json()["execution_id"] == replay.json()["execution_id"]
+            assert replay.json()["replayed"] is True
+            assert first.json()["citations"][0]["document_id"] == str(UUID(int=101))
+            assert first.json()["snapshot_identity"]
+            assert len(provider.requests) == 1
+            assert len(seen_principals) == 2
+            expected_subject = "api-key" if auth_mode == "api-key" else "chat-user"
+            assert seen_principals[0] == principal_from_claims({"sub": expected_subject})
+            if auth_mode == "jwt":
+                other_actor = await client.post(
+                    path,
+                    json=body,
+                    headers={
+                        "Authorization": "Bearer "
+                        + _jwt(
+                            "other-chat-user",
+                            "chat-jwt-secret-32-bytes-minimum-long",
+                            expires_at=int(time.time()) + 60,
+                        )
+                    },
+                )
+                assert other_actor.status_code == 404
+                assert other_actor.json()["error"]["message"] == (
+                    "authorized resource was not found"
+                )
+                assert len(provider.requests) == 1
+        persisted = await operational.get_final_qa_v2_execution(UUID(body["assistant_turn_id"]))
+        assert persisted is not None
+        assert persisted.actor_id == seen_principals[0].actor_id
+        assert persisted.state is FinalQAExecutionState.PUBLISHED
+        assert (tmp_path / "operational" / "final_qa_v2.db").exists()
+        assert not (tmp_path / "certified" / "corpus.db").exists()
+    finally:
+        await operational.close()
+
+
+@pytest.mark.anyio
+async def test_production_http_chat_full_deadline_records_terminal_state(
+    tmp_path: Path, monkeypatch
+) -> None:  # type: ignore[no-untyped-def]
+    class BlockingProvider(Provider):
+        async def complete(self, request):  # type: ignore[no-untyped-def]
+            del request
+            await asyncio.Event().wait()
+            raise AssertionError("unreachable")
+
+    operational = SQLiteFinalQAOperationalStore(tmp_path / "operational" / "final_qa_v2.db")
+    await operational.open()
+    # Give the replay's authorization/persistence reads room under a busy full
+    # suite; the provider remains deterministically blocked until the deadline.
+    app, _ = _production_chat_app(tmp_path, operational, BlockingProvider([]), timeout_ms=500)
+    question = "Timed out publication"
+    evidence = retrieval((candidate(),), question)
+
+    async def authorized_retrieval(self, query, request, principal):  # type: ignore[no-untyped-def]
+        del self, request, principal
+        return replace(evidence, query=query)
+
+    monkeypatch.setattr(
+        FinalQAV2ApplicationService, "_retrieval_result_authorized", authorized_retrieval
+    )
+    body = payload(question, uuid4())
+    try:
+        async with (
+            app.router.lifespan_context(app),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client,
+        ):
+            path = f"/v2/notebooks/{NOTEBOOK_ID}/final-qa"
+            response = await client.post(
+                path, json=body, headers={"Authorization": "Bearer chat-key"}
+            )
+            assert response.status_code == 504
+            assert response.json()["error"]["code"] == "contract.timeout"
+            assert response.json()["error"]["details"]["execution_id"]
+            replay = await client.post(
+                path, json=body, headers={"Authorization": "Bearer chat-key"}
+            )
+            assert replay.status_code == 409
+        persisted = await operational.get_final_qa_v2_execution(UUID(body["assistant_turn_id"]))
+        assert persisted is not None
+        assert persisted.state is FinalQAExecutionState.TIMED_OUT
+        assert persisted.failure_classification == "operation_timeout"
+        assert not (tmp_path / "certified" / "corpus.db").exists()
+    finally:
+        await operational.close()
+
+
+@pytest.mark.anyio
+async def test_production_http_chat_stalled_timeout_reconciliation_fails_safely(
+    tmp_path: Path, monkeypatch
+) -> None:  # type: ignore[no-untyped-def]
+    class BlockingProvider(Provider):
+        async def complete(self, request):  # type: ignore[no-untyped-def]
+            del request
+            await asyncio.Event().wait()
+            raise AssertionError("unreachable")
+
+    operational = SQLiteFinalQAOperationalStore(tmp_path / "operational" / "final_qa_v2.db")
+    await operational.open()
+    app, _ = _production_chat_app(tmp_path, operational, BlockingProvider([]), timeout_ms=20)
+    evidence = retrieval((candidate(),), "Timeout reconciliation")
+
+    async def authorized_retrieval(self, query, request, principal):  # type: ignore[no-untyped-def]
+        del self, request, principal
+        return replace(evidence, query=query)
+
+    async def stalled_reconciliation(body, principal, store):  # type: ignore[no-untyped-def]
+        del body, principal, store
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(
+        FinalQAV2ApplicationService, "_retrieval_result_authorized", authorized_retrieval
+    )
+    monkeypatch.setattr(
+        FinalQAV2ApplicationService, "_record_timeout", staticmethod(stalled_reconciliation)
+    )
+    monkeypatch.setattr("mnemo_server.services.final_qa_v2._TIMEOUT_RECONCILIATION_SECONDS", 0.01)
+    try:
+        async with (
+            app.router.lifespan_context(app),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client,
+        ):
+            response = await client.post(
+                f"/v2/notebooks/{NOTEBOOK_ID}/final-qa",
+                json=payload("Timeout reconciliation", uuid4()),
+                headers={"Authorization": "Bearer chat-key"},
+            )
+            assert response.status_code == 503
+            assert response.json()["error"]["code"] == "contract.dependency_unavailable"
+            assert response.json()["error"]["details"]["execution_id"]
+    finally:
+        await operational.close()

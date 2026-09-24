@@ -4,6 +4,20 @@
 **Date:** 2026-09-08  
 **Scope:** Decision-grade pre-Phase-8.8 audit only. No implementation, configuration, database, model, registry, activation, certification, or tunnel changes were made.
 
+> **Forward-implementation status (2026-09-23):** This report remains a
+> point-in-time audit and evidence source. Its recommendation to defer semantic
+> multimodal discovery and its conditional Phase 9 wording are superseded for
+> forward implementation by the current authoritative architecture and
+> engineering roadmap. Those living documents require `search_images` in Phase
+> 8.8 and permit Phase 9 only after the complete `PHASE_8_8_VERIFIED` gate. The
+> factual defects and observations below remain valid Phase 8.8 inputs.
+> ADR-0077 subsequently resolved the mutable-workspace alternative in favor of
+> a separately governed explicit absolute workspace with mandatory read-only
+> fallback; 8.8.14a is now implemented and certified. Authenticated HTTP
+> FinalQA V2 was subsequently accepted as production chat in 8.8.14b, and
+> 8.8.14c reconciled the current documentation. The historical findings below
+> remain unchanged; Module 8.8.1 and the complete Phase 8.8 gate are pending.
+
 ## 1. Executive Summary
 
 The external client's results were real observations, but they did not all describe the same architecture that Mnemo certified. There are currently two materially different MCP compositions:

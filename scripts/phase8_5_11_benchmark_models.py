@@ -96,7 +96,7 @@ def _snapshot(hub: Path, repository: str) -> Path:
 
 
 def _documents(database: Path) -> tuple[list[str], list[str]]:
-    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
     connection.row_factory = sqlite3.Row
     try:
         rows = connection.execute(

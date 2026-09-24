@@ -35,6 +35,7 @@ class ProductionParityBGEEvaluationLeaseV1:
     reranker: BGEMultilingualReranker
     assembler: ProductionFullMultilingualV2ServerDependencyAssemblerV1
     installed: InstalledFullMultilingualV2RuntimeV1
+    expected_mode: V2RerankerMode
 
     @classmethod
     async def open(
@@ -44,10 +45,15 @@ class ProductionParityBGEEvaluationLeaseV1:
         installed: InstalledFullMultilingualV2RuntimeV1,
         workspace_root: Path,
         model_cache: Path,
+        pre_certification_observation: bool = False,
     ) -> ProductionParityBGEEvaluationLeaseV1:
-        if (
-            installed.reranker.mode is not V2RerankerMode.PASS_THROUGH
-            or installed.reranker.activation_record is not None
+        expected_mode = (
+            V2RerankerMode.BGE_V2_M3
+            if pre_certification_observation
+            else V2RerankerMode.PASS_THROUGH
+        )
+        if installed.reranker.mode is not expected_mode or (
+            (installed.reranker.activation_record is not None) is not pre_certification_observation
         ):
             raise RuntimeError("PRODUCTION_EVALUATION_REQUIRES_INACTIVE_BGE")
         profile = profile_snapshot(
@@ -72,7 +78,7 @@ class ProductionParityBGEEvaluationLeaseV1:
             await assembler.close()
             await reranker.close()
             raise
-        if installed.reranker.mode is not V2RerankerMode.PASS_THROUGH:
+        if installed.reranker.mode is not expected_mode:
             await assembler.close()
             await reranker.close()
             raise RuntimeError("PRODUCTION_EVALUATION_MUTATED_ACTIVE_ROUTER")
@@ -81,13 +87,14 @@ class ProductionParityBGEEvaluationLeaseV1:
             reranker=reranker,
             assembler=assembler,
             installed=installed,
+            expected_mode=expected_mode,
         )
 
     async def close(self) -> None:
         await self.assembler.close()
         await self.reranker.close()
-        if (
-            self.installed.reranker.mode is not V2RerankerMode.PASS_THROUGH
-            or self.installed.reranker.activation_record is not None
+        if self.installed.reranker.mode is not self.expected_mode or (
+            (self.installed.reranker.activation_record is not None)
+            is not (self.expected_mode is V2RerankerMode.BGE_V2_M3)
         ):
             raise RuntimeError("PRODUCTION_EVALUATION_MUTATED_ACTIVE_ROUTER")

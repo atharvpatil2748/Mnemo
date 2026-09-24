@@ -55,6 +55,7 @@ from mnemo_server.services.delivery import build_delivery_service, delivery_resp
 from mnemo_server.services.final_qa_v2 import (
     FinalQAV2ApplicationService,
 )
+from mnemo_server.services.mutable_workspace import MutableWorkspaceDecision
 from mnemo_server.services.query import QueryService
 from mnemo_server.services.retrieval_v2 import EvidenceRetrievalApplicationService
 from mnemo_server.services.search import SearchService
@@ -632,6 +633,7 @@ async def execute_mcp_tool(
     arguments: dict[str, Any] | None,
     server_config: ServerConfig | None = None,
     principal: ServerPrincipalV1 | None = None,
+    workspace_decision: MutableWorkspaceDecision | None = None,
 ) -> list[MCPContent]:
     """Execute an authorized Mnemo MCP knowledge tool call."""
     if engine is None or engine.state is not EngineState.READY:
@@ -670,7 +672,7 @@ async def execute_mcp_tool(
             server_principal,
         )
     elif name == "get_capabilities":
-        return await _handle_get_capabilities(engine, args, config)
+        return await _handle_get_capabilities(engine, args, config, workspace_decision)
     elif name == "list_notebooks":
         return await _handle_list_notebooks(engine, args)
     elif name == "get_notebook_summary":
@@ -747,10 +749,13 @@ async def _handle_final_qa_v2(
 
 
 async def _handle_get_capabilities(
-    engine: KnowledgeEngine, args: dict[str, Any], config: ServerConfig
+    engine: KnowledgeEngine,
+    args: dict[str, Any],
+    config: ServerConfig,
+    workspace_decision: MutableWorkspaceDecision | None,
 ) -> list[MCPContent]:
     request = CapabilityDiscoveryRequest.model_validate(args)
-    response = CapabilityDiscoveryService(engine, config).document(request)
+    response = CapabilityDiscoveryService(engine, config, workspace_decision).document(request)
     return [types.TextContent(type="text", text=response.model_dump_json(indent=2))]
 
 
