@@ -6,11 +6,11 @@ import hashlib
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Final
+from typing import Final, Literal, cast
 
 from mnemo.engine import EngineState, KnowledgeEngine
-from mnemo.interfaces import ContractValidationError
-from mnemo.phase85 import CapabilityStatus
+from mnemo.interfaces import ContractValidationError, PrincipalContextV1
+from mnemo.phase85 import CapabilityState, CapabilityStatus
 
 from mnemo_server.config import ServerConfig
 from mnemo_server.schemas.capabilities_v2 import (
@@ -18,6 +18,7 @@ from mnemo_server.schemas.capabilities_v2 import (
     CapabilityDependencyResponse,
     CapabilityDiscoveryRequest,
     CapabilityDocument,
+    CapabilityEffectiveIdentityResponse,
     CapabilityGenerationResponse,
     CapabilityLifecycleResponse,
     CapabilityNextActionResponse,
@@ -28,7 +29,12 @@ from mnemo_server.schemas.capabilities_v2 import (
     CapabilityTaskGuidanceResponse,
     CapabilityTransportResponse,
 )
+from mnemo_server.services.authorization import (
+    AuthorizationOperationV1,
+    CentralAuthorizationServiceV1,
+)
 from mnemo_server.services.mutable_workspace import MutableWorkspaceDecision
+from mnemo_server.services.production_runtime_binding import CertifiedProductionBinding
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +51,8 @@ class _PublicSemantics:
 
 _GENERATION_BACKED: Final = frozenset(
     {
+        "caption_derivation",
+        "clip_embedding",
         "ocr",
         "vision",
         "visual_vector_retrieval",
@@ -115,6 +123,13 @@ _SEMANTICS: Final[dict[str, _PublicSemantics]] = {
         modalities=("image",),
         continuation=True,
         mcp=("get_asset",),
+    ),
+    "caption_derivation": _PublicSemantics(
+        "derived", ("vision_caption",), modalities=("image",), mcp=("get_image_analysis",)
+    ),
+    "clip_embedding": _PublicSemantics("derived", ("visual_vector",), modalities=("image",)),
+    "semantic_image_search": _PublicSemantics(
+        "retrieval", ("visual_vector",), modalities=("image",)
     ),
     "ocr": _PublicSemantics(
         "derived", ("ocr_text",), modalities=("ocr",), mcp=("get_image_analysis",)
@@ -255,22 +270,81 @@ class CapabilityDiscoveryService:
         engine: KnowledgeEngine,
         config: ServerConfig,
         workspace_decision: MutableWorkspaceDecision | None = None,
+        certified_binding: CertifiedProductionBinding | None = None,
+        transport: str | None = None,
     ) -> None:
         self._engine = engine
         self._config = config
         self._workspace_decision = workspace_decision
+        self._certified_binding = certified_binding
+        self._transport = transport
+
+    async def document_for_principal(
+        self, request: CapabilityDiscoveryRequest, principal: PrincipalContextV1
+    ) -> CapabilityDocument:
+        """Qualify only an already-authenticated, canonically authorized scope."""
+        if not principal.authenticated:
+            raise PermissionError("authenticated principal is required")
+        if request.notebook_id is not None:
+            await CentralAuthorizationServiceV1(self._engine).authorize_notebook(
+                principal, request.notebook_id, AuthorizationOperationV1.RETRIEVE
+            )
+        return self._document(request, scope_authorized=request.notebook_id is not None)
 
     def document(self, request: CapabilityDiscoveryRequest | None = None) -> CapabilityDocument:
+        """Return global metadata only; scoped metadata uses document_for_principal."""
         query = request or CapabilityDiscoveryRequest()
+        if query.notebook_id is not None:
+            raise PermissionError("notebook capability scope requires authorization")
+        return self._document(query, scope_authorized=False)
+
+    def _document(
+        self, query: CapabilityDiscoveryRequest, *, scope_authorized: bool
+    ) -> CapabilityDocument:
         runtime = self._engine.phase85
         selected = set(query.capability_ids)
-        statuses = runtime.capabilities()
+        statuses = dict(runtime.capabilities())
+        statuses.update(
+            {
+                capability_id: CapabilityStatus(
+                    capability_id=capability_id,
+                    owner=owner,
+                    state=CapabilityState(),
+                    registered=False,
+                    implemented=implemented,
+                    dependencies=dependencies,
+                    reason_code=(
+                        "service_not_registered" if implemented else "implementation_pending"
+                    ),
+                )
+                for capability_id, owner, implemented, dependencies in (
+                    (
+                        "caption_derivation",
+                        "Persisted Vision caption derivation",
+                        False,
+                        ("vision",),
+                    ),
+                    (
+                        "clip_embedding",
+                        "CLIP visual embedding derivation",
+                        False,
+                        ("visual_vector_retrieval",),
+                    ),
+                    (
+                        "semantic_image_search",
+                        "Dedicated semantic image discovery",
+                        False,
+                        ("clip_embedding",),
+                    ),
+                )
+            }
+        )
         unknown = selected - set(statuses)
         if unknown:
             names = ", ".join(sorted(unknown))
-            raise ContractValidationError(f"unknown Phase 8.5 capabilities: {names}")
+            raise ContractValidationError(f"unknown capabilities: {names}")
         items = tuple(
-            self._capability(status)
+            self._capability(status, scope_authorized, statuses)
             for capability_id, status in sorted(statuses.items())
             if not selected or capability_id in selected
         )
@@ -279,9 +353,8 @@ class CapabilityDiscoveryService:
         task_guidance = tuple(self._task(item, statuses) for item in _TASKS)
         base = CapabilityDocument(
             snapshot_identity="0" * 64,
-            # WP-14 owns actor/notebook policy qualification. Accept the frozen optional
-            # scope input, but never imply that global runtime metadata was authorized per scope.
-            scope_qualified=False,
+            scope_qualified=scope_authorized,
+            scope_notebook_id=query.notebook_id if scope_authorized else None,
             runtime=CapabilityRuntimeResponse(
                 engine_ready=readiness.engine_ready,
                 runtime_ready=readiness.runtime_ready,
@@ -302,13 +375,14 @@ class CapabilityDiscoveryService:
                     mcp_enabled=active_profile.mcp_enabled,
                 ),
                 storage=self._storage_capabilities(),
+                effective_identity=self._effective_identity(),
             ),
             capabilities=items,
             task_guidance=task_guidance,
             limitations=(
                 "Capability metadata does not grant authorization.",
                 "Exposed does not imply behaviorally verified or certified.",
-                "Notebook scope is opaque until WP-14 authorization policy evaluation.",
+                "Scope availability requires an authorized scope and verified service.",
             ),
         )
         canonical = base.model_dump(mode="json", exclude={"snapshot_identity"})
@@ -316,6 +390,29 @@ class CapabilityDiscoveryService:
             json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
         return base.model_copy(update={"snapshot_identity": identity})
+
+    def _effective_identity(self) -> CapabilityEffectiveIdentityResponse | None:
+        binding = self._certified_binding
+        if binding is None or not self._config.production_mode:
+            return None
+        if self._transport not in {"http", "mcp_stdio", "mcp_sse", "external_tunnel"}:
+            return None
+        return CapabilityEffectiveIdentityResponse(
+            binding_id=binding.binding_id,
+            configuration_digest=binding.configuration_digest,
+            database_identity=binding.database_identity,
+            database_sha256=binding.database_sha256,
+            final_qa_operational_identity=binding.final_qa_operational_identity,
+            model_profile_fingerprint=binding.model_profile_fingerprint,
+            embedding_revision=binding.embedding_revision,
+            reranker_revision=binding.reranker_revision,
+            activation_digest=binding.activation_digest,
+            certification_digest=binding.certification_digest,
+            credential_generation_id=binding.credential_generation_id,
+            transport=cast(
+                Literal["http", "mcp_stdio", "mcp_sse", "external_tunnel"], self._transport
+            ),
+        )
 
     def _storage_capabilities(self) -> CapabilityStorageResponse:
         engine_ready = self._engine.state is EngineState.READY
@@ -352,25 +449,22 @@ class CapabilityDiscoveryService:
             reason=reason,
         )
 
-    def _capability(self, status: CapabilityStatus) -> CapabilityResponse:
+    def _capability(
+        self,
+        status: CapabilityStatus,
+        scope_authorized: bool,
+        statuses: Mapping[str, CapabilityStatus],
+    ) -> CapabilityResponse:
         semantics = _SEMANTICS.get(status.capability_id, _PublicSemantics("runtime"))
         runtime = self._engine.phase85
         dependencies = tuple(
             CapabilityDependencyResponse(
                 capability_id=dependency,
-                stage=(
-                    runtime.capability_status(dependency).state.stage.value
-                    if dependency in runtime.capabilities()
-                    else None
-                ),
-                active=(
-                    runtime.capability_status(dependency).state.active
-                    if dependency in runtime.capabilities()
-                    else None
-                ),
+                stage=(statuses[dependency].state.stage.value if dependency in statuses else None),
+                active=(statuses[dependency].state.active if dependency in statuses else None),
                 reason=(
-                    runtime.capability_status(dependency).reason_code
-                    if dependency in runtime.capabilities()
+                    statuses[dependency].reason_code
+                    if dependency in statuses
                     else "external_dependency"
                 ),
             )
@@ -397,7 +491,21 @@ class CapabilityDiscoveryService:
             for profile in (runtime.profile_status(profile_id),)
         )
         state = status.state
-        tools = semantics.mcp if runtime.active_profile.mcp_enabled else ()
+        # Tool registration is a route fact, never proof that the family is active.
+        from mnemo_server.mcp.tools import get_mcp_tools
+
+        registered_tools = {tool.name for tool in get_mcp_tools()}
+        exposed_tools = tuple(tool for tool in semantics.mcp if tool in registered_tools)
+        scope_available: bool | None = None
+        if scope_authorized:
+            scope_available = (
+                state.exposed
+                if status.capability_id
+                in {"v1_retrieval", "exhaustive_retrieval", "capability_discovery"}
+                or not state.exposed
+                else None
+            )
+        tools = exposed_tools if runtime.active_profile.mcp_enabled else ()
         next_actions = (
             tuple(
                 CapabilityNextActionResponse(
@@ -423,6 +531,9 @@ class CapabilityDiscoveryService:
             lifecycle=CapabilityLifecycleResponse(
                 stage=state.stage.value,
                 declared=state.declared,
+                registered=status.registered,
+                implemented=status.implemented,
+                service_registered=status.service_registered,
                 configured=state.configured,
                 buildable=state.buildable,
                 ready=state.ready,
@@ -431,6 +542,7 @@ class CapabilityDiscoveryService:
                 behaviorally_verified=state.behaviorally_verified,
                 security_verified=state.security_verified,
                 certified=state.certified,
+                available_for_scope=scope_available,
             ),
             dependencies=dependencies,
             profiles=profiles,
@@ -442,13 +554,11 @@ class CapabilityDiscoveryService:
             ),
             transports=CapabilityTransportResponse(
                 http=semantics.http if runtime.active_profile.http_enabled else (),
-                mcp=semantics.mcp if runtime.active_profile.mcp_enabled else (),
+                mcp=tools,
                 callable=state.exposed
-                and bool(
-                    (semantics.http if runtime.active_profile.http_enabled else ())
-                    or (semantics.mcp if runtime.active_profile.mcp_enabled else ())
-                ),
+                and bool((semantics.http if runtime.active_profile.http_enabled else ()) or tools),
             ),
+            registered_mcp_tools=exposed_tools,
             supported_representations=semantics.representations if state.active else (),
             supported_modalities=semantics.modalities if state.active else (),
             supported_languages=self._supported_languages(status, semantics),

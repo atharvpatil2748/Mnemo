@@ -63,17 +63,10 @@ class ChunkPosition:
         require_non_negative(self.section_index, "section_index")
         require_non_negative(self.chunk_index_in_section, "chunk_index_in_section")
 
-        # Harmonize page_number, page_start, and page_end
+        # A page number locates one page but does not prove the full page range.
+        # Preserve absent range endpoints rather than inventing an interval.
         p_num = self.page_number
         p_start = self.page_start
-        p_end = self.page_end
-
-        if p_start is None and p_num is not None:
-            p_start = p_num
-            object.__setattr__(self, "page_start", p_start)
-        if p_end is None and p_num is not None:
-            p_end = p_num
-            object.__setattr__(self, "page_end", p_end)
         if p_num is None and p_start is not None:
             p_num = p_start
             object.__setattr__(self, "page_number", p_num)

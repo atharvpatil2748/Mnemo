@@ -6,6 +6,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import httpx
 import jsonschema
@@ -27,6 +29,7 @@ from mnemo import (
     RerankerConfig,
     StorageConfig,
 )
+from mnemo.interfaces import NotFoundError, PrincipalContextV1
 from mnemo_server.auth import AuthMiddleware
 from mnemo_server.config import ServerConfig
 from mnemo_server.dependencies import get_engine, get_server_config
@@ -40,6 +43,7 @@ from mnemo_server.services.mutable_workspace import (
     MutableWorkspaceLayout,
     WorkspaceMode,
 )
+from mnemo_server.services.production_runtime_binding import CertifiedProductionBinding
 
 
 @dataclass(slots=True)
@@ -429,3 +433,221 @@ async def test_production_capabilities_report_accepted_workspace_without_paths(
     assert storage.mutation_available is True
     assert storage.read_only_fallback is False
     assert str(workspace) not in document.model_dump_json()
+
+
+@pytest.mark.anyio
+async def test_capability_lifecycle_distinguishes_routes_from_services_and_image_families(
+    tmp_path: Path,
+) -> None:
+    engine = await _engine(tmp_path)
+    document = CapabilityDiscoveryService(engine, ServerConfig()).document()
+    items = {item.capability_id: item for item in document.capabilities}
+    delivery = items["document_delivery"]
+    assert delivery.lifecycle.registered and delivery.lifecycle.implemented
+    assert delivery.lifecycle.service_registered
+    assert not delivery.lifecycle.active
+    assert delivery.registered_mcp_tools == ("get_document", "get_document_chunk")
+    assert not delivery.transports.callable
+    assert not items["exhaustive_retrieval"].lifecycle.behaviorally_verified
+    assert not items["exhaustive_retrieval"].lifecycle.certified
+    assert items["asset_delivery"].lifecycle.active
+    for capability_id in ("ocr", "vision", "caption_derivation", "clip_embedding"):
+        assert capability_id in items
+        assert not items[capability_id].lifecycle.active
+        assert not items[capability_id].transports.callable
+    for capability_id in ("caption_derivation", "clip_embedding"):
+        assert not items[capability_id].lifecycle.registered
+        assert not items[capability_id].lifecycle.implemented
+    image_search = items["semantic_image_search"]
+    assert not image_search.lifecycle.registered
+    assert not image_search.lifecycle.implemented
+    assert not image_search.transports.callable
+    assert image_search.registered_mcp_tools == ()
+
+
+@pytest.mark.anyio
+async def test_registered_exact_chunk_route_does_not_activate_document_family(
+    tmp_path: Path,
+) -> None:
+    runtime = Phase85Runtime(
+        _config(tmp_path),
+        engine_ready=True,
+        active_v1_profiles=frozenset({"v1.embedding", "v1.reranker"}),
+        core_active_capabilities=frozenset(
+            {"v1_retrieval", "authorization", "provenance", "completeness", "cursor_continuation"}
+        ),
+        service_registrations=(
+            Phase85ServiceRegistration(
+                capability_id="exhaustive_retrieval",
+                service=object(),
+                ready=True,
+                activate=True,
+                exposed=True,
+            ),
+        ),
+    )
+    await runtime.initialize()
+    engine = SimpleNamespace(state=EngineState.READY, phase85=runtime)
+    items = {
+        item.capability_id: item
+        for item in CapabilityDiscoveryService(engine, ServerConfig()).document().capabilities
+    }
+    document = items["document_delivery"]
+    assert document.unavailable_reason == "service_not_registered"
+    assert document.lifecycle.service_registered is False
+    assert document.registered_mcp_tools == ("get_document", "get_document_chunk")
+    assert document.transports.callable is False
+    exhaustive = items["exhaustive_retrieval"]
+    assert exhaustive.transports.callable is True
+    assert exhaustive.lifecycle.behaviorally_verified is False
+    assert exhaustive.lifecycle.certified is False
+
+
+@pytest.mark.anyio
+async def test_notebook_capabilities_require_canonical_authorization(tmp_path: Path) -> None:
+    engine = await _engine(tmp_path)
+    notebook_id = uuid4()
+    engine.storage = SimpleNamespace(get_notebook=AsyncMock(return_value=object()))
+    service = CapabilityDiscoveryService(engine, ServerConfig())
+    request = CapabilityDiscoveryRequest(notebook_id=notebook_id)
+    with pytest.raises(PermissionError):
+        service.document(request)
+    with pytest.raises(PermissionError):
+        await service.document_for_principal(request, PrincipalContextV1(uuid4(), False))
+    scoped = await service.document_for_principal(request, PrincipalContextV1(uuid4(), True))
+    assert scoped.scope_qualified
+    assert scoped.scope_notebook_id == notebook_id
+    states = {
+        item.capability_id: item.lifecycle.available_for_scope for item in scoped.capabilities
+    }
+    assert states["exhaustive_retrieval"] is True
+    assert states["document_delivery"] is False
+    assert states["asset_delivery"] is None
+    assert service.document().scope_qualified is False
+    engine.storage.get_notebook.return_value = None
+    with pytest.raises(NotFoundError, match="authorized resource was not found"):
+        await service.document_for_principal(request, PrincipalContextV1(uuid4(), True))
+
+
+@pytest.mark.anyio
+async def test_effective_identity_uses_only_verified_server_binding(tmp_path: Path) -> None:
+    engine = await _engine(tmp_path)
+    binding = CertifiedProductionBinding(
+        schema_version="mnemo.certified-production-binding/1",
+        binding_id="a" * 64,
+        configuration_digest="b" * 64,
+        database_identity="c" * 64,
+        database_sha256="d" * 64,
+        model_profile_fingerprint="e" * 64,
+        embedding_model="embedding",
+        embedding_revision="f" * 40,
+        reranker_model="reranker",
+        reranker_revision="1" * 40,
+        activation_digest="2" * 64,
+        activation_mode="BGE_V2_M3",
+        certification_digest="3" * 64,
+        certification_signature="private-signature-not-for-output",
+        final_qa_operational_identity="4" * 64,
+        mutable_workspace_identity="5" * 64,
+        authorization_mode="api-key",
+        stdio_principal_identity="6" * 64,
+        runtime_profile="test",
+        credential_generation_id=str(uuid4()),
+        final_evidence_digest="7" * 64,
+    )
+    config = ServerConfig(
+        production_mode=True,
+        auth_mode="api-key",
+        api_key="private-key",
+        delivery_cursor_secret="distinct-test-cursor-signing-secret-32-bytes",
+    )
+    document = CapabilityDiscoveryService(
+        engine, config, certified_binding=binding, transport="external_tunnel"
+    ).document()
+    identity = document.runtime.effective_identity
+    assert identity is not None
+    assert identity.binding_id == binding.binding_id
+    assert identity.database_identity == binding.database_identity
+    assert identity.transport == "external_tunnel"
+    assert "private-signature" not in document.model_dump_json()
+    assert "private-key" not in document.model_dump_json()
+    assert CapabilityDiscoveryService(engine, config).document().runtime.effective_identity is None
+
+
+@pytest.mark.anyio
+async def test_http_and_mcp_scope_use_trusted_principal_and_same_binding(tmp_path: Path) -> None:
+    engine = await _engine(tmp_path)
+    notebook_id = uuid4()
+    engine.storage = SimpleNamespace(get_notebook=AsyncMock(return_value=object()))
+    binding = CertifiedProductionBinding(
+        schema_version="mnemo.certified-production-binding/1",
+        binding_id="a" * 64,
+        configuration_digest="b" * 64,
+        database_identity="c" * 64,
+        database_sha256="d" * 64,
+        model_profile_fingerprint="e" * 64,
+        embedding_model="embedding",
+        embedding_revision="f" * 40,
+        reranker_model="reranker",
+        reranker_revision="1" * 40,
+        activation_digest="2" * 64,
+        activation_mode="BGE_V2_M3",
+        certification_digest="3" * 64,
+        certification_signature="private-signature-not-for-output",
+        final_qa_operational_identity="4" * 64,
+        mutable_workspace_identity="5" * 64,
+        authorization_mode="api-key",
+        stdio_principal_identity="6" * 64,
+        runtime_profile="test",
+        credential_generation_id=str(uuid4()),
+        final_evidence_digest="7" * 64,
+    )
+    config = ServerConfig(
+        production_mode=True,
+        full_multilingual_v2_enabled=True,
+        auth_mode="api-key",
+        api_key="private-key",
+        full_multilingual_v2_model_cache=tmp_path,
+        final_qa_operational_store_path=tmp_path / "operational.db",
+        mcp_stdio_principal_subject="test-operator",
+        delivery_cursor_secret="distinct-test-cursor-signing-secret-32-bytes",
+    )
+    app = FastAPI()
+    app.add_middleware(AuthMiddleware, config=config)
+    app.include_router(router, prefix="/v2")
+    app.state.certified_production_binding = binding
+    app.dependency_overrides[get_engine] = lambda: engine
+    app.dependency_overrides[get_server_config] = lambda: config
+    register_error_handlers(app)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        denied = await client.get("/v2/capabilities", params={"notebook_id": str(notebook_id)})
+        allowed = await client.get(
+            "/v2/capabilities",
+            params={"notebook_id": str(notebook_id)},
+            headers={"X-API-Key": "private-key"},
+        )
+    assert denied.status_code == 401
+    assert allowed.status_code == 200
+    http_doc = allowed.json()
+    assert http_doc["scope_qualified"] is True
+    assert http_doc["runtime"]["effective_identity"]["transport"] == "http"
+    principal = PrincipalContextV1(uuid4(), True)
+    content = await execute_mcp_tool(
+        engine,
+        "get_capabilities",
+        {"notebook_id": str(notebook_id)},
+        config,
+        principal,
+        certified_binding=binding,
+        transport="external_tunnel",
+    )
+    mcp_doc = json.loads(content[0].text)
+    assert mcp_doc["scope_qualified"] is True
+    assert mcp_doc["runtime"]["effective_identity"]["transport"] == "external_tunnel"
+    assert (
+        mcp_doc["runtime"]["effective_identity"]["binding_id"]
+        == http_doc["runtime"]["effective_identity"]["binding_id"]
+    )
+    assert "private-key" not in json.dumps(mcp_doc) + json.dumps(http_doc)

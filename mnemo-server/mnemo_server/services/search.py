@@ -26,6 +26,7 @@ from mnemo.retrieval import MultiSourceRetriever, RerankingModule
 
 from mnemo_server.schemas.query import QueryFilters
 from mnemo_server.schemas.search import SearchRequest, SearchResponse, SearchResultItem
+from mnemo_server.services.authorization import CentralAuthorizationServiceV1
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,8 +43,12 @@ class SearchService:
     def __init__(self, engine: KnowledgeEngine) -> None:
         self._engine = engine
 
-    async def execute_search(self, request: SearchRequest) -> SearchResponse:
+    async def execute_search(
+        self, request: SearchRequest, principal: PrincipalContextV1 | None = None
+    ) -> SearchResponse:
         """Execute global or notebook-scoped multi-mode search and return ranked results."""
+        if principal is not None and not principal.authenticated:
+            raise PermissionError("authenticated search principal is required")
         start_time = time.perf_counter()
 
         # 1. Notebook Scope Validation (if specified)
@@ -80,6 +85,11 @@ class SearchService:
         # 4. Multi-Source Retrieval & RRF Fusion
         retriever = MultiSourceRetriever(self._engine.registry, self._engine.embedding_provider)
         fusion_result = await retriever.execute(plan, global_limit=request.limit)
+        authorized_scopes: dict[tuple[UUID, UUID], UUID] = {}
+        if principal is not None:
+            fusion_result, authorized_scopes = await CentralAuthorizationServiceV1(
+                self._engine
+            ).filter_fused_candidates(principal, fusion_result, request.notebook_id)
 
         # 5. Optional Reranking
         rerank_result = None
@@ -93,26 +103,29 @@ class SearchService:
             if rerank_result is not None
             else [r.chunk for r in fusion_result.results]
         )
-        doc_ids = {c.document_id for c in candidate_chunks}
-        doc_to_notebook: dict[UUID, UUID | None] = {}
-        for doc_id in doc_ids:
-            try:
-                candidate = next(item for item in candidate_chunks if item.document_id == doc_id)
-                resolved = await self._engine.document_scope_resolver.resolve_document_scope(
-                    PrincipalContextV1(UUID(int=0), False),
-                    doc_id,
-                    candidate.version_id,
-                    request.notebook_id,
-                )
-                doc_to_notebook[doc_id] = resolved.notebook_id
-            except Exception:
-                doc_to_notebook[doc_id] = None
+        identities = {(c.document_id, c.version_id) for c in candidate_chunks}
+        doc_to_notebook: dict[tuple[UUID, UUID], UUID | None] = dict(authorized_scopes)
+        if principal is None:
+            for doc_id, version_id in identities:
+                try:
+                    resolved = await self._engine.document_scope_resolver.resolve_document_scope(
+                        PrincipalContextV1(UUID(int=0), False),
+                        doc_id,
+                        version_id,
+                        request.notebook_id,
+                    )
+                    doc_to_notebook[(doc_id, version_id)] = resolved.notebook_id
+                except Exception:
+                    doc_to_notebook[(doc_id, version_id)] = None
 
         # 6. Result Assembly
         results: list[SearchResultItem] = []
         if rerank_result is not None:
             for reranked_item in rerank_result.results:
                 chunk = reranked_item.fused_result.chunk
+                identity = (chunk.document_id, chunk.version_id)
+                if principal is not None and identity not in doc_to_notebook:
+                    continue
                 source_mode = (
                     reranked_item.fused_result.evidence[0].effective_mode.value
                     if reranked_item.fused_result.evidence
@@ -126,12 +139,14 @@ class SearchService:
                 results.append(
                     SearchResultItem(
                         chunk_id=chunk.id,
-                        notebook_id=doc_to_notebook.get(chunk.document_id, request.notebook_id),
+                        notebook_id=doc_to_notebook.get(identity, request.notebook_id),
                         document_id=chunk.document_id,
                         version_id=chunk.version_id,
                         text=chunk.text,
                         score=round(score, 6),
-                        rank=reranked_item.reranked_rank,
+                        rank=len(results) + 1
+                        if principal is not None
+                        else reranked_item.reranked_rank,
                         retrieval_mode=source_mode,
                         heading_path=list(chunk.heading_path),
                         page_number=chunk.position.page_number,
@@ -143,18 +158,21 @@ class SearchService:
         else:
             for fused_item in fusion_result.results:
                 chunk = fused_item.chunk
+                identity = (chunk.document_id, chunk.version_id)
+                if principal is not None and identity not in doc_to_notebook:
+                    continue
                 source_mode = (
                     fused_item.evidence[0].effective_mode.value if fused_item.evidence else "hybrid"
                 )
                 results.append(
                     SearchResultItem(
                         chunk_id=chunk.id,
-                        notebook_id=doc_to_notebook.get(chunk.document_id, request.notebook_id),
+                        notebook_id=doc_to_notebook.get(identity, request.notebook_id),
                         document_id=chunk.document_id,
                         version_id=chunk.version_id,
                         text=chunk.text,
                         score=round(fused_item.rrf_score, 6),
-                        rank=fused_item.global_rank,
+                        rank=len(results) + 1 if principal is not None else fused_item.global_rank,
                         retrieval_mode=source_mode,
                         heading_path=list(chunk.heading_path),
                         page_number=chunk.position.page_number,

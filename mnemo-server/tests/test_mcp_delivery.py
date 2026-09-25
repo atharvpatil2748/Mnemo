@@ -10,7 +10,12 @@ from uuid import uuid4
 import mcp.types as types
 import pytest
 from mnemo.engine import EngineState, KnowledgeEngine
-from mnemo.interfaces import ContractValidationError, DeliveryAuthorizationError
+from mnemo.interfaces import (
+    ContractValidationError,
+    DeliveryAuthorizationError,
+    NotFoundError,
+    PrincipalContextV1,
+)
 from mnemo.models import (
     BinaryDelivery,
     DeliveryAttribution,
@@ -21,7 +26,7 @@ from mnemo.models import (
     DeliveryUsage,
 )
 from mnemo_server.config import ServerConfig
-from mnemo_server.mcp.tools import execute_mcp_tool, get_mcp_tools
+from mnemo_server.mcp.tools import _execute_delivery_tool, execute_mcp_tool, get_mcp_tools
 
 
 def _engine() -> MagicMock:
@@ -323,6 +328,35 @@ async def test_mcp_delivery_sanitizes_authorization_failures() -> None:
             _engine(),
             "get_asset",
             {"notebook_id": str(uuid4()), "occurrence_id": str(occurrence_id)},
+        )
+    assert "private" not in str(err.value)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "failure", [NotFoundError("private path"), DeliveryAuthorizationError("private path")]
+)
+async def test_production_asset_masks_existence_and_authorization_equally(
+    failure: Exception,
+) -> None:
+    config = ServerConfig.model_validate(
+        {
+            "production_mode": True,
+            "full_multilingual_v2_enabled": True,
+            "full_multilingual_v2_model_cache": "D:/models",
+            "final_qa_operational_store_path": "scratch/test-final-qa-operational.db",
+            "mcp_stdio_principal_subject": "mnemo-local-operator",
+            "auth_mode": "api-key",
+            "api_key": "synthetic-test-key",
+            "delivery_cursor_secret": "c" * 32,
+        }
+    )
+    with (
+        patch("mnemo_server.mcp.tools._handle_get_asset", side_effect=failure),
+        pytest.raises(NotFoundError, match="authorized resource was not found") as err,
+    ):
+        await _execute_delivery_tool(
+            _engine(), "get_asset", {}, config, PrincipalContextV1(uuid4(), True)
         )
     assert "private" not in str(err.value)
 

@@ -31,6 +31,7 @@ from starlette.routing import Route
 from mnemo_server.auth import AuthMiddleware
 from mnemo_server.config import ServerConfig
 from mnemo_server.runtime_config import resolve_mnemo_runtime_config
+from mnemo_server.schemas.capabilities_v2 import CapabilityDiscoveryRequest
 from mnemo_server.services.retrieval_v2 import build_retrieval_cursor_codec
 from mnemo_server.tokenizer_provisioning import provision_tokenizer
 
@@ -145,6 +146,8 @@ class MnemoServer(Server):
     _engine: KnowledgeEngine | None = None
     _config: ServerConfig
     _workspace_decision: Any | None = None
+    _certified_binding: Any | None = None
+    _transport_label: str | None = None
 
 
 def create_mcp_server(
@@ -152,6 +155,8 @@ def create_mcp_server(
     config: ServerConfig | None = None,
     principal_provider: MCPPrincipalProviderV1 | None = None,
     workspace_decision: Any | None = None,
+    certified_binding: Any | None = None,
+    transport_label: str | None = None,
 ) -> Server:
     """Create and configure the canonical Mnemo MCP Server instance.
 
@@ -163,11 +168,17 @@ def create_mcp_server(
     server._engine = engine
     server._config = config or ServerConfig()
     server._workspace_decision = workspace_decision
+    server._certified_binding = certified_binding
+    server._transport_label = transport_label
     resolved_principal_provider = principal_provider
 
     @server.list_tools()  # type: ignore[no-untyped-call,untyped-decorator]
     async def list_tools() -> list[types.Tool]:
         """List knowledge tools exposed by the Mnemo MCP server."""
+        if server._config.full_multilingual_v2_enabled:
+            require_authenticated_principal(
+                resolved_principal_provider() if resolved_principal_provider else None
+            )
         return get_mcp_tools()
 
     @server.call_tool()  # type: ignore[untyped-decorator]
@@ -187,6 +198,8 @@ def create_mcp_server(
             server._config,
             principal,
             server._workspace_decision,
+            server._certified_binding,
+            server._transport_label,
         )
         return content, structured_content_for(name, resolved_arguments, content)
 
@@ -198,6 +211,10 @@ def create_mcp_server(
     @server.list_resources()  # type: ignore[no-untyped-call,untyped-decorator]
     async def list_resources() -> list[types.Resource]:
         """List resources exposed by Mnemo."""
+        if server._config.full_multilingual_v2_enabled:
+            require_authenticated_principal(
+                resolved_principal_provider() if resolved_principal_provider else None
+            )
         return [
             types.Resource(
                 name="Mnemo Phase 8.5 runtime capabilities",
@@ -212,15 +229,31 @@ def create_mcp_server(
 
     @server.read_resource()  # type: ignore[no-untyped-call]
     async def read_resource(uri):  # type: ignore[no-untyped-def]
+        if server._config.full_multilingual_v2_enabled:
+            require_authenticated_principal(
+                resolved_principal_provider() if resolved_principal_provider else None
+            )
         if str(uri) != "mnemo://capabilities":
             raise ValueError("Unknown Mnemo resource")
         if server._engine is None or server._engine.state is not EngineState.READY:
             raise RuntimeError("KnowledgeEngine is not ready")
         from mnemo_server.services.capabilities_v2 import CapabilityDiscoveryService
 
-        document = CapabilityDiscoveryService(
-            server._engine, server._config, server._workspace_decision
-        ).document()
+        principal = resolved_principal_provider() if resolved_principal_provider else None
+        service = CapabilityDiscoveryService(
+            server._engine,
+            server._config,
+            server._workspace_decision,
+            server._certified_binding,
+            server._transport_label,
+        )
+        document = (
+            await service.document_for_principal(
+                CapabilityDiscoveryRequest(), require_authenticated_principal(principal)
+            )
+            if server._config.full_multilingual_v2_enabled
+            else service.document()
+        )
         return json.dumps(document.model_dump(mode="json"), sort_keys=True)
 
     return server
@@ -469,6 +502,8 @@ async def run_stdio_server(
             workspace_decision=(
                 storage_composition.decision if storage_composition is not None else None
             ),
+            certified_binding=production_binding,
+            transport_label=transport_label,
         )
     init_options = server.create_initialization_options()
 
@@ -572,6 +607,9 @@ def create_sse_app(
                     server_config=server_config, mnemo_config=mnemo_config
                 )
                 app.state.certified_production_binding = production_binding
+                if isinstance(active_server, MnemoServer):
+                    active_server._certified_binding = production_binding
+                    active_server._transport_label = "mcp_sse"
         elif pre_certification_observation:
             raise RuntimeError("PRE_CERTIFICATION_BINDING_REJECTED")
         else:

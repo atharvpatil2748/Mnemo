@@ -69,6 +69,7 @@ from mnemo.models.final_qa_execution import (
     FinalQAExecutionState,
 )
 from mnemo.models.notebook import InsightType, NoteOrigin, TurnRole
+from mnemo.storage.chunk_read_model import ChunkReadModel
 from mnemo.storage.multilingual import (
     MULTILINGUAL_SCHEMA_STATEMENTS,
     MULTILINGUAL_V2_SCHEMA_STATEMENTS,
@@ -620,6 +621,7 @@ class SQLiteStore(
         """Initialize the storage configuration without connecting."""
         self._db_path = db_path
         self._db: aiosqlite.Connection | None = None
+        self._chunk_read_model: ChunkReadModel | None = None
         self._processing_job_lock = asyncio.Lock()
         self._ocr_lock = asyncio.Lock()
         self._vision_lock = asyncio.Lock()
@@ -648,10 +650,26 @@ class SQLiteStore(
             await self._db.execute("PRAGMA journal_mode = WAL;")
             await self._db.execute("PRAGMA busy_timeout = 60000;")
             await self._migrate()
+            await self._inspect_chunk_read_model_if_present()
         except BaseException:
             await self._db.close()
             self._db = None
+            self._chunk_read_model = None
             raise
+
+    async def _inspect_chunk_read_model_if_present(self) -> None:
+        db = self._require_open()
+        async with db.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='chunks'"
+        ) as cursor:
+            if await cursor.fetchone() is not None:
+                self._chunk_read_model = await ChunkReadModel.inspect(db)
+
+    def _require_chunk_read_model(self) -> ChunkReadModel:
+        self._require_open()
+        if self._chunk_read_model is None:
+            raise StorageError("CHUNK_READ_SCHEMA_UNAVAILABLE")
+        return self._chunk_read_model
 
     async def _migrate(self) -> None:
         """Apply schema migrations to the latest version."""
@@ -888,6 +906,7 @@ class SQLiteStore(
         if self._db is not None:
             await self._db.close()
             self._db = None
+            self._chunk_read_model = None
 
     async def health_check(self) -> tuple[HealthStatus, ...]:
         """Return health observations for the SQLite store."""
@@ -2991,23 +3010,12 @@ class SQLiteStore(
     async def get_chunk(self, chunk_id: str) -> Chunk | None:
         """Return one chunk by its stable SHA-256 identity.
 
-        The page-range columns are additive metadata and are absent from
-        immutable corpus artifacts created before schema 16.  ``_chunk_from_row``
-        already derives the same range from ``position_page_number`` when those
-        columns are not selected, so this canonical reader deliberately uses the
-        common schema shared by both artifact generations.
+        The inspected read model selects only physically available page columns.
         """
         db = self._require_open()
 
         async with db.execute(
-            """
-            SELECT id, document_id, version_id, text, chunk_type,
-                   position_section_index, position_chunk_index, position_page_number,
-                   position_start_offset, position_end_offset,
-                   source_start_ordinal, source_end_ordinal,
-                   heading_path, parent_chunk_id, sibling_ids, metadata
-            FROM chunks WHERE id = ?
-            """,
+            f"SELECT {self._require_chunk_read_model().projection()} FROM chunks WHERE id = ?",
             (chunk_id,),
         ) as cursor:
             row = await cursor.fetchone()
@@ -3021,21 +3029,13 @@ class SQLiteStore(
     ) -> tuple[Chunk, ...]:
         """Return one exact version's chunks in canonical physical order.
 
-        Select the cross-version column set for the same immutable-artifact
-        compatibility guaranteed by :meth:`get_chunk`.
+        Use the same inspected physical projection as :meth:`get_chunk`.
         """
         async with self._require_open().execute(
-            """
-            SELECT id, document_id, version_id, text, chunk_type,
-                   position_section_index, position_chunk_index, position_page_number,
-                   position_start_offset, position_end_offset,
-                   source_start_ordinal, source_end_ordinal,
-                   heading_path, parent_chunk_id, sibling_ids, metadata
-            FROM chunks
-            WHERE document_id = ? AND version_id = ?
-            ORDER BY source_start_ordinal, source_end_ordinal,
-                     position_section_index, position_chunk_index, id
-            """,
+            f"SELECT {self._require_chunk_read_model().projection()} FROM chunks "
+            "WHERE document_id = ? AND version_id = ? "
+            "ORDER BY source_start_ordinal, source_end_ordinal, "
+            "position_section_index, position_chunk_index, id",
             (str(document_id), str(version_id)),
         ) as cursor:
             return tuple(self._chunk_from_row(row) for row in await cursor.fetchall())
@@ -3222,15 +3222,13 @@ class SQLiteStore(
                 SELECT id FROM body_matching UNION SELECT chunk_id FROM title_matching
             ) """
             params.extend((fts_query, fts_query))
+        read_model = self._require_chunk_read_model()
+        read_model.require_page_filter(page_start=position.page_start, page_end=position.page_end)
         columns = (
             "c.id,MIN(s.source_id),dv.metadata"
             if snapshot_only
-            else """c.id,c.document_id,c.version_id,c.text,c.chunk_type,
-                   c.position_section_index,c.position_chunk_index,c.position_page_number,
-                   c.position_start_offset,c.position_end_offset,c.source_start_ordinal,
-                   c.source_end_ordinal,c.heading_path,c.parent_chunk_id,c.sibling_ids,c.metadata,
-                   c.position_page_start,c.position_page_end,
-                   MIN(s.source_id),dv.metadata"""
+            else read_model.projection("c")
+            + ",MIN(s.source_id),dv.metadata"
             + (
                 ",MAX(CASE WHEN c.id IN (SELECT chunk_id FROM title_matching) THEN 1 ELSE 0 END)"
                 if terms
@@ -3259,10 +3257,10 @@ class SQLiteStore(
                 sql += f" AND {expression} IN ({placeholders})"
                 params.extend(str(value) for value in values)
         if position.page_start is not None:
-            sql += " AND (c.position_page_end IS NULL OR c.position_page_end>=?)"
+            sql += " AND c.position_page_end>=?"
             params.append(position.page_start)
         if position.page_end is not None:
-            sql += " AND (c.position_page_start IS NULL OR c.position_page_start<=?)"
+            sql += " AND c.position_page_start<=?"
             params.append(position.page_end)
         if position.section_indexes:
             placeholders = ",".join("?" for _ in position.section_indexes)
@@ -3329,19 +3327,15 @@ class SQLiteStore(
                     chunk.parent_chunk_id,
                     json.dumps(list(chunk.sibling_ids)),
                     json.dumps(thaw_json(chunk.metadata)),
-                    chunk.position.page_start,
-                    chunk.position.page_end,
+                    chunk.position.page_start or chunk.position.page_number,
+                    chunk.position.page_end or chunk.position.page_number,
                 ),
             )
 
     @staticmethod
     def _chunk_from_row(row: Sequence[Any]) -> Chunk:
-        page_start = row[16] if len(row) > 16 and row[16] is not None else row[7]
-        page_end = (
-            row[17]
-            if len(row) > 17 and row[17] is not None
-            else (row[16] if len(row) > 16 and row[16] is not None else row[7])
-        )
+        page_start = row[16] if len(row) > 16 else None
+        page_end = row[17] if len(row) > 17 else None
         return Chunk(
             id=row[0],
             document_id=UUID(row[1]),

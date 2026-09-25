@@ -31,6 +31,9 @@ class CapabilityLifecycleResponse(BaseModel):
         "certified",
     ]
     declared: bool
+    registered: bool = True
+    implemented: bool = True
+    service_registered: bool = False
     configured: bool
     buildable: bool
     ready: bool
@@ -39,6 +42,7 @@ class CapabilityLifecycleResponse(BaseModel):
     behaviorally_verified: bool
     security_verified: bool
     certified: bool
+    available_for_scope: bool | None = None
 
 
 class CapabilityDependencyResponse(BaseModel):
@@ -105,6 +109,7 @@ class CapabilityResponse(BaseModel):
     profiles: tuple[CapabilityProfileResponse, ...]
     generation: CapabilityGenerationResponse
     transports: CapabilityTransportResponse
+    registered_mcp_tools: tuple[str, ...] = ()
     supported_representations: tuple[str, ...] = ()
     supported_modalities: tuple[str, ...] = ()
     supported_languages: tuple[str, ...] = ()
@@ -158,6 +163,25 @@ class CapabilityStorageResponse(BaseModel):
     reason: str
 
 
+class CapabilityEffectiveIdentityResponse(BaseModel):
+    """Verified server-owned binding; no paths, credentials or signing material."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    binding_id: str
+    configuration_digest: str
+    database_identity: str
+    database_sha256: str
+    final_qa_operational_identity: str
+    model_profile_fingerprint: str
+    embedding_revision: str
+    reranker_revision: str
+    activation_digest: str
+    certification_digest: str
+    credential_generation_id: str
+    transport: Literal["http", "mcp_stdio", "mcp_sse", "external_tunnel"]
+
+
 class CapabilityRuntimeResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -169,6 +193,7 @@ class CapabilityRuntimeResponse(BaseModel):
     configuration_fingerprint: str
     active_profile: ActiveModelProfileResponse
     storage: CapabilityStorageResponse
+    effective_identity: CapabilityEffectiveIdentityResponse | None = None
 
 
 class CapabilityDocument(BaseModel):
@@ -179,6 +204,7 @@ class CapabilityDocument(BaseModel):
     schema_version: Literal["mnemo.capabilities/1"] = "mnemo.capabilities/1"
     snapshot_identity: str = Field(min_length=64, max_length=64)
     scope_qualified: bool
+    scope_notebook_id: UUID | None = None
     runtime: CapabilityRuntimeResponse
     capabilities: tuple[CapabilityResponse, ...]
     task_guidance: tuple[CapabilityTaskGuidanceResponse, ...]

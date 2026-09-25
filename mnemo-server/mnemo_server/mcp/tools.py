@@ -56,6 +56,7 @@ from mnemo_server.services.final_qa_v2 import (
     FinalQAV2ApplicationService,
 )
 from mnemo_server.services.mutable_workspace import MutableWorkspaceDecision
+from mnemo_server.services.production_runtime_binding import CertifiedProductionBinding
 from mnemo_server.services.query import QueryService
 from mnemo_server.services.retrieval_v2 import EvidenceRetrievalApplicationService
 from mnemo_server.services.search import SearchService
@@ -480,6 +481,111 @@ def get_mcp_tools() -> list[types.Tool]:
     return list(_TOOL_DEFINITIONS)
 
 
+# These scopes are authorization policy, not client-selectable tool metadata.
+# The current corpus has notebook membership, but no actor-to-notebook ACL.
+_TOOL_SCOPES: dict[str, str] = {
+    "list_notebooks": "collection",
+    "get_notebook_summary": "notebook",
+    "get_timeline": "notebook",
+    "get_source_insights": "source",
+    "search_all_notebooks": "optional_notebook",
+    "query_notebook": "notebook",
+    "search_evidence": "service",
+    "get_capabilities": "capability",
+    "query_structured": "service",
+    "get_document": "document",
+    "get_document_chunk": "document",
+    "get_asset": "notebook",
+    "get_image_analysis": "notebook",
+    "run_final_qa_v2": "service",
+}
+assert set(_TOOL_SCOPES) == {tool.name for tool in _TOOL_DEFINITIONS}
+
+_SERVER_OWNED_FIELDS = frozenset(
+    {
+        "actor_id",
+        "principal_id",
+        "principal",
+        "credential_generation_id",
+        "generation_id",
+        "database_path",
+        "db_path",
+        "workspace_root",
+        "storage_path",
+        "storage_role",
+        "model_revision",
+        "reranker_revision",
+        "reranker_model",
+        "activation_path",
+        "manifest_path",
+        "internal_candidate_pool_k",
+        "evaluation_notebook_id",
+        "production_profile",
+    }
+)
+
+
+def _reject_client_policy_overrides(name: str, args: dict[str, Any]) -> None:
+    """Reject unknown top-level arguments and privileged nested policy selectors."""
+    tool = next(tool for tool in _TOOL_DEFINITIONS if tool.name == name)
+    schema = tool.inputSchema
+    properties = schema.get("properties", {})
+    allowed = set(properties) | ({"limit"} if name == "search_all_notebooks" else set())
+    if set(args) - allowed:
+        raise ContractValidationError("Unsupported MCP tool argument")
+
+    def inspect(value: Any) -> None:
+        if isinstance(value, dict):
+            if _SERVER_OWNED_FIELDS.intersection(value):
+                raise ContractValidationError("Client production policy override is forbidden")
+            for child in value.values():
+                inspect(child)
+        elif isinstance(value, list):
+            for child in value:
+                inspect(child)
+
+    inspect(args)
+
+
+async def _authorize_mcp_call(
+    engine: KnowledgeEngine,
+    name: str,
+    args: dict[str, Any],
+    principal: ServerPrincipalV1,
+) -> None:
+    """Authorize the declared resource scope before a production tool executes."""
+    scope = _TOOL_SCOPES[name]
+    authority = CentralAuthorizationServiceV1(engine)
+    if scope in {"notebook", "optional_notebook"}:
+        raw = args.get("notebook_id")
+        if raw is not None or scope == "notebook":
+            await authority.authorize_notebook(
+                principal, _parse_uuid(raw, "notebook_id"), AuthorizationOperationV1.RETRIEVE
+            )
+        if name == "get_timeline" and args.get("source_id") is not None:
+            source_notebook = await authority.authorize_source(
+                principal,
+                _parse_uuid(args["source_id"], "source_id"),
+                AuthorizationOperationV1.RETRIEVE,
+            )
+            if source_notebook != _parse_uuid(raw, "notebook_id"):
+                raise NotFoundError("authorized resource was not found")
+    elif scope == "source":
+        await authority.authorize_source(
+            principal,
+            _parse_uuid(args.get("source_id"), "source_id"),
+            AuthorizationOperationV1.RETRIEVE,
+        )
+    elif scope == "document" and args.get("notebook_id") is not None:
+        await authority.authorize_notebook(
+            principal,
+            _parse_uuid(args["notebook_id"], "notebook_id"),
+            AuthorizationOperationV1.DELIVER,
+        )
+    # Document/version membership is subsequently resolved by the delivery
+    # handler; V2 service scopes are authorized by their typed applications.
+
+
 def _next_action(
     tool: str,
     reason: str,
@@ -616,9 +722,7 @@ def _parse_uuid(value: Any, param_name: str) -> UUID:
     try:
         return UUID(value.strip())
     except ValueError as err:
-        raise ContractValidationError(
-            f"Parameter '{param_name}' has invalid UUID format: '{value}'"
-        ) from err
+        raise ContractValidationError(f"Parameter '{param_name}' has invalid UUID format") from err
 
 
 def _get_token_counter() -> TokenCounterInterfaceV1:
@@ -634,6 +738,8 @@ async def execute_mcp_tool(
     server_config: ServerConfig | None = None,
     principal: ServerPrincipalV1 | None = None,
     workspace_decision: MutableWorkspaceDecision | None = None,
+    certified_binding: CertifiedProductionBinding | None = None,
+    transport: str | None = None,
 ) -> list[MCPContent]:
     """Execute an authorized Mnemo MCP knowledge tool call."""
     if engine is None or engine.state is not EngineState.READY:
@@ -645,11 +751,16 @@ async def execute_mcp_tool(
     args = arguments or {}
     config = server_config or ServerConfig()
     server_principal = _principal_for_call(principal, config)
+    if config.full_multilingual_v2_enabled:
+        if name not in _TOOL_SCOPES:
+            raise ValueError("Unknown MCP tool")
+        _reject_client_policy_overrides(name, args)
+        await _authorize_mcp_call(engine, name, args, server_principal)
 
     if name == "query_notebook":
-        return await _handle_query_notebook(engine, args)
+        return await _handle_query_notebook(engine, args, config, server_principal)
     elif name == "search_all_notebooks":
-        return await _handle_search_all_notebooks(engine, args)
+        return await _handle_search_all_notebooks(engine, args, config, server_principal)
     elif name == "search_evidence":
         return await _handle_search_evidence(
             engine,
@@ -672,7 +783,15 @@ async def execute_mcp_tool(
             server_principal,
         )
     elif name == "get_capabilities":
-        return await _handle_get_capabilities(engine, args, config, workspace_decision)
+        return await _handle_get_capabilities(
+            engine,
+            args,
+            config,
+            workspace_decision,
+            server_principal,
+            certified_binding,
+            transport,
+        )
     elif name == "list_notebooks":
         return await _handle_list_notebooks(engine, args)
     elif name == "get_notebook_summary":
@@ -753,9 +872,19 @@ async def _handle_get_capabilities(
     args: dict[str, Any],
     config: ServerConfig,
     workspace_decision: MutableWorkspaceDecision | None,
+    principal: ServerPrincipalV1,
+    certified_binding: CertifiedProductionBinding | None,
+    transport: str | None,
 ) -> list[MCPContent]:
     request = CapabilityDiscoveryRequest.model_validate(args)
-    response = CapabilityDiscoveryService(engine, config, workspace_decision).document(request)
+    service = CapabilityDiscoveryService(
+        engine, config, workspace_decision, certified_binding, transport
+    )
+    response = (
+        await service.document_for_principal(request, principal)
+        if config.full_multilingual_v2_enabled
+        else service.document(request)
+    )
     return [types.TextContent(type="text", text=response.model_dump_json(indent=2))]
 
 
@@ -783,7 +912,11 @@ async def _execute_delivery_tool(
         if name == "get_asset":
             return await _handle_get_asset(engine, args, config)
         return await _handle_get_image_analysis(engine, args, config)
-    except DeliveryAuthorizationError as error:
+    except (DeliveryAuthorizationError, NotFoundError) as error:
+        if config.full_multilingual_v2_enabled:
+            raise NotFoundError("authorized resource was not found") from None
+        if isinstance(error, NotFoundError):
+            raise
         raise DeliveryAuthorizationError("Resource access is forbidden") from error
     except DeliveryCursorExpiredError as error:
         raise DeliveryCursorExpiredError(
@@ -833,9 +966,14 @@ async def _handle_get_document(
         resolver = StorageDocumentScopeResolverV1(
             engine.storage, StorageSourceAssociationReaderV1(engine.storage)
         )
-        resolved_scope = await resolver.resolve_document_scope(
-            principal, document_id, version_id, requested_notebook_id
-        )
+        try:
+            resolved_scope = await resolver.resolve_document_scope(
+                principal, document_id, version_id, requested_notebook_id
+            )
+        except ContractValidationError as error:
+            if config.full_multilingual_v2_enabled:
+                raise NotFoundError("authorized resource was not found") from error
+            raise
         notebook_id = resolved_scope.notebook_id
 
     mode = args.get("mode", "blocks")
@@ -959,9 +1097,14 @@ async def _handle_get_document_chunk(
         resolver = StorageDocumentScopeResolverV1(
             engine.storage, StorageSourceAssociationReaderV1(engine.storage)
         )
-        resolved_scope = await resolver.resolve_document_scope(
-            principal, document_id, version_id, requested_notebook_id
-        )
+        try:
+            resolved_scope = await resolver.resolve_document_scope(
+                principal, document_id, version_id, requested_notebook_id
+            )
+        except ContractValidationError as error:
+            if config.full_multilingual_v2_enabled:
+                raise NotFoundError("authorized resource was not found") from error
+            raise
         notebook_id = resolved_scope.notebook_id
 
     result = await _delivery_service(engine, config).get_document_chunk(
@@ -1164,6 +1307,8 @@ async def _handle_get_image_analysis(
 async def _handle_query_notebook(
     engine: KnowledgeEngine,
     args: dict[str, Any],
+    config: ServerConfig,
+    principal: ServerPrincipalV1,
 ) -> list[MCPContent]:
     """Handle query_notebook tool invocation."""
     notebook_id_raw = args.get("notebook_id")
@@ -1192,7 +1337,11 @@ async def _handle_query_notebook(
         synthesis=SynthesisConfig(enabled=synthesize),
     )
 
-    resp = await service.execute_query(req)
+    resp = (
+        await service.execute_query(req, principal=principal)
+        if config.full_multilingual_v2_enabled
+        else await service.execute_query(req)
+    )
 
     data = {
         "answer": resp.answer,
@@ -1237,6 +1386,8 @@ async def _handle_query_notebook(
 async def _handle_search_all_notebooks(
     engine: KnowledgeEngine,
     args: dict[str, Any],
+    config: ServerConfig,
+    principal: ServerPrincipalV1,
 ) -> list[MCPContent]:
     """Handle search_all_notebooks tool invocation."""
     query = args.get("query")
@@ -1263,7 +1414,11 @@ async def _handle_search_all_notebooks(
         limit=top_k,
     )
 
-    resp = await service.execute_search(req)
+    resp = (
+        await service.execute_search(req, principal=principal)
+        if config.full_multilingual_v2_enabled
+        else await service.execute_search(req)
+    )
 
     data = {
         "results": [
@@ -1386,7 +1541,7 @@ async def _handle_get_notebook_summary(
 
     existing = await engine.storage.get_notebook(notebook_id)
     if existing is None:
-        raise NotFoundError(f"Notebook {notebook_id} was not found")
+        raise NotFoundError("authorized resource was not found")
 
     insights_page = await engine.storage.list_insights(notebook_id, limit=100, cursor=None)
     sources_page = await engine.storage.list_sources(notebook_id, limit=100, cursor=None)
@@ -1480,7 +1635,7 @@ async def _handle_get_source_insights(
 
     source = await engine.storage.get_source(source_id)
     if source is None:
-        raise NotFoundError(f"Source with id '{source_id}' not found")
+        raise NotFoundError("authorized resource was not found")
 
     insights_page = await engine.storage.list_insights(source.notebook_id, limit=1000, cursor=None)
 
@@ -1528,24 +1683,33 @@ async def _handle_get_timeline(
     limit = args.get("limit", 50)
 
     notebook_id = _parse_uuid(notebook_id_raw, "notebook_id")
+    source_id = _optional_uuid(args, "source_id")
 
     if not isinstance(limit, int) or limit < 1 or limit > 100:
         raise ContractValidationError("Parameter 'limit' must be an integer between 1 and 100")
 
     existing = await engine.storage.get_notebook(notebook_id)
     if existing is None:
-        raise NotFoundError(f"Notebook {notebook_id} was not found")
+        raise NotFoundError("authorized resource was not found")
 
     sources_page = await engine.storage.list_sources(
         notebook_id=notebook_id, limit=1000, cursor=None
     )
-    notes_page = await engine.storage.list_notes(notebook_id=notebook_id, limit=1000, cursor=None)
-    sessions_page = await engine.storage.list_sessions(
-        notebook_id=notebook_id, limit=1000, cursor=None
+    notes_page = (
+        await engine.storage.list_notes(notebook_id=notebook_id, limit=1000, cursor=None)
+        if source_id is None
+        else None
+    )
+    sessions_page = (
+        await engine.storage.list_sessions(notebook_id=notebook_id, limit=1000, cursor=None)
+        if source_id is None
+        else None
     )
 
     events: list[dict[str, Any]] = []
     for s in sources_page.items:
+        if source_id is not None and s.source_id != source_id:
+            continue
         events.append(
             {
                 "event_type": "source_added",
@@ -1555,7 +1719,7 @@ async def _handle_get_timeline(
                 "details": {"document_id": str(s.document_id)},
             }
         )
-    for n in notes_page.items:
+    for n in notes_page.items if notes_page is not None else ():
         events.append(
             {
                 "event_type": "note_created",
@@ -1567,7 +1731,7 @@ async def _handle_get_timeline(
                 },
             }
         )
-    for sess in sessions_page.items:
+    for sess in sessions_page.items if sessions_page is not None else ():
         events.append(
             {
                 "event_type": "session_started",
