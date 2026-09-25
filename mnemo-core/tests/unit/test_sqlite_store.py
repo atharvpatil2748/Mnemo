@@ -54,6 +54,7 @@ from mnemo.models import (
 )
 from mnemo.storage.retrieval_projection import RetrievalMetadataProjection
 from mnemo.storage.sqlite import SQLiteStore
+from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
 
 T = TypeVar("T")
 
@@ -872,31 +873,321 @@ def test_exact_document_chunk_reader_uses_physical_order_and_version_scope(
     assert _run(open_store.list_exact_document_chunks(document_id=doc_id, version_id=uuid4())) == ()
 
 
-def test_chunk_readers_support_immutable_artifacts_without_page_range_columns(
-    tmp_path: Path, doc_id: UUID, ver_id: UUID, dt: datetime
+@pytest.mark.parametrize("legacy_schema", [True, False], ids=["legacy", "current"])
+def test_fts_candidate_and_chunk_readers_across_immutable_schema_generations(
+    tmp_path: Path, doc_id: UUID, ver_id: UUID, dt: datetime, legacy_schema: bool
 ) -> None:
-    """Legacy immutable corpus schemas remain readable without data migration."""
-    path = tmp_path / "legacy-corpus.db"
+    """Pin the old FTS-to-page-column failure; current readers work in both schemas."""
+    path = tmp_path / "corpus.db"
     store = SQLiteStore(path)
     _run(store.open())
+    notebook_id = uuid4()
+    _run(
+        store.upsert_notebook(
+            Notebook(notebook_id=notebook_id, title="NB", created_at=dt, updated_at=dt)
+        )
+    )
     _run(store.upsert_document(make_doc(doc_id, ver_id, dt)))
-    chunk = _search_chunk(doc_id, ver_id, 0, "legacy artifact")
+    _run(
+        store.upsert_source(
+            Source(source_id=uuid4(), notebook_id=notebook_id, document_id=doc_id, created_at=dt)
+        )
+    )
+    chunk = _search_chunk(doc_id, ver_id, 0, "schema artifact")
     _run(store.upsert_chunks((chunk,)))
     _run(store.close())
 
     with sqlite3.connect(path) as db:
-        db.execute("ALTER TABLE chunks DROP COLUMN position_page_start")
-        db.execute("ALTER TABLE chunks DROP COLUMN position_page_end")
-        db.commit()
+        if legacy_schema:
+            db.execute("ALTER TABLE chunks DROP COLUMN position_page_start")
+            db.execute("ALTER TABLE chunks DROP COLUMN position_page_end")
+            db.commit()
+            # Immutable readers ignore WAL content; materialize this disposable schema.
+            db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            db.execute("PRAGMA journal_mode=DELETE")
+        candidates = db.execute(
+            "SELECT c.id FROM fts_chunks f JOIN chunks c ON f.rowid=c.rowid "
+            "WHERE fts_chunks MATCH ?",
+            ("schema",),
+        ).fetchall()
+        assert candidates == [(chunk.id,)]
+        if legacy_schema:
+            with pytest.raises(
+                sqlite3.OperationalError, match="no such column: position_page_start"
+            ):
+                db.execute(
+                    "SELECT position_page_start, position_page_end FROM chunks WHERE id=?",
+                    (chunk.id,),
+                ).fetchone()
 
-    legacy = SQLiteStore(path)
-    _run(legacy.open())
-    restored = _run(legacy.get_chunk(chunk.id))
-    listed = _run(legacy.list_exact_document_chunks(document_id=doc_id, version_id=ver_id))
-    _run(legacy.close())
+    reader = SQLiteV2ReadOnlyRuntimeStore(path)
+    _run(reader.open())
+    restored = _run(reader.get_chunk(chunk.id))
+    listed = _run(reader.list_exact_document_chunks(document_id=doc_id, version_id=ver_id))
+    sparse = _run(reader.search_sparse("schema", MetadataFilter(), top_k=5))
+    scoped = _run(reader.search_sparse("schema", MetadataFilter(notebook_id=notebook_id), top_k=5))
+    denied = _run(reader.search_sparse("schema", MetadataFilter(notebook_id=uuid4()), top_k=5))
+    governed = _run(reader._get_governed_artifact_chunk(chunk.id))
+    _run(reader.close())
 
     assert restored == chunk
     assert listed == (chunk,)
+    assert governed == chunk
+    assert tuple(result.chunk.id for result in sparse) == (chunk.id,)
+    assert tuple(result.chunk.id for result in scoped) == (chunk.id,)
+    assert denied == ()
+    from mnemo.document_positions import ExactDocumentPositionIndex
+    from mnemo.models import ParsedDocument, TextBlock
+    from mnemo.models.delivery import ChunkRangeSelector, FullDocumentSelector
+
+    parsed = ParsedDocument(
+        blocks=(TextBlock(ordinal=0, text="schema artifact", page_number=2),),
+        metadata=DocumentMetadata(content_hash="a" * 64, page_count=2),
+        language="en",
+        doc_type=DocType.GENERIC,
+    )
+    index = ExactDocumentPositionIndex(parsed, listed)
+    assert index.select(FullDocumentSelector()).units[0].value.text == "schema artifact"
+    assert index.select(ChunkRangeSelector(start=0, end=0)).units[0].value.id == chunk.id
+    assert index.overlapping_chunks(0) == (chunk.id,)
+
+
+@pytest.mark.parametrize("legacy_schema", [True, False], ids=["legacy", "current"])
+def test_advanced_canonical_uses_inspected_chunk_read_model(
+    tmp_path: Path, doc_id: UUID, ver_id: UUID, dt: datetime, legacy_schema: bool
+) -> None:
+    from mnemo.interfaces.errors import UnsupportedError
+    from mnemo.models.advanced_retrieval import (
+        AdvancedRetrievalMode,
+        EvidenceRepresentation,
+        PositionalScopeV2,
+        RankingPolicyV2,
+        RetrievalBudgetsV2,
+        RetrievalPlanV2,
+        RetrievalScopeV2,
+    )
+    from mnemo.retrieval.advanced_sources import CanonicalTextAdvancedSource
+    from mnemo.retrieval.sparse import SparseRetriever
+
+    path = tmp_path / "canonical.db"
+    notebook_id, source_id = uuid4(), uuid4()
+    writer = SQLiteStore(path)
+    _run(writer.open())
+    _run(writer.upsert_document(make_doc(doc_id, ver_id, dt)))
+    _run(
+        writer.upsert_notebook(
+            Notebook(notebook_id=notebook_id, title="NB", created_at=dt, updated_at=dt)
+        )
+    )
+    _run(
+        writer.upsert_source(
+            Source(source_id=source_id, notebook_id=notebook_id, document_id=doc_id, created_at=dt)
+        )
+    )
+    chunk = replace(
+        _search_chunk(doc_id, ver_id, 100, "schema evidence"),
+        position=ChunkPosition(
+            section_index=0,
+            chunk_index_in_section=0,
+            page_number=3,
+            page_start=None if legacy_schema else 3,
+            page_end=None if legacy_schema else 5,
+        ),
+    )
+    _run(writer.upsert_chunks((chunk,)))
+    _run(writer.close())
+    if legacy_schema:
+        with sqlite3.connect(path) as db:
+            db.execute("ALTER TABLE chunks DROP COLUMN position_page_start")
+            db.execute("ALTER TABLE chunks DROP COLUMN position_page_end")
+            db.commit()
+            db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            db.execute("PRAGMA journal_mode=DELETE")
+
+    reader = SQLiteV2ReadOnlyRuntimeStore(path)
+    _run(reader.open())
+    assert reader._require_chunk_read_model().has_page_range is not legacy_schema
+    scope = RetrievalScopeV2(notebook_id=notebook_id)
+    unconstrained = PositionalScopeV2()
+    records = _run(
+        reader.enumerate_advanced_canonical(
+            scope=scope, position=unconstrained, query="schema", offset=0, limit=10
+        )
+    )
+    assert len(records) == 1
+    assert records[0].source_id == source_id
+    assert records[0].chunk.id == chunk.id
+    assert records[0].chunk.document_id == doc_id
+    assert records[0].chunk.version_id == ver_id
+    assert records[0].chunk.position.page_number == 3
+    assert records[0].chunk.position.page_start == (None if legacy_schema else 3)
+    assert records[0].chunk.position.page_end == (None if legacy_schema else 5)
+    source = CanonicalTextAdvancedSource(store=reader, ranked_retriever=SparseRetriever(reader))
+    budgets = RetrievalBudgetsV2(
+        recall_limit=10,
+        expansion_limit=0,
+        fusion_limit=10,
+        rerank_limit=10,
+        result_limit=10,
+        max_serialized_bytes=100_000,
+        max_content_characters=10_000,
+    )
+    for mode, ranking in (
+        (AdvancedRetrievalMode.RANKED, RankingPolicyV2.SOURCE_RANK_FUSION),
+        (AdvancedRetrievalMode.EXHAUSTIVE, RankingPolicyV2.DETERMINISTIC_STORAGE_ORDER),
+    ):
+        page = _run(
+            source.retrieve(
+                RetrievalPlanV2(
+                    query="schema",
+                    mode=mode,
+                    scope=scope,
+                    position=unconstrained,
+                    representations=(EvidenceRepresentation.CANONICAL_TEXT,),
+                    budgets=budgets,
+                    ranking_policy=ranking,
+                ),
+                offset=0,
+                limit=10,
+            )
+        )
+        assert len(page.candidates) == 1
+        candidate = page.candidates[0]
+        assert (candidate.document_id, candidate.version_id, candidate.chunk.id) == (
+            doc_id,
+            ver_id,
+            chunk.id,
+        )
+        assert candidate.locator["page_number"] == 3
+        assert candidate.locator["page_start"] == (None if legacy_schema else 3)
+        assert candidate.locator["page_end"] == (None if legacy_schema else 5)
+    assert (
+        _run(
+            reader.get_advanced_canonical_records(
+                scope=scope, position=unconstrained, chunk_ids=(chunk.id,)
+            )
+        )
+        == records
+    )
+    assert (
+        len(
+            _run(
+                reader.advanced_canonical_snapshot(
+                    scope=scope, position=unconstrained, query="schema"
+                )
+            )
+        )
+        == 64
+    )
+    assert _run(reader.get_chunk(chunk.id)) is not None
+    assert _run(reader._get_governed_artifact_chunk(chunk.id)) is not None
+    assert _run(reader.list_exact_document_chunks(document_id=doc_id, version_id=ver_id)) == (
+        chunk,
+    )
+
+    constrained = PositionalScopeV2(page_start=4, page_end=4)
+    if legacy_schema:
+        with pytest.raises(UnsupportedError, match="PAGE_RANGE_UNAVAILABLE_FOR_CHUNK_SCHEMA"):
+            _run(
+                reader.enumerate_advanced_canonical(
+                    scope=scope, position=constrained, query="schema", offset=0, limit=10
+                )
+            )
+        with pytest.raises(UnsupportedError, match="PAGE_RANGE_UNAVAILABLE_FOR_CHUNK_SCHEMA"):
+            _run(
+                reader.advanced_canonical_snapshot(
+                    scope=scope, position=constrained, query="schema"
+                )
+            )
+    else:
+        assert (
+            _run(
+                reader.enumerate_advanced_canonical(
+                    scope=scope, position=constrained, query="schema", offset=0, limit=10
+                )
+            )
+            == records
+        )
+        assert (
+            _run(
+                reader.enumerate_advanced_canonical(
+                    scope=scope,
+                    position=PositionalScopeV2(page_start=6),
+                    query="schema",
+                    offset=0,
+                    limit=10,
+                )
+            )
+            == ()
+        )
+    _run(reader.close())
+
+    if not legacy_schema:
+        # A newer schema can still lack a persisted range for an individual row.
+        with sqlite3.connect(path) as db:
+            db.execute(
+                "UPDATE chunks SET position_page_start=NULL, position_page_end=NULL WHERE id=?",
+                (chunk.id,),
+            )
+            db.commit()
+            db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            db.execute("PRAGMA journal_mode=DELETE")
+        _run(reader.open())
+        unknown = _run(
+            reader.enumerate_advanced_canonical(
+                scope=scope, position=unconstrained, query="schema", offset=0, limit=10
+            )
+        )
+        assert len(unknown) == 1
+        assert unknown[0].chunk.position.page_number == 3
+        assert unknown[0].chunk.position.page_start is None
+        assert unknown[0].chunk.position.page_end is None
+        unknown_page = _run(
+            source.retrieve(
+                RetrievalPlanV2(
+                    query="schema",
+                    mode=AdvancedRetrievalMode.EXHAUSTIVE,
+                    scope=scope,
+                    position=unconstrained,
+                    representations=(EvidenceRepresentation.CANONICAL_TEXT,),
+                    budgets=budgets,
+                    ranking_policy=RankingPolicyV2.DETERMINISTIC_STORAGE_ORDER,
+                ),
+                offset=0,
+                limit=10,
+            )
+        )
+        assert unknown_page.candidates[0].locator["page_start"] is None
+        assert unknown_page.candidates[0].locator["page_end"] is None
+        assert (
+            _run(
+                reader.enumerate_advanced_canonical(
+                    scope=scope, position=constrained, query="schema", offset=0, limit=10
+                )
+            )
+            == ()
+        )
+        _run(reader.close())
+
+
+def test_incomplete_page_range_schema_fails_closed(
+    tmp_path: Path, doc_id: UUID, ver_id: UUID, dt: datetime
+) -> None:
+    path = tmp_path / "incomplete.db"
+    writer = SQLiteStore(path)
+    _run(writer.open())
+    _run(writer.upsert_document(make_doc(doc_id, ver_id, dt)))
+    _run(writer.close())
+    with sqlite3.connect(path) as db:
+        db.execute("ALTER TABLE chunks DROP COLUMN position_page_end")
+        db.commit()
+        db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        db.execute("PRAGMA journal_mode=DELETE")
+
+    reader = SQLiteV2ReadOnlyRuntimeStore(path)
+    with pytest.raises(StorageError, match="CHUNK_PAGE_RANGE_SCHEMA_INCOMPLETE"):
+        _run(reader.open())
+    assert reader._db is None
 
 
 def test_chunk_snapshot_restore_preserves_replaced_rows(

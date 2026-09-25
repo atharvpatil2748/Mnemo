@@ -110,6 +110,9 @@ class CapabilityStatus:
     capability_id: str
     owner: str
     state: CapabilityState
+    registered: bool = True
+    implemented: bool = True
+    service_registered: bool = False
     dependencies: tuple[str, ...] = ()
     profile_ids: tuple[str, ...] = ()
     generation_id: str | None = None

@@ -408,6 +408,8 @@ class Phase85Runtime(Phase85RuntimeV1):
             statuses[capability_id] = CapabilityStatus(
                 capability_id=capability_id,
                 owner=definition.owner,
+                implemented=definition.code_present,
+                service_registered=service is not None,
                 dependencies=definition.dependencies,
                 profile_ids=definition.profile_ids,
                 generation_id=None if service is None else service.generation_id,

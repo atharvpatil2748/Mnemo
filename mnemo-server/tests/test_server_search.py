@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
@@ -17,6 +18,8 @@ from mnemo.interfaces import (
     EmbeddingProviderV1,
     LLMCapabilities,
     LLMInterfaceV1,
+    NotFoundError,
+    PrincipalContextV1,
     StorageCapabilities,
     StorageError,
     StorageInterfaceV1,
@@ -34,6 +37,8 @@ from mnemo.models import (
 from mnemo.registry import PluginRegistry
 from mnemo_server.app import create_app
 from mnemo_server.config import ServerConfig
+from mnemo_server.schemas.search import SearchRequest
+from mnemo_server.services.search import SearchService
 
 
 class MockTokenCounter(TokenCounterInterfaceV1):
@@ -43,6 +48,52 @@ class MockTokenCounter(TokenCounterInterfaceV1):
 
     def count(self, text: str) -> int:
         return max(1, len(text.split()))
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("authorized", [False, True])
+async def test_authenticated_global_search_filters_by_canonical_source_membership(
+    mock_engine: MagicMock,
+    authorized: bool,
+) -> None:
+    """An orphaned or cross-scope candidate cannot become an MCP search result."""
+    marker = "private candidate text"
+    private = _make_mock_chunk(text=marker)
+    mock_engine.storage.search_dense = AsyncMock(
+        return_value=(ScoredChunk(chunk=private, score=0.88, source="dense", rank=1),)
+    )
+    mock_engine.storage.search_sparse = AsyncMock(return_value=())
+    notebook_id = uuid4()
+    mock_engine.storage.list_sources_for_document = AsyncMock(
+        return_value=(SimpleNamespace(notebook_id=notebook_id),)
+    )
+    resolved = SimpleNamespace(
+        notebook_id=notebook_id,
+        document_id=private.document_id,
+        version_id=private.version_id,
+    )
+    mock_engine.document_scope_resolver.resolve_document_scope = AsyncMock(
+        return_value=resolved if authorized else None,
+        side_effect=None if authorized else NotFoundError("authorized resource was not found"),
+    )
+    principal = PrincipalContextV1(uuid4(), True)
+    response = await SearchService(mock_engine).execute_search(
+        SearchRequest(query="candidate", limit=5, modes=("dense",), enable_reranking=False),
+        principal=principal,
+    )
+    assert response.total == (1 if authorized else 0)
+    if authorized:
+        assert response.results[0].document_id == private.document_id
+        assert response.results[0].notebook_id == notebook_id
+        assert response.results[0].text == marker
+        assert response.results[0].rank == 1
+    else:
+        assert response.results == []
+        assert marker not in response.model_dump_json()
+        assert private.id not in response.model_dump_json()
+    assert (
+        mock_engine.document_scope_resolver.resolve_document_scope.await_args.args[0] is principal
+    )
 
 
 def _make_mock_chunk(

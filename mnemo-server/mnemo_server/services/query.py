@@ -11,6 +11,7 @@ from mnemo.engine import KnowledgeEngine
 from mnemo.interfaces import (
     ContractValidationError,
     NotFoundError,
+    PrincipalContextV1,
     TokenCounterInterfaceV1,
     UnsupportedError,
 )
@@ -38,6 +39,7 @@ from mnemo_server.schemas.query import (
     QueryResponse,
     RetrievalMetadataResponse,
 )
+from mnemo_server.services.authorization import CentralAuthorizationServiceV1
 
 _LOGGER = logging.getLogger(__name__)
 _MARKER = re.compile(r"\[source:([1-9][0-9]*)\]", flags=re.ASCII)
@@ -60,8 +62,12 @@ class QueryService:
         self._engine = engine
         self._token_counter = token_counter
 
-    async def execute_query(self, request: QueryRequest) -> QueryResponse:
+    async def execute_query(
+        self, request: QueryRequest, principal: PrincipalContextV1 | None = None
+    ) -> QueryResponse:
         """Execute evidence retrieval and optional grounded answer synthesis."""
+        if principal is not None and not principal.authenticated:
+            raise PermissionError("authenticated query principal is required")
         start_time = time.perf_counter()
 
         # 1. Notebook Scope Validation
@@ -100,6 +106,10 @@ class QueryService:
         # 4. Multi-Source Retrieval & RRF Fusion
         retriever = MultiSourceRetriever(self._engine.registry, self._engine.embedding_provider)
         fusion_result = await retriever.execute(plan, global_limit=request.retrieval_config.top_k)
+        if principal is not None:
+            fusion_result, _ = await CentralAuthorizationServiceV1(
+                self._engine
+            ).filter_fused_candidates(principal, fusion_result, request.notebook_id)
 
         # 5. Reranking (Cross-Encoder / RRF Fallback)
         reranker = RerankingModule(self._engine.registry)

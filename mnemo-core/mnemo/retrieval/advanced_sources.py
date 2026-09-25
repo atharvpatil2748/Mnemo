@@ -198,6 +198,8 @@ def _canonical_candidate(
     locator = FrozenMetadata(
         {
             "page_number": chunk.position.page_number,
+            "page_start": chunk.position.page_start,
+            "page_end": chunk.position.page_end,
             "section_index": chunk.position.section_index,
             "chunk_index": chunk.position.chunk_index_in_section,
             "start_offset": chunk.position.start_offset,

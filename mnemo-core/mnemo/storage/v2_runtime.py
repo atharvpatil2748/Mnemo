@@ -50,6 +50,12 @@ class SQLiteV2ReadOnlyRuntimeStore(SQLiteStore):
         )
         await self._db.execute("PRAGMA query_only=ON")
         await self._db.execute("PRAGMA foreign_keys=ON")
+        try:
+            await self._inspect_chunk_read_model_if_present()
+        except BaseException:
+            await self._db.close()
+            self._db = None
+            raise
 
     async def resolve_active_multilingual_v2_alias_digest(self) -> str | None:
         row = await (
@@ -260,25 +266,8 @@ class SQLiteV2ReadOnlyRuntimeStore(SQLiteStore):
         return value
 
     async def _get_governed_artifact_chunk(self, chunk_id: str) -> Chunk | None:
-        """Read the immutable governed build schema without requiring later columns.
-
-        The 44-document artifact predates additive ``position_page_start/end``
-        columns. ``_chunk_from_row`` already canonically derives those values
-        from ``position_page_number`` when absent, so the read-only V2 adapter
-        selects only columns physically governed by that artifact.
-        """
-        row = await (
-            await self._require_open().execute(
-                """SELECT id,document_id,version_id,text,chunk_type,
-                          position_section_index,position_chunk_index,
-                          position_page_number,position_start_offset,position_end_offset,
-                          source_start_ordinal,source_end_ordinal,heading_path,
-                          parent_chunk_id,sibling_ids,metadata
-                   FROM chunks WHERE id=?""",
-                (chunk_id,),
-            )
-        ).fetchone()
-        return None if row is None else self._chunk_from_row(row)
+        """Resolve a governed identity through the shared immutable read model."""
+        return await self.get_chunk(chunk_id)
 
     async def _validate_observations(self, row: MultilingualTextProjectionRowV2) -> None:
         representation = cast(

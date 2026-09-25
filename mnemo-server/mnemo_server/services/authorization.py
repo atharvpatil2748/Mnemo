@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from uuid import UUID, uuid5
 
 from mnemo.engine import KnowledgeEngine
-from mnemo.interfaces import NotFoundError, PrincipalContextV1, ResolvedDocumentScope
+from mnemo.interfaces import (
+    ContractValidationError,
+    NotFoundError,
+    PrincipalContextV1,
+    ResolvedDocumentScope,
+)
+from mnemo.models import FusedChunkResult, RetrievalFusionResult
+from mnemo.retrieval import StorageSourceAssociationReaderV1
 
 _ACTOR_NAMESPACE = UUID("f3d4e4e3-b4d4-52e8-89f1-e6e8d5a32472")
 
@@ -63,6 +70,21 @@ class CentralAuthorizationServiceV1:
             "authorized_scope",
         )
 
+    async def authorize_source(
+        self,
+        principal: PrincipalContextV1,
+        source_id: UUID,
+        operation: AuthorizationOperationV1,
+    ) -> UUID:
+        """Resolve a canonical source membership without disclosing unknown identities."""
+        if not principal.authenticated:
+            raise PermissionError("authenticated principal is required")
+        source = await self._engine.storage.get_source(source_id)
+        if source is None:
+            raise NotFoundError("authorized resource was not found")
+        await self.authorize_notebook(principal, source.notebook_id, operation)
+        return source.notebook_id
+
     async def authorize_document(
         self,
         principal: PrincipalContextV1,
@@ -75,6 +97,45 @@ class CentralAuthorizationServiceV1:
         return await self._engine.document_scope_resolver.resolve_document_scope(
             principal, document_id, version_id, notebook_id
         )
+
+    async def filter_fused_candidates(
+        self,
+        principal: PrincipalContextV1,
+        fusion: RetrievalFusionResult,
+        notebook_id: UUID | None,
+    ) -> tuple[RetrievalFusionResult, dict[tuple[UUID, UUID], UUID]]:
+        """Remove non-members before reranking, synthesis, counts, or snippets."""
+        if not principal.authenticated:
+            raise PermissionError("authenticated principal is required")
+        permitted: list[FusedChunkResult] = []
+        scopes: dict[tuple[UUID, UUID], UUID] = {}
+        for result in fusion.results:
+            chunk = result.chunk
+            requested: tuple[UUID, ...] = () if notebook_id is None else (notebook_id,)
+            if notebook_id is None:
+                associations = await StorageSourceAssociationReaderV1(
+                    self._engine.storage
+                ).list_sources_for_document(chunk.document_id)
+                requested = tuple(sorted({source.notebook_id for source in associations}))
+            for candidate_notebook in requested:
+                if candidate_notebook is None:
+                    continue
+                try:
+                    resolved = await self._engine.document_scope_resolver.resolve_document_scope(
+                        principal, chunk.document_id, chunk.version_id, candidate_notebook
+                    )
+                except (NotFoundError, ContractValidationError):
+                    continue
+                if (
+                    resolved.document_id != chunk.document_id
+                    or resolved.version_id != chunk.version_id
+                    or resolved.notebook_id != candidate_notebook
+                ):
+                    continue
+                scopes[(chunk.document_id, chunk.version_id)] = candidate_notebook
+                permitted.append(replace(result, global_rank=len(permitted) + 1))
+                break
+        return replace(fusion, results=tuple(permitted)), scopes
 
 
 def principal_from_claims(claims: dict[str, object] | None) -> ServerPrincipalV1:
