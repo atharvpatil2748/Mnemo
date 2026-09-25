@@ -6,10 +6,9 @@
 
 ADR-0077 accepts a separately governed mutable filesystem + SQLite workspace
 from explicit absolute server configuration, with mandatory server-enforced
-read-only fallback. That boundary is not implemented or certified yet. The
-current generic writable engine and its notebook/source/session/note routes must
-not be treated as permission to mutate the certified V2 corpus, and the FinalQA
-operational store is not a substitute user workspace.
+read-only fallback. That boundary is implemented and certified for 8.8.14a.
+When no valid workspace root is configured, mutation routes remain unavailable;
+the FinalQA operational store is not a substitute user workspace.
 
 ---
 
@@ -50,9 +49,10 @@ operational store is not a substitute user workspace.
 - **Authentication Middleware:**
   - Three configurable modes: `none` (local single-user default), `api-key` (constant-time header validation), and `jwt` (RFC 7519 HMAC-SHA verification).
   - Certified V2 remote operations require a transport-authenticated,
-    server-derived principal. Phase 8.8 completes central authorization across
-    the full remotely exposed MCP surface and rejects client principal/model/
-    reranker/store policy overrides.
+    server-derived principal. Central authorization for all 14 registered MCP
+    tools and rejection of client principal/model/reranker/store overrides have
+    local Stage 5 acceptance; the complete Stage 5 code set has not been
+    deployed or externally verified.
 - **CLI Utilities:**
   - `mnemo serve`: Start the HTTP/REST and WebSocket ASGI server.
   - `mnemo-mcp`: Run the Model Context Protocol (MCP) server (`--transport stdio` or `--transport sse`).
@@ -70,9 +70,11 @@ operational store is not a substitute user workspace.
 - Phase 8.8: in progress, not verified. ADR-0077's 8.8.14a
   workspace/read-only boundary and 8.8.14b authenticated HTTP FinalQA V2 are
   implemented, certified, and accepted; 8.8.14c documentation is reconciled.
-  Runtime convergence, compatible readers, authorization, metadata,
-  capability/error truth, tunnel parity, `search_images`, and the other Phase 9
-  readiness work also remain pending.
+  Module 8.8.1 startup identity convergence is certified. Compatible readers,
+  authorization, and capability truth are [locally accepted Stage 5 work](../docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md)
+  in the local checkout. Metadata, typed errors (including deferred
+  8.8.2f), complete tool contracts, behavioral tunnel parity, `search_images`,
+  and Phase 9 readiness remain pending.
 - Phase 9: planned and blocked until `Phase 8.8 VERIFIED → Phase 9 GO`.
 
 See the [current architecture](../docs/architecture/current/mnemo_architecture_v2.md)
@@ -131,16 +133,31 @@ accepting a client-selected database or model graph. HTTP and other MCP
 entrypoints use the same server-owned binding when certified V2 is selected.
 
 The model-cache directory is an operator-controlled location, not part of the
-certified model revision or binding digest. The operator still supplies an
-absolute local model-cache path, the activation
-operator and trusted stdio subjects, an authenticated API-key or JWT policy and
-its credential, and the existing delivery-cursor signing secret. The signing
-secret must verify the durable activation state; the tunnel-client API key is
-not a Mnemo server credential. Missing or conflicting required values fail
-closed. No production credential source is currently provisioned by the
-repository launcher. The optional ADR-0077 mutable workspace root remains
-explicit and absolute; when missing or invalid, workspace mutation is
+certified model revision or binding digest. The operator supplies an absolute
+local model-cache path, trusted stdio subjects, and the required authenticated
+transport policy. The production manifest selects one server-owned credential
+registry authority; the active generation's signing secret is resolved from
+the OS-backed store and verified against its signed activation, certificate,
+and final evidence. It is not a client-supplied or historical secret. Tunnel
+control-plane credentials are separate from Mnemo server credentials. Missing
+or conflicting required values fail closed. The optional ADR-0077 workspace
+root remains explicit and absolute; when missing or invalid, workspace mutation is
 server-enforced read-only.
+
+All 14 MCP tools are registered, but route registration does not imply that
+every service is configured, ready, available for an authorized scope, or
+certified. The locally accepted capability lifecycle reports these separately
+with effective server-owned identity. On the certified corpus, exact persisted
+`get_document_chunk` delivery can work while broader `get_document` delivery
+reports `service_not_registered` because a parsed-document representation is
+not available. The older/newer-schema public MCP fixture matrix supplies
+parsed blocks in memory; it is not proof of production document delivery.
+Older schemas lack optional page-range columns: actual `page_number` survives,
+but start/end remain null. A page-range filter is not silently broadened;
+the current MCP contract reports a partial canonical-source omission until
+8.8.2f/8.8.7 preserve the typed originating reason. The shared reader stays
+read-only against the certified corpus, and central authorization scopes reads
+before protected content is returned.
 
 | Variable | Default | Description |
 |---|---|---|

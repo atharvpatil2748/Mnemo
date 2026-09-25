@@ -33,6 +33,9 @@ Current Phase 8.8 inputs include the
 [post-Phase-8 architecture audit](operations/mnemo-post-phase8-architecture-next-step-audit.md),
 [MCP failure and contract audit](operations/mnemo-mcp-failure-and-contract-audit.md),
 and [post-Phase-8.5 MCP architecture audit](architecture/POST_PHASE_8_5_MCP_ARCHITECTURAL_AUDIT.md).
+The [Phase 8.8 Stage 5 implementation acceptance](operations/mnemo-phase-8-8-stage-5-acceptance.md)
+records local prerequisite-branch evidence, not Phase 8.8 certification or a
+production deployment.
 
 Historical claims are not rewritten when current architecture changes. Use the
 current certification and architecture audit above for production truth.

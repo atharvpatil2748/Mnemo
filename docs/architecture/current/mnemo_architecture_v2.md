@@ -1824,8 +1824,9 @@ indexes.
 The FinalQA store is purpose-specific `GOVERNED_OPERATIONAL` state, not a user
 workspace. ADR-0077 accepts an additional, separately governed
 `MUTABLE_WORKSPACE` filesystem + SQLite role from explicit absolute server
-configuration. That role is not implemented or certified yet; until it is,
-production workspace mutations are server-enforced read-only. It must never be
+configuration. That boundary is implemented and certified under 8.8.14a.
+Without a valid configured workspace root, production workspace mutations
+remain server-enforced read-only. The workspace must never be
 derived from or colocated with the certified corpus, evaluation artifacts,
 operational state, user caches, or process CWD.
 
@@ -2547,7 +2548,7 @@ As the plugin ecosystem grows, users will face incompatibility between plugin ve
 | 8.5 | **COMPLETED / CERTIFIED** | Full Multilingual V2, BGE-M3 + FTS5 + RRF, BGE-reranker-v2-m3, identity-bound authorization/evidence, provenance, FinalQA operational-store separation, durable reranker activation/rollback, and HTTP/stdio/SSE parity | Certification applies to the exact immutable 44-document production identity; the historical 94.4% evaluation is not identity-equivalent to the 83.3% production-parity result |
 | 8.6 | **COMPLETED / VALIDATED EVALUATION NOTEBOOK** | 24 governed sources across PDF, HTML, DOCX, PPTX, XLSX, CSV, JSON, and Markdown; Hindi, Marathi, and English; structure-aware chunking; 5,843 FTS rows and BGE-M3 embeddings; 161 image occurrences with complete OCR, Vision, and CLIP derivations; canonical manifest and transport validation | Evaluation-only; not merged into or exposed as the certified production corpus |
 | 8.7 | **COMPLETED CAPABILITY MILESTONE; HARDENING FOLLOW-UP REQUIRED** | Expanded MCP surface to 14 registered tools, additive retrieval/delivery contracts, notebook/asset identity propagation, FinalQA exposure, and real client exercises | The later audits found historical tunnel composition, retained-tool authorization, immutable-schema reader, metadata, capability, and parity defects; Phase 8.8 owns those corrections |
-| 8.8 | **IN PROGRESS / NOT VERIFIED** | 8.8.14a and 8.8.14b accepted; Module 8.8.1 server-owned runtime convergence certified; tool-contract correctness, behavioral parity, semantic image discovery, and Phase 9 preparation remain pending | No Phase 9 implementation, no Phase 8.6 promotion, and no Qdrant/SurrealDB production integration |
+| 8.8 | **IN PROGRESS / NOT VERIFIED** | 8.8.14a/b accepted; Module 8.8.1 startup convergence certified; Stage 5 reader, authorization, and capability branches accepted locally; tool contracts, behavioral parity, semantic image discovery, and Phase 9 preparation remain pending | Stage 5 is not a production deployment or external verification of the complete code set; 8.8.2f awaits 8.8.7; no Phase 9 implementation or Phase 8.6 promotion |
 
 The authoritative evidence is ADR-0070, ADR-0071, ADR-0073 through ADR-0076,
 the current V2 certification report, the single-production-path audit, the
@@ -2723,8 +2724,10 @@ historical evidence. Phase 8.8 remains **IN PROGRESS / NOT VERIFIED**; Module
 post-promotion HTTP/stdio/SSE/external-tunnel convergence. The evidence is
 `scratch/phase8_8_1_runtime_convergence/convergence.json`; see the Module 8.8.1
 certification report. Individual capability readiness remains separately gated.
-Modules 8.8.2–8.8.13 and the complete acceptance gate remain open, and 8.8.14d
-remains **PENDING**. Phase 9 is blocked until
+Stage 5's 8.8.2a–e/g, 8.8.3a–d, and 8.8.6a–c branches are locally accepted;
+this is not a production deployment or complete
+module/phase certification. Task 8.8.2f and the complete Phase 8.8 acceptance
+gate remain open, and 8.8.14d remains **PENDING**. Phase 9 is blocked until
 `PHASE_8_8_VERIFIED → Phase 9 GO`.
 
 The 8.8.1 configuration contract derives the certified BGE mode, activation
@@ -2814,17 +2817,23 @@ a second configuration.
 ### 21.4 Immutable corpus and compatible read model
 
 The certified corpus is immutable and must not be migrated to satisfy newer
-generic readers. Phase 8.8 introduces one shared compatibility/read-model
-boundary for retained sparse retrieval, canonical-text evidence, document blocks,
-and exact chunks. The known mismatch is that generic readers select
-`chunks.position_page_start` and `chunks.position_page_end`, while the certified
-immutable schema predates those additive columns. The read model selects only
-columns physically present, reconstructs optional
-page information only from governed evidence, preserves stable IDs/provenance,
-and returns an explicit unavailable field when a locator is genuinely absent.
-It must never invent page ranges or mutate the certified database. The separate
-mutable FinalQA operational store remains the only destination for execution,
-snapshot, transition, and citation records.
+generic readers. The locally accepted `ChunkReadModel` inspects the physical
+`chunks` schema and supplies one typed projection to retained sparse retrieval,
+canonical-text evidence, document blocks, and exact chunks. Historically,
+generic readers selected `chunks.position_page_start` and
+`chunks.position_page_end` even though the certified immutable schema lacks
+those additive columns. The compatible read model preserves persisted
+document/version/chunk IDs, source provenance, and actual `page_number`; absent
+or NULL page-range endpoints remain unavailable, not inferred from a single
+page number. Half-present optional columns fail closed. A page-range-constrained
+query against the older schema cannot broaden to an unconstrained result: the
+current public MCP result is partial with a canonical-source omission. Typed
+propagation of the originating safe reason remains 8.8.2f after 8.8.7.
+The public older/newer-schema MCP fixture matrix passed locally, including
+exact chunk and block attribution. Its in-memory parsed blocks do not establish
+availability of broader document delivery for the certified corpus. Certified
+reads remain immutable; the separate FinalQA operational store remains the
+destination for execution, snapshot, transition, and citation records.
 
 ### 21.5 Authorization and non-disclosure
 
@@ -2837,11 +2846,13 @@ transport-authenticated principal
   → retrieval or delivery
 ```
 
+The locally accepted 8.8.3 boundary derives a trusted principal from the
+authenticated transport (or trusted stdio launcher), then applies centralized
+authorization across all 14 registered tools before resource disclosure.
 Client arguments cannot supply or override a principal, model, reranker, internal
-candidate pool, store path, generation, or activation state. Unauthorized and
-unknown resources retain the repository's non-disclosure contract. Phase 8.8
-must test the boundary for every tool rather than infer safety from shared class
-existence.
+candidate pool, store path, generation, or activation state. Unknown and
+unauthorized resources share a sanitized non-disclosure outcome. This does not
+assert an actor-to-notebook ACL or complete four-transport behavioral parity.
 
 ### 21.6 Tool and routing declarations
 
@@ -2899,6 +2910,16 @@ OCR derivation availability, Vision derivation availability, CLIP embedding
 availability, and semantic image-search readiness are separate capabilities.
 For example, `get_asset` may be active while `visual` search is unavailable for
 the selected notebook.
+The local 8.8.6 implementation distinguishes tool registration from service
+construction, configuration, readiness, exposure, authorized-scope availability,
+and certification. The effective identity is server-owned and scope-qualified.
+`get_document_chunk` can be callable for a persisted authorized chunk while
+the broader `document_delivery` and `exact_retrieval` families remain
+`service_not_registered`; `get_document` is not thereby production-ready.
+Likewise, an exposed exhaustive `search_evidence` route is not behaviorally
+verified or certified by a bounded result with a continuation cursor. Caption,
+CLIP, and semantic image search are reported independently and are not
+activated by registration of `get_image_analysis` or `get_asset`.
 
 MCP errors use safe typed categories: `invalid_input`, `unauthorized`,
 `not_found`, `capability_unavailable`, `configuration_mismatch`,

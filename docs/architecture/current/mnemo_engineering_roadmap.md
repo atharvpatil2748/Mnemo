@@ -13,8 +13,8 @@ production-exposed. Phase 8.7 is the retrospective completed capability
 milestone for the expanded 14-tool MCP surface and real client exercises; later
 audits identified production-composition and contract hardening that Phase 8.8
 must correct. Phase 8.8 is in progress (8.8.14a and 8.8.14b accepted;
-Module 8.8.1 certified) but not
-verified. Phase 9 is
+Module 8.8.1 certified; Stage 5 locally accepted)
+but not verified. Phase 9 is
 the next implementation phase, gated on Phase 8.8 verification, the mutable
 workspace boundary, and authenticated V2 chat/FinalQA transport.
 
@@ -256,6 +256,13 @@ implementation and evidence.
    configuration forks; 8.8.1c bind the tunnel to server-owned startup after
    8.8.1a; and 8.8.1d capture convergence evidence after 8.8.1b.
 5. **Close the first prerequisite branches permitted by 8.8.1:**
+   **Stage 5 implementation acceptance: `STAGE_5_COMPLETE` (2026-09-25,
+   local implementation only).** The public MCP older/newer-schema regression matrix,
+   security boundary, and capability-truthfulness branches have passing local
+   evidence in the [Stage 5 implementation report](../../reports/operations/mnemo-phase-8-8-stage-5-acceptance.md).
+   This is not a deployment, external ChatGPT re-verification, completion of
+   Module 8.8.2, or Phase 8.8 verification. Task 8.8.2f remains deferred to
+   Stage 6 after Module 8.8.7.
    - Module 8.8.2 reader work: 8.8.2a reproduce and pin the confirmed failure;
      8.8.2b introduce one compatible read-model boundary; then 8.8.2c preserve
      truthful locators, 8.8.2d route every affected reader, 8.8.2e add
@@ -366,8 +373,10 @@ historical evidence. Phase 8.8 remains **IN PROGRESS / NOT VERIFIED**; Module
 HTTP/stdio/SSE/external-tunnel convergence. The signed post-promotion evidence
 is `scratch/phase8_8_1_runtime_convergence/convergence.json`; see
 `docs/reports/operations/mnemo-module-8-8-1-certification.md`. Individual
-capability readiness is not certified by tool registration. Modules 8.8.2–8.8.13
-and the complete acceptance gate remain open, and 8.8.14d remains **PENDING**. Phase 9 is blocked until
+capability readiness is not certified by tool registration. Stage 5's 8.8.2a–e/g,
+8.8.3a–d, and 8.8.6a–c branches are locally accepted; 8.8.2f and the
+complete Phase 8.8 acceptance gate remain open.
+8.8.14d remains **PENDING**. Phase 9 is blocked until
 `PHASE_8_8_VERIFIED → Phase 9 GO`.
 
 The 8.8.1 configuration contract derives the certified BGE mode, activation
@@ -1278,8 +1287,8 @@ FTS5 successfully returns candidates from the certified immutable corpus, but
 the generic `SQLiteStore.get_chunk()` reader then selects
 `chunks.position_page_start` and `chunks.position_page_end`. Those additive
 columns do not exist in the certified database, so SQLite raises
-`OperationalError: no such column: position_page_start`; the retrieval wrapper
-currently obscures that cause as `retriever invocation failed: sq-2:sparse`.
+`OperationalError: no such column: position_page_start`; the historical
+retrieval wrapper obscured that cause as `retriever invocation failed: sq-2:sparse`.
 Here, `sq-2:sparse` is only the generated sparse invocation identifier—not the
 failing database object, not an FTS5 failure, and not the root cause.
 
@@ -1291,6 +1300,11 @@ stable document/version/chunk identities and provenance, and represent absent
 page positions as unavailable. It must not migrate or mutate the certified
 database, invent page ranges, rebuild FTS, reindex documents, or regenerate
 embeddings.
+
+Tasks 8.8.2a–e/g have local acceptance in the Stage 5 report, including a
+public MCP older/newer-schema fixture matrix and protected-corpus checks.
+Task 8.8.2f remains open until Module 8.8.7 supplies typed error semantics;
+therefore this module's complete acceptance gate is not yet closed.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
