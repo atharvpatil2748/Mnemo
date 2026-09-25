@@ -16,7 +16,11 @@
 > fallback; 8.8.14a is now implemented and certified. Authenticated HTTP
 > FinalQA V2 was subsequently accepted as production chat in 8.8.14b, and
 > 8.8.14c reconciled the current documentation. The historical findings below
-> remain unchanged; Module 8.8.1 and the complete Phase 8.8 gate are pending.
+> remain unchanged. Subsequent [8.8.1 certification](mnemo-module-8-8-1-certification.md)
+> closed startup identity convergence, and [Stage 5 local acceptance](mnemo-phase-8-8-stage-5-acceptance.md)
+> closed its prerequisite branches locally, without production deployment.
+> Neither result completes the Phase 8.8 gate. The September 8 findings below
+> remain point-in-time observations, not a declaration of current deployment.
 
 ## 1. Executive Summary
 

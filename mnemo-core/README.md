@@ -22,6 +22,10 @@ notebook, and Phase 8.7 is a completed MCP capability milestone. Phase 8.8 is
 in progress but not verified. 8.8.14a and authenticated HTTP FinalQA V2 chat
 (8.8.14b) are accepted, and 8.8.14c documentation is reconciled; Phase 9
 remains gated on complete Phase 8.8 verification.
+The immutable-schema-compatible chunk read model and truthful optional page
+locators have local [Stage 5 acceptance](../docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md).
+The complete Stage 5 code set has not been deployed or externally verified;
+typed MCP error propagation (8.8.2f) awaits Module 8.8.7.
 
 See the [current architecture](../docs/architecture/current/mnemo_architecture_v2.md),
 [engineering roadmap](../docs/architecture/current/mnemo_engineering_roadmap.md),

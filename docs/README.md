@@ -21,7 +21,10 @@ Phase 8.8 implementation and verification. ADR-0077's 8.8.14a mutable-workspace
 boundary and mandatory read-only fallback are implemented, certified, and
 accepted. 8.8.14b has selected and certified authenticated HTTP FinalQA V2 as
 production chat; 8.8.14c has reconciled current documentation. Module 8.8.1
-server-owned runtime convergence is certified; later Phase 8.8 gates remain pending.
+server-owned startup convergence is certified. [Stage 5](reports/operations/mnemo-phase-8-8-stage-5-acceptance.md)
+has local implementation acceptance (8.8.2a–e/g, 8.8.3a–d, 8.8.6a–c),
+not deployment or external verification of the complete Stage 5 code set.
+Task 8.8.2f and later Phase 8.8 gates remain pending.
 
 ## Architecture decisions
 
@@ -46,6 +49,7 @@ server-owned runtime convergence is certified; later Phase 8.8 gates remain pend
 - [Current final certification](reports/certification/current/mnemo-v2-final-certification.md)
 - [Module 8.8.1 certification](reports/operations/mnemo-module-8-8-1-certification.md)
 - [Module 8.8.1 forensic audit](reports/operations/mnemo-module-8-8-1-forensic-audit.md)
+- [Phase 8.8 Stage 5 local acceptance](reports/operations/mnemo-phase-8-8-stage-5-acceptance.md)
 - [Evaluation reports](reports/evaluation/)
 - [Audit reports](reports/audits/)
 - [Performance reports](reports/performance/)

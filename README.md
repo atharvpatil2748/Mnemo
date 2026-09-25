@@ -152,10 +152,10 @@ Mnemo is in active engineering development. Every module is rigorously tested be
 | Embedding Pipeline | ✅ Released | Content-addressed embedding cache and batch vector generation (Phase 5) |
 | Hybrid Retrieval & Grounded QA | ✅ Implemented and validated | Title-aware sparse retrieval, optional dense retrieval, fusion/reranking, strict persisted Final QA, citation correction, immutable replay (ADRs 0052–0057). |
 | REST API & Streaming | ✅ Released; Phase 8.8 hardening in progress | Milestone M7 REST and legacy V1 WebSocket/SSE exist. Authenticated HTTP FinalQA V2 is the accepted production chat path; V1 streaming is non-production and V2 streaming is optional future work. |
-| Native MCP Integration | ✅ 14 tools registered; 8.8.1 runtime convergence certified | Six retained knowledge tools, four bounded delivery tools, and four V2 evidence/capability/FinalQA tools over stdio/SSE. Server-owned HTTP/stdio/SSE/external-tunnel runtime identity converges; authorization across all tools, compatible readers, metadata, capability truth, errors, and behavioral parity remain Phase 8.8 work. |
-| Advanced Retrieval & Multimodal Foundation | ✅ Implemented & evaluated | Phase 8.5 is certified for its exact 44-document production identity. OCR, Vision, CLIP, and BGE-M3 foundations are validated; dedicated semantic image discovery through MCP is not currently exposed and is planned as `search_images` in Phase 8.8. |
+| Native MCP Integration | ✅ 14 tools registered; 8.8.1 runtime convergence certified | Six retained knowledge tools, four bounded delivery tools, and four V2 evidence/capability/FinalQA tools over stdio/SSE. Server-owned HTTP/stdio/SSE/external-tunnel startup identity converges. Compatible readers, central authorization, and capability truth have local Stage 5 acceptance; metadata, typed errors, complete tool contracts, and behavioral parity remain open. |
+| Advanced Retrieval & Multimodal Foundation | ✅ Implemented & evaluated for their scoped evidence | Phase 8.5 is certified for its exact 44-document production identity. OCR, Vision, and CLIP evaluation foundations do not imply callable production image services; BGE-M3 is governed separately. Dedicated semantic image discovery through MCP is not exposed and is planned as `search_images` in Phase 8.8. |
 | Phase 8.6 evaluation notebook | ✅ Validated; evaluation-only | Format-diverse multilingual corpus with structure-aware chunking, OCR, Vision, CLIP, BGE-M3, provenance, canonical manifests, isolation, and transport validation; not production-exposed. |
-| Phase 8.8 | 🚧 In progress, not verified | 8.8.14a workspace and 8.8.14b authenticated HTTP chat are implemented, certified, and accepted; 8.8.14c documentation is reconciled. Module 8.8.1 runtime convergence is certified; later MCP contracts, behavioral parity, and planned `search_images` remain pending. |
+| Phase 8.8 | 🚧 In progress, not verified | 8.8.14a/b accepted; 8.8.14c reconciled; 8.8.1 startup convergence certified. [Stage 5](docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md) has local implementation acceptance (8.8.2a–e/g, 8.8.3a–d, 8.8.6a–c), not deployment or external verification of the complete Stage 5 code; 8.8.2f awaits 8.8.7. Later contracts, parity, and `search_images` remain pending. |
 | Web UI | 📋 Planned after Phase 8.8 verification | Phase 9 is the next implementation phase, but has not started. |
 | Cross-Doc Reasoning | 📋 Planned | Phase 11 |
 
@@ -223,6 +223,15 @@ CLIP text-to-image, and governed hybrid discovery. It becomes a 15-tool surface
 only after implementation and verification. `search_images` will return stable
 notebook/source/document/version/occurrence/asset identities and human-readable
 metadata where available; `get_asset` remains exact binary delivery.
+
+Tool registration is not proof that a service is configured, callable for an
+authorized scope, or certified. In particular, exact persisted
+`get_document_chunk` reads can succeed while broader `get_document` delivery
+is unavailable for a production document lacking a registered parsed-document
+representation. Use `get_capabilities` for the effective service state. The
+older/newer SQLite schema MCP matrix passed locally with disposable fixtures;
+its in-memory parsed blocks do not establish production document delivery or
+external ChatGPT verification of the complete Stage 5 code set.
 
 ### 4. Setup and Validation
 Clone the repository and run the validation script to ensure your environment is clean:
@@ -292,7 +301,7 @@ Mnemo's roadmap is structured to ensure every phase produces a runnable, testabl
 * **COMPLETED/CERTIFIED (Phase 8.5):** Exact 44-document V2 production composition, production-parity evaluation, durable BGE activation/rollback, authenticated FinalQA, and transport parity. Historical Golden evaluation and later production-parity evaluation remain distinct evidence identities.
 * **COMPLETED/VALIDATED (Phase 8.6):** Isolated 24-document format-diverse multilingual evaluation notebook; not production-exposed.
 * **COMPLETED CAPABILITY MILESTONE (Phase 8.7):** 14 registered MCP tools and real client exercises. Defects discovered by the later audits are Phase 8.8 inputs, not retroactive Phase 8.7 claims.
-* **CURRENT HARDENING (Phase 8.8):** In progress, not verified. The mutable-workspace and authenticated HTTP FinalQA V2 chat gates are accepted; Module 8.8.1 server-owned runtime convergence is certified, while MCP tool-contract and behavioral parity gates remain pending. See the [8.8.1 forensic audit](docs/reports/operations/mnemo-module-8-8-1-forensic-audit.md).
+* **CURRENT HARDENING (Phase 8.8):** In progress, not verified. Mutable-workspace and authenticated HTTP FinalQA V2 chat gates are accepted; Module 8.8.1 startup convergence is certified. Stage 5 reader, authorization, and capability branches are locally accepted, not deployed or externally verified as a complete Stage 5 code set. MCP tool-contract and behavioral parity gates remain pending. See the [8.8.1 forensic audit](docs/reports/operations/mnemo-module-8-8-1-forensic-audit.md) and [Stage 5 acceptance](docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md).
 * **NEXT IMPLEMENTATION AFTER VERIFICATION (Phase 9):** Web UI React frontend. Phase 9 starts only after `Phase 8.8 VERIFIED → Phase 9 GO`.
 * **FUTURE (Phases 10–13):** Notebook features, cross-document reasoning, plugin ecosystem, and production hardening.
 
