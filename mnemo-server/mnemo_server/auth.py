@@ -9,6 +9,7 @@ import json
 import logging
 import time
 from typing import Any
+from uuid import uuid4
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -16,6 +17,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.types import ASGIApp
 
 from mnemo_server.config import ServerConfig
+from mnemo_server.typed_errors import ErrorCategory, TypedPublicError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -133,6 +135,23 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """Evaluate request against the active authentication strategy."""
+        request.state.correlation_id = uuid4()
+
+        def auth_failure(category: ErrorCategory, code: str, status: int) -> JSONResponse:
+            typed = TypedPublicError(
+                category,
+                code,
+                request.state.correlation_id,
+                "authentication",
+                "principal_required" if status == 401 else "authentication_configuration",
+                status,
+            )
+            return JSONResponse(
+                status_code=status,
+                content={"error": typed.body()},
+                headers={"X-Mnemo-Correlation-ID": str(typed.correlation_id)},
+            )
+
         path = request.url.path
         if path in EXEMPT_PATHS or path.rstrip("/") in EXEMPT_PATHS:
             return await call_next(request)
@@ -146,16 +165,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if config.auth_mode == "api-key":
             if not config.api_key:
                 _LOGGER.error("auth_mode is 'api-key' but no API key is configured")
-                return JSONResponse(
-                    status_code=500,
-                    content={
-                        "error": {
-                            "code": "internal.configuration",
-                            "message": "Server authentication is misconfigured",
-                            "details": {},
-                            "retryable": False,
-                        }
-                    },
+                return auth_failure(
+                    ErrorCategory.CONFIGURATION_MISMATCH, "internal.configuration", 500
                 )
 
             provided_key = None
@@ -173,17 +184,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             if not provided_key or not hmac.compare_digest(
                 provided_key.strip(), config.api_key.strip()
             ):
-                return JSONResponse(
-                    status_code=401,
-                    content={
-                        "error": {
-                            "code": "auth.unauthorized",
-                            "message": "Invalid or missing API key",
-                            "details": {},
-                            "retryable": False,
-                        }
-                    },
-                )
+                return auth_failure(ErrorCategory.UNAUTHORIZED, "auth.unauthorized", 401)
 
             request.state.auth = {"sub": "api-key"}
             return await call_next(request)
@@ -191,16 +192,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if config.auth_mode == "jwt":
             if not config.jwt_secret:
                 _LOGGER.error("auth_mode is 'jwt' but no JWT secret is configured")
-                return JSONResponse(
-                    status_code=500,
-                    content={
-                        "error": {
-                            "code": "internal.configuration",
-                            "message": "Server authentication is misconfigured",
-                            "details": {},
-                            "retryable": False,
-                        }
-                    },
+                return auth_failure(
+                    ErrorCategory.CONFIGURATION_MISMATCH, "internal.configuration", 500
                 )
 
             token = None
@@ -214,17 +207,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 token = request.query_params.get("token")
 
             if not token:
-                return JSONResponse(
-                    status_code=401,
-                    content={
-                        "error": {
-                            "code": "auth.unauthorized",
-                            "message": "Missing Bearer token",
-                            "details": {},
-                            "retryable": False,
-                        }
-                    },
-                )
+                return auth_failure(ErrorCategory.UNAUTHORIZED, "auth.unauthorized", 401)
 
             try:
                 claims = validate_jwt(
@@ -233,18 +216,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     allowed_algorithms=config.jwt_algorithms,
                 )
                 request.state.auth = claims
-            except AuthError as err:
-                return JSONResponse(
-                    status_code=401,
-                    content={
-                        "error": {
-                            "code": err.code,
-                            "message": err.message,
-                            "details": {},
-                            "retryable": False,
-                        }
-                    },
-                )
+            except AuthError:
+                return auth_failure(ErrorCategory.UNAUTHORIZED, "auth.unauthorized", 401)
 
             return await call_next(request)
 

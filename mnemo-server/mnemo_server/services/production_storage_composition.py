@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mnemo.config import MnemoConfig
+from mnemo.engine import KnowledgeEngine
 
 from ..config import ServerConfig
 from .mutable_workspace import (
@@ -42,6 +43,18 @@ class ProductionStorageComposition:
     inventory: ProtectedStorageInventory
     certified_read_only: bool
     embedding_cache_path: Path | None
+
+    def validate_injected_engine(self, engine: KnowledgeEngine) -> None:
+        """Reject a read-only but differently bound historical runtime before exposure."""
+        if self.certified_read_only and not engine.certified_read_only:
+            raise RuntimeError("UNSAFE_INJECTED_PRODUCTION_STORAGE")
+        # Real engines have a MnemoConfig. Test doubles may expose only the
+        # storage protocol; the certified startup path always uses a real one.
+        if isinstance(engine.config, MnemoConfig):
+            if engine.config != self.engine_config:
+                raise RuntimeError("INJECTED_PRODUCTION_RUNTIME_MISMATCH")
+        elif not self.certified_read_only and engine.config.storage != self.engine_config.storage:
+            raise RuntimeError("INJECTED_WORKSPACE_STORAGE_MISMATCH")
 
     def materialize(self) -> ProductionStorageComposition:
         validator = MutableWorkspaceBoundaryValidator(self.inventory)

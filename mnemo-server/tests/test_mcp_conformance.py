@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -119,7 +120,10 @@ async def test_mcp_invalid_tool_invocation_error_format() -> None:
             assert len(res.content) > 0
             first_content = res.content[0]
             assert isinstance(first_content, types.TextContent)
-            assert "Unknown MCP tool" in first_content.text
+            error = json.loads(first_content.text)["error"]
+            assert error["category"] == "invalid_input"
+            assert error["message"] == "Request is invalid"
+            assert "unknown_tool" not in first_content.text
 
             # 2. Invalid parameter type
             res2 = await session.call_tool(
@@ -128,18 +132,47 @@ async def test_mcp_invalid_tool_invocation_error_format() -> None:
             assert getattr(res2, "is_error", getattr(res2, "isError", False)) is True
             second_content = res2.content[0]
             assert isinstance(second_content, types.TextContent)
-            assert "invalid UUID" in second_content.text
+            second_error = json.loads(second_content.text)["error"]
+            assert second_error["category"] == "invalid_input"
+            assert second_error["origin_code"] == "contract.validation"
+            assert "not-valid-uuid" not in second_content.text
 
             tg.cancel_scope.cancel()
 
 
 @pytest.mark.anyio
+async def test_mcp_unknown_tool_remains_invalid_when_engine_is_unavailable() -> None:
+    """Route validation is independent of optional local model readiness."""
+    server = create_mcp_server(None)
+    c2s_send, c2s_recv = anyio.create_memory_object_stream(10)
+    s2c_send, s2c_recv = anyio.create_memory_object_stream(10)
+
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(server.run, c2s_recv, s2c_send, server.create_initialization_options())
+        async with ClientSession(s2c_recv, c2s_send) as session:
+            await session.initialize()
+            unavailable = await session.call_tool("list_notebooks", {"limit": 1})
+            assert unavailable.isError
+            assert json.loads(unavailable.content[0].text)["error"]["category"] == (
+                "capability_unavailable"
+            )
+            unknown = await session.call_tool("unknown_fixture_tool", {})
+            assert unknown.isError
+            error = json.loads(unknown.content[0].text)["error"]
+            assert error["category"] == "invalid_input"
+            assert "unknown_fixture_tool" not in unknown.content[0].text
+            tg.cancel_scope.cancel()
+
+
+@pytest.mark.anyio
 async def test_mcp_real_stdio_subprocess_handshake(tmp_path: Path) -> None:
-    """Verify that a real child process running mnemo-mcp stdio performs clean handshake."""
+    """Verify the real CLI handshake without requiring a cached embedding model."""
     from mcp.client.stdio import StdioServerParameters, stdio_client
 
     env = dict(os.environ)
     env["MNEMO_STORAGE_SQLITE_PATH"] = str(tmp_path / "isolated.db")
+    env["HF_HUB_OFFLINE"] = "1"
+    env["TRANSFORMERS_OFFLINE"] = "1"
 
     server_params = StdioServerParameters(
         command="uv",
@@ -159,3 +192,21 @@ async def test_mcp_real_stdio_subprocess_handshake(tmp_path: Path) -> None:
         tool_names = {t.name for t in tools_res.tools}
         assert "list_notebooks" in tool_names
         assert "query_notebook" in tool_names
+        empty_inventory = await session.call_tool("list_notebooks", {"limit": 1})
+        inventory = json.loads(empty_inventory.content[0].text)
+        if empty_inventory.isError:
+            # A clean CI runner need not have the local model cache. The CLI
+            # must expose a safe typed unavailability, not a false empty result.
+            error = inventory["error"]
+            assert error["category"] == "capability_unavailable"
+            assert error["code"] == "contract.dependency_unavailable"
+            assert error["reason"] == "dependency_unavailable"
+        else:
+            assert inventory["notebooks"] == []
+            assert inventory["completeness"] == "complete"
+        denied = await session.call_tool("unknown_fixture_tool", {})
+        assert denied.isError
+        error = json.loads(denied.content[0].text)["error"]
+        assert error["category"] == "invalid_input"
+        assert error["message"] == "Request is invalid"
+        assert "unknown_fixture_tool" not in denied.content[0].text

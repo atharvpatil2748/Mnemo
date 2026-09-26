@@ -228,6 +228,33 @@ async def test_production_rejects_injected_writable_certified_engine() -> None:
 
 
 @pytest.mark.anyio
+async def test_production_rejects_read_only_historical_engine_before_initialization(
+    tmp_path: Path,
+) -> None:
+    certified = _write_core_config(tmp_path)
+    historical_root = tmp_path / "historical"
+    historical_root.mkdir()
+    historical = _write_core_config(historical_root)
+    engine = _make_mock_engine()
+    engine.config = historical
+    engine.certified_read_only = True
+    app = create_app(
+        server_config=ServerConfig(production_mode=True, delivery_cursor_secret="w" * 32),
+        mnemo_config=certified,
+        engine=engine,
+        provision_tokenizer_on_startup=False,
+    )
+
+    with pytest.raises(RuntimeError, match="INJECTED_PRODUCTION_RUNTIME_MISMATCH"):
+        async with app.router.lifespan_context(app):
+            pass
+
+    engine.initialize.assert_not_awaited()
+    assert not historical.storage.sqlite.path.exists()
+    assert not certified.storage.sqlite.path.exists()
+
+
+@pytest.mark.anyio
 async def test_rejected_workspace_startup_creates_no_storage_artifacts(tmp_path: Path) -> None:
     application = tmp_path / "application"
     application.mkdir()

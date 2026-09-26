@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -87,6 +88,49 @@ async def test_certified_stdio_rejects_fork_before_tool_exposure(tmp_path: Path)
     stream.assert_not_called()
     assert not (tmp_path / "activation.json").exists()
     assert not (tmp_path / "finalqa.db").exists()
+
+
+@pytest.mark.anyio
+async def test_certified_stdio_rejects_injected_historical_store_before_stream(
+    tmp_path: Path,
+) -> None:
+    core_config = _write_core_config(tmp_path)
+    historical = core_config.model_copy(
+        update={
+            "storage": core_config.storage.model_copy(
+                update={
+                    "sqlite": core_config.storage.sqlite.model_copy(
+                        update={"path": tmp_path / "historical-v1.db"}
+                    )
+                }
+            )
+        }
+    )
+    config = ServerConfig(
+        production_mode=True,
+        full_multilingual_v2_enabled=True,
+        full_multilingual_v2_model_cache=tmp_path / "models",
+        final_qa_operational_store_path=tmp_path / "operational.db",
+        mcp_stdio_principal_subject="stdio",
+        auth_mode="api-key",
+        api_key="synthetic-key",
+        delivery_cursor_secret="x" * 32,
+    )
+    engine = MagicMock(spec=KnowledgeEngine)
+    engine.config = historical
+    engine.certified_read_only = True
+    engine.state = EngineState.READY
+    with (
+        patch(
+            "mnemo_server.services.production_runtime_binding.resolve_certified_production_binding",
+            return_value=(core_config, SimpleNamespace(binding_id="synthetic-binding")),
+        ),
+        patch("mnemo_server.mcp.server.stdio_server") as stream,
+        pytest.raises(RuntimeError, match="INJECTED_PRODUCTION_RUNTIME_MISMATCH"),
+    ):
+        await run_stdio_server(config=config, mnemo_config=core_config, engine=engine)
+    stream.assert_not_called()
+    assert not (tmp_path / "historical-v1.db").exists()
 
 
 @pytest.mark.anyio
@@ -267,7 +311,10 @@ async def test_mcp_server_call_unknown_tool_returns_error_result() -> None:
     is_err = getattr(result, "isError", getattr(result, "is_error", False))
     assert is_err is True
     assert len(result.content) == 1
-    assert "Unknown MCP tool" in result.content[0].text
+    error = json.loads(result.content[0].text)["error"]
+    assert error["category"] == "invalid_input"
+    assert error["message"] == "Request is invalid"
+    assert "non_existent_tool" not in result.content[0].text
 
 
 @pytest.mark.anyio

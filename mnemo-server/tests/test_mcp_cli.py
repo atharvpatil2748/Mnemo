@@ -242,7 +242,8 @@ def test_cli_main_handles_exception(capsys: pytest.CaptureFixture[str]) -> None:
         exit_code = main(["stdio"])
         assert exit_code == 1
         captured = capsys.readouterr()
-        assert "Error in stdio MCP server: Stream failure" in captured.err
+        assert "Error in stdio MCP server: startup failed" in captured.err
+        assert "Stream failure" not in captured.err
 
 
 def test_cli_main_handles_exception_sse(capsys: pytest.CaptureFixture[str]) -> None:
@@ -251,7 +252,8 @@ def test_cli_main_handles_exception_sse(capsys: pytest.CaptureFixture[str]) -> N
         exit_code = main(["sse"])
         assert exit_code == 1
         captured = capsys.readouterr()
-        assert "Error in SSE MCP server: SSE failure" in captured.err
+        assert "Error in SSE MCP server: startup failed" in captured.err
+        assert "SSE failure" not in captured.err
 
 
 def test_cli_subprocess_execution() -> None:

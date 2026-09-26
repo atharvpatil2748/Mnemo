@@ -130,11 +130,7 @@ def create_app(
             runtime_config = storage_composition.engine_config
 
             if active_engine is not None:
-                if storage_composition.certified_read_only:
-                    if not active_engine.certified_read_only:
-                        raise RuntimeError("UNSAFE_INJECTED_PRODUCTION_STORAGE")
-                elif active_engine.config.storage != runtime_config.storage:
-                    raise RuntimeError("INJECTED_WORKSPACE_STORAGE_MISMATCH")
+                storage_composition.validate_injected_engine(active_engine)
 
         if active_engine is None:
             if (

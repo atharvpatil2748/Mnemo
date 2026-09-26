@@ -6,6 +6,7 @@ configuration declarations.
 
 Latest entries:
 
+- [0090 — Stage 6 local acceptance and proprietary current-tree transition (unreleased)](entries/0090-stage-6-local-acceptance-proprietary-transition.md)
 - [0089 — Phase 8.8 Stage 5 local implementation acceptance (unreleased)](entries/0089-phase-8-8-stage-5-local-acceptance.md)
 - [0088 — Module 8.8.1 forensic documentation closure](entries/0088-module-8-8-1-forensic-documentation-closure.md)
 - [0087 — Documentation tree reorganization](entries/0087-documentation-tree-reorganization.md)

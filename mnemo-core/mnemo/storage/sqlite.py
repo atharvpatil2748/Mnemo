@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import sqlite3
 import unicodedata
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
@@ -69,7 +70,7 @@ from mnemo.models.final_qa_execution import (
     FinalQAExecutionState,
 )
 from mnemo.models.notebook import InsightType, NoteOrigin, TurnRole
-from mnemo.storage.chunk_read_model import ChunkReadModel
+from mnemo.storage.chunk_read_model import CHUNK_READ_FAILURE, ChunkReadModel
 from mnemo.storage.multilingual import (
     MULTILINGUAL_SCHEMA_STATEMENTS,
     MULTILINGUAL_V2_SCHEMA_STATEMENTS,
@@ -3014,15 +3015,18 @@ class SQLiteStore(
         """
         db = self._require_open()
 
-        async with db.execute(
-            f"SELECT {self._require_chunk_read_model().projection()} FROM chunks WHERE id = ?",
-            (chunk_id,),
-        ) as cursor:
-            row = await cursor.fetchone()
-            if row is None:
-                return None
+        try:
+            async with db.execute(
+                f"SELECT {self._require_chunk_read_model().projection()} FROM chunks WHERE id = ?",
+                (chunk_id,),
+            ) as cursor:
+                row = await cursor.fetchone()
+                if row is None:
+                    return None
 
-            return self._chunk_from_row(row)
+                return self._chunk_from_row(row)
+        except sqlite3.DatabaseError as error:
+            raise StorageError(CHUNK_READ_FAILURE) from error
 
     async def list_exact_document_chunks(
         self, *, document_id: UUID, version_id: UUID
@@ -3031,14 +3035,17 @@ class SQLiteStore(
 
         Use the same inspected physical projection as :meth:`get_chunk`.
         """
-        async with self._require_open().execute(
-            f"SELECT {self._require_chunk_read_model().projection()} FROM chunks "
-            "WHERE document_id = ? AND version_id = ? "
-            "ORDER BY source_start_ordinal, source_end_ordinal, "
-            "position_section_index, position_chunk_index, id",
-            (str(document_id), str(version_id)),
-        ) as cursor:
-            return tuple(self._chunk_from_row(row) for row in await cursor.fetchall())
+        try:
+            async with self._require_open().execute(
+                f"SELECT {self._require_chunk_read_model().projection()} FROM chunks "
+                "WHERE document_id = ? AND version_id = ? "
+                "ORDER BY source_start_ordinal, source_end_ordinal, "
+                "position_section_index, position_chunk_index, id",
+                (str(document_id), str(version_id)),
+            ) as cursor:
+                return tuple(self._chunk_from_row(row) for row in await cursor.fetchall())
+        except sqlite3.DatabaseError as error:
+            raise StorageError(CHUNK_READ_FAILURE) from error
 
     async def advanced_canonical_snapshot(
         self, *, scope: RetrievalScopeV2, position: PositionalScopeV2, query: str
@@ -3057,16 +3064,19 @@ class SQLiteStore(
         )
         digest = hashlib.sha256()
         digest.update(b"mnemo-advanced-canonical-snapshot/v1\0")
-        async with self._require_open().execute(sql, params) as cursor:
-            async for chunk_id, source_id, metadata_json in cursor:
-                metadata = json.loads(metadata_json)
-                title = metadata.get("title") if isinstance(metadata, dict) else None
-                digest.update(str(source_id).encode())
-                digest.update(b"\0")
-                digest.update(str(chunk_id).encode())
-                digest.update(b"\0")
-                digest.update((title if isinstance(title, str) else "").encode())
-                digest.update(b"\0")
+        try:
+            async with self._require_open().execute(sql, params) as cursor:
+                async for chunk_id, source_id, metadata_json in cursor:
+                    metadata = json.loads(metadata_json)
+                    title = metadata.get("title") if isinstance(metadata, dict) else None
+                    digest.update(str(source_id).encode())
+                    digest.update(b"\0")
+                    digest.update(str(chunk_id).encode())
+                    digest.update(b"\0")
+                    digest.update((title if isinstance(title, str) else "").encode())
+                    digest.update(b"\0")
+        except sqlite3.DatabaseError as error:
+            raise StorageError(CHUNK_READ_FAILURE) from error
         return digest.hexdigest()
 
     async def enumerate_advanced_canonical(
@@ -3144,13 +3154,16 @@ class SQLiteStore(
                 max(0, chunk.position.chunk_index_in_section - 1),
                 chunk.position.chunk_index_in_section + 1,
             ]
-            async with db.execute(
-                """SELECT id FROM chunks WHERE document_id=? AND version_id=?
-                   AND position_section_index=? AND position_chunk_index BETWEEN ? AND ?
-                   ORDER BY position_chunk_index,id""",
-                params,
-            ) as cursor:
-                candidate_ids.update(row[0] for row in await cursor.fetchall())
+            try:
+                async with db.execute(
+                    """SELECT id FROM chunks WHERE document_id=? AND version_id=?
+                       AND position_section_index=? AND position_chunk_index BETWEEN ? AND ?
+                       ORDER BY position_chunk_index,id""",
+                    params,
+                ) as cursor:
+                    candidate_ids.update(row[0] for row in await cursor.fetchall())
+            except sqlite3.DatabaseError as error:
+                raise StorageError(CHUNK_READ_FAILURE) from error
             if include_parents and chunk.parent_chunk_id is not None:
                 candidate_ids.add(chunk.parent_chunk_id)
         candidate_ids.difference_update(seed_chunk_ids)
@@ -3178,8 +3191,11 @@ class SQLiteStore(
             chunk_ids=chunk_ids,
             snapshot_only=False,
         )
-        async with self._require_open().execute(sql, params) as cursor:
-            rows = await cursor.fetchall()
+        try:
+            async with self._require_open().execute(sql, params) as cursor:
+                rows = await cursor.fetchall()
+        except sqlite3.DatabaseError as error:
+            raise StorageError(CHUNK_READ_FAILURE) from error
         output: list[CanonicalEvidenceRecord] = []
         for row in rows:
             metadata = json.loads(row[19])
@@ -3465,8 +3481,11 @@ class SQLiteStore(
         )
         params.append(top_k)
 
-        async with db.execute(sql, params) as cursor:
-            rows = list(await cursor.fetchall())
+        try:
+            async with db.execute(sql, params) as cursor:
+                rows = list(await cursor.fetchall())
+        except sqlite3.DatabaseError as error:
+            raise StorageError(CHUNK_READ_FAILURE) from error
 
         results: list[ScoredChunk] = []
         for chunk_id, score, title_match, document_title in rows:

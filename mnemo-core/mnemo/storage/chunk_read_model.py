@@ -28,6 +28,17 @@ _COMMON_COLUMNS = (
 )
 _PAGE_COLUMNS = ("position_page_start", "position_page_end")
 
+# Reader-owned, nonsecret reasons shared with the public typed-error boundary.
+CHUNK_SCHEMA_REASONS = frozenset(
+    {
+        "CHUNK_READ_SCHEMA_INCOMPATIBLE",
+        "CHUNK_PAGE_RANGE_SCHEMA_INCOMPLETE",
+        "CHUNK_READ_SCHEMA_UNAVAILABLE",
+        "PAGE_RANGE_UNAVAILABLE_FOR_CHUNK_SCHEMA",
+    }
+)
+CHUNK_READ_FAILURE = "CHUNK_READ_FAILURE"
+
 
 @dataclass(frozen=True, slots=True)
 class ChunkReadModel:

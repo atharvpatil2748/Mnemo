@@ -31,10 +31,25 @@ from mnemo_server.schemas.streaming import (
     StreamEventType,
 )
 from mnemo_server.services.streaming import StreamingQueryService
+from mnemo_server.typed_errors import classify_public_error
 
 _LOGGER = logging.getLogger(__name__)
 
 router = APIRouter(tags=["streaming"])
+
+
+def _safe_stream_error(error: Exception, legacy_code: str) -> StreamErrorData:
+    """Map the shared classification to retained V1 event codes without reflection."""
+    typed = classify_public_error(error)
+    return StreamErrorData(
+        code=legacy_code,
+        message=(
+            "An internal streaming error occurred"
+            if legacy_code == "internal_error"
+            else str(typed.body()["message"])
+        ),
+        detail=f"correlation_id={typed.correlation_id}",
+    )
 
 
 async def _handle_websocket_connection(websocket: WebSocket) -> None:
@@ -79,11 +94,11 @@ async def _handle_websocket_connection(websocket: WebSocket) -> None:
 
         try:
             payload = json.loads(raw_text)
-        except json.JSONDecodeError as err:
+        except json.JSONDecodeError:
             await websocket.send_text(
                 StreamEvent(
                     event=StreamEventType.ERROR,
-                    data=StreamErrorData(code="bad_request", message=f"Invalid JSON: {err}"),
+                    data=_safe_stream_error(ContractValidationError("invalid JSON"), "bad_request"),
                 ).model_dump_json()
             )
             continue
@@ -96,11 +111,13 @@ async def _handle_websocket_connection(websocket: WebSocket) -> None:
 
         try:
             query_request = QueryRequest.model_validate(payload)
-        except ValidationError as err:
+        except ValidationError:
             await websocket.send_text(
                 StreamEvent(
                     event=StreamEventType.ERROR,
-                    data=StreamErrorData(code="validation_error", message=str(err)),
+                    data=_safe_stream_error(
+                        ContractValidationError("invalid request body"), "validation_error"
+                    ),
                 ).model_dump_json()
             )
             continue
@@ -112,24 +129,22 @@ async def _handle_websocket_connection(websocket: WebSocket) -> None:
             await websocket.send_text(
                 StreamEvent(
                     event=StreamEventType.ERROR,
-                    data=StreamErrorData(code="not_found", message=str(err)),
+                    data=_safe_stream_error(err, "not_found"),
                 ).model_dump_json()
             )
         except ContractValidationError as err:
             await websocket.send_text(
                 StreamEvent(
                     event=StreamEventType.ERROR,
-                    data=StreamErrorData(code="contract_validation_error", message=str(err)),
+                    data=_safe_stream_error(err, "contract_validation_error"),
                 ).model_dump_json()
             )
         except Exception as err:
-            _LOGGER.exception("Streaming query execution failed: %s", err)
+            _LOGGER.error("Streaming query execution failed: type=%s", type(err).__name__)
             await websocket.send_text(
                 StreamEvent(
                     event=StreamEventType.ERROR,
-                    data=StreamErrorData(
-                        code="internal_error", message="An internal streaming error occurred"
-                    ),
+                    data=_safe_stream_error(err, "internal_error"),
                 ).model_dump_json()
             )
 
@@ -163,16 +178,14 @@ async def query_stream_sse(
         except NotFoundError as err:
             err_event = StreamEvent(
                 event=StreamEventType.ERROR,
-                data=StreamErrorData(code="not_found", message=str(err)),
+                data=_safe_stream_error(err, "not_found"),
             )
             yield f"event: {StreamEventType.ERROR.value}\ndata: {err_event.model_dump_json()}\n\n"
         except Exception as err:
-            _LOGGER.exception("SSE query execution failed: %s", err)
+            _LOGGER.error("SSE query execution failed: type=%s", type(err).__name__)
             err_event = StreamEvent(
                 event=StreamEventType.ERROR,
-                data=StreamErrorData(
-                    code="internal_error", message="An internal streaming error occurred"
-                ),
+                data=_safe_stream_error(err, "internal_error"),
             )
             yield f"event: {StreamEventType.ERROR.value}\ndata: {err_event.model_dump_json()}\n\n"
 

@@ -6,10 +6,10 @@ import asyncio
 import hashlib
 from datetime import timedelta
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from mnemo.engine import KnowledgeEngine
-from mnemo.interfaces import ContractValidationError, OperationTimeoutError
+from mnemo.interfaces import ContractValidationError, NotFoundError, OperationTimeoutError
 from mnemo.interfaces.advanced_retrieval import PrincipalAwareAdvancedRetrievalInterfaceV2
 from mnemo.models import RetrievalResultSetV1, RetrievalScopeV2, thaw_metadata
 from mnemo.retrieval import RetrievalCursorCodec
@@ -21,6 +21,10 @@ from mnemo_server.services.authorization import (
     CentralAuthorizationServiceV1,
     ServerPrincipalV1,
     principal_from_claims,
+)
+from mnemo_server.services.source_metadata import (
+    AuthorizedSourceMetadataResolverV1,
+    SourceMetadataReferenceV1,
 )
 
 CONTRACT_VERSION = "mnemo.mcp.contract/v2"
@@ -79,6 +83,10 @@ class EvidenceRetrievalApplicationService:
                         plan.scope.notebook_id, principal
                     )
                 if partition_ids:
+                    if type(self._engine) is KnowledgeEngine:
+                        await self._authorize_partition_documents(
+                            principal, plan.scope.notebook_id, partition_ids, plan.scope.version_ids
+                        )
                     if not plan.scope.document_ids:
                         plan = plan.model_copy(
                             update={
@@ -90,13 +98,23 @@ class EvidenceRetrievalApplicationService:
                                 )
                             }
                         )
-                    partitioned = await self._engine.partitioned_retrieval.execute(
-                        plan,
-                        document_ids=partition_ids,
-                        cursors=request.partition_cursors,
-                        cursor=request.cursor,
-                    )
-                    return _partitioned_response(
+                    partitioned_service = self._engine.partitioned_retrieval
+                    if self._config.production_mode:
+                        partitioned = await partitioned_service.execute_authorized(
+                            principal=principal,
+                            plan=plan,
+                            document_ids=partition_ids,
+                            cursors=request.partition_cursors,
+                            cursor=request.cursor,
+                        )
+                    else:
+                        partitioned = await partitioned_service.execute(
+                            plan,
+                            document_ids=partition_ids,
+                            cursors=request.partition_cursors,
+                            cursor=request.cursor,
+                        )
+                    response = _partitioned_response(
                         plan.mode.value,
                         plan.scope.model_dump(mode="json"),
                         plan.budgets,
@@ -105,6 +123,7 @@ class EvidenceRetrievalApplicationService:
                         requested_k=request.evidence_budget,
                         internal_candidate_pool_k=plan.budgets.rerank_limit,
                     )
+                    return await self._with_authorized_metadata(response, principal)
                 retrieval = self._engine.advanced_retrieval
                 if self._config.production_mode:
                     if not principal.authenticated:
@@ -131,6 +150,7 @@ class EvidenceRetrievalApplicationService:
             requested_k=request.evidence_budget,
             internal_candidate_pool_k=plan.budgets.rerank_limit,
         )
+        response = await self._with_authorized_metadata(response, principal)
         if (
             len(response.model_dump_json().encode("utf-8"))
             > self._config.max_advanced_response_bytes
@@ -140,6 +160,91 @@ class EvidenceRetrievalApplicationService:
                 "lower evidence_budget or max_serialized_bytes"
             )
         return response
+
+    async def _with_authorized_metadata(
+        self, response: EvidenceSearchResponse, principal: ServerPrincipalV1
+    ) -> EvidenceSearchResponse:
+        if (
+            not principal.authenticated
+            or not response.items
+            or type(self._engine) is not KnowledgeEngine
+        ):
+            return response
+        references = tuple(
+            SourceMetadataReferenceV1(
+                notebook_id=UUID(item["notebook_id"]),
+                source_id=UUID(item["source_id"]),
+                document_id=UUID(item["document_id"]),
+                version_id=UUID(item["version_id"]),
+            )
+            for item in response.items
+        )
+        metadata = await AuthorizedSourceMetadataResolverV1(self._engine).resolve_many(
+            principal, references
+        )
+        envelopes = {
+            reference: envelope.model_dump(mode="json") for reference, envelope in metadata.items()
+        }
+
+        def enrich(item: dict[str, Any]) -> dict[str, Any]:
+            reference = SourceMetadataReferenceV1(
+                notebook_id=UUID(item["notebook_id"]),
+                source_id=UUID(item["source_id"]),
+                document_id=UUID(item["document_id"]),
+                version_id=UUID(item["version_id"]),
+            )
+            return {**item, "source_metadata": envelopes[reference]}
+
+        items = [enrich(item) for item in response.items]
+        partitions = [
+            {**partition, "items": [enrich(item) for item in partition["items"]]}
+            for partition in response.partitions
+        ]
+        enriched = response.model_copy(update={"items": items, "partitions": partitions})
+        if (
+            len(enriched.model_dump_json().encode("utf-8"))
+            > self._config.max_advanced_response_bytes
+        ):
+            raise ContractValidationError(
+                "advanced retrieval response exceeds the server byte ceiling; "
+                "lower evidence_budget or max_serialized_bytes"
+            )
+        return enriched
+
+    async def _authorize_partition_documents(
+        self,
+        principal: ServerPrincipalV1,
+        notebook_id: UUID,
+        document_ids: tuple[UUID, ...],
+        version_ids: tuple[UUID, ...],
+    ) -> None:
+        if not principal.authenticated:
+            raise PermissionError("authenticated principal is required")
+        if len(document_ids) > 100 or len(document_ids) != len(set(document_ids)):
+            raise ContractValidationError("document partitions must be a bounded unique set")
+        matched_version_ids: set[UUID] = set()
+        for document_id in document_ids:
+            document = await self._engine.storage.get_document(document_id)
+            if document is None:
+                raise NotFoundError("authorized resource was not found")
+            matching_versions = (
+                tuple(
+                    version.version_id
+                    for version in document.versions
+                    if version.version_id in version_ids
+                )
+                if version_ids
+                else (document.current_version_id,)
+            )
+            if not matching_versions:
+                raise NotFoundError("authorized resource was not found")
+            for version_id in matching_versions:
+                await self._engine.document_scope_resolver.resolve_document_scope(
+                    principal, document_id, version_id, notebook_id
+                )
+                matched_version_ids.add(version_id)
+        if version_ids and matched_version_ids != set(version_ids):
+            raise NotFoundError("authorized resource was not found")
 
     async def _resolve_authorized_documents(
         self, notebook_id: Any, principal: ServerPrincipalV1

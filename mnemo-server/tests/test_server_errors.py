@@ -96,6 +96,19 @@ def error_app() -> FastAPI:
     async def raise_storage() -> None:
         raise StorageError("Database connection refused")
 
+    @app.get("/raise/nested-schema")
+    async def raise_nested_schema() -> None:
+        try:
+            raise StorageError("PAGE_RANGE_UNAVAILABLE_FOR_CHUNK_SCHEMA")
+        except StorageError as error:
+            raise PluginError("sq-2:sparse /private/credential.sql") from error
+
+    @app.get("/raise/forged-code")
+    async def raise_forged_code() -> None:
+        error = StorageError("C:/private/token.db")
+        error.code = "private_secret_token"
+        raise error
+
     @app.get("/raise/plugin")
     async def raise_plugin() -> None:
         raise PluginError("Plugin crashed")
@@ -120,11 +133,27 @@ def error_app() -> FastAPI:
     async def raise_http_503() -> None:
         raise StarletteHTTPException(status_code=503, detail="Service unavailable")
 
+    @app.get("/raise/http-status/{status}")
+    async def raise_http_status(status: int) -> None:
+        raise StarletteHTTPException(status_code=status, detail="C:/private/token.sql")
+
     @app.get("/raise/unexpected")
     async def raise_unexpected() -> None:
         raise RuntimeError("Secret internal failure with /path/to/secret.key")
 
     return app
+
+
+@pytest.mark.anyio
+async def test_http_error_does_not_publish_forged_instance_code(error_app: FastAPI) -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=error_app), base_url="http://test"
+    ) as client:
+        response = await client.get("/raise/forged-code")
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "contract.storage"
+    assert "private_secret_token" not in response.text
+    assert "C:/private" not in response.text
 
 
 @pytest.mark.anyio
@@ -136,7 +165,9 @@ async def test_contract_validation_error(error_app: FastAPI) -> None:
         assert resp.status_code == 422
         data = resp.json()
         assert data["error"]["code"] == "contract.validation"
-        assert data["error"]["message"] == "Contract violation occurred"
+        assert data["error"]["message"] == "Request is invalid"
+        assert data["error"]["category"] == "invalid_input"
+        assert resp.headers["X-Mnemo-Correlation-ID"] == data["error"]["correlation_id"]
         assert data["error"]["details"] == {}
         assert data["error"]["retryable"] is False
 
@@ -261,6 +292,22 @@ async def test_storage_error(error_app: FastAPI) -> None:
 
 
 @pytest.mark.anyio
+async def test_nested_schema_error_preserves_safe_origin(error_app: FastAPI) -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=error_app), base_url="http://test"
+    ) as client:
+        resp = await client.get("/raise/nested-schema")
+    assert resp.status_code == 503
+    data = resp.json()["error"]
+    assert data["category"] == "schema_compatibility"
+    assert data["origin_code"] == "contract.storage"
+    assert data["reason"] == "PAGE_RANGE_UNAVAILABLE_FOR_CHUNK_SCHEMA"
+    assert "credential.sql" not in resp.text
+    assert "sq-2:sparse" not in resp.text
+    assert resp.headers["X-Mnemo-Correlation-ID"] == data["correlation_id"]
+
+
+@pytest.mark.anyio
 async def test_plugin_and_knowledge_engine_errors(error_app: FastAPI) -> None:
     async with AsyncClient(
         transport=ASGITransport(app=error_app), base_url="http://test"
@@ -287,8 +334,8 @@ async def test_request_validation_error(error_app: FastAPI) -> None:
         assert resp.status_code == 422
         data = resp.json()
         assert data["error"]["code"] == "http.validation"
-        assert data["error"]["message"] == "Request validation failed"
-        assert "validation_errors" in data["error"]["details"]
+        assert data["error"]["message"] == "Request is invalid"
+        assert data["error"]["details"] == {}
 
 
 @pytest.mark.anyio
@@ -300,7 +347,7 @@ async def test_http_exceptions(error_app: FastAPI) -> None:
         assert resp1.status_code == 403
         data1 = resp1.json()
         assert data1["error"]["code"] == "http.403"
-        assert data1["error"]["message"] == "Forbidden access"
+        assert data1["error"]["message"] == "Resource access is forbidden"
         assert data1["error"]["retryable"] is False
 
         resp2 = await client.get("/raise/http-503")
@@ -308,6 +355,35 @@ async def test_http_exceptions(error_app: FastAPI) -> None:
         data2 = resp2.json()
         assert data2["error"]["code"] == "http.503"
         assert data2["error"]["retryable"] is True
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("status", "category"),
+    [
+        (400, "invalid_input"),
+        (401, "unauthorized"),
+        (404, "not_found"),
+        (408, "timeout"),
+        (501, "capability_unavailable"),
+        (502, "transport_failure"),
+        (504, "timeout"),
+        (500, "server_failure"),
+    ],
+)
+async def test_http_status_mapping_is_sanitized(
+    error_app: FastAPI, status: int, category: str
+) -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=error_app), base_url="http://test"
+    ) as client:
+        response = await client.get(f"/raise/http-status/{status}")
+    assert response.status_code == status
+    error = response.json()["error"]
+    assert error["category"] == category
+    assert error["code"] == f"http.{status}"
+    assert "private" not in response.text
+    assert response.headers["X-Mnemo-Correlation-ID"] == error["correlation_id"]
 
 
 @pytest.mark.anyio

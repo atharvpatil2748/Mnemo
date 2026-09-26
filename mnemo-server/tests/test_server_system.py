@@ -145,7 +145,7 @@ async def test_health_check_storage_error_degraded(app: Any, mock_engine: MagicM
     assert data["healthy"] is False
     storage_comp = next(c for c in data["components"] if c["component"] == "storage")
     assert storage_comp["healthy"] is False
-    assert "Database corrupted" in storage_comp["detail"]
+    assert storage_comp["detail"] == "Component unavailable"
 
 
 @pytest.mark.anyio
@@ -163,7 +163,20 @@ async def test_health_check_embedding_error_degraded(app: Any, mock_engine: Magi
     assert data["healthy"] is False
     emb_comp = next(c for c in data["components"] if c["component"] == "embedding")
     assert emb_comp["healthy"] is False
-    assert "Embedding model offline" in emb_comp["detail"]
+    assert emb_comp["detail"] == "Component unavailable"
+
+
+@pytest.mark.anyio
+async def test_health_failure_never_reflects_sensitive_provider_detail(
+    app: Any, mock_engine: MagicMock, caplog: Any
+) -> None:
+    secret = "C:/private/token.db SELECT * FROM secrets bearer_private_token"
+    mock_engine.storage.health_check = AsyncMock(side_effect=StorageError(secret))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/v1/health")
+    assert response.status_code == 200
+    assert secret not in response.text
+    assert secret not in caplog.text
 
 
 @pytest.mark.anyio

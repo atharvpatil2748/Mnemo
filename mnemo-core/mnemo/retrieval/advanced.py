@@ -18,7 +18,13 @@ from mnemo.interfaces.advanced_retrieval import (
     AdvancedSourcePage,
     PrincipalAwareAdvancedRetrievalSourceV2,
 )
-from mnemo.interfaces.errors import ConflictError, ContractValidationError, IntegrityError
+from mnemo.interfaces.errors import (
+    ConflictError,
+    ContractValidationError,
+    IntegrityError,
+    StorageError,
+    UnsupportedError,
+)
 from mnemo.interfaces.scope import PrincipalContextV1
 from mnemo.models.advanced_retrieval import (
     AdvancedRetrievalCandidate,
@@ -32,6 +38,7 @@ from mnemo.models.advanced_retrieval import (
     RetrievalPlanV2,
     RetrievalResultSetV1,
 )
+from mnemo.storage.chunk_read_model import CHUNK_READ_FAILURE, CHUNK_SCHEMA_REASONS
 
 _CURSOR_DOMAIN = "mnemo-advanced-retrieval-cursor/v2"
 _RRF_K = 60
@@ -265,11 +272,12 @@ class AdvancedRetrievalService:
             except Exception as error:
                 if isinstance(error, (IntegrityError, ConflictError, TypeError, ValueError)):
                     raise
-                _LOGGER.exception(
-                    "advanced retrieval source failed: representation=%s",
+                _LOGGER.warning(
+                    "advanced retrieval source failed: representation=%s reason=%s",
                     representation.value,
+                    _safe_source_failure_reason(error),
                 )
-                reports.append(_failed_report(representation, type(error).__name__))
+                reports.append(_failed_report(representation, error))
                 continue
             pages.append(page)
             reports.append(_searched_report(page))
@@ -364,7 +372,7 @@ class AdvancedRetrievalService:
                 if isinstance(error, (IntegrityError, ConflictError, TypeError, ValueError)):
                     raise
                 unavailable = True
-                reports.append(_failed_report(representation, type(error).__name__))
+                reports.append(_failed_report(representation, error))
                 offset = 0
                 continue
             previous_snapshot = snapshots.get(representation.value)
@@ -700,15 +708,31 @@ def _unavailable_report(representation: EvidenceRepresentation) -> Representatio
     )
 
 
-def _failed_report(representation: EvidenceRepresentation, reason: str) -> RepresentationReportV2:
+def _failed_report(
+    representation: EvidenceRepresentation, error: Exception
+) -> RepresentationReportV2:
     return RepresentationReportV2(
         representation=representation,
         status=RepresentationSearchStatus.FAILED,
         examined=0,
         returned=0,
         exhausted=False,
-        reason_code=f"source_failure:{reason}",
+        reason_code=_safe_source_failure_reason(error),
     )
+
+
+def _safe_source_failure_reason(error: Exception) -> str:
+    """Retain only reader-owned, allowlisted reasons in partial coverage reports."""
+    current: BaseException | None = error
+    for _ in range(8):
+        if current is None:
+            break
+        if isinstance(current, (StorageError, UnsupportedError)):
+            reason = current.message
+            if reason in CHUNK_SCHEMA_REASONS or reason == CHUNK_READ_FAILURE:
+                return f"source_failure:{type(current).code}:{reason}"
+        current = current.__cause__
+    return "source_failure:provider_failure"
 
 
 def _combined_snapshot(snapshots: dict[str, str]) -> str:

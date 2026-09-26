@@ -12,8 +12,8 @@
 
 **Document Type:** Design Specification  
 **Status:** Living Design Document  
-**Project Type:** Standalone Open-Source Software  
-**License Target:** Apache 2.0  
+**Project Type:** Standalone proprietary software (current project-owned tree)
+**Distribution:** All rights reserved; [current-tree policy](../../governance/active/proprietary_distribution_policy.md)
 
 **Implementation baseline:** Phases 0–8 are complete. Phase 8.5 is complete and
 certified for the exact 44-document production identity under ADR-0076: BGE-M3,
@@ -2548,7 +2548,7 @@ As the plugin ecosystem grows, users will face incompatibility between plugin ve
 | 8.5 | **COMPLETED / CERTIFIED** | Full Multilingual V2, BGE-M3 + FTS5 + RRF, BGE-reranker-v2-m3, identity-bound authorization/evidence, provenance, FinalQA operational-store separation, durable reranker activation/rollback, and HTTP/stdio/SSE parity | Certification applies to the exact immutable 44-document production identity; the historical 94.4% evaluation is not identity-equivalent to the 83.3% production-parity result |
 | 8.6 | **COMPLETED / VALIDATED EVALUATION NOTEBOOK** | 24 governed sources across PDF, HTML, DOCX, PPTX, XLSX, CSV, JSON, and Markdown; Hindi, Marathi, and English; structure-aware chunking; 5,843 FTS rows and BGE-M3 embeddings; 161 image occurrences with complete OCR, Vision, and CLIP derivations; canonical manifest and transport validation | Evaluation-only; not merged into or exposed as the certified production corpus |
 | 8.7 | **COMPLETED CAPABILITY MILESTONE; HARDENING FOLLOW-UP REQUIRED** | Expanded MCP surface to 14 registered tools, additive retrieval/delivery contracts, notebook/asset identity propagation, FinalQA exposure, and real client exercises | The later audits found historical tunnel composition, retained-tool authorization, immutable-schema reader, metadata, capability, and parity defects; Phase 8.8 owns those corrections |
-| 8.8 | **IN PROGRESS / NOT VERIFIED** | 8.8.14a/b accepted; Module 8.8.1 startup convergence certified; Stage 5 reader, authorization, and capability branches accepted locally; tool contracts, behavioral parity, semantic image discovery, and Phase 9 preparation remain pending | Stage 5 is not a production deployment or external verification of the complete code set; 8.8.2f awaits 8.8.7; no Phase 9 implementation or Phase 8.6 promotion |
+| 8.8 | **IN PROGRESS / NOT VERIFIED** | 8.8.14a/b accepted; Module 8.8.1 startup convergence certified; Stage 5 accepted locally; corrected 8.8.5/8.8.7/8.8.2f/8.8.4/8.8.8 batch independently accepted locally; 8.8.10/8.8.11, behavioral parity, and semantic image discovery remain pending | Repository publication is not production deployment or external verification; no Phase 9 implementation or Phase 8.6 promotion |
 
 The authoritative evidence is ADR-0070, ADR-0071, ADR-0073 through ADR-0076,
 the current V2 certification report, the single-production-path audit, the
@@ -2618,7 +2618,9 @@ implementation and evidence.
      8.8.2b introduce one compatible read-model boundary; then 8.8.2c preserve
      truthful locators, 8.8.2d route every affected reader, 8.8.2e add
      schema-compatibility regression tests, and 8.8.2g prove corpus immutability.
-     Task 8.8.2f remains pending until Module 8.8.7 supplies typed errors.
+     Task 8.8.2f was deferred at Stage 5 acceptance until Module 8.8.7 supplied
+     typed errors; it was subsequently implemented locally and assessed in the
+     combined Stage 6 forensic audit.
    - Module 8.8.3 authorization work: 8.8.3a require a
      transport-authenticated principal; 8.8.3b apply central authorization to
      all 14 tools; then 8.8.3c preserve non-disclosure and 8.8.3d reject client
@@ -2726,8 +2728,9 @@ post-promotion HTTP/stdio/SSE/external-tunnel convergence. The evidence is
 certification report. Individual capability readiness remains separately gated.
 Stage 5's 8.8.2a–e/g, 8.8.3a–d, and 8.8.6a–c branches are locally accepted;
 this is not a production deployment or complete
-module/phase certification. Task 8.8.2f and the complete Phase 8.8 acceptance
-gate remain open, and 8.8.14d remains **PENDING**. Phase 9 is blocked until
+module/phase certification. Task 8.8.2f was subsequently implemented locally;
+the complete Phase 8.8 acceptance gate remains open, and 8.8.14d remains
+**PENDING**. Phase 9 is blocked until
 `PHASE_8_8_VERIFIED → Phase 9 GO`.
 
 The 8.8.1 configuration contract derives the certified BGE mode, activation
@@ -2828,7 +2831,9 @@ or NULL page-range endpoints remain unavailable, not inferred from a single
 page number. Half-present optional columns fail closed. A page-range-constrained
 query against the older schema cannot broaden to an unconstrained result: the
 current public MCP result is partial with a canonical-source omission. Typed
-propagation of the originating safe reason remains 8.8.2f after 8.8.7.
+propagation of the originating safe reason was subsequently implemented in
+8.8.2f using the 8.8.7 taxonomy and independently accepted locally in the
+dated Stage 6 remediation assessment.
 The public older/newer-schema MCP fixture matrix passed locally, including
 exact chunk and block attribution. Its in-memory parsed blocks do not establish
 availability of broader document delivery for the certified corpus. Certified
@@ -2878,6 +2883,17 @@ Retained V1 contracts are not blindly rewritten as V2. They remain explicit,
 compatible, and authorized. V2 operations cannot fall back to the historical V1
 database or model profile.
 
+The [dated Stage 6 remediation and independent reassessment](../../reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md)
+confirms local implementation of this route map and all 14 tool contracts.
+Its F-1 correction carries the server-authenticated principal through
+partitioned ranked V2 retrieval and validates explicit document/version
+partitions against authorized ancestry before source invocation. Governed
+multilingual retrieval may not use the unauthenticated compatibility entry
+point or fall back to a historical V1 store/model. The earlier
+[blocked audit](../../reports/operations/mnemo-stage-6-combined-forensic-audit.md)
+remains the historical defect record. Neither report certifies the running
+tunnel or four-transport behavioral parity under 8.8.9.
+
 ### 21.7 Source metadata and provenance envelope
 
 Stable IDs remain identity. Presentation metadata is additive and authorized.
@@ -2895,6 +2911,12 @@ documents/chunks, assets/analysis, image search, and FinalQA citations reuse thi
 resolver where their result refers to a source. A filename is nullable presentation
 metadata: it is never canonical identity, authorization scope, or a uniqueness
 assumption. Filesystem paths are never exposed.
+
+The locally accepted F-2 correction resolves an authorized bounded envelope
+once per canonical reference and projects the same metadata to both top-level
+evidence `items` and matching `partitions[].items`. Duplicate filenames and
+nullable legacy metadata do not merge identities; the existing 200-reference
+and response-size bounds remain. See the [remediation evidence](../../reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md).
 
 ### 21.8 Capability and error state
 
@@ -3038,7 +3060,7 @@ later additive integration without making either backend a Phase 9 prerequisite.
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                              MNEMO                                        │
 │                    Local Knowledge Engine                                 │
-│                       Open Source · Local-First · Privacy-Absolute       │
+│                       Proprietary · Local-First · Privacy-First           │
 ├──────────────────────────────────────────────────────────────────────────┤
 │                                                                            │
 │  IDENTITY                                                                 │

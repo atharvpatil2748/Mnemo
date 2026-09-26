@@ -41,6 +41,10 @@ from .authorization import (
     CentralAuthorizationServiceV1,
     ServerPrincipalV1,
 )
+from .source_metadata import (
+    AuthorizedSourceMetadataResolverV1,
+    SourceMetadataReferenceV1,
+)
 
 
 @dataclass(slots=True)
@@ -155,6 +159,26 @@ class FinalQAV2ApplicationService:
             not in {RetrievalCompleteness.COMPLETE, RetrievalCompleteness.EMPTY}
         ):
             raise ContractValidationError("complete evidence is required before publication")
+        # Resolve presentation metadata before any persisted Final-QA execution.
+        # A missing/mismatched association therefore fails without a partial publication.
+        citation_metadata: dict[UUID, dict[str, Any]] = {}
+        if self._config.production_mode and type(self._engine) is KnowledgeEngine:
+            references = tuple(
+                SourceMetadataReferenceV1(
+                    notebook_id=item.notebook_id,
+                    source_id=item.source_id,
+                    document_id=item.document_id,
+                    version_id=item.version_id,
+                )
+                for item in result.candidates
+            )
+            resolved = await AuthorizedSourceMetadataResolverV1(self._engine).resolve_many(
+                principal, references
+            )
+            citation_metadata = {
+                item.candidate_id: resolved[reference].model_dump(mode="json")
+                for item, reference in zip(result.candidates, references, strict=True)
+            }
         request = FinalQARequestV2(
             actor_id=principal.actor_id,
             notebook_id=notebook_id,
@@ -194,7 +218,10 @@ class FinalQAV2ApplicationService:
             replayed=existing is not None and existing.state is FinalQAExecutionState.PUBLISHED,
             status=final.status.value,
             answer=final.answer,
-            citations=tuple(_citation(item) for item in final.citations),
+            citations=tuple(
+                _citation(item, citation_metadata.get(item.candidate.candidate_id))
+                for item in final.citations
+            ),
             completeness=final.context_result.completeness.value,
             coverage={
                 "items": len(final.context_result.items),
@@ -333,7 +360,9 @@ def _multimodal_result(question: str, raw: Any) -> MultimodalRetrievalResultV2:
     )
 
 
-def _citation(item: Any) -> FinalQAV2CitationResponse:
+def _citation(
+    item: Any, source_metadata: dict[str, Any] | None = None
+) -> FinalQAV2CitationResponse:
     candidate = item.candidate
     return FinalQAV2CitationResponse(
         citation_id=item.citation_id,
@@ -348,5 +377,10 @@ def _citation(item: Any) -> FinalQAV2CitationResponse:
         generation_id=candidate.generation_id,
         kind=candidate.kind.value,
         authority=candidate.authority.value,
-        document_title=item.document_title,
+        document_title=(
+            source_metadata["document_title"]
+            if source_metadata is not None
+            else item.document_title
+        ),
+        source_metadata=source_metadata,
     )

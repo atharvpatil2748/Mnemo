@@ -222,7 +222,8 @@ async def test_generate_insights_returns_501_not_implemented(
         response = await client.post(f"/v1/notebooks/{notebook_id}/insights/generate")
 
     assert response.status_code == 501
-    assert "Phase 10" in response.json()["error"]["message"]
+    assert response.json()["error"]["category"] == "capability_unavailable"
+    assert "not ready or unavailable" in response.json()["error"]["message"]
 
 
 @pytest.mark.anyio

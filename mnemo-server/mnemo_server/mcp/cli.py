@@ -250,11 +250,11 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         except KeyboardInterrupt:
             return 0
-        except Exception as exc:
+        except Exception:
             if governed_command:
                 print("CERTIFIED_PRODUCTION_STARTUP_FAILED", file=sys.stderr)
             else:
-                print(f"Error in stdio MCP server: {exc}", file=sys.stderr)
+                print("Error in stdio MCP server: startup failed", file=sys.stderr)
             return 1
 
     if selected_transport == "sse":
@@ -268,11 +268,11 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         except KeyboardInterrupt:
             return 0
-        except Exception as exc:
+        except Exception:
             if governed_command:
                 print("CERTIFIED_PRODUCTION_STARTUP_FAILED", file=sys.stderr)
             else:
-                print(f"Error in SSE MCP server: {exc}", file=sys.stderr)
+                print("Error in SSE MCP server: startup failed", file=sys.stderr)
             return 1
 
     parser.print_help(file=sys.stderr)

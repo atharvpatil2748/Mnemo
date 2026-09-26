@@ -196,6 +196,7 @@ class DeliveryItemResponse(BaseModel):
     attribution: DeliveryAttributionResponse
     payload: dict[str, Any]
     byte_size: int = Field(ge=0)
+    source_metadata: dict[str, Any] | None = None
 
 
 class DeliveryUsageResponse(BaseModel):
@@ -214,6 +215,7 @@ class DeliveryResponseBody(BaseModel):
     usage: DeliveryUsageResponse
     omissions: list[str]
     next_cursor: str | None = None
+    source_metadata: dict[str, Any] | None = None
 
 
 class DeliveryCapabilityResponse(BaseModel):

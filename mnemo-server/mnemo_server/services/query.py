@@ -40,6 +40,10 @@ from mnemo_server.schemas.query import (
     RetrievalMetadataResponse,
 )
 from mnemo_server.services.authorization import CentralAuthorizationServiceV1
+from mnemo_server.services.source_metadata import (
+    AuthorizedSourceMetadataResolverV1,
+    SourceMetadataReferenceV1,
+)
 
 _LOGGER = logging.getLogger(__name__)
 _MARKER = re.compile(r"\[source:([1-9][0-9]*)\]", flags=re.ASCII)
@@ -106,8 +110,9 @@ class QueryService:
         # 4. Multi-Source Retrieval & RRF Fusion
         retriever = MultiSourceRetriever(self._engine.registry, self._engine.embedding_provider)
         fusion_result = await retriever.execute(plan, global_limit=request.retrieval_config.top_k)
+        authorized_scopes: dict[tuple[UUID, UUID], UUID] = {}
         if principal is not None:
-            fusion_result, _ = await CentralAuthorizationServiceV1(
+            fusion_result, authorized_scopes = await CentralAuthorizationServiceV1(
                 self._engine
             ).filter_fused_candidates(principal, fusion_result, request.notebook_id)
 
@@ -185,6 +190,33 @@ class QueryService:
                         confidence=round(evidence_score, 6),
                     )
                 )
+
+        if principal is not None and citations_response and type(self._engine) is KnowledgeEngine:
+            chunks = {
+                item.reranked_result.fused_result.chunk.id: item.reranked_result.fused_result.chunk
+                for item in context_result.items
+            }
+            references = tuple(
+                SourceMetadataReferenceV1(
+                    notebook_id=authorized_scopes[(chunk.document_id, chunk.version_id)],
+                    document_id=chunk.document_id,
+                    version_id=chunk.version_id,
+                )
+                for citation in citations_response
+                for chunk in (chunks[citation.chunk_id],)
+            )
+            metadata = await AuthorizedSourceMetadataResolverV1(self._engine).resolve_many(
+                principal, references
+            )
+            citations_response = [
+                citation.model_copy(
+                    update={
+                        "document_title": metadata[reference].document_title,
+                        "source_metadata": metadata[reference].model_dump(mode="json"),
+                    }
+                )
+                for citation, reference in zip(citations_response, references, strict=True)
+            ]
 
         latency_ms = max(1, int((time.perf_counter() - start_time) * 1000))
         modes_used = sorted({sq.retrieval_mode.value for sq in plan.sub_queries})

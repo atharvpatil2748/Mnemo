@@ -4,6 +4,9 @@ This is the entry point for Mnemo’s current architecture, governance,
 certification, engineering history, and operational guidance. Current authority
 is separated from point-in-time historical evidence.
 
+Mnemo-owned documentation is proprietary: Copyright © 2026 Atharv Patil. All
+rights reserved. See the [distribution policy](governance/active/proprietary_distribution_policy.md).
+
 ## Current architecture
 
 - [Architecture overview](architecture/README.md)
@@ -24,7 +27,14 @@ production chat; 8.8.14c has reconciled current documentation. Module 8.8.1
 server-owned startup convergence is certified. [Stage 5](reports/operations/mnemo-phase-8-8-stage-5-acceptance.md)
 has local implementation acceptance (8.8.2a–e/g, 8.8.3a–d, 8.8.6a–c),
 not deployment or external verification of the complete Stage 5 code set.
-Task 8.8.2f and later Phase 8.8 gates remain pending.
+Task 8.8.2f was subsequently implemented locally using 8.8.7 typed errors.
+The first [combined Stage 6 audit](reports/operations/mnemo-stage-6-combined-forensic-audit.md)
+found F-1 partitioned principal propagation and F-2 nested metadata defects;
+the [dated remediation and independent reassessment](reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md)
+accepted 8.8.5, 8.8.7, 8.8.2f, 8.8.4 and 8.8.8 locally after correction.
+GitHub publication does not establish deployment or external re-verification. Stage 6
+still requires 8.8.10/8.8.11; 8.8.9 four-transport behavioral parity and the
+Phase 8.8 gate remain separate.
 
 ## Architecture decisions
 
@@ -40,6 +50,7 @@ Task 8.8.2f and later Phase 8.8 gates remain pending.
 - [Governance index](governance/README.md)
 - [Active governance](governance/active/)
 - [Machine-readable contracts](governance/contracts/)
+- [Proprietary distribution policy](governance/active/proprietary_distribution_policy.md)
 - [Proposals](governance/proposals/)
 - [Historical governance](governance/historical/)
 
