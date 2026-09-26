@@ -2,7 +2,25 @@
 
 > One knowledge layer. Thousands of documents. Your hardware, your data.
 
-![Version](https://img.shields.io/badge/version-0.25.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue) ![License](https://img.shields.io/badge/license-Apache_2.0-blue) [![CI](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvpatil2748/Mnemo/actions/workflows/ci.yml)
+Copyright © 2026 Atharv Patil.
+All rights reserved.
+
+Mnemo is proprietary software. Its source code and
+project-owned documentation are not offered under an
+open-source license. No license to use, copy, modify,
+distribute, sublicense, or commercially exploit the
+proprietary material is granted without prior written
+permission from Atharv Patil, except where applicable
+law or pre-existing rights provide otherwise.
+
+Unauthorized use or redistribution is prohibited
+to the extent permitted by applicable law.
+
+This notice applies to Mnemo-owned material in the current tree. Third-party
+materials retain their own terms and notices; earlier licensed versions retain
+rights already granted. See the [distribution policy](docs/governance/active/proprietary_distribution_policy.md).
+
+![Version](https://img.shields.io/badge/version-0.25.0-blue) ![Python](https://img.shields.io/badge/python-3.12-blue)
 
 ## Why Mnemo Exists
 
@@ -21,11 +39,11 @@ Mnemo ingests documents, understands them deeply, retrieves evidence in response
 
 ## The NotebookLM Difference
 
-Mnemo provides a local-first, self-hosted, open-architecture alternative to cloud notebook and knowledge systems like NotebookLM.
+Mnemo provides a local-first, self-hosted alternative to cloud notebook and knowledge systems like NotebookLM.
 
 * **Local-First Operation:** All storage and retrieval happens on your own hardware. Nothing is sent to the cloud unless you explicitly configure a remote LLM provider.
 * **User-Controlled Storage:** You own your knowledge graph. No mandatory cloud dependencies.
-* **Open Architecture & Plugins:** Replaceable parsers, chunkers, embedders, and LLM providers.
+* **Modular Architecture & Plugins:** Replaceable parsers, chunkers, embedders, and LLM providers.
 * **No SaaS Rate Limits:** Because Mnemo runs locally, there is no hosted SaaS query quota. Practical limits are determined entirely by your local compute, storage, models, and workload.
 
 ## Cross-Document & Cross-Notebook Retrieval
@@ -152,10 +170,10 @@ Mnemo is in active engineering development. Every module is rigorously tested be
 | Embedding Pipeline | ✅ Released | Content-addressed embedding cache and batch vector generation (Phase 5) |
 | Hybrid Retrieval & Grounded QA | ✅ Implemented and validated | Title-aware sparse retrieval, optional dense retrieval, fusion/reranking, strict persisted Final QA, citation correction, immutable replay (ADRs 0052–0057). |
 | REST API & Streaming | ✅ Released; Phase 8.8 hardening in progress | Milestone M7 REST and legacy V1 WebSocket/SSE exist. Authenticated HTTP FinalQA V2 is the accepted production chat path; V1 streaming is non-production and V2 streaming is optional future work. |
-| Native MCP Integration | ✅ 14 tools registered; 8.8.1 runtime convergence certified | Six retained knowledge tools, four bounded delivery tools, and four V2 evidence/capability/FinalQA tools over stdio/SSE. Server-owned HTTP/stdio/SSE/external-tunnel startup identity converges. Compatible readers, central authorization, and capability truth have local Stage 5 acceptance; metadata, typed errors, complete tool contracts, and behavioral parity remain open. |
+| Native MCP Integration | ✅ 14 tools registered; 8.8.1 runtime convergence certified | Six retained knowledge tools, four bounded delivery tools, and four V2 evidence/capability/FinalQA tools over stdio/SSE. Stage 5 and the 8.8.5/8.8.7/8.8.2f/8.8.4/8.8.8 batch have local acceptance, including F-1 principal propagation and F-2 nested metadata parity. GitHub publication does not establish deployment or external verification of the batch. Four-transport behavioral parity remains separate. |
 | Advanced Retrieval & Multimodal Foundation | ✅ Implemented & evaluated for their scoped evidence | Phase 8.5 is certified for its exact 44-document production identity. OCR, Vision, and CLIP evaluation foundations do not imply callable production image services; BGE-M3 is governed separately. Dedicated semantic image discovery through MCP is not exposed and is planned as `search_images` in Phase 8.8. |
 | Phase 8.6 evaluation notebook | ✅ Validated; evaluation-only | Format-diverse multilingual corpus with structure-aware chunking, OCR, Vision, CLIP, BGE-M3, provenance, canonical manifests, isolation, and transport validation; not production-exposed. |
-| Phase 8.8 | 🚧 In progress, not verified | 8.8.14a/b accepted; 8.8.14c reconciled; 8.8.1 startup convergence certified. [Stage 5](docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md) has local implementation acceptance (8.8.2a–e/g, 8.8.3a–d, 8.8.6a–c), not deployment or external verification of the complete Stage 5 code; 8.8.2f awaits 8.8.7. Later contracts, parity, and `search_images` remain pending. |
+| Phase 8.8 | 🚧 In progress, not verified | 8.8.14a/b accepted; 8.8.14c reconciled; 8.8.1 startup convergence certified. [Stage 5](docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md) is locally accepted. The five-module Stage 6 [remediation batch](docs/reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md) is independently accepted locally; 8.8.10 and 8.8.11 remain mandatory for Stage 6 closure. Production deployment, external re-verification, 8.8.9 behavioral parity, and `search_images` remain separate. |
 | Web UI | 📋 Planned after Phase 8.8 verification | Phase 9 is the next implementation phase, but has not started. |
 | Cross-Doc Reasoning | 📋 Planned | Phase 11 |
 
@@ -234,7 +252,7 @@ its in-memory parsed blocks do not establish production document delivery or
 external ChatGPT verification of the complete Stage 5 code set.
 
 ### 4. Setup and Validation
-Clone the repository and run the validation script to ensure your environment is clean:
+In an owner-authorized checkout, run the validation script to ensure your environment is clean:
 
 ```shell
 # Windows
@@ -290,7 +308,7 @@ To understand the system in depth, consult the authoritative documentation in th
 * [Phase 8.5 Architecture](docs/architecture/historical/phase8.5_architecture.md) - Accepted additive architecture retained with the completed phase history.
 * [Phase 8.5 Engineering Roadmap](docs/architecture/historical/mnemo_phase8_5_engineering_roadmap.md) - Dedicated implementation and certification plan.
 * [Architecture Decision Records (ADRs)](docs/adr/README.md) - Historical records and the Phase 8.5 successor package.
-* [Contributing Guide](CONTRIBUTING.md) - How to contribute to the project.
+* [Proprietary distribution policy](docs/governance/active/proprietary_distribution_policy.md) - Current-tree rights and historical-license limits.
 * [Engineering Changelog](docs/changelog/README.md) - Current index and detailed historical module releases.
 
 ## Roadmap
@@ -301,16 +319,8 @@ Mnemo's roadmap is structured to ensure every phase produces a runnable, testabl
 * **COMPLETED/CERTIFIED (Phase 8.5):** Exact 44-document V2 production composition, production-parity evaluation, durable BGE activation/rollback, authenticated FinalQA, and transport parity. Historical Golden evaluation and later production-parity evaluation remain distinct evidence identities.
 * **COMPLETED/VALIDATED (Phase 8.6):** Isolated 24-document format-diverse multilingual evaluation notebook; not production-exposed.
 * **COMPLETED CAPABILITY MILESTONE (Phase 8.7):** 14 registered MCP tools and real client exercises. Defects discovered by the later audits are Phase 8.8 inputs, not retroactive Phase 8.7 claims.
-* **CURRENT HARDENING (Phase 8.8):** In progress, not verified. Mutable-workspace and authenticated HTTP FinalQA V2 chat gates are accepted; Module 8.8.1 startup convergence is certified. Stage 5 reader, authorization, and capability branches are locally accepted, not deployed or externally verified as a complete Stage 5 code set. MCP tool-contract and behavioral parity gates remain pending. See the [8.8.1 forensic audit](docs/reports/operations/mnemo-module-8-8-1-forensic-audit.md) and [Stage 5 acceptance](docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md).
+* **CURRENT HARDENING (Phase 8.8):** In progress, not verified. Mutable-workspace and authenticated HTTP FinalQA V2 chat gates are accepted; Module 8.8.1 startup convergence is certified. Stage 5 and the corrected five-module Stage 6 batch are accepted locally. Stage 6 still requires 8.8.10 evaluation isolation and 8.8.11 structured-contract verification; 8.8.9 live behavioral parity and later Phase 8.8 gates remain separate. See the [Stage 5 acceptance](docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md) and [Stage 6 remediation acceptance](docs/reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md).
 * **NEXT IMPLEMENTATION AFTER VERIFICATION (Phase 9):** Web UI React frontend. Phase 9 starts only after `Phase 8.8 VERIFIED → Phase 9 GO`.
 * **FUTURE (Phases 10–13):** Notebook features, cross-document reasoning, plugin ecosystem, and production hardening.
 
 See the complete execution plan in the [Engineering Roadmap](docs/architecture/current/mnemo_engineering_roadmap.md).
-
-## Contributing
-
-Interested in working on Mnemo?
-
-Whether you're interested in building a new parser, optimizing vector storage, or shaping the retrieval algorithms, we welcome your help!
-
-Please read our [Contributing Guide](CONTRIBUTING.md) to understand our architectural rules, local setup, and PR expectations before opening a pull request.

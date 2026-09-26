@@ -22,3 +22,6 @@ fallback; its implementation and certification are accepted. Authenticated HTTP
 FinalQA V2 is the accepted production chat path; legacy V1 WebSocket is not.
 Qdrant is an optional derived vector-scale path; SurrealDB is a partial future
 graph path. Phase 8.8 is in progress but not verified and still gates Phase 9.
+The corrected five-module Stage 6 batch is [independently accepted locally](../reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md);
+8.8.10 and 8.8.11 still gate Stage 6 closure. Current project-owned material
+follows the [proprietary distribution policy](../governance/active/proprietary_distribution_policy.md).

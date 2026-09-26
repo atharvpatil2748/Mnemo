@@ -1,5 +1,8 @@
 # mnemo-server
 
+Mnemo-owned code and documentation are proprietary: Copyright © 2026 Atharv
+Patil. All rights reserved. See the [current-tree distribution policy](../docs/governance/active/proprietary_distribution_policy.md).
+
 > Layer 2 Transport Adapter, REST API & Model Context Protocol (MCP) Server for the Mnemo Local Knowledge Engine.
 
 `mnemo-server` provides HTTP/REST, legacy V1 WebSocket/SSE, and **Model Context Protocol (MCP)** transport adapters for `mnemo-core`. Built with **FastAPI**, **Uvicorn**, and the standard **Model Context Protocol SDK**, it also contains the server-owned certified V2 composition, principal/authorization boundary, capability reporting, delivery adapters, and separate FinalQA operational-store wiring. Phase 8.8 must converge every externally exposed transport and tunnel on that certified composition; code registration alone is not readiness or certification evidence.
@@ -71,10 +74,13 @@ the FinalQA operational store is not a substitute user workspace.
   workspace/read-only boundary and 8.8.14b authenticated HTTP FinalQA V2 are
   implemented, certified, and accepted; 8.8.14c documentation is reconciled.
   Module 8.8.1 startup identity convergence is certified. Compatible readers,
-  authorization, and capability truth are [locally accepted Stage 5 work](../docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md)
-  in the local checkout. Metadata, typed errors (including deferred
-  8.8.2f), complete tool contracts, behavioral tunnel parity, `search_images`,
-  and Phase 9 readiness remain pending.
+  authorization, and capability truth are [locally accepted Stage 5 work](../docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md).
+  Metadata, typed errors, 8.8.2f reader errors, all-14-tool contracts and V1/V2
+  route isolation have [independent local acceptance](../docs/reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md),
+  including F-1 principal propagation and F-2 nested metadata parity. This
+  batch is not thereby deployed or externally re-verified by GitHub publication.
+  Stage 6 still requires 8.8.10 and 8.8.11; behavioral tunnel parity,
+  `search_images`, and Phase 9 readiness remain pending.
 - Phase 9: planned and blocked until `Phase 8.8 VERIFIED → Phase 9 GO`.
 
 See the [current architecture](../docs/architecture/current/mnemo_architecture_v2.md)

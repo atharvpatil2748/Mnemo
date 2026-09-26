@@ -13,7 +13,8 @@ production-exposed. Phase 8.7 is the retrospective completed capability
 milestone for the expanded 14-tool MCP surface and real client exercises; later
 audits identified production-composition and contract hardening that Phase 8.8
 must correct. Phase 8.8 is in progress (8.8.14a and 8.8.14b accepted;
-Module 8.8.1 certified; Stage 5 locally accepted)
+Module 8.8.1 certified; Stage 5 locally accepted; corrected 8.8.5/8.8.7/
+8.8.2f/8.8.4/8.8.8 batch independently accepted locally)
 but not verified. Phase 9 is
 the next implementation phase, gated on Phase 8.8 verification, the mutable
 workspace boundary, and authenticated V2 chat/FinalQA transport.
@@ -261,13 +262,15 @@ implementation and evidence.
    security boundary, and capability-truthfulness branches have passing local
    evidence in the [Stage 5 implementation report](../../reports/operations/mnemo-phase-8-8-stage-5-acceptance.md).
    This is not a deployment, external ChatGPT re-verification, completion of
-   Module 8.8.2, or Phase 8.8 verification. Task 8.8.2f remains deferred to
-   Stage 6 after Module 8.8.7.
+   Module 8.8.2, or Phase 8.8 verification. Task 8.8.2f was deferred to
+   Stage 6 after Module 8.8.7 and was subsequently implemented locally.
    - Module 8.8.2 reader work: 8.8.2a reproduce and pin the confirmed failure;
      8.8.2b introduce one compatible read-model boundary; then 8.8.2c preserve
      truthful locators, 8.8.2d route every affected reader, 8.8.2e add
      schema-compatibility regression tests, and 8.8.2g prove corpus immutability.
-     Task 8.8.2f remains pending until Module 8.8.7 supplies typed errors.
+     Task 8.8.2f was pending at Stage 5 acceptance until Module 8.8.7 supplied
+     typed errors; it was subsequently implemented and independently accepted locally
+     in the dated Stage 6 remediation assessment.
    - Module 8.8.3 authorization work: 8.8.3a require a
      transport-authenticated principal; 8.8.3b apply central authorization to
      all 14 tools; then 8.8.3c preserve non-disclosure and 8.8.3d reject client
@@ -287,6 +290,13 @@ implementation and evidence.
    - Module 8.8.8, only after Module 8.8.4: 8.8.8a inventory and freeze routes;
      then 8.8.8b prevent historical fallback and 8.8.8c verify frozen
      compatibility.
+   **Current local evidence (2026-09-26):** the five-module batch above is
+   independently accepted after F-1 principal-propagation and F-2 nested
+   metadata corrections. The [initial blocked audit](../../reports/operations/mnemo-stage-6-combined-forensic-audit.md)
+   remains historical; the [remediation acceptance](../../reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md)
+   is the current local verdict (2,694 passed, 18 skipped, 90.31% coverage in
+   that run). Repository publication does not establish deployment or external verification.
+   This does not complete Stage 6 or Phase 8.8.
 7. **Verify the bounded isolation and structured-contract branches:**
    - Module 8.8.10: 8.8.10a enforce evaluation-only selection; then 8.8.10b
      specify the future promotion gate and 8.8.10c test Phase 8.5/8.6 isolation.
@@ -374,8 +384,9 @@ HTTP/stdio/SSE/external-tunnel convergence. The signed post-promotion evidence
 is `scratch/phase8_8_1_runtime_convergence/convergence.json`; see
 `docs/reports/operations/mnemo-module-8-8-1-certification.md`. Individual
 capability readiness is not certified by tool registration. Stage 5's 8.8.2a–e/g,
-8.8.3a–d, and 8.8.6a–c branches are locally accepted; 8.8.2f and the
-complete Phase 8.8 acceptance gate remain open.
+8.8.3a–d, and 8.8.6a–c branches are locally accepted. Task 8.8.2f was
+subsequently implemented and independently assessed locally; the complete
+Phase 8.8 acceptance gate remains open.
 8.8.14d remains **PENDING**. Phase 9 is blocked until
 `PHASE_8_8_VERIFIED → Phase 9 GO`.
 
@@ -1303,8 +1314,11 @@ embeddings.
 
 Tasks 8.8.2a–e/g have local acceptance in the Stage 5 report, including a
 public MCP older/newer-schema fixture matrix and protected-corpus checks.
-Task 8.8.2f remains open until Module 8.8.7 supplies typed error semantics;
-therefore this module's complete acceptance gate is not yet closed.
+Task 8.8.2f was subsequently implemented with Module 8.8.7 typed errors and
+independently accepted locally in the dated [Stage 6 remediation report](../../reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md).
+The Stage 5 report's
+deferral remains an accurate point-in-time record; current local acceptance
+does not establish production deployment or Phase 8.8 certification.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
