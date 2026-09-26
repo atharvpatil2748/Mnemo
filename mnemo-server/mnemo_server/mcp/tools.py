@@ -788,6 +788,9 @@ async def execute_mcp_tool(
     transport: str | None = None,
 ) -> list[MCPContent]:
     """Execute an authorized Mnemo MCP knowledge tool call."""
+    route = _TOOL_ROUTES.get(name)
+    if route is None:
+        raise ValueError(f"Unknown MCP tool: {name!r}")
     if engine is None or engine.state is not EngineState.READY:
         raise DependencyUnavailableError(
             "KnowledgeEngine is not ready or uninitialized on the MCP server",
@@ -797,9 +800,6 @@ async def execute_mcp_tool(
     args = arguments or {}
     config = server_config or ServerConfig()
     server_principal = _principal_for_call(principal, config)
-    route = _TOOL_ROUTES.get(name)
-    if route is None:
-        raise ValueError(f"Unknown MCP tool: {name!r}")
     if config.full_multilingual_v2_enabled:
         _reject_client_policy_overrides(name, args)
         await _authorize_mcp_call(engine, name, args, server_principal)

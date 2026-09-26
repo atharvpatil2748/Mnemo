@@ -141,6 +141,30 @@ async def test_mcp_invalid_tool_invocation_error_format() -> None:
 
 
 @pytest.mark.anyio
+async def test_mcp_unknown_tool_remains_invalid_when_engine_is_unavailable() -> None:
+    """Route validation is independent of optional local model readiness."""
+    server = create_mcp_server(None)
+    c2s_send, c2s_recv = anyio.create_memory_object_stream(10)
+    s2c_send, s2c_recv = anyio.create_memory_object_stream(10)
+
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(server.run, c2s_recv, s2c_send, server.create_initialization_options())
+        async with ClientSession(s2c_recv, c2s_send) as session:
+            await session.initialize()
+            unavailable = await session.call_tool("list_notebooks", {"limit": 1})
+            assert unavailable.isError
+            assert json.loads(unavailable.content[0].text)["error"]["category"] == (
+                "capability_unavailable"
+            )
+            unknown = await session.call_tool("unknown_fixture_tool", {})
+            assert unknown.isError
+            error = json.loads(unknown.content[0].text)["error"]
+            assert error["category"] == "invalid_input"
+            assert "unknown_fixture_tool" not in unknown.content[0].text
+            tg.cancel_scope.cancel()
+
+
+@pytest.mark.anyio
 async def test_mcp_real_stdio_subprocess_handshake(tmp_path: Path) -> None:
     """Verify the real CLI handshake without requiring a cached embedding model."""
     from mcp.client.stdio import StdioServerParameters, stdio_client
