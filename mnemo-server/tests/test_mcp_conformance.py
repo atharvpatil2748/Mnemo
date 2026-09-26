@@ -142,11 +142,13 @@ async def test_mcp_invalid_tool_invocation_error_format() -> None:
 
 @pytest.mark.anyio
 async def test_mcp_real_stdio_subprocess_handshake(tmp_path: Path) -> None:
-    """Verify that a real child process running mnemo-mcp stdio performs clean handshake."""
+    """Verify the real CLI handshake without requiring a cached embedding model."""
     from mcp.client.stdio import StdioServerParameters, stdio_client
 
     env = dict(os.environ)
     env["MNEMO_STORAGE_SQLITE_PATH"] = str(tmp_path / "isolated.db")
+    env["HF_HUB_OFFLINE"] = "1"
+    env["TRANSFORMERS_OFFLINE"] = "1"
 
     server_params = StdioServerParameters(
         command="uv",
@@ -167,10 +169,17 @@ async def test_mcp_real_stdio_subprocess_handshake(tmp_path: Path) -> None:
         assert "list_notebooks" in tool_names
         assert "query_notebook" in tool_names
         empty_inventory = await session.call_tool("list_notebooks", {"limit": 1})
-        assert not empty_inventory.isError
         inventory = json.loads(empty_inventory.content[0].text)
-        assert inventory["notebooks"] == []
-        assert inventory["completeness"] == "complete"
+        if empty_inventory.isError:
+            # A clean CI runner need not have the local model cache. The CLI
+            # must expose a safe typed unavailability, not a false empty result.
+            error = inventory["error"]
+            assert error["category"] == "capability_unavailable"
+            assert error["code"] == "contract.dependency_unavailable"
+            assert error["reason"] == "dependency_unavailable"
+        else:
+            assert inventory["notebooks"] == []
+            assert inventory["completeness"] == "complete"
         denied = await session.call_tool("unknown_fixture_tool", {})
         assert denied.isError
         error = json.loads(denied.content[0].text)["error"]
