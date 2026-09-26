@@ -9,7 +9,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID
 
-from mnemo.interfaces.advanced_retrieval import AdvancedRetrievalInterfaceV1
+from mnemo.interfaces.advanced_retrieval import (
+    AdvancedRetrievalInterfaceV1,
+    PrincipalAwareAdvancedRetrievalInterfaceV2,
+)
+from mnemo.interfaces.scope import PrincipalContextV1
 from mnemo.models.advanced_retrieval import (
     RetrievalCompleteness,
     RetrievalPlanV2,
@@ -83,6 +87,37 @@ class PartitionedRetrievalServiceV1:
         cursors: Mapping[UUID, str] | None = None,
         cursor: str | None = None,
     ) -> PartitionedRetrievalResultV1:
+        return await self._execute(
+            plan, document_ids=document_ids, cursors=cursors, cursor=cursor, principal=None
+        )
+
+    async def execute_authorized(
+        self,
+        *,
+        principal: PrincipalContextV1,
+        plan: RetrievalPlanV2,
+        document_ids: tuple[UUID, ...],
+        cursors: Mapping[UUID, str] | None = None,
+        cursor: str | None = None,
+    ) -> PartitionedRetrievalResultV1:
+        """Keep the trusted transport principal on every document traversal."""
+        if not principal.authenticated:
+            raise PermissionError("authenticated principal is required")
+        if not isinstance(self._retrieval, PrincipalAwareAdvancedRetrievalInterfaceV2):
+            raise RuntimeError("partitioned retrieval lacks the principal-aware V2 entry point")
+        return await self._execute(
+            plan, document_ids=document_ids, cursors=cursors, cursor=cursor, principal=principal
+        )
+
+    async def _execute(
+        self,
+        plan: RetrievalPlanV2,
+        *,
+        document_ids: tuple[UUID, ...],
+        cursors: Mapping[UUID, str] | None,
+        cursor: str | None,
+        principal: PrincipalContextV1 | None,
+    ) -> PartitionedRetrievalResultV1:
         document_ids = await self.resolve_document_set(scope=plan.scope, document_ids=document_ids)
         expected_snapshot: object | None = None
         if cursor is not None and cursors:
@@ -114,9 +149,15 @@ class PartitionedRetrievalServiceV1:
                     )
                 }
             )
-            result = await self._retrieval.execute(
-                partition_plan, cursor=cursor_map.get(document_id)
-            )
+            if principal is None:
+                result = await self._retrieval.execute(
+                    partition_plan, cursor=cursor_map.get(document_id)
+                )
+            else:
+                assert isinstance(self._retrieval, PrincipalAwareAdvancedRetrievalInterfaceV2)
+                result = await self._retrieval.execute_authorized(
+                    principal=principal, plan=partition_plan, cursor=cursor_map.get(document_id)
+                )
             partitions.append(RetrievalPartitionV1(document_id=document_id, result=result))
         completeness = _combine_completeness(partitions)
         snapshots = [partition.result.snapshot_identity for partition in partitions]

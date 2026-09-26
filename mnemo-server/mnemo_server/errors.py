@@ -5,34 +5,16 @@ from __future__ import annotations
 import logging
 from collections.abc import Mapping
 from typing import Any
+from uuid import UUID, uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from mnemo.engine import (
-    EngineInitializationError,
-    EngineLifecycleError,
-    KnowledgeEngineError,
-)
-from mnemo.interfaces import (
-    ConflictError,
-    ContractValidationError,
-    DeliveryAuthorizationError,
-    DeliveryCursorError,
-    DeliveryLimitExceededError,
-    DependencyUnavailableError,
-    IntegrityError,
-    LifecycleError,
-    MnemoInterfaceError,
-    NotFoundError,
-    OperationCancelledError,
-    OperationTimeoutError,
-    PluginError,
-    StorageError,
-    UnsupportedError,
-)
+from mnemo.interfaces import ContractValidationError, MnemoInterfaceError
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from mnemo_server.typed_errors import ErrorCategory, TypedPublicError, classify_public_error
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,6 +28,11 @@ class ErrorBody(BaseModel):
     message: str = Field(..., min_length=1)
     details: dict[str, Any] = Field(default_factory=dict)
     retryable: bool = Field(default=False)
+    category: str | None = None
+    origin_code: str | None = None
+    layer: str | None = None
+    reason: str | None = None
+    correlation_id: str | None = None
 
 
 class ErrorEnvelope(BaseModel):
@@ -64,6 +51,7 @@ def error_response(
     details: dict[str, Any] | None = None,
     retryable: bool = False,
     headers: Mapping[str, str] | None = None,
+    typed: TypedPublicError | None = None,
 ) -> JSONResponse:
     """Construct a standardized JSON error response."""
     payload = ErrorEnvelope(
@@ -72,94 +60,95 @@ def error_response(
             message=message,
             details=details or {},
             retryable=retryable,
+            category=None if typed is None else typed.category.value,
+            origin_code=None if typed is None else typed.origin_code,
+            layer=None if typed is None else typed.layer,
+            reason=None if typed is None else typed.reason,
+            correlation_id=None if typed is None else str(typed.correlation_id),
         )
     ).model_dump()
     return JSONResponse(
         status_code=status_code,
         content=payload,
-        headers=dict(headers) if headers is not None else None,
+        headers={
+            **(dict(headers) if headers is not None else {}),
+            **({"X-Mnemo-Correlation-ID": str(typed.correlation_id)} if typed else {}),
+        },
+    )
+
+
+def _correlation(request: Request) -> UUID:
+    existing = getattr(request.state, "correlation_id", None)
+    if isinstance(existing, UUID):
+        return existing
+    created = uuid4()
+    request.state.correlation_id = created
+    return created
+
+
+def _typed_response(typed: TypedPublicError, *, code: str | None = None) -> JSONResponse:
+    body = typed.body()
+    return error_response(
+        typed.status,
+        code or typed.code,
+        str(body["message"]),
+        retryable=typed.retryable,
+        details=typed.details,
+        typed=typed,
     )
 
 
 def _interface_error_handler(request: Request, exc: MnemoInterfaceError) -> JSONResponse:
-    """Handle core MnemoInterfaceError exceptions according to ADR-0049 mapping."""
-    details = dict(exc.details) if hasattr(exc, "details") and exc.details else {}
-    code = getattr(exc, "code", "interface.error")
-    retryable = getattr(exc, "retryable", False)
-
-    match exc:
-        case DeliveryAuthorizationError():
-            return error_response(403, code, "Resource access is forbidden")
-        case DeliveryCursorError():
-            return error_response(409, code, exc.message, details=details, retryable=retryable)
-        case DeliveryLimitExceededError():
-            return error_response(413, code, "Delivery limit exceeded")
-        case ContractValidationError():
-            return error_response(422, code, exc.message, details=details, retryable=retryable)
-        case NotFoundError():
-            return error_response(404, code, exc.message, details=details, retryable=retryable)
-        case ConflictError():
-            return error_response(409, code, exc.message, details=details, retryable=retryable)
-        case UnsupportedError():
-            return error_response(400, code, exc.message, details=details, retryable=retryable)
-        case IntegrityError():
-            _LOGGER.error("Integrity error encountered: %s", exc.message)
-            return error_response(500, code, exc.message, details=details, retryable=retryable)
-        case EngineLifecycleError() | LifecycleError():
-            return error_response(503, code, exc.message, details=details, retryable=retryable)
-        case EngineInitializationError() | DependencyUnavailableError():
-            return error_response(503, code, exc.message, details=details, retryable=retryable)
-        case OperationTimeoutError():
-            return error_response(504, code, exc.message, details=details, retryable=retryable)
-        case OperationCancelledError():
-            return error_response(499, code, exc.message, details=details, retryable=retryable)
-        case StorageError():
-            _LOGGER.error("Storage error encountered: %s", exc.message)
-            return error_response(503, code, exc.message, details=details, retryable=retryable)
-        case PluginError():
-            _LOGGER.error("Plugin error encountered: %s", exc.message)
-            return error_response(500, code, exc.message, details=details, retryable=retryable)
-        case KnowledgeEngineError():
-            _LOGGER.error("KnowledgeEngine error encountered: %s", exc.message)
-            return error_response(500, code, exc.message, details=details, retryable=retryable)
-        case _:
-            _LOGGER.error("Unclassified core interface error: %s", exc.message)
-            return error_response(500, code, exc.message, details=details, retryable=retryable)
+    """Map existing stable codes to sanitized category, reason and correlation."""
+    typed = classify_public_error(exc, _correlation(request))
+    _LOGGER.warning(
+        "Public interface failure: correlation=%s type=%s category=%s origin=%s reason=%s",
+        typed.correlation_id,
+        type(exc).__name__,
+        typed.category.value,
+        typed.origin_code,
+        typed.reason,
+    )
+    return _typed_response(typed)
 
 
 def _validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    """Handle FastAPI request validation errors."""
-    cleaned_errors: list[dict[str, Any]] = []
-    for err in exc.errors():
-        clean_err = dict(err)
-        if "ctx" in clean_err and isinstance(clean_err["ctx"], dict):
-            clean_err["ctx"] = {
-                k: str(v) if isinstance(v, Exception) else v for k, v in clean_err["ctx"].items()
-            }
-        cleaned_errors.append(clean_err)
-
-    return error_response(
-        422,
-        "http.validation",
-        "Request validation failed",
-        details={"validation_errors": cleaned_errors},
-        retryable=False,
+    """Never echo pydantic inputs, locations or exception contexts."""
+    del exc
+    typed = classify_public_error(
+        ContractValidationError("request validation"), _correlation(request)
     )
+    return _typed_response(typed, code="http.validation")
 
 
 def _http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-    """Handle Starlette / FastAPI HTTPExceptions."""
-    message = str(exc.detail) if exc.detail else "HTTP request failed"
-    retryable = exc.status_code in (502, 503, 504)
-    code = f"http.{exc.status_code}"
-    return error_response(
-        exc.status_code,
-        code,
-        message,
-        details={},
-        retryable=retryable,
-        headers=exc.headers,
+    """Preserve the HTTP status without reflecting arbitrary detail or headers."""
+    correlation = _correlation(request)
+    category = (
+        ErrorCategory.NOT_FOUND
+        if exc.status_code == 404
+        else ErrorCategory.UNAUTHORIZED
+        if exc.status_code in {401, 403}
+        else ErrorCategory.CAPABILITY_UNAVAILABLE
+        if exc.status_code in {501, 503}
+        else ErrorCategory.TIMEOUT
+        if exc.status_code in {408, 504}
+        else ErrorCategory.TRANSPORT_FAILURE
+        if exc.status_code == 502
+        else ErrorCategory.INVALID_INPUT
+        if exc.status_code < 500
+        else ErrorCategory.SERVER_FAILURE
     )
+    typed = TypedPublicError(
+        category,
+        f"http.{exc.status_code}",
+        correlation,
+        "http",
+        "http_failure",
+        exc.status_code,
+        exc.status_code in {502, 503, 504},
+    )
+    return _typed_response(typed)
 
 
 def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -168,14 +157,11 @@ def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONRespon
         for sub_exc in exc.exceptions:
             if isinstance(sub_exc, MnemoInterfaceError):
                 return _interface_error_handler(request, sub_exc)
-    _LOGGER.exception("Unhandled server exception: %s", exc)
-    return error_response(
-        500,
-        "internal.error",
-        "An unexpected internal server error occurred.",
-        details={},
-        retryable=False,
+    typed = classify_public_error(exc, _correlation(request))
+    _LOGGER.error(
+        "Unhandled server failure: correlation=%s type=%s", typed.correlation_id, type(exc).__name__
     )
+    return _typed_response(typed)
 
 
 def register_error_handlers(app: FastAPI) -> None:

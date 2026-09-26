@@ -57,6 +57,10 @@ from mnemo_server.services.authorization import (
     ServerPrincipalV1,
     principal_from_claims,
 )
+from mnemo_server.services.source_metadata import (
+    AuthorizedSourceMetadataResolverV1,
+    SourceMetadataReferenceV1,
+)
 
 CONTRACT_VERSION = "mnemo.structured/v2"
 _CURSOR_DOMAIN = "mnemo-structured-retrieval/v2"
@@ -101,10 +105,47 @@ class StructuredRetrievalApplicationService:
                     response = await self._query(request, catalog, principal)
         except TimeoutError as error:
             raise OperationTimeoutError("structured retrieval deadline expired") from error
+        if type(self._engine) is KnowledgeEngine and principal.authenticated:
+            response = await self._with_source_metadata(response, principal)
         if len(response.model_dump_json().encode()) > self._config.max_structured_response_bytes:
             raise ContractValidationError(
                 "structured response exceeds the server byte ceiling; lower page_size"
             )
+        return response
+
+    async def _with_source_metadata(
+        self, response: StructuredRetrievalResponse, principal: ServerPrincipalV1
+    ) -> StructuredRetrievalResponse:
+        nodes: list[dict[str, Any]] = []
+        for item in response.items:
+            if {"notebook_id", "source_id", "document_id", "version_id"} <= item.keys():
+                nodes.append(item)
+            provenance = item.get("provenance")
+            if isinstance(provenance, list):
+                nodes.extend(provenance)
+            elif isinstance(provenance, dict):
+                nodes.append(provenance)
+            for collection in ("values", "aggregates"):
+                for value in item.get(collection, {}).values():
+                    nodes.extend(value.get("provenance", []))
+        if not nodes:
+            return response
+        if len(nodes) > AuthorizedSourceMetadataResolverV1.MAX_REFERENCES:
+            raise ContractValidationError("structured metadata lookup exceeds the bounded limit")
+        references = tuple(
+            SourceMetadataReferenceV1(
+                notebook_id=UUID(node["notebook_id"]),
+                source_id=UUID(node["source_id"]),
+                document_id=UUID(node["document_id"]),
+                version_id=UUID(node["version_id"]),
+            )
+            for node in nodes
+        )
+        metadata = await AuthorizedSourceMetadataResolverV1(self._engine).resolve_many(
+            principal, references
+        )
+        for node, reference in zip(nodes, references, strict=True):
+            node["source_metadata"] = metadata[reference].model_dump(mode="json")
         return response
 
     def _describe(

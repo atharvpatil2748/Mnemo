@@ -27,6 +27,10 @@ from mnemo.retrieval import MultiSourceRetriever, RerankingModule
 from mnemo_server.schemas.query import QueryFilters
 from mnemo_server.schemas.search import SearchRequest, SearchResponse, SearchResultItem
 from mnemo_server.services.authorization import CentralAuthorizationServiceV1
+from mnemo_server.services.source_metadata import (
+    AuthorizedSourceMetadataResolverV1,
+    SourceMetadataReferenceV1,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -181,6 +185,36 @@ class SearchService:
                         metadata=thaw_metadata(chunk.metadata),
                     )
                 )
+
+        if principal is not None and results and type(self._engine) is KnowledgeEngine:
+            references = tuple(
+                SourceMetadataReferenceV1(
+                    notebook_id=item.notebook_id,
+                    document_id=item.document_id,
+                    version_id=item.version_id,
+                )
+                for item in results
+                if item.notebook_id is not None
+            )
+            envelopes = await AuthorizedSourceMetadataResolverV1(self._engine).resolve_many(
+                principal, references
+            )
+            results = [
+                item.model_copy(
+                    update={
+                        "source_metadata": envelopes[
+                            SourceMetadataReferenceV1(
+                                notebook_id=item.notebook_id,
+                                document_id=item.document_id,
+                                version_id=item.version_id,
+                            )
+                        ].model_dump(mode="json")
+                    }
+                )
+                if item.notebook_id is not None
+                else item
+                for item in results
+            ]
 
         latency_ms = max(1, int((time.perf_counter() - start_time) * 1000))
 

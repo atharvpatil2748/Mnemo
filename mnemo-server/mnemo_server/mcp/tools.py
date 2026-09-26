@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import base64
+import inspect
 import json
 import logging
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -51,7 +55,11 @@ from mnemo_server.services.authorization import (
     principal_from_claims,
 )
 from mnemo_server.services.capabilities_v2 import CapabilityDiscoveryService
-from mnemo_server.services.delivery import build_delivery_service, delivery_response_body
+from mnemo_server.services.delivery import (
+    authorized_delivery_response_body,
+    build_delivery_service,
+    delivery_response_body,
+)
 from mnemo_server.services.final_qa_v2 import (
     FinalQAV2ApplicationService,
 )
@@ -60,6 +68,10 @@ from mnemo_server.services.production_runtime_binding import CertifiedProduction
 from mnemo_server.services.query import QueryService
 from mnemo_server.services.retrieval_v2 import EvidenceRetrievalApplicationService
 from mnemo_server.services.search import SearchService
+from mnemo_server.services.source_metadata import (
+    AuthorizedSourceMetadataResolverV1,
+    SourceMetadataReferenceV1,
+)
 from mnemo_server.services.structured_v2 import StructuredRetrievalApplicationService
 from mnemo_server.tokenizer_provisioning import provision_tokenizer
 
@@ -478,28 +490,62 @@ _TOOL_DEFINITIONS = [
 
 def get_mcp_tools() -> list[types.Tool]:
     """Return the list of authoritative MCP tool definitions exposed by Mnemo."""
+    _validate_tool_routes()
     return list(_TOOL_DEFINITIONS)
 
 
-# These scopes are authorization policy, not client-selectable tool metadata.
-# The current corpus has notebook membership, but no actor-to-notebook ACL.
-_TOOL_SCOPES: dict[str, str] = {
-    "list_notebooks": "collection",
-    "get_notebook_summary": "notebook",
-    "get_timeline": "notebook",
-    "get_source_insights": "source",
-    "search_all_notebooks": "optional_notebook",
-    "query_notebook": "notebook",
-    "search_evidence": "service",
-    "get_capabilities": "capability",
-    "query_structured": "service",
-    "get_document": "document",
-    "get_document_chunk": "document",
-    "get_asset": "notebook",
-    "get_image_analysis": "notebook",
-    "run_final_qa_v2": "service",
-}
-assert set(_TOOL_SCOPES) == {tool.name for tool in _TOOL_DEFINITIONS}
+class ToolBackendRoute(StrEnum):
+    """Frozen business-logic families, independent of the MCP transport."""
+
+    RETAINED_V1 = "retained_v1"
+    RETAINED_STORAGE = "retained_storage"
+    V2_REPRESENTATIONS = "v2_representations"
+    V2_STRUCTURED = "v2_structured"
+    V2_CAPABILITIES = "v2_capabilities"
+    SHARED_V2_DELIVERY = "shared_v2_delivery"
+    CERTIFIED_V2_FINAL_QA = "certified_v2_final_qa"
+
+
+@dataclass(frozen=True, slots=True)
+class ToolRouteContract:
+    """One registered tool's handler, authorization scope and serving family."""
+
+    backend: ToolBackendRoute
+    auth_scope: str
+    handler: Callable[..., Awaitable[list[MCPContent]]]
+
+
+# Defined after handlers below. This is the existing dispatcher and authorization
+# scope declaration, not a second tool registry.
+_TOOL_ROUTES: dict[str, ToolRouteContract]
+
+
+def _validate_tool_routes() -> None:
+    names = [tool.name for tool in _TOOL_DEFINITIONS]
+    if len(names) != 14 or len(set(names)) != len(names) or set(names) != set(_TOOL_ROUTES):
+        raise RuntimeError("MCP tool route declaration is incomplete")
+    for name, route in _TOOL_ROUTES.items():
+        arity = (
+            7
+            if route.backend is ToolBackendRoute.V2_CAPABILITIES
+            else 2
+            if name == "list_notebooks"
+            else 5
+            if route.backend is ToolBackendRoute.SHARED_V2_DELIVERY
+            else 4
+        )
+        if (
+            not inspect.iscoroutinefunction(route.handler)
+            or len(inspect.signature(route.handler).parameters) != arity
+        ):
+            raise RuntimeError("MCP tool route handler is not executable")
+
+
+def get_mcp_route_contracts() -> dict[str, ToolRouteContract]:
+    """Return a checked read-only snapshot for contract and transport tests."""
+    _validate_tool_routes()
+    return dict(_TOOL_ROUTES)
+
 
 _SERVER_OWNED_FIELDS = frozenset(
     {
@@ -554,7 +600,7 @@ async def _authorize_mcp_call(
     principal: ServerPrincipalV1,
 ) -> None:
     """Authorize the declared resource scope before a production tool executes."""
-    scope = _TOOL_SCOPES[name]
+    scope = _TOOL_ROUTES[name].auth_scope
     authority = CentralAuthorizationServiceV1(engine)
     if scope in {"notebook", "optional_notebook"}:
         raw = args.get("notebook_id")
@@ -751,39 +797,14 @@ async def execute_mcp_tool(
     args = arguments or {}
     config = server_config or ServerConfig()
     server_principal = _principal_for_call(principal, config)
+    route = _TOOL_ROUTES.get(name)
+    if route is None:
+        raise ValueError(f"Unknown MCP tool: {name!r}")
     if config.full_multilingual_v2_enabled:
-        if name not in _TOOL_SCOPES:
-            raise ValueError("Unknown MCP tool")
         _reject_client_policy_overrides(name, args)
         await _authorize_mcp_call(engine, name, args, server_principal)
-
-    if name == "query_notebook":
-        return await _handle_query_notebook(engine, args, config, server_principal)
-    elif name == "search_all_notebooks":
-        return await _handle_search_all_notebooks(engine, args, config, server_principal)
-    elif name == "search_evidence":
-        return await _handle_search_evidence(
-            engine,
-            args,
-            config,
-            server_principal,
-        )
-    elif name == "query_structured":
-        return await _handle_query_structured(
-            engine,
-            args,
-            config,
-            server_principal,
-        )
-    elif name == "run_final_qa_v2":
-        return await _handle_final_qa_v2(
-            engine,
-            args,
-            config,
-            server_principal,
-        )
-    elif name == "get_capabilities":
-        return await _handle_get_capabilities(
+    if route.backend is ToolBackendRoute.V2_CAPABILITIES:
+        return await route.handler(
             engine,
             args,
             config,
@@ -792,24 +813,17 @@ async def execute_mcp_tool(
             certified_binding,
             transport,
         )
-    elif name == "list_notebooks":
-        return await _handle_list_notebooks(engine, args)
-    elif name == "get_notebook_summary":
-        return await _handle_get_notebook_summary(engine, args)
-    elif name == "get_source_insights":
-        return await _handle_get_source_insights(engine, args)
-    elif name == "get_timeline":
-        return await _handle_get_timeline(engine, args)
-    elif name in {"get_document", "get_document_chunk", "get_asset", "get_image_analysis"}:
-        return await _execute_delivery_tool(
+    if name == "list_notebooks":
+        return await route.handler(engine, args)
+    if route.backend is ToolBackendRoute.SHARED_V2_DELIVERY:
+        return await route.handler(
             engine,
             name,
             args,
             config,
             server_principal,
         )
-    else:
-        raise ValueError(f"Unknown MCP tool: '{name}'")
+    return await route.handler(engine, args, config, server_principal)
 
 
 def _principal_for_call(
@@ -910,8 +924,8 @@ async def _execute_delivery_tool(
                 principal, notebook_id, AuthorizationOperationV1.DELIVER
             )
         if name == "get_asset":
-            return await _handle_get_asset(engine, args, config)
-        return await _handle_get_image_analysis(engine, args, config)
+            return await _handle_get_asset(engine, args, config, principal)
+        return await _handle_get_image_analysis(engine, args, config, principal)
     except (DeliveryAuthorizationError, NotFoundError) as error:
         if config.full_multilingual_v2_enabled:
             raise NotFoundError("authorized resource was not found") from None
@@ -946,6 +960,39 @@ def _optional_positive_int(args: dict[str, Any], name: str) -> int | None:
 def _optional_uuid(args: dict[str, Any], name: str) -> UUID | None:
     value = args.get(name)
     return None if value is None else _parse_uuid(value, name)
+
+
+async def _delivery_payload(
+    engine: KnowledgeEngine,
+    result: Any,
+    config: ServerConfig,
+    principal: ServerPrincipalV1,
+) -> dict[str, Any]:
+    if config.full_multilingual_v2_enabled and type(engine) is KnowledgeEngine:
+        body = await authorized_delivery_response_body(
+            result, engine, principal, max_response_bytes=config.max_delivery_response_bytes
+        )
+    else:
+        body = delivery_response_body(result)
+    return body.model_dump(mode="json")
+
+
+async def _binary_source_metadata(
+    engine: KnowledgeEngine, result: Any, config: ServerConfig, principal: ServerPrincipalV1
+) -> dict[str, Any] | None:
+    if not config.full_multilingual_v2_enabled or type(engine) is not KnowledgeEngine:
+        return None
+    attribution = result.attribution
+    envelope = await AuthorizedSourceMetadataResolverV1(engine).resolve(
+        principal,
+        SourceMetadataReferenceV1(
+            notebook_id=attribution.notebook_id,
+            source_id=attribution.source_id,
+            document_id=attribution.document_id,
+            version_id=attribution.version_id,
+        ),
+    )
+    return envelope.model_dump(mode="json")
 
 
 async def _handle_get_document(
@@ -994,6 +1041,7 @@ async def _handle_get_document(
     service = _delivery_service(engine, config)
     if mode == "original":
         result = await service.get_original_document(request)
+        source_metadata = await _binary_source_metadata(engine, result, config, principal)
         return [
             types.EmbeddedResource(
                 type="resource",
@@ -1006,6 +1054,7 @@ async def _handle_get_document(
                         "contentHash": result.content_hash,
                         "nextCursor": result.next_cursor,
                         "totalBytes": result.total_byte_size,
+                        "sourceMetadata": source_metadata,
                     },
                 ),
             )
@@ -1037,7 +1086,7 @@ async def _handle_get_document(
         if selector_body is not None
         else await service.expand_document(request)
     )
-    data = delivery_response_body(result).model_dump(mode="json")
+    data = await _delivery_payload(engine, result, config, principal)
     data.update(
         _contract_fields(
             "get_document",
@@ -1113,7 +1162,7 @@ async def _handle_get_document_chunk(
         version_id=version_id,
         chunk_id=chunk_id,
     )
-    data = delivery_response_body(result).model_dump(mode="json")
+    data = await _delivery_payload(engine, result, config, principal)
     data.update(
         _contract_fields(
             "get_document_chunk",
@@ -1149,7 +1198,10 @@ def _is_safe_complete_image_content(media_type: str, content: bytes) -> bool:
 
 
 async def _handle_get_asset(
-    engine: KnowledgeEngine, args: dict[str, Any], config: ServerConfig
+    engine: KnowledgeEngine,
+    args: dict[str, Any],
+    config: ServerConfig,
+    principal: ServerPrincipalV1,
 ) -> list[MCPContent]:
     notebook_id = _parse_uuid(args.get("notebook_id"), "notebook_id")
     occurrence_id = _optional_uuid(args, "occurrence_id")
@@ -1164,6 +1216,7 @@ async def _handle_get_asset(
             cursor=cursor,
             max_bytes=_optional_positive_int(args, "max_bytes"),
         )
+        source_metadata = await _binary_source_metadata(engine, result, config, principal)
         encoded = base64.b64encode(result.content).decode("ascii")
         resource_metadata = {
             "completeness": result.completeness.value,
@@ -1178,6 +1231,7 @@ async def _handle_get_asset(
             "versionId": str(result.attribution.version_id),
             "assetId": str(result.attribution.asset_id),
             "occurrenceId": str(result.attribution.occurrence_id),
+            "sourceMetadata": source_metadata,
         }
         if (
             _is_safe_complete_image_content(result.media_type, result.content)
@@ -1215,7 +1269,7 @@ async def _handle_get_asset(
         cursor=cursor,
         limit=_optional_positive_int(args, "limit"),
     )
-    data = delivery_response_body(result).model_dump(mode="json")
+    data = await _delivery_payload(engine, result, config, principal)
     data.update(
         _contract_fields(
             "get_asset",
@@ -1253,7 +1307,10 @@ async def _handle_get_asset(
 
 
 async def _handle_get_image_analysis(
-    engine: KnowledgeEngine, args: dict[str, Any], config: ServerConfig
+    engine: KnowledgeEngine,
+    args: dict[str, Any],
+    config: ServerConfig,
+    principal: ServerPrincipalV1,
 ) -> list[MCPContent]:
     notebook_id = _parse_uuid(args.get("notebook_id"), "notebook_id")
     occurrence_id = _parse_uuid(args.get("occurrence_id"), "occurrence_id")
@@ -1283,7 +1340,7 @@ async def _handle_get_image_analysis(
         result = await _delivery_service(engine, config).get_image_analysis_v2(
             notebook_id=notebook_id, occurrence_id=occurrence_id, selector=selector
         )
-    data = delivery_response_body(result).model_dump(mode="json")
+    data = await _delivery_payload(engine, result, config, principal)
     data.update(
         _contract_fields(
             "get_image_analysis",
@@ -1354,6 +1411,7 @@ async def _handle_query_notebook(
                 "heading_path": c.heading_path,
                 "quote": c.quote,
                 "confidence": c.confidence,
+                "source_metadata": c.source_metadata,
             }
             for c in resp.citations
         ],
@@ -1436,6 +1494,7 @@ async def _handle_search_all_notebooks(
                 "page_start": r.page_start,
                 "page_end": r.page_end,
                 "metadata": r.metadata,
+                "source_metadata": getattr(r, "source_metadata", None),
             }
             for r in resp.results
         ],
@@ -1478,7 +1537,7 @@ async def _handle_list_notebooks(
     limit = args.get("limit", 50)
     cursor = args.get("cursor")
 
-    if not isinstance(limit, int) or limit < 1 or limit > 100:
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1 or limit > 100:
         raise ContractValidationError("Parameter 'limit' must be an integer between 1 and 100")
 
     cursor_str = str(cursor) if cursor is not None else None
@@ -1534,6 +1593,8 @@ async def _handle_list_notebooks(
 async def _handle_get_notebook_summary(
     engine: KnowledgeEngine,
     args: dict[str, Any],
+    config: ServerConfig,
+    principal: ServerPrincipalV1,
 ) -> list[MCPContent]:
     """Handle get_notebook_summary tool invocation."""
     notebook_id_raw = args.get("notebook_id")
@@ -1558,25 +1619,47 @@ async def _handle_get_notebook_summary(
     ]
 
     sources = []
-    for s in sources_page.items:
-        doc_title = str(s.document_id)
-        try:
-            doc = await engine.storage.get_document(s.document_id)
-            if doc is not None:
-                for v in doc.versions:
-                    if v.version_id == doc.current_version_id and v.metadata.title:
-                        doc_title = v.metadata.title
-                        break
-        except Exception:
-            pass
-        sources.append(
-            {
-                "source_id": str(s.source_id),
-                "document_id": str(s.document_id),
-                "title": doc_title,
-                "created_at": s.created_at.isoformat(),
-            }
+    if config.full_multilingual_v2_enabled and type(engine) is KnowledgeEngine:
+        references = tuple(
+            SourceMetadataReferenceV1(
+                notebook_id=notebook_id, source_id=s.source_id, document_id=s.document_id
+            )
+            for s in sources_page.items
         )
+        metadata = await AuthorizedSourceMetadataResolverV1(engine).resolve_many(
+            principal, references
+        )
+        for source, reference in zip(sources_page.items, references, strict=True):
+            envelope = metadata[reference]
+            sources.append(
+                {
+                    "source_id": str(source.source_id),
+                    "document_id": str(source.document_id),
+                    "title": envelope.document_title,
+                    "source_metadata": envelope.model_dump(mode="json"),
+                    "created_at": source.created_at.isoformat(),
+                }
+            )
+    else:
+        for source in sources_page.items:
+            doc_title = str(source.document_id)
+            try:
+                doc = await engine.storage.get_document(source.document_id)
+                if doc is not None:
+                    for version in doc.versions:
+                        if version.version_id == doc.current_version_id and version.metadata.title:
+                            doc_title = version.metadata.title
+                            break
+            except Exception:
+                pass
+            sources.append(
+                {
+                    "source_id": str(source.source_id),
+                    "document_id": str(source.document_id),
+                    "title": doc_title,
+                    "created_at": source.created_at.isoformat(),
+                }
+            )
 
     combined_summary = "\n\n".join(str(s["content"]) for s in summaries) if summaries else None
     status_str = "ready" if summaries else "empty"
@@ -1609,6 +1692,8 @@ async def _handle_get_notebook_summary(
 async def _handle_get_source_insights(
     engine: KnowledgeEngine,
     args: dict[str, Any],
+    config: ServerConfig,
+    principal: ServerPrincipalV1,
 ) -> list[MCPContent]:
     """Handle get_source_insights tool invocation."""
     source_id_raw = args.get("source_id")
@@ -1617,7 +1702,7 @@ async def _handle_get_source_insights(
 
     source_id = _parse_uuid(source_id_raw, "source_id")
 
-    if not isinstance(limit, int) or limit < 1 or limit > 100:
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1 or limit > 100:
         raise ContractValidationError("Parameter 'limit' must be an integer between 1 and 100")
 
     target_type: InsightType | None = None
@@ -1637,6 +1722,19 @@ async def _handle_get_source_insights(
     if source is None:
         raise NotFoundError("authorized resource was not found")
 
+    source_metadata = None
+    if config.full_multilingual_v2_enabled and type(engine) is KnowledgeEngine:
+        source_metadata = (
+            await AuthorizedSourceMetadataResolverV1(engine).resolve(
+                principal,
+                SourceMetadataReferenceV1(
+                    notebook_id=source.notebook_id,
+                    source_id=source.source_id,
+                    document_id=source.document_id,
+                ),
+            )
+        ).model_dump(mode="json")
+
     insights_page = await engine.storage.list_insights(source.notebook_id, limit=1000, cursor=None)
 
     matching_insights = [
@@ -1648,6 +1746,7 @@ async def _handle_get_source_insights(
     data = {
         "source_id": str(source_id),
         "notebook_id": str(source.notebook_id),
+        "source_metadata": source_metadata,
         "insights": [
             {
                 "insight_id": str(ins.insight_id),
@@ -1677,6 +1776,8 @@ async def _handle_get_source_insights(
 async def _handle_get_timeline(
     engine: KnowledgeEngine,
     args: dict[str, Any],
+    config: ServerConfig,
+    principal: ServerPrincipalV1,
 ) -> list[MCPContent]:
     """Handle get_timeline tool invocation."""
     notebook_id_raw = args.get("notebook_id")
@@ -1685,7 +1786,7 @@ async def _handle_get_timeline(
     notebook_id = _parse_uuid(notebook_id_raw, "notebook_id")
     source_id = _optional_uuid(args, "source_id")
 
-    if not isinstance(limit, int) or limit < 1 or limit > 100:
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1 or limit > 100:
         raise ContractValidationError("Parameter 'limit' must be an integer between 1 and 100")
 
     existing = await engine.storage.get_notebook(notebook_id)
@@ -1745,6 +1846,21 @@ async def _handle_get_timeline(
     # Sort descending by timestamp (most recent first)
     events.sort(key=lambda e: e["timestamp"], reverse=True)
     sliced_events = events[:limit]
+    if config.full_multilingual_v2_enabled and type(engine) is KnowledgeEngine:
+        source_events = [event for event in sliced_events if event["event_type"] == "source_added"]
+        references = tuple(
+            SourceMetadataReferenceV1(
+                notebook_id=notebook_id,
+                source_id=UUID(event["event_id"]),
+                document_id=UUID(event["details"]["document_id"]),
+            )
+            for event in source_events
+        )
+        metadata = await AuthorizedSourceMetadataResolverV1(engine).resolve_many(
+            principal, references
+        )
+        for event, reference in zip(source_events, references, strict=True):
+            event["source_metadata"] = metadata[reference].model_dump(mode="json")
 
     data = {
         "notebook_id": str(notebook_id),
@@ -1760,3 +1876,51 @@ async def _handle_get_timeline(
     }
 
     return [types.TextContent(type="text", text=json.dumps(data, indent=2))]
+
+
+# One authoritative route per registered tool. Dispatch executes these exact
+# handler references, and get_mcp_tools validates this same declaration.
+_TOOL_ROUTES = {
+    "list_notebooks": ToolRouteContract(
+        ToolBackendRoute.RETAINED_V1, "collection", _handle_list_notebooks
+    ),
+    "get_notebook_summary": ToolRouteContract(
+        ToolBackendRoute.RETAINED_STORAGE, "notebook", _handle_get_notebook_summary
+    ),
+    "get_timeline": ToolRouteContract(
+        ToolBackendRoute.RETAINED_STORAGE, "notebook", _handle_get_timeline
+    ),
+    "get_source_insights": ToolRouteContract(
+        ToolBackendRoute.RETAINED_STORAGE, "source", _handle_get_source_insights
+    ),
+    "search_all_notebooks": ToolRouteContract(
+        ToolBackendRoute.RETAINED_V1, "optional_notebook", _handle_search_all_notebooks
+    ),
+    "query_notebook": ToolRouteContract(
+        ToolBackendRoute.RETAINED_V1, "notebook", _handle_query_notebook
+    ),
+    "search_evidence": ToolRouteContract(
+        ToolBackendRoute.V2_REPRESENTATIONS, "service", _handle_search_evidence
+    ),
+    "get_capabilities": ToolRouteContract(
+        ToolBackendRoute.V2_CAPABILITIES, "capability", _handle_get_capabilities
+    ),
+    "query_structured": ToolRouteContract(
+        ToolBackendRoute.V2_STRUCTURED, "service", _handle_query_structured
+    ),
+    "get_document": ToolRouteContract(
+        ToolBackendRoute.SHARED_V2_DELIVERY, "document", _execute_delivery_tool
+    ),
+    "get_document_chunk": ToolRouteContract(
+        ToolBackendRoute.SHARED_V2_DELIVERY, "document", _execute_delivery_tool
+    ),
+    "get_asset": ToolRouteContract(
+        ToolBackendRoute.SHARED_V2_DELIVERY, "notebook", _execute_delivery_tool
+    ),
+    "get_image_analysis": ToolRouteContract(
+        ToolBackendRoute.SHARED_V2_DELIVERY, "notebook", _execute_delivery_tool
+    ),
+    "run_final_qa_v2": ToolRouteContract(
+        ToolBackendRoute.CERTIFIED_V2_FINAL_QA, "service", _handle_final_qa_v2
+    ),
+}

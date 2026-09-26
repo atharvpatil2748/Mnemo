@@ -67,17 +67,17 @@ class SystemService:
                         component=f"storage.{status.component}",
                         healthy=status.healthy,
                         checked_at=status.checked_at,
-                        detail=status.detail,
+                        detail=None if status.healthy else "Component unavailable",
                     )
                 )
         except Exception as err:
-            _LOGGER.warning("Storage health check failed: %s", err)
+            _LOGGER.warning("Storage health check failed: type=%s", type(err).__name__)
             components.append(
                 ComponentHealthResponse(
                     component="storage",
                     healthy=False,
                     checked_at=checked_at,
-                    detail=str(err),
+                    detail="Component unavailable",
                 )
             )
 
@@ -89,17 +89,17 @@ class SystemService:
                     component=f"embedding.{emb_status.component}",
                     healthy=emb_status.healthy,
                     checked_at=emb_status.checked_at,
-                    detail=emb_status.detail,
+                    detail=None if emb_status.healthy else "Component unavailable",
                 )
             )
         except Exception as err:
-            _LOGGER.warning("Embedding health check failed: %s", err)
+            _LOGGER.warning("Embedding health check failed: type=%s", type(err).__name__)
             components.append(
                 ComponentHealthResponse(
                     component="embedding",
                     healthy=False,
                     checked_at=checked_at,
-                    detail=str(err),
+                    detail="Component unavailable",
                 )
             )
 
@@ -113,17 +113,19 @@ class SystemService:
                         component=f"llm.{role}",
                         healthy=llm_status.healthy,
                         checked_at=llm_status.checked_at,
-                        detail=llm_status.detail,
+                        detail=None if llm_status.healthy else "Component unavailable",
                     )
                 )
             except Exception as err:
-                _LOGGER.warning("LLM health check for role '%s' failed: %s", role, err)
+                _LOGGER.warning(
+                    "LLM health check for role '%s' failed: type=%s", role, type(err).__name__
+                )
                 components.append(
                     ComponentHealthResponse(
                         component=f"llm.{role}",
                         healthy=False,
                         checked_at=checked_at,
-                        detail=str(err),
+                        detail="Component unavailable",
                     )
                 )
 
@@ -136,16 +138,16 @@ class SystemService:
                         component="token_counter",
                         healthy=healthy_tc,
                         checked_at=checked_at,
-                        detail=self._token_counter.tokenizer_id,
+                        detail=None,
                     )
                 )
-            except Exception as err:
+            except Exception:
                 components.append(
                     ComponentHealthResponse(
                         component="token_counter",
                         healthy=False,
                         checked_at=checked_at,
-                        detail=str(err),
+                        detail="Component unavailable",
                     )
                 )
 

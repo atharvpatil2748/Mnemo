@@ -145,6 +145,8 @@ async def test_auth_mode_api_key_enforcement() -> None:
         assert resp_no_key.status_code == 401
         data = resp_no_key.json()
         assert data["error"]["code"] == "auth.unauthorized"
+        assert data["error"]["category"] == "unauthorized"
+        assert resp_no_key.headers["X-Mnemo-Correlation-ID"] == data["error"]["correlation_id"]
 
         # 3. Invalid key returns 401
         resp_bad_key = await client.get(
@@ -152,6 +154,8 @@ async def test_auth_mode_api_key_enforcement() -> None:
             headers={"Authorization": "Bearer wrong-key"},
         )
         assert resp_bad_key.status_code == 401
+        assert resp_bad_key.json()["error"]["correlation_id"] != data["error"]["correlation_id"]
+        assert "wrong-key" not in resp_bad_key.text
 
         # 4. Valid key in Authorization Bearer returns 200
         resp_valid_bearer = await client.get(

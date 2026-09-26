@@ -247,8 +247,10 @@ async def test_mcp_malformed_or_unsupported_image_mime_is_not_image_content() ->
 
 
 @pytest.mark.anyio
-async def test_mcp_latest_ready_analysis_does_not_require_hidden_ids() -> None:
+@pytest.mark.parametrize("selection", ["latest_ready", "all", "explicit"])
+async def test_mcp_analysis_selection_preserves_requested_mode(selection: str) -> None:
     notebook_id, _, _, occurrence_id, response, _ = _values()
+    derivation_id = uuid4()
     service = MagicMock()
     service.get_image_analysis_v2 = AsyncMock(return_value=response)
     with patch("mnemo_server.mcp.tools._delivery_service", return_value=service):
@@ -258,14 +260,15 @@ async def test_mcp_latest_ready_analysis_does_not_require_hidden_ids() -> None:
             {
                 "notebook_id": str(notebook_id),
                 "occurrence_id": str(occurrence_id),
-                "selection": "latest_ready",
+                "selection": selection,
                 "modalities": ["ocr", "vision"],
+                **({"ocr_derivation_id": str(derivation_id)} if selection == "explicit" else {}),
             },
         )
     assert isinstance(content[0], types.TextContent)
     selector = service.get_image_analysis_v2.await_args.kwargs["selector"]
-    assert selector.selection.value == "latest_ready"
-    assert selector.derivation_ids == ()
+    assert selector.selection.value == selection
+    assert selector.derivation_ids == ((derivation_id,) if selection == "explicit" else ())
 
 
 @pytest.mark.anyio

@@ -75,6 +75,7 @@ class SearchResultItem(BaseModel):
     page_start: int | None = None
     page_end: int | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+    source_metadata: dict[str, Any] | None = None
 
 
 class SearchResponse(BaseModel):

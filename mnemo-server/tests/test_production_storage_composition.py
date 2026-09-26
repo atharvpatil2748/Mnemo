@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock
 
+import pytest
 from mnemo import MnemoConfig
+from mnemo.engine import KnowledgeEngine
 from mnemo_server.config import ServerConfig
 from mnemo_server.services.mutable_workspace import StorageRole, WorkspaceMode
 from mnemo_server.services.production_storage_composition import (
@@ -75,6 +78,39 @@ def test_missing_workspace_composes_certified_read_only_without_writes(tmp_path:
     assert composition.engine_config is config
     assert composition.embedding_cache_path is None
     assert not (application / "governed").exists()
+
+
+def test_injected_runtime_must_match_store_and_model_profile(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    composition = preflight_production_storage(
+        application_root=tmp_path / "application",
+        mnemo_config=config,
+        server_config=ServerConfig(),
+    )
+    engine = MagicMock(spec=KnowledgeEngine)
+    engine.certified_read_only = True
+    engine.config = config
+    composition.validate_injected_engine(engine)
+
+    engine.config = config.model_copy(
+        update={
+            "storage": config.storage.model_copy(
+                update={
+                    "sqlite": config.storage.sqlite.model_copy(
+                        update={"path": tmp_path / "historical-v1.db"}
+                    )
+                }
+            )
+        }
+    )
+    with pytest.raises(RuntimeError, match="INJECTED_PRODUCTION_RUNTIME_MISMATCH"):
+        composition.validate_injected_engine(engine)
+    engine.config = config.model_copy(
+        update={"embedding": config.embedding.model_copy(update={"model": "historical-v1"})}
+    )
+    with pytest.raises(RuntimeError, match="INJECTED_PRODUCTION_RUNTIME_MISMATCH"):
+        composition.validate_injected_engine(engine)
+    assert not (tmp_path / "historical-v1.db").exists()
 
 
 def test_valid_workspace_gets_disjoint_database_blobs_and_cache(tmp_path: Path) -> None:

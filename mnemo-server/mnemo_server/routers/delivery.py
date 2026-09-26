@@ -15,6 +15,7 @@ from mnemo.models import (
     AssetAnalysisSelector,
     BinaryDelivery,
     DeliveryRequest,
+    DeliveryResponse,
     DeliveryView,
 )
 
@@ -29,11 +30,28 @@ from mnemo_server.services.authorization import (
     CentralAuthorizationServiceV1,
     principal_from_claims,
 )
-from mnemo_server.services.delivery import build_delivery_service, delivery_response_body
+from mnemo_server.services.delivery import (
+    authorized_delivery_response_body,
+    build_delivery_service,
+    delivery_response_body,
+)
 
 router = APIRouter(tags=["delivery-v2"])
 EngineDep = Annotated[KnowledgeEngine, Depends(get_engine)]
 ConfigDep = Annotated[ServerConfig, Depends(get_server_config)]
+
+
+async def _response_body(
+    request: Request, engine: KnowledgeEngine, config: ServerConfig, result: DeliveryResponse
+) -> DeliveryResponseBody:
+    if config.full_multilingual_v2_enabled and type(engine) is KnowledgeEngine:
+        return await authorized_delivery_response_body(
+            result,
+            engine,
+            principal_from_claims(getattr(request.state, "auth", None)),
+            max_response_bytes=config.max_delivery_response_bytes,
+        )
+    return delivery_response_body(result)
 
 
 @router.get(
@@ -63,7 +81,7 @@ async def get_document_delivery(
             max_items=max_items,
         )
     )
-    return delivery_response_body(result)
+    return await _response_body(request, engine, config, result)
 
 
 @router.post(
@@ -84,7 +102,7 @@ async def expand_document_delivery_v2(
     result = await build_delivery_service(engine, config).expand_document_v2(
         body.to_core(notebook_id=notebook_id, document_id=document_id, version_id=version_id)
     )
-    return delivery_response_body(result)
+    return await _response_body(request, engine, config, result)
 
 
 @router.get("/notebooks/{notebook_id}/documents/{document_id}/versions/{version_id}/original")
@@ -139,7 +157,7 @@ async def get_document_chunk_delivery(
         version_id=version_id,
         chunk_id=chunk_id,
     )
-    return delivery_response_body(result)
+    return await _response_body(request, engine, config, result)
 
 
 @router.get(
@@ -164,7 +182,7 @@ async def list_document_assets_delivery(
         cursor=cursor,
         limit=limit,
     )
-    return delivery_response_body(result)
+    return await _response_body(request, engine, config, result)
 
 
 @router.get("/notebooks/{notebook_id}/asset-occurrences/{occurrence_id}/content")
@@ -236,7 +254,7 @@ async def get_asset_analysis_delivery(
         result = await service.get_image_analysis_v2(
             notebook_id=notebook_id, occurrence_id=occurrence_id, selector=selector
         )
-    return delivery_response_body(result)
+    return await _response_body(request, engine, config, result)
 
 
 @router.get(
@@ -257,7 +275,7 @@ async def get_final_qa_v2_evidence_delivery(
         assistant_turn_id=assistant_turn_id,
         cursor=cursor,
     )
-    return delivery_response_body(result)
+    return await _response_body(request, engine, config, result)
 
 
 async def _authorize_notebook(request: Request, engine: KnowledgeEngine, notebook_id: UUID) -> None:

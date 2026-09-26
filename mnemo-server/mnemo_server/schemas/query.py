@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -93,6 +94,7 @@ class CitationResponse(BaseModel):
     heading_path: list[str] = Field(default_factory=list)
     quote: str | None = None
     confidence: float | None = None
+    source_metadata: dict[str, Any] | None = None
 
 
 class RetrievalMetadataResponse(BaseModel):

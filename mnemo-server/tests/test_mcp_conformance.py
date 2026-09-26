@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -119,7 +120,10 @@ async def test_mcp_invalid_tool_invocation_error_format() -> None:
             assert len(res.content) > 0
             first_content = res.content[0]
             assert isinstance(first_content, types.TextContent)
-            assert "Unknown MCP tool" in first_content.text
+            error = json.loads(first_content.text)["error"]
+            assert error["category"] == "invalid_input"
+            assert error["message"] == "Request is invalid"
+            assert "unknown_tool" not in first_content.text
 
             # 2. Invalid parameter type
             res2 = await session.call_tool(
@@ -128,7 +132,10 @@ async def test_mcp_invalid_tool_invocation_error_format() -> None:
             assert getattr(res2, "is_error", getattr(res2, "isError", False)) is True
             second_content = res2.content[0]
             assert isinstance(second_content, types.TextContent)
-            assert "invalid UUID" in second_content.text
+            second_error = json.loads(second_content.text)["error"]
+            assert second_error["category"] == "invalid_input"
+            assert second_error["origin_code"] == "contract.validation"
+            assert "not-valid-uuid" not in second_content.text
 
             tg.cancel_scope.cancel()
 
@@ -159,3 +166,14 @@ async def test_mcp_real_stdio_subprocess_handshake(tmp_path: Path) -> None:
         tool_names = {t.name for t in tools_res.tools}
         assert "list_notebooks" in tool_names
         assert "query_notebook" in tool_names
+        empty_inventory = await session.call_tool("list_notebooks", {"limit": 1})
+        assert not empty_inventory.isError
+        inventory = json.loads(empty_inventory.content[0].text)
+        assert inventory["notebooks"] == []
+        assert inventory["completeness"] == "complete"
+        denied = await session.call_tool("unknown_fixture_tool", {})
+        assert denied.isError
+        error = json.loads(denied.content[0].text)["error"]
+        assert error["category"] == "invalid_input"
+        assert error["message"] == "Request is invalid"
+        assert "unknown_fixture_tool" not in denied.content[0].text

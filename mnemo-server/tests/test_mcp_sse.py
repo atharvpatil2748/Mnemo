@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import anyio
 import pytest
+import uvicorn
 from httpx import ASGITransport, AsyncClient
+from mcp.client.session import ClientSession
+from mcp.client.sse import sse_client
 from mnemo import EngineState, KnowledgeEngine, MnemoConfig, __version__
+from mnemo.interfaces import Page
 from mnemo_server.config import ServerConfig
 from mnemo_server.mcp.server import create_sse_app, run_sse_server
 
@@ -83,6 +89,51 @@ async def test_mcp_sse_auth_protection(mock_engine: MagicMock) -> None:
         assert authed_resp.status_code in (400, 404, 202)
 
 
+@pytest.mark.anyio
+async def test_local_sse_tool_error_uses_typed_sanitized_result(
+    mock_engine: MagicMock, tmp_path: Path
+) -> None:
+    """Exercise the actual SSE wire transport on a disposable loopback port."""
+    config = ServerConfig(
+        auth_mode="api-key", api_key="fixture-only-token", delivery_cursor_secret="c" * 32
+    )
+    mock_engine.storage.list_notebooks = AsyncMock(return_value=Page(items=(), next_cursor=None))
+    app = create_sse_app(
+        config=config, engine=mock_engine, mnemo_config=_synthetic_config(tmp_path)
+    )
+    server = uvicorn.Server(
+        uvicorn.Config(app, host="127.0.0.1", port=0, lifespan="on", log_level="error")
+    )
+    async with anyio.create_task_group() as tasks:
+        tasks.start_soon(server.serve)
+        try:
+            with anyio.fail_after(20):
+                while not server.started:
+                    await anyio.sleep(0.05)
+                assert server.servers
+                port = server.servers[0].sockets[0].getsockname()[1]
+                async with (
+                    sse_client(
+                        f"http://127.0.0.1:{port}/sse",
+                        headers={"Authorization": "Bearer fixture-only-token"},
+                    ) as (read_stream, write_stream),
+                    ClientSession(read_stream, write_stream) as client,
+                ):
+                    await client.initialize()
+                    inventory = await client.call_tool("list_notebooks", {"limit": 1})
+                    assert not inventory.isError
+                    assert json.loads(inventory.content[0].text)["notebooks"] == []
+                    result = await client.call_tool("unknown_fixture_tool", {})
+                    assert result.isError
+                    error = json.loads(result.content[0].text)["error"]
+                    assert error["category"] == "invalid_input"
+                    assert error["message"] == "Request is invalid"
+                    assert "unknown_fixture_tool" not in result.content[0].text
+                    assert "fixture-only-token" not in result.content[0].text
+        finally:
+            server.should_exit = True
+
+
 def test_mcp_sse_lifespan_lifecycle(tmp_path: Path) -> None:
     """Lifespan manages initialization when engine is provided uninitialized."""
     from starlette.testclient import TestClient
@@ -142,6 +193,42 @@ def test_mcp_sse_lifespan_publishes_and_closes_v2_runtime(
         assert client.get("/health").json()["engine_state"] == "ready"
         assert app.state.full_multilingual_v2_runtime is installed
     installed.close.assert_awaited_once()
+
+
+def test_certified_sse_rejects_injected_historical_model_before_exposure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from starlette.testclient import TestClient
+
+    certified = _synthetic_config(tmp_path)
+    historical = certified.model_copy(
+        update={"embedding": certified.embedding.model_copy(update={"model": "historical-v1"})}
+    )
+    engine = MagicMock(spec=KnowledgeEngine)
+    engine.config = historical
+    engine.certified_read_only = True
+    engine.state = EngineState.READY
+    monkeypatch.setattr(
+        "mnemo_server.services.production_runtime_binding.resolve_certified_production_binding",
+        lambda **_kwargs: (certified, SimpleNamespace(binding_id="synthetic-binding")),
+    )
+    config = ServerConfig(
+        production_mode=True,
+        full_multilingual_v2_enabled=True,
+        full_multilingual_v2_model_cache=tmp_path / "models",
+        final_qa_operational_store_path=tmp_path / "operational.db",
+        mcp_stdio_principal_subject="stdio",
+        auth_mode="api-key",
+        api_key="synthetic-key",
+        delivery_cursor_secret="x" * 32,
+    )
+    app = create_sse_app(config=config, engine=engine, mnemo_config=certified)
+    with (
+        pytest.raises(RuntimeError, match="INJECTED_PRODUCTION_RUNTIME_MISMATCH"),
+        TestClient(app),
+    ):
+        pass
+    assert not (tmp_path / "operational.db").exists()
 
 
 def test_mcp_sse_lifespan_creates_engine_from_config(tmp_path: Path) -> None:

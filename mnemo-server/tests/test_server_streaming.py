@@ -20,6 +20,7 @@ from mnemo.interfaces import (
     EmbeddingProviderV1,
     LLMCapabilities,
     LLMInterfaceV1,
+    NotFoundError,
     StorageCapabilities,
     StorageInterfaceV1,
     TokenCounterInterfaceV1,
@@ -582,3 +583,25 @@ async def test_sse_unexpected_error_does_not_leak_exception_details() -> None:
     assert '"code":"internal_error"' in body
     assert "An internal streaming error occurred" in body
     assert "secret backend connection string" not in body
+
+
+@pytest.mark.anyio
+async def test_sse_not_found_does_not_reflect_protected_identity() -> None:
+    class MissingService:
+        async def stream_query(self, request: QueryRequest) -> Any:
+            if False:
+                yield request
+            raise NotFoundError("C:/private/notebook-id")
+
+    response = await query_stream_sse(
+        QueryRequest(question="safe public error"),
+        MissingService(),  # type: ignore[arg-type]
+    )
+    chunks = [chunk async for chunk in response.body_iterator]
+    body = b"".join(
+        chunk.encode("utf-8") if isinstance(chunk, str) else chunk for chunk in chunks
+    ).decode("utf-8")
+    assert '"code":"not_found"' in body
+    assert "authorized resource was not found" in body
+    assert "C:/private" not in body
+    assert "correlation_id=" in body

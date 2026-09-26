@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Any
 from uuid import UUID
 
 from mnemo.models.multimodal import MultimodalContextBudgetsV1
@@ -65,6 +66,7 @@ class FinalQAV2CitationResponse(BaseModel):
     kind: str
     authority: str
     document_title: str | None
+    source_metadata: dict[str, Any] | None = None
 
 
 class FinalQAV2Response(BaseModel):

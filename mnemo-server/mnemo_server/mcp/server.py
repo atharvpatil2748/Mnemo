@@ -34,6 +34,7 @@ from mnemo_server.runtime_config import resolve_mnemo_runtime_config
 from mnemo_server.schemas.capabilities_v2 import CapabilityDiscoveryRequest
 from mnemo_server.services.retrieval_v2 import build_retrieval_cursor_codec
 from mnemo_server.tokenizer_provisioning import provision_tokenizer
+from mnemo_server.typed_errors import classify_public_error
 
 from .principal import (
     MCPPrincipalProviderV1,
@@ -164,6 +165,8 @@ def create_mcp_server(
     transport infrastructure. Module 8.2 delivers the six authoritative knowledge
     retrieval tools.
     """
+    # Fail before transport exposure if any registered tool lacks a route/handler.
+    get_mcp_tools()
     server: MnemoServer = MnemoServer(name="mnemo-mcp", version=__version__)
     server._engine = engine
     server._config = config or ServerConfig()
@@ -181,27 +184,48 @@ def create_mcp_server(
             )
         return get_mcp_tools()
 
-    @server.call_tool()  # type: ignore[untyped-decorator]
+    @server.call_tool(validate_input=False)  # type: ignore[untyped-decorator]
     async def call_tool(
         name: str, arguments: dict[str, Any] | None
-    ) -> tuple[
-        list[types.TextContent | types.ImageContent | types.EmbeddedResource],
-        dict[str, Any],
-    ]:
+    ) -> (
+        types.CallToolResult
+        | tuple[
+            list[types.TextContent | types.ImageContent | types.EmbeddedResource],
+            dict[str, Any],
+        ]
+    ):
         """Execute an authorized Mnemo MCP knowledge tool call."""
-        resolved_arguments = arguments or {}
-        principal = resolved_principal_provider() if resolved_principal_provider else None
-        content = await execute_mcp_tool(
-            server._engine,
-            name,
-            resolved_arguments,
-            server._config,
-            principal,
-            server._workspace_decision,
-            server._certified_binding,
-            server._transport_label,
-        )
-        return content, structured_content_for(name, resolved_arguments, content)
+        correlation_id = uuid4()
+        try:
+            resolved_arguments = arguments or {}
+            principal = resolved_principal_provider() if resolved_principal_provider else None
+            content = await execute_mcp_tool(
+                server._engine,
+                name,
+                resolved_arguments,
+                server._config,
+                principal,
+                server._workspace_decision,
+                server._certified_binding,
+                server._transport_label,
+            )
+            return content, structured_content_for(name, resolved_arguments, content)
+        except Exception as error:
+            typed = classify_public_error(error, correlation_id)
+            logger.warning(
+                "MCP tool failure: correlation=%s type=%s category=%s origin=%s reason=%s",
+                correlation_id,
+                type(error).__name__,
+                typed.category.value,
+                typed.origin_code,
+                typed.reason,
+            )
+            body = {"error": typed.body()}
+            return types.CallToolResult(
+                content=[types.TextContent(type="text", text=json.dumps(body, sort_keys=True))],
+                structuredContent=body,
+                isError=True,
+            )
 
     @server.list_prompts()  # type: ignore[no-untyped-call,untyped-decorator]
     async def list_prompts() -> list[types.Prompt]:
@@ -399,11 +423,7 @@ async def run_stdio_server(
         ).materialize()
         runtime_cfg = storage_composition.engine_config
         if active_engine is not None:
-            if storage_composition.certified_read_only:
-                if not active_engine.certified_read_only:
-                    raise RuntimeError("UNSAFE_INJECTED_PRODUCTION_STORAGE")
-            elif active_engine.config.storage != runtime_cfg.storage:
-                raise RuntimeError("INJECTED_WORKSPACE_STORAGE_MISMATCH")
+            storage_composition.validate_injected_engine(active_engine)
     operational_store = None
     if active_engine is None:
         try:
@@ -447,20 +467,24 @@ async def run_stdio_server(
         except Exception as err:
             if resolved_server_config.production_mode:
                 raise RuntimeError("CERTIFIED_PRODUCTION_STARTUP_FAILED") from err
-            logger.warning("KnowledgeEngine could not be loaded: %s", err)
+            logger.warning("KnowledgeEngine could not be loaded: type=%s", type(err).__name__)
 
     if active_engine is not None and active_engine.state != EngineState.READY:
         if owns_engine:
             try:
                 await asyncio.to_thread(provision_tokenizer)
             except Exception as err:
-                logger.warning("Tokenizer provisioning check skipped or failed: %s", err)
+                logger.warning(
+                    "Tokenizer provisioning check skipped or failed: type=%s", type(err).__name__
+                )
         try:
             await active_engine.initialize()
         except Exception as err:
             if resolved_server_config.production_mode:
                 raise RuntimeError("CERTIFIED_PRODUCTION_STARTUP_FAILED") from err
-            logger.warning("KnowledgeEngine initialization encountered error: %s", err)
+            logger.warning(
+                "KnowledgeEngine initialization encountered error: type=%s", type(err).__name__
+            )
 
     if resolved_server_config.production_mode and (
         active_engine is None or active_engine.state != EngineState.READY
@@ -643,11 +667,7 @@ def create_sse_app(
                 active_server._workspace_decision = storage_composition.decision
             runtime_config = storage_composition.engine_config
             if active_engine is not None:
-                if storage_composition.certified_read_only:
-                    if not active_engine.certified_read_only:
-                        raise RuntimeError("UNSAFE_INJECTED_PRODUCTION_STORAGE")
-                elif active_engine.config.storage != runtime_config.storage:
-                    raise RuntimeError("INJECTED_WORKSPACE_STORAGE_MISMATCH")
+                storage_composition.validate_injected_engine(active_engine)
         if active_engine is None:
             try:
                 final_qa_components = None
@@ -685,7 +705,7 @@ def create_sse_app(
             except Exception as err:
                 if server_config.production_mode:
                     raise RuntimeError("CERTIFIED_PRODUCTION_STARTUP_FAILED") from err
-                logger.warning("KnowledgeEngine could not be loaded: %s", err)
+                logger.warning("KnowledgeEngine could not be loaded: type=%s", type(err).__name__)
             app.state.engine = active_engine
             if isinstance(active_server, MnemoServer):
                 active_server._engine = active_engine
@@ -695,13 +715,18 @@ def create_sse_app(
                 try:
                     await asyncio.to_thread(provision_tokenizer)
                 except Exception as err:
-                    logger.warning("Tokenizer provisioning check skipped or failed: %s", err)
+                    logger.warning(
+                        "Tokenizer provisioning check skipped or failed: type=%s",
+                        type(err).__name__,
+                    )
             try:
                 await active_engine.initialize()
             except Exception as err:
                 if server_config.production_mode:
                     raise RuntimeError("CERTIFIED_PRODUCTION_STARTUP_FAILED") from err
-                logger.warning("KnowledgeEngine initialization encountered error: %s", err)
+                logger.warning(
+                    "KnowledgeEngine initialization encountered error: type=%s", type(err).__name__
+                )
 
         if server_config.production_mode and (
             active_engine is None or active_engine.state != EngineState.READY
