@@ -62,6 +62,9 @@ module and batch verdicts. It is not production or external verification.
 The [documentation and proprietary transition report](operations/mnemo-documentation-and-proprietary-transition.md)
 records current-status reconciliation and the local current-tree rights change,
 without changing GitHub visibility or historical grants.
+The [Stage 6 completed-batch GitHub closure report](operations/mnemo-stage-6-github-closure.md)
+records publication, exact-SHA CI, protected-state checks and the remaining
+Stage 6 and owner-only visibility gates. It does not claim deployment.
 
 Historical claims are not rewritten when current architecture changes. Use the
 current certification and architecture audit above for production truth.
