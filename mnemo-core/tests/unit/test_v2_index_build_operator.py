@@ -186,7 +186,6 @@ def _disposable_operator(tmp_path: Path) -> FullMultilingualV2IndexBuildOperator
     return FullMultilingualV2IndexBuildOperator(workspace_root=tmp_path, proposal_root=proposal)
 
 
-@pytest.mark.local_database
 def test_v2_operator_preflight_is_manifest_bound_and_non_mutating(tmp_path: Path) -> None:
     operator = _disposable_operator(tmp_path)
     preflight = operator.preflight()
@@ -202,7 +201,52 @@ def test_v2_operator_preflight_is_manifest_bound_and_non_mutating(tmp_path: Path
     ]
 
 
-@pytest.mark.local_database
+@pytest.mark.parametrize(
+    ("defect", "message"),
+    [
+        ("orphan-sidecar", "sidecar exists"),
+        ("changed-source-database", "source database digest mismatch"),
+        ("missing-source-file", "corpus file is absent"),
+        ("changed-source-bytes", "Golden Dataset differs"),
+        ("profile-binding", "profile fingerprint binding mismatch"),
+        ("vector-binding", "vector-space bindings disagree"),
+        ("generation-order", "generation order is not canonical"),
+        ("unowned-checkpoint", "no governed build identity"),
+    ],
+)
+def test_disposable_v2_preflight_refuses_stale_or_incompatible_inputs(
+    tmp_path: Path, defect: str, message: str
+) -> None:
+    operator = _disposable_operator(tmp_path)
+    source = tmp_path / "scratch/phase8_5_wp16/eval-20260828-01/mnemo.db"
+    target = tmp_path / "scratch/phase8_5_full_multilingual_v2/build-20260831-01/mnemo.db"
+    corpus_file = tmp_path / "goldenDataset/Phase 8.5 Evaluation Corpus/fixture.txt"
+    if defect == "orphan-sidecar":
+        target.parent.mkdir(parents=True)
+        Path(f"{target}-wal").write_bytes(b"orphan")
+    elif defect == "changed-source-database":
+        with sqlite3.connect(source) as connection:
+            connection.execute("CREATE TABLE unexpected(value TEXT)")
+    elif defect == "missing-source-file":
+        corpus_file.unlink()
+    elif defect == "changed-source-bytes":
+        corpus_file.write_bytes(b"changed")
+    elif defect == "profile-binding":
+        cast(dict[str, Any], operator._artifacts.binding)["profile_fingerprint"] = "different"
+    elif defect == "vector-binding":
+        cast(dict[str, Any], operator._artifacts.binding["embedding"])[
+            "vector_space_profile_identity"
+        ] = "different"
+    elif defect == "generation-order":
+        cast(list[dict[str, Any]], operator._artifacts.build["generation_specifications"]).reverse()
+    else:
+        target.parent.mkdir(parents=True)
+        with sqlite3.connect(target) as connection:
+            connection.execute("CREATE TABLE unrelated(value TEXT)")
+    with pytest.raises((ContractValidationError, IntegrityError), match=message):
+        operator.preflight()
+
+
 def test_v2_operator_loads_all_governed_evidence_kinds_without_mutation(tmp_path: Path) -> None:
     """The identity-bound census resolves canonical, OCR, and Vision evidence."""
     operator = _disposable_operator(tmp_path)
@@ -434,7 +478,6 @@ async def test_v2_execute_runs_governed_stage_order_and_closes_resources(
     ]
 
 
-@pytest.mark.local_database
 @pytest.mark.anyio
 async def test_v2_build_stages_persist_governed_evidence_and_vectors(
     tmp_path: Path,

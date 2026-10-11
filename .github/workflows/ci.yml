@@ -28,6 +28,7 @@ jobs:
       - run: uv run mypy --strict mnemo-core/mnemo mnemo-server/mnemo_server plugins/email-ingestion/email_ingestion
       - run: uv run mnemo provision-tokenizer
       - run: uv run pytest
+      - run: uv run coverage report --fail-under=90
       - run: uv build --package mnemo-core
       - run: uv build --package mnemo-server
       - run: uv build --package mnemo-email-ingestion

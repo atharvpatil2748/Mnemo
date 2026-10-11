@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import sqlite3
 from pathlib import Path
 
@@ -13,6 +14,8 @@ from mnemo_server.runtime_config import resolve_mnemo_runtime_config
 from mnemo_server.services.production_store_readiness import (
     EVALUATION_DATABASE,
     ProductionV2ReadinessEvidenceBuilderV1,
+    _verify_database_census,
+    _verify_source_blobs,
     validate_production_v2_serving_readiness,
 )
 
@@ -24,6 +27,70 @@ MANIFEST = (
 )
 
 EXPECTED_PRODUCTION_DOCUMENT_COUNT = 44
+
+
+def test_disposable_database_census_checks_counts_and_version_ancestry(tmp_path: Path) -> None:
+    database = tmp_path / "fixture.db"
+    documents = [
+        {
+            "document_id": f"document-{index}",
+            "version_id": f"version-{index}",
+            "corpus_file_hash": f"hash-{index}",
+        }
+        for index in range(44)
+    ]
+    with sqlite3.connect(database) as connection:
+        connection.executescript(
+            "CREATE TABLE documents(document_id TEXT PRIMARY KEY);"
+            "CREATE TABLE document_versions(version_id TEXT PRIMARY KEY,"
+            "document_id TEXT REFERENCES documents(document_id),content_hash TEXT);"
+            "CREATE TABLE sources(source_id TEXT PRIMARY KEY);"
+            "CREATE TABLE chunks(chunk_id INTEGER PRIMARY KEY);"
+        )
+        connection.executemany(
+            "INSERT INTO documents VALUES(?)", ((item["document_id"],) for item in documents)
+        )
+        connection.executemany(
+            "INSERT INTO document_versions VALUES(?,?,?)",
+            (
+                (item["version_id"], item["document_id"], item["corpus_file_hash"])
+                for item in documents
+            ),
+        )
+        connection.executemany(
+            "INSERT INTO sources VALUES(?)", ((f"source-{index}",) for index in range(44))
+        )
+        connection.executemany("INSERT INTO chunks VALUES(?)", ((index,) for index in range(2658)))
+    census = {"documents": documents}
+    assert _verify_database_census(database, census) == (44, 44, 44, 2658, 0)
+    with pytest.raises(RuntimeError, match="VERSION_IDENTITY_MISMATCH"):
+        _verify_database_census(database, {"documents": documents[:-1]})
+    with sqlite3.connect(database) as connection:
+        connection.execute("DELETE FROM chunks WHERE chunk_id=0")
+    with pytest.raises(RuntimeError, match="DATABASE_CENSUS_MISMATCH"):
+        _verify_database_census(database, census)
+
+
+def test_disposable_source_blob_census_rejects_missing_and_changed_bytes(
+    tmp_path: Path,
+) -> None:
+    blobs = tmp_path / "blobs"
+    corpus_files = []
+    for index in range(44):
+        payload = f"source-{index}".encode()
+        digest = hashlib.sha256(payload).hexdigest()
+        target = blobs / digest[:2] / digest[2:] / "raw.txt"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(payload)
+        corpus_files.append({"sha256": digest})
+    assert _verify_source_blobs(blobs, {"corpus_files": corpus_files}) == 44
+    (blobs / corpus_files[0]["sha256"][:2] / corpus_files[0]["sha256"][2:] / "raw.txt").write_bytes(
+        b"changed"
+    )
+    with pytest.raises(RuntimeError, match="SOURCE_BLOB_MISMATCH"):
+        _verify_source_blobs(blobs, {"corpus_files": corpus_files})
+    with pytest.raises(RuntimeError, match="SOURCE_BLOB_CENSUS_MISMATCH"):
+        _verify_source_blobs(blobs, {"corpus_files": []})
 
 
 def _require_full_production_database(store_path: Path) -> None:

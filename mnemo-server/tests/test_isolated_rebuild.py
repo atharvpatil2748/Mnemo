@@ -8,6 +8,7 @@ import sqlite3
 import subprocess
 import sys
 from pathlib import Path
+from typing import cast
 from uuid import UUID, uuid4
 
 import pytest
@@ -55,6 +56,51 @@ def test_manifest_rejects_derived_file_and_duplicate_hash(tmp_path: Path) -> Non
         build_source_manifest(corpus=tmp_path, label="pair", expected_count=2)
 
 
+def test_legacy_source_authority_is_reference_checked_on_disposable_index(tmp_path: Path) -> None:
+    corpus = tmp_path / "originals"
+    corpus.mkdir()
+    original = corpus / "one.txt"
+    original.write_bytes(b"preserved source")
+    digest = hashlib.sha256(original.read_bytes()).hexdigest()
+    database = tmp_path / "evaluation.db"
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "CREATE TABLE documents(document_id TEXT,current_version_id TEXT,current_hash TEXT)"
+        )
+        connection.execute("INSERT INTO documents VALUES('document','version',?)", (digest,))
+    selected = verify_sources(corpus=corpus, includes=("one.txt",), source_database=database)
+    assert selected[0].prior_document_id == "document"
+    assert selected[0].prior_version_id == "version"
+    assert selected[0].sha256 == digest
+    with pytest.raises(ValueError, match="exactly one source authority"):
+        verify_sources(corpus=corpus, includes=("one.txt",))
+    with pytest.raises(ValueError, match="nonempty and unique"):
+        verify_sources(corpus=corpus, includes=("one.txt", "one.txt"), source_database=database)
+    with sqlite3.connect(database) as connection:
+        connection.execute("INSERT INTO documents VALUES('other','other',?)", (digest,))
+    with pytest.raises(ValueError, match="absent or ambiguous"):
+        verify_sources(corpus=corpus, includes=("one.txt",), source_database=database)
+
+
+def test_legacy_source_authority_refuses_path_escape(tmp_path: Path) -> None:
+    corpus = tmp_path / "originals"
+    corpus.mkdir()
+    outside = tmp_path / "outside.txt"
+    outside.write_bytes(b"outside")
+    alias = corpus / "alias.txt"
+    try:
+        alias.symlink_to(outside)
+    except (OSError, NotImplementedError):
+        pytest.skip("disposable symlinks unavailable")
+    database = tmp_path / "evaluation.db"
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "CREATE TABLE documents(document_id TEXT,current_version_id TEXT,current_hash TEXT)"
+        )
+    with pytest.raises(ValueError, match="regular file inside the corpus"):
+        verify_sources(corpus=corpus, includes=("alias.txt",), source_database=database)
+
+
 def test_vision_gpu_gate_requires_exact_full_gpu_runner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -81,7 +127,9 @@ def test_vision_gpu_gate_requires_exact_full_gpu_runner(
         isolated_rebuild._verify_vision_gpu(model="vision", revision="revision")
 
 
-def test_inspect_isolated_ingestion_verifies_original_ir_and_chunk_span(tmp_path: Path) -> None:
+def _ingestion_fixture(
+    tmp_path: Path,
+) -> tuple[Path, Path, str, VerifiedSource, Path, Path]:
     original = b"ordered test source\n"
     digest = hashlib.sha256(original).hexdigest()
     notebook, document, version = (str(uuid4()) for _ in range(3))
@@ -125,12 +173,60 @@ def test_inspect_isolated_ingestion_verifies_original_ir_and_chunk_span(tmp_path
         prior_document_id=document,
         prior_version_id=version,
     )
+    return database, files, notebook, source, raw, ir
+
+
+def test_inspect_isolated_ingestion_verifies_original_ir_and_chunk_span(tmp_path: Path) -> None:
+    database, files, notebook, source, _, _ = _ingestion_fixture(tmp_path)
     result = inspect_isolated_ingestion(
         database=database, files=files, notebook_id=notebook, sources=(source,)
     )
     assert result["counts"]["chunks"] == 1
     assert result["sources"][0]["original_sha256_verified"] is True
     assert result["sources"][0]["block_ordinals_contiguous"] is True
+
+
+@pytest.mark.parametrize(
+    ("defect", "message"),
+    [
+        ("notebook", "isolated notebook identity mismatch"),
+        ("document", "verified source missing"),
+        ("version", "source document/version identity changed"),
+        ("membership", "source membership is missing"),
+        ("binary", "original binary reference differs"),
+        ("raw", "stored original bytes differ"),
+        ("ir", "persisted IR hash or block ordering is invalid"),
+        ("span", "impossible block ordinal"),
+        ("census", "source/version count mismatch"),
+    ],
+)
+def test_isolated_ingestion_refuses_corrupt_disposable_state(
+    tmp_path: Path, defect: str, message: str
+) -> None:
+    database, files, notebook, source, raw, ir = _ingestion_fixture(tmp_path)
+    statements = {
+        "notebook": "UPDATE notebooks SET notebook_id='other'",
+        "document": "DELETE FROM documents",
+        "version": "UPDATE documents SET current_version_id='other'",
+        "membership": "DELETE FROM sources",
+        "binary": "UPDATE document_binary_references SET byte_size=0",
+        "span": "UPDATE chunks SET source_end_ordinal=1",
+        "census": "INSERT INTO documents VALUES('other','other','other')",
+    }
+    if defect in statements:
+        with sqlite3.connect(database) as connection:
+            connection.execute(statements[defect])
+    elif defect == "raw":
+        raw.write_bytes(b"changed")
+    elif defect == "ir":
+        ir.write_text(
+            json.dumps({"metadata": {"content_hash": "other"}, "blocks": [{"ordinal": 0}]}),
+            encoding="utf-8",
+        )
+    with pytest.raises(RuntimeError, match=message):
+        inspect_isolated_ingestion(
+            database=database, files=files, notebook_id=notebook, sources=(source,)
+        )
 
 
 def test_isolated_stage_and_v2_probe_fail_closed(
@@ -374,6 +470,43 @@ def test_verified_source_requires_prior_indexed_exact_bytes(tmp_path: Path) -> N
     (corpus / "one.txt").write_bytes(b"changed")
     with pytest.raises(ValueError, match="absent or ambiguous"):
         verify_sources(corpus=corpus, source_database=database, includes=("one.txt",))
+
+
+@pytest.mark.parametrize("attested_device", [None, "cpu", "cuda:0"])
+def test_cuda_canary_requires_actual_ingestion_execution_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, attested_device: str | None
+) -> None:
+    corpus, database, _ = _source_fixture(tmp_path)
+
+    def ingest(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        assert cast(dict[str, str], kwargs["env"])["MNEMO_EMBEDDING_DEVICE"] == "cuda"
+        runtime = Path(command[command.index("--runtime") + 1])
+        if attested_device is not None:
+            (runtime / "ingestion-evidence.json").write_text(
+                json.dumps({"configuration": {"embedding_execution_device": attested_device}}),
+                encoding="utf-8",
+            )
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", ingest)
+    if attested_device == "cuda:0":
+        monkeypatch.setattr(isolated_rebuild, "inspect_isolated_ingestion", lambda **_: {})
+        monkeypatch.setattr(isolated_rebuild, "assess_canary_coverage", lambda *_: {})
+    report = run_canary(
+        workspace=tmp_path,
+        corpus=corpus,
+        source_database=database,
+        includes=("one.txt",),
+        canonical_device="cuda",
+    )
+    assert (Path(report["runtime"]) / "rebuild-status.json").is_file()
+    if attested_device == "cuda:0":
+        assert report["canonical_execution_device"] == "cuda:0"
+        assert report["stages"]["canonical_ingestion"] == "complete"
+    else:
+        assert report["stages"]["canonical_ingestion"] == "failed"
+        assert report["activation"] == "inactive"
+        assert "canonical_execution_device" not in report
 
 
 def test_failed_ingestion_remains_isolated_and_inactive(
