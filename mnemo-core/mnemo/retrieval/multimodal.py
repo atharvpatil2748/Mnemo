@@ -13,6 +13,7 @@ from uuid import UUID, uuid5
 from mnemo.interfaces.errors import (
     ConflictError,
     ContractValidationError,
+    GenerationIncompleteError,
     IntegrityError,
     NotFoundError,
 )
@@ -536,6 +537,14 @@ class FinalQAV2Orchestrator:
             raise IntegrityError("multimodal provider returned an invalid result")
         if result.provider != capabilities.provider or result.model != capabilities.model:
             raise IntegrityError("multimodal provider identity changed during generation")
+        if not result.output_complete:
+            await self._store.transition_final_qa_v2_execution(
+                final_qa_v2_execution_id(request.assistant_turn_id),
+                FinalQAExecutionState.RUNNING,
+                FinalQAExecutionState.REJECTED_GENERATION,
+                failure_classification=result.termination_reason,
+            )
+            raise GenerationIncompleteError("Final-QA generation is incomplete")
         if result.answer_tokens > request.max_output_tokens:
             raise IntegrityError("multimodal answer exceeds output token bound")
         try:
@@ -562,6 +571,8 @@ class FinalQAV2Orchestrator:
             return decode_published_v2_snapshot(snapshot.payload)
         if execution.state is FinalQAExecutionState.REJECTED_CITATION_COMPLIANCE:
             raise IntegrityError("citation_compliance: final publication is non-compliant")
+        if execution.state is FinalQAExecutionState.REJECTED_GENERATION:
+            raise GenerationIncompleteError("Final-QA generation is incomplete")
         if execution.state is FinalQAExecutionState.TIMED_OUT:
             raise ConflictError("final_qa_v2.execution_timed_out")
         validated = await self._store.get_final_qa_v2_snapshot(
@@ -582,6 +593,8 @@ class FinalQAV2Orchestrator:
         context: MultimodalContextBuildResultV1,
         retry_count: int,
     ) -> FinalQAResultV2:
+        if answer is not None and not answer.output_complete:
+            raise GenerationIncompleteError("Final-QA generation is incomplete")
         lock = self._locks.setdefault(request.assistant_turn_id, asyncio.Lock())
         async with lock:
             current = await self._store.get_final_qa_v2_execution(request.assistant_turn_id)
@@ -632,6 +645,8 @@ class FinalQAV2Orchestrator:
                 context_result=context,
                 citations=citations,
                 retry_count=retry_count,
+                answer_complete=None if answer is None else answer.output_complete,
+                termination_reason=None if answer is None else answer.termination_reason,
             )
             if citations:
                 await self._store.put_final_qa_v2_citations(citations)

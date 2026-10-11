@@ -215,6 +215,8 @@ class DeliveryResponseBody(BaseModel):
     usage: DeliveryUsageResponse
     omissions: list[str]
     next_cursor: str | None = None
+    total_items: int | None = Field(default=None, ge=0)
+    representation: str | None = None
     source_metadata: dict[str, Any] | None = None
 
 

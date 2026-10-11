@@ -99,3 +99,9 @@ class PluginError(MnemoInterfaceError):
     """Plugin registration or invocation failed at an isolation boundary."""
 
     code = "contract.plugin"
+
+
+class GenerationIncompleteError(PluginError):
+    """Provider output cannot be published as a complete grounded answer."""
+
+    code = "final_qa.generation_incomplete"

@@ -5,17 +5,23 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
+from contextlib import closing
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any, Protocol, cast
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
 import anyio
 import pytest
+from disposable_index_admission import mcp_text as _text
+from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from mcp.client.session import ClientSession
+from mcp.server import Server
+from mcp.types import CallToolResult, EmbeddedResource, ImageContent
 from mnemo.config import (
     EmbeddingConfig,
     LLMConfig,
@@ -35,7 +41,7 @@ from mnemo.interfaces import (
     PrincipalContextV1,
     StorageError,
 )
-from mnemo.interfaces.advanced_retrieval import AdvancedSourcePage
+from mnemo.interfaces.advanced_retrieval import AdvancedRetrievalSourceV1, AdvancedSourcePage
 from mnemo.models import (
     Asset,
     AssetContainerKind,
@@ -113,12 +119,13 @@ from mnemo.retrieval import (
 from mnemo.storage import SQLiteFinalQAOperationalStore
 from mnemo.storage.sqlite import SQLiteStore
 from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
-from mnemo_server.app import create_app
+from mnemo_server.app import create_app as _create_app
 from mnemo_server.config import ServerConfig
 from mnemo_server.mcp import server as mcp_server_module
 from mnemo_server.mcp import tools as mcp_tools
-from mnemo_server.mcp.server import create_mcp_server
+from mnemo_server.mcp.server import create_mcp_server as _create_mcp_server
 from mnemo_server.routers import delivery as delivery_router
+from mnemo_server.services.mutable_workspace import MutableWorkspaceDecision
 
 
 class _ParsedReadStore(SQLiteV2ReadOnlyRuntimeStore):
@@ -139,6 +146,17 @@ class _ParsedReadStore(SQLiteV2ReadOnlyRuntimeStore):
 
     async def get_asset(self, asset_id: UUID) -> bytes | None:
         return self.assets.get(asset_id)
+
+
+FixtureIdentity = tuple[UUID, UUID, UUID, UUID, Chunk]
+
+
+class _IndexedFixtureAdmission(Protocol):
+    _disposable_index_readiness_check: Callable[[], None]
+
+
+def _admission_check(engine: KnowledgeEngine) -> Callable[[], None]:
+    return cast(_IndexedFixtureAdmission, engine)._disposable_index_readiness_check
 
 
 class _Embedding:
@@ -494,12 +512,12 @@ async def _fixture(
     cursor_ready: bool = False,
     inventory_empty: bool = False,
     asset_empty: bool = False,
-):  # type: ignore[no-untyped-def]
+) -> tuple[KnowledgeEngine, _ParsedReadStore, ServerConfig, list[FixtureIdentity]]:
     path = tmp_path / "matrix.db"
     writer = SQLiteStore(path)
     await writer.open()
     now = datetime(2026, 1, 1, tzinfo=UTC)
-    identities = []
+    identities: list[FixtureIdentity] = []
     parsed: dict[UUID, ParsedDocument] = {}
     assets: dict[UUID, bytes] = {}
     analysis_ids: dict[str, UUID] = {}
@@ -649,7 +667,9 @@ async def _fixture(
                     metadata=FrozenMetadata(),
                 )
             )
-        blocks = (TextBlock(ordinal=0, text=text, page_number=3),)
+        blocks: tuple[TextBlock | TableBlock, ...] = (
+            TextBlock(ordinal=0, text=text, page_number=3),
+        )
         if index == 0 and structured_ready:
             blocks += (
                 TableBlock(
@@ -722,7 +742,9 @@ async def _fixture(
         from test_capabilities_v2 import _engine as capability_engine
 
         engine._phase85 = (await capability_engine(tmp_path)).phase85
-    sources = [CanonicalTextAdvancedSource(store=reader, ranked_retriever=SparseRetriever(reader))]
+    sources: list[AdvancedRetrievalSourceV1] = [
+        CanonicalTextAdvancedSource(store=reader, ranked_retriever=SparseRetriever(reader))
+    ]
     if governed_multilingual and identities:
         notebook_id, document_id, version_id, source_id, chunk = identities[0]
         sources.append(
@@ -803,12 +825,124 @@ async def _fixture(
             "delivery_cursor_secret": "disposable-schema-matrix-delivery-secret",
         }
     )
+    cast(
+        _IndexedFixtureAdmission, engine
+    )._disposable_index_readiness_check = _disposable_index_admission(
+        tmp_path,
+        identities,
+        extra_notebook_ids={str(UUID(int=1000))} if empty_notebook else set(),
+    )
     return engine, reader, config, identities
 
 
-def _body(result):  # type: ignore[no-untyped-def]
+def _body(result: CallToolResult) -> dict[str, Any]:
     assert not result.isError, result.content
-    return json.loads(result.content[0].text)
+    payload = json.loads(_text(result))
+    assert isinstance(payload, dict)
+    return cast(dict[str, Any], payload)
+
+
+def _disposable_index_admission(
+    tmp_path: Path,
+    identities: list[FixtureIdentity],
+    *,
+    extra_notebook_ids: set[str] | None = None,
+) -> Callable[[], None]:
+    """Bind one positive transport probe to its own indexed SQLite fixture."""
+    database = tmp_path / "matrix.db"
+    workspace = Path(__file__).resolve().parents[2]
+    if workspace == tmp_path or workspace in tmp_path.parents:
+        raise ValueError("indexed fixture must not reside in the repository")
+    expected_notebooks = {str(item[0]) for item in identities} | (extra_notebook_ids or set())
+
+    def verify() -> None:
+        if database.is_symlink() or not database.is_file():
+            raise RuntimeError("DISPOSABLE_INDEX_UNAVAILABLE")
+        with closing(
+            sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
+        ) as connection:
+            actual = {row[0] for row in connection.execute("SELECT notebook_id FROM notebooks")}
+        if actual != expected_notebooks:
+            raise RuntimeError("DISPOSABLE_INDEX_IDENTITY_MISMATCH")
+
+    verify()
+    return verify
+
+
+def create_mcp_server(
+    engine: KnowledgeEngine,
+    *,
+    config: ServerConfig | None = None,
+    principal_provider: Callable[[], PrincipalContextV1] | None = None,
+    workspace_decision: MutableWorkspaceDecision | None = None,
+) -> Server:
+    """Use the real MCP dispatcher with this engine's explicit fixture admission."""
+    check = getattr(engine, "_disposable_index_readiness_check", None)
+    if check is None:
+        raise ValueError("disposable indexed engine admission is missing")
+    return _create_mcp_server(
+        engine,
+        config=config,
+        principal_provider=principal_provider,
+        workspace_decision=workspace_decision,
+        indexed_fixture_readiness_check=check,
+    )
+
+
+def create_app(
+    *,
+    engine: KnowledgeEngine,
+    server_config: ServerConfig | None = None,
+    provision_tokenizer_on_startup: bool = True,
+) -> FastAPI:
+    """Use real ASGI routes with the same engine-bound fixture admission."""
+    check = getattr(engine, "_disposable_index_readiness_check", None)
+    if check is None:
+        raise ValueError("disposable indexed engine admission is missing")
+    return _create_app(
+        engine=engine,
+        server_config=server_config,
+        provision_tokenizer_on_startup=provision_tokenizer_on_startup,
+        indexed_fixture_readiness_check=check,
+    )
+
+
+@pytest.mark.anyio
+async def test_disposable_admission_does_not_change_production_unindexed_guard(
+    tmp_path: Path,
+) -> None:
+    engine, reader, config, identities = await _fixture(tmp_path, legacy=False)
+    try:
+        assert len(identities) == 2
+        # The fixture checker is explicit, not installed on ordinary constructors.
+        with pytest.raises(RuntimeError, match="PRODUCTION_CORPUS_UNINDEXED"):
+            await mcp_tools.execute_mcp_tool(engine, "list_notebooks", {}, config)
+        raw_app = _create_app(
+            server_config=config, engine=engine, provision_tokenizer_on_startup=False
+        )
+        async with AsyncClient(
+            transport=ASGITransport(app=raw_app), base_url="http://fixture"
+        ) as http:
+            response = await http.get("/v1/notebooks")
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "PRODUCTION_CORPUS_UNINDEXED"
+        with pytest.raises(ValueError, match="injected engine"):
+            _create_app(
+                server_config=config,
+                indexed_fixture_readiness_check=_admission_check(engine),
+            )
+    finally:
+        await reader.close()
+
+
+def test_disposable_admission_rejects_missing_or_wrong_store(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match="DISPOSABLE_INDEX_UNAVAILABLE"):
+        _disposable_index_admission(tmp_path, [])
+    with sqlite3.connect(tmp_path / "matrix.db") as connection:
+        connection.execute("CREATE TABLE notebooks(notebook_id TEXT PRIMARY KEY)")
+        connection.execute("INSERT INTO notebooks VALUES ('fixture-notebook')")
+    with pytest.raises(RuntimeError, match="DISPOSABLE_INDEX_IDENTITY_MISMATCH"):
+        _disposable_index_admission(tmp_path, [])
 
 
 @pytest.mark.anyio
@@ -831,7 +965,9 @@ async def test_public_persisted_ocr_vision_analysis_matrix(tmp_path: Path, legac
         "fixture-vision",
     }
     server = create_mcp_server(
-        engine, config=config, principal_provider=lambda: PrincipalContextV1(uuid4(), True)
+        engine,
+        config=config,
+        principal_provider=lambda: PrincipalContextV1(uuid4(), True),
     )
     c2s_send, c2s_recv = anyio.create_memory_object_stream(20)
     s2c_send, s2c_recv = anyio.create_memory_object_stream(20)
@@ -904,7 +1040,7 @@ async def test_public_persisted_ocr_vision_analysis_matrix(tmp_path: Path, legac
                         {**wrong_scope, "ocr_derivation_id": str(ids["ocr_0"])},
                     )
                     assert denied.isError
-                    error = json.loads(denied.content[0].text)["error"]
+                    error = json.loads(_text(denied))["error"]
                     assert error["category"] == "not_found"
                     assert UUID(error["correlation_id"])
                     assert str(ids["ocr_0"]) not in str(denied.content)
@@ -919,7 +1055,7 @@ async def test_public_persisted_ocr_vision_analysis_matrix(tmp_path: Path, legac
                     },
                 )
                 assert unknown.isError
-                assert json.loads(unknown.content[0].text)["error"]["category"] == "not_found"
+                assert json.loads(_text(unknown))["error"]["category"] == "not_found"
                 pending = _body(
                     await client.call_tool(
                         "get_image_analysis",
@@ -940,9 +1076,7 @@ async def test_public_persisted_ocr_vision_analysis_matrix(tmp_path: Path, legac
                 ):
                     rejected = await client.call_tool("get_image_analysis", invalid)
                     assert rejected.isError
-                    assert (
-                        json.loads(rejected.content[0].text)["error"]["category"] == "invalid_input"
-                    )
+                    assert json.loads(_text(rejected))["error"]["category"] == "invalid_input"
                 tasks.cancel_scope.cancel()
     finally:
         await reader.close()
@@ -982,16 +1116,14 @@ async def test_public_mcp_chunk_reader_matrix(
                 assert notebooks["total"] == 2
                 invalid_limit = await client.call_tool("list_notebooks", {"limit": True})
                 assert invalid_limit.isError
-                assert json.loads(invalid_limit.content[0].text)["error"]["category"] == (
-                    "invalid_input"
-                )
+                assert json.loads(_text(invalid_limit))["error"]["category"] == ("invalid_input")
                 assert {item["notebook_id"] for item in notebooks["notebooks"]} == {
                     str(notebook_id),
                     str(other_notebook),
                 }
                 capabilities = await client.call_tool("get_capabilities", {})
                 assert capabilities.isError
-                capability_error = json.loads(capabilities.content[0].text)["error"]
+                capability_error = json.loads(_text(capabilities))["error"]
                 assert capability_error["category"] == "capability_unavailable"
                 assert UUID(capability_error["correlation_id"])
                 search = _body(
@@ -1060,7 +1192,7 @@ async def test_public_mcp_chunk_reader_matrix(
                     "get_source_insights", {"source_id": str(source_id), "limit": True}
                 )
                 assert bad_insight_limit.isError
-                assert json.loads(bad_insight_limit.content[0].text)["error"]["category"] == (
+                assert json.loads(_text(bad_insight_limit))["error"]["category"] == (
                     "invalid_input"
                 )
                 timeline = _body(
@@ -1073,7 +1205,7 @@ async def test_public_mcp_chunk_reader_matrix(
                     "get_timeline", {"notebook_id": str(notebook_id), "limit": True}
                 )
                 assert bad_timeline_limit.isError
-                assert json.loads(bad_timeline_limit.content[0].text)["error"]["category"] == (
+                assert json.loads(_text(bad_timeline_limit))["error"]["category"] == (
                     "invalid_input"
                 )
                 query = _body(
@@ -1208,10 +1340,13 @@ async def test_public_mcp_chunk_reader_matrix(
                     },
                 )
                 assert not original_asset.isError
-                assert original_asset.content[0].meta["assetId"] == str(occurrence.asset_id)
-                assert original_asset.content[0].meta["sourceId"] == str(source_id)
+                asset_content = original_asset.content[0]
+                assert isinstance(asset_content, ImageContent)
+                assert asset_content.meta is not None
+                assert asset_content.meta["assetId"] == str(occurrence.asset_id)
+                assert asset_content.meta["sourceId"] == str(source_id)
                 assert (
-                    original_asset.content[0].meta["contentHash"]
+                    asset_content.meta["contentHash"]
                     == hashlib.sha256(reader.assets[occurrence.asset_id]).hexdigest()
                 )
                 original_document = await client.call_tool(
@@ -1224,9 +1359,12 @@ async def test_public_mcp_chunk_reader_matrix(
                     },
                 )
                 assert not original_document.isError
-                assert original_document.content[0].resource.meta["sourceMetadata"][
-                    "version_id"
-                ] == str(version_id)
+                document_content = original_document.content[0]
+                assert isinstance(document_content, EmbeddedResource)
+                assert document_content.resource.meta is not None
+                assert document_content.resource.meta["sourceMetadata"]["version_id"] == str(
+                    version_id
+                )
                 bad = await client.call_tool(
                     "get_document_chunk",
                     {
@@ -1238,7 +1376,7 @@ async def test_public_mcp_chunk_reader_matrix(
                 )
                 assert bad.isError
                 assert chunk.text not in str(bad.content)
-                bad_error = json.loads(bad.content[0].text)["error"]
+                bad_error = json.loads(_text(bad))["error"]
                 assert bad_error["category"] == "not_found"
                 assert bad_error["code"] == "contract.not_found"
                 assert UUID(bad_error["correlation_id"])
@@ -1253,7 +1391,7 @@ async def test_public_mcp_chunk_reader_matrix(
                 )
                 assert missing.isError
                 assert chunk.text not in str(missing.content)
-                missing_error = json.loads(missing.content[0].text)["error"]
+                missing_error = json.loads(_text(missing))["error"]
                 assert missing_error["category"] == bad_error["category"]
                 assert missing_error["code"] == bad_error["code"]
                 assert missing_error["correlation_id"] != bad_error["correlation_id"]
@@ -1266,7 +1404,7 @@ async def test_public_mcp_chunk_reader_matrix(
                 )
                 assert denied.isError
                 assert other_chunk.text not in str(denied.content)
-                denied_error = json.loads(denied.content[0].text)["error"]
+                denied_error = json.loads(_text(denied))["error"]
                 assert denied_error["category"] == bad_error["category"]
                 assert denied_error["message"] == bad_error["message"]
 
@@ -1279,7 +1417,7 @@ async def test_public_mcp_chunk_reader_matrix(
                 monkeypatch.setattr(mcp_server_module, "execute_mcp_tool", failed_retrieval)
                 typed_failure = await client.call_tool("search_evidence", {"query": "schema"})
                 assert typed_failure.isError
-                failure = json.loads(typed_failure.content[0].text)["error"]
+                failure = json.loads(_text(typed_failure))["error"]
                 assert failure["category"] == "schema_compatibility"
                 assert failure["origin_code"] == "contract.storage"
                 assert failure["reason"] == "PAGE_RANGE_UNAVAILABLE_FOR_CHUNK_SCHEMA"
@@ -1306,11 +1444,11 @@ async def test_every_public_tool_rejects_client_owned_storage_selection(
             tasks.start_soon(server.run, c2s_recv, s2c_send, server.create_initialization_options())
             async with ClientSession(s2c_recv, c2s_send) as client:
                 await client.initialize()
-                assert len((await client.list_tools()).tools) == 14
+                assert len((await client.list_tools()).tools) == 15
                 for tool in mcp_tools.get_mcp_tools():
                     response = await client.call_tool(tool.name, {"db_path": "DUMMY_DO_NOT_USE"})
                     assert response.isError, tool.name
-                    error = json.loads(response.content[0].text)["error"]
+                    error = json.loads(_text(response))["error"]
                     assert error["category"] == "invalid_input", tool.name
                     assert UUID(error["correlation_id"])
                     assert "DUMMY_DO_NOT_USE" not in str(response.content)
@@ -1367,14 +1505,14 @@ async def test_public_empty_notebook_and_asset_inventories(tmp_path: Path, legac
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("legacy", [True, False], ids=["certified-older", "newer"])
+@pytest.mark.parametrize("external_shape", [False, True], ids=["baseline", "external-budgets"])
 async def test_public_exhaustive_cursor_traverses_persisted_chunks(
-    tmp_path: Path, legacy: bool
+    tmp_path: Path, legacy: bool, external_shape: bool
 ) -> None:
     engine, reader, config, identities = await _fixture(tmp_path, legacy=legacy, cursor_ready=True)
     notebook_id, document_id, version_id, source_id, first_chunk = identities[0]
-    server = create_mcp_server(
-        engine, config=config, principal_provider=lambda: PrincipalContextV1(uuid4(), True)
-    )
+    principal = PrincipalContextV1(uuid4(), True)
+    server = create_mcp_server(engine, config=config, principal_provider=lambda: principal)
     c2s_send, c2s_recv = anyio.create_memory_object_stream(20)
     s2c_send, s2c_recv = anyio.create_memory_object_stream(20)
     request = {
@@ -1384,6 +1522,11 @@ async def test_public_exhaustive_cursor_traverses_persisted_chunks(
         "representations": ["canonical_text"],
         "evidence_budget": 1,
     }
+    if external_shape:
+        request.update(
+            candidate_budget=3,
+            max_content_characters=80,
+        )
     try:
         async with anyio.create_task_group() as tasks:
             tasks.start_soon(server.run, c2s_recv, s2c_send, server.create_initialization_options())
@@ -1417,10 +1560,10 @@ async def test_public_exhaustive_cursor_traverses_persisted_chunks(
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("legacy", [True, False], ids=["certified-older", "newer"])
-async def test_public_fourteen_tool_invalid_input_matrix(tmp_path: Path, legacy: bool) -> None:
+async def test_public_tool_invalid_input_matrix(tmp_path: Path, legacy: bool) -> None:
     engine, reader, config, identities = await _fixture(tmp_path, legacy=legacy)
     notebook_id, document_id, version_id, source_id, _ = identities[0]
-    invalid = {
+    invalid: dict[str, dict[str, Any]] = {
         "list_notebooks": {"limit": True},
         "get_notebook_summary": {"notebook_id": "malformed"},
         "get_timeline": {"notebook_id": str(notebook_id), "limit": True},
@@ -1444,6 +1587,7 @@ async def test_public_fourteen_tool_invalid_input_matrix(tmp_path: Path, legacy:
         "get_asset": {"notebook_id": str(notebook_id), "limit": True},
         "get_image_analysis": {"notebook_id": str(notebook_id), "occurrence_id": "malformed"},
         "run_final_qa_v2": {"notebook_id": str(notebook_id)},
+        "query_notebook_v2": {"query": ""},
     }
     assert set(invalid) == {tool.name for tool in mcp_tools.get_mcp_tools()}
     server = create_mcp_server(
@@ -1459,7 +1603,7 @@ async def test_public_fourteen_tool_invalid_input_matrix(tmp_path: Path, legacy:
                 for name, args in invalid.items():
                     response = await client.call_tool(name, args)
                     assert response.isError, name
-                    error = json.loads(response.content[0].text)["error"]
+                    error = json.loads(_text(response))["error"]
                     assert error["category"] == "invalid_input", (name, error)
                     assert UUID(error["correlation_id"])
                     assert "malformed" not in str(response.content)
@@ -1540,10 +1684,10 @@ async def test_public_invalid_cursors_and_excessive_budgets(tmp_path: Path, lega
                 for tool, arguments in cases:
                     response = await client.call_tool(tool, arguments)
                     assert response.isError, (tool, arguments)
-                    error = json.loads(response.content[0].text)["error"]
+                    error = json.loads(_text(response))["error"]
                     assert error["category"] == "invalid_input", (tool, error)
                     assert UUID(error["correlation_id"])
-                    assert "not-a-signed-cursor" not in response.content[0].text
+                    assert "not-a-signed-cursor" not in _text(response)
                 tasks.cancel_scope.cancel()
     finally:
         await reader.close()
@@ -1630,14 +1774,14 @@ async def test_public_resource_scope_nondisclosure_matrix(tmp_path: Path, legacy
                 for tool, args in cases:
                     response = await client.call_tool(tool, args)
                     assert response.isError, tool
-                    error = json.loads(response.content[0].text)["error"]
+                    error = json.loads(_text(response))["error"]
                     assert error["category"] == "not_found", (tool, error)
                     assert UUID(error["correlation_id"])
-                    assert str(document_id) not in response.content[0].text
-                    assert str(source_id) not in response.content[0].text
-                    assert chunk.text not in response.content[0].text
-                    assert str(other_document) not in response.content[0].text
-                    assert str(other_source) not in response.content[0].text
+                    assert str(document_id) not in _text(response)
+                    assert str(source_id) not in _text(response)
+                    assert chunk.text not in _text(response)
+                    assert str(other_document) not in _text(response)
+                    assert str(other_source) not in _text(response)
                 tasks.cancel_scope.cancel()
     finally:
         await reader.close()
@@ -1746,7 +1890,7 @@ async def test_public_exact_chunk_reader_sql_failure_is_typed_and_sanitized(
                     },
                 )
                 assert result.isError
-                error = json.loads(result.content[0].text)["error"]
+                error = json.loads(_text(result))["error"]
                 assert error["category"] == "retrieval_failure"
                 assert error["code"] == "contract.storage"
                 assert error["origin_code"] == "contract.storage"
@@ -1762,8 +1906,8 @@ async def test_public_exact_chunk_reader_sql_failure_is_typed_and_sanitized(
             transport=ASGITransport(app=app),
             base_url="http://fixture",
             headers={"X-API-Key": "fixture-only-not-production"},
-        ) as client:
-            response = await client.get(
+        ) as http_client:
+            response = await http_client.get(
                 f"/v2/notebooks/{notebook_id}/documents/{document_id}/"
                 f"versions/{version_id}/chunks/{chunk.id}"
             )
@@ -1810,7 +1954,7 @@ async def test_public_sparse_reader_failure_keeps_safe_origin(
                     {"query": "schema", "top_k": 2, "notebook_id": str(notebook_id)},
                 )
                 assert search.isError
-                error = json.loads(search.content[0].text)["error"]
+                error = json.loads(_text(search))["error"]
                 assert error["category"] == "retrieval_failure"
                 assert error["reason"] == "CHUNK_READ_FAILURE"
                 assert error["origin_code"] == "contract.storage"
@@ -1979,6 +2123,156 @@ async def test_http_metadata_envelope_matches_public_mcp_schema(
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("legacy", [True, False], ids=["certified-older", "newer"])
+async def test_structured_projection_availability_is_scope_qualified_on_public_adapters(
+    tmp_path: Path, legacy: bool
+) -> None:
+    engine, reader, config, identities = await _fixture(
+        tmp_path, legacy=legacy, structured_ready=True, capability_ready=True
+    )
+    notebook_id, _, version_id, _, _ = identities[0]
+    other_notebook, other_document, other_version, _, _ = identities[1]
+    server = create_mcp_server(
+        engine, config=config, principal_provider=lambda: PrincipalContextV1(uuid4(), True)
+    )
+    app = create_app(server_config=config, engine=engine, provision_tokenizer_on_startup=False)
+    app.state.engine = engine
+    app.state.server_config = config
+    c2s_send, c2s_recv = anyio.create_memory_object_stream(20)
+    s2c_send, s2c_recv = anyio.create_memory_object_stream(20)
+    try:
+        async with anyio.create_task_group() as tasks:
+            tasks.start_soon(server.run, c2s_recv, s2c_send, server.create_initialization_options())
+            async with (
+                ClientSession(s2c_recv, c2s_send) as mcp,
+                AsyncClient(
+                    transport=ASGITransport(app=app),
+                    base_url="http://fixture",
+                    headers={"X-API-Key": "fixture-only-not-production"},
+                ) as http,
+            ):
+                await mcp.initialize()
+                ready = {
+                    "operation": "describe",
+                    "scope": {"notebook_id": str(notebook_id), "version_ids": [str(version_id)]},
+                }
+                unavailable = {
+                    "operation": "describe",
+                    "scope": {
+                        "notebook_id": str(other_notebook),
+                        "version_ids": [str(other_version)],
+                    },
+                }
+                mismatch = {
+                    "operation": "describe",
+                    "scope": {
+                        "notebook_id": str(notebook_id),
+                        "document_ids": [str(other_document)],
+                        "version_ids": [str(version_id)],
+                    },
+                }
+                unknown_version = {
+                    "operation": "describe",
+                    "scope": {
+                        "notebook_id": str(notebook_id),
+                        "version_ids": [str(UUID(int=999))],
+                    },
+                }
+                ready_mcp = await mcp.call_tool("query_structured", ready)
+                ready_http = await http.post("/v2/retrieval/structured", json=ready)
+                assert not ready_mcp.isError and ready_http.status_code == 200
+                assert _body(ready_mcp)["items"] == ready_http.json()["items"]
+                empty_query = {
+                    "operation": "query",
+                    "scope": ready["scope"],
+                    "dataset_ids": [ready_http.json()["items"][0]["dataset_id"]],
+                    "filters": [{"field": "CPI", "operator": "gt", "value": 100}],
+                }
+                empty_mcp = await mcp.call_tool("query_structured", empty_query)
+                empty_http = await http.post("/v2/retrieval/structured", json=empty_query)
+                assert not empty_mcp.isError and empty_http.status_code == 200
+                assert _body(empty_mcp)["completeness"] == empty_http.json()["completeness"]
+                assert empty_http.json()["completeness"] == "empty"
+                for arguments, category in (
+                    (unavailable, "capability_unavailable"),
+                    (mismatch, "not_found"),
+                    (unknown_version, "not_found"),
+                ):
+                    mcp_result = await mcp.call_tool("query_structured", arguments)
+                    http_result = await http.post("/v2/retrieval/structured", json=arguments)
+                    assert mcp_result.isError and http_result.status_code >= 400
+                    assert json.loads(_text(mcp_result))["error"]["category"] == category
+                    assert http_result.json()["error"]["category"] == category
+                    assert "source_metadata" not in http_result.text
+                for scoped_notebook, expected in ((notebook_id, True), (other_notebook, False)):
+                    capability = await mcp.call_tool(
+                        "get_capabilities", {"notebook_id": str(scoped_notebook)}
+                    )
+                    assert not capability.isError
+                    states = {
+                        item["capability_id"]: item["lifecycle"]["available_for_scope"]
+                        for item in _body(capability)["capabilities"]
+                    }
+                    assert states["structured_retrieval"] is expected
+    finally:
+        await reader.close()
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("legacy", [True, False], ids=["certified-older", "newer"])
+@pytest.mark.parametrize("generation_state", ["inactive", "missing"])
+async def test_persisted_structured_generation_loss_is_explicit_unavailability(
+    tmp_path: Path, legacy: bool, generation_state: str
+) -> None:
+    engine, reader, config, identities = await _fixture(
+        tmp_path, legacy=legacy, structured_ready=True, capability_ready=True
+    )
+    notebook_id, _, version_id, _, _ = identities[0]
+    await reader.close()
+    with sqlite3.connect(tmp_path / "matrix.db") as db:
+        db.execute(
+            "DELETE FROM active_index_generations WHERE generation_id IN "
+            "(SELECT generation_id FROM index_generations WHERE capability='structured_table')"
+        )
+        if generation_state == "missing":
+            db.execute("DELETE FROM index_generations WHERE capability='structured_table'")
+        db.commit()
+        db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        db.execute("PRAGMA journal_mode=DELETE")
+    await reader.open()
+    app = create_app(server_config=config, engine=engine, provision_tokenizer_on_startup=False)
+    app.state.engine = engine
+    app.state.server_config = config
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://fixture",
+            headers={"X-API-Key": "fixture-only-not-production"},
+        ) as http:
+            response = await http.post(
+                "/v2/retrieval/structured",
+                json={
+                    "operation": "describe",
+                    "scope": {"notebook_id": str(notebook_id), "version_ids": [str(version_id)]},
+                },
+            )
+            assert response.status_code == 503
+            assert response.json()["error"]["category"] == "capability_unavailable"
+            capabilities = await http.get(
+                "/v2/capabilities", params={"notebook_id": str(notebook_id)}
+            )
+            assert capabilities.status_code == 200
+            structured = next(
+                item
+                for item in capabilities.json()["capabilities"]
+                if item["capability_id"] == "structured_retrieval"
+            )
+            assert structured["lifecycle"]["available_for_scope"] is False
+    finally:
+        await reader.close()
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("legacy", [True, False], ids=["certified-older", "newer"])
 async def test_http_and_mcp_exact_reader_provenance_and_scope_agree(
     tmp_path: Path, legacy: bool
 ) -> None:
@@ -2050,7 +2344,7 @@ async def test_http_and_mcp_exact_reader_provenance_and_scope_agree(
                 )
                 assert mcp_denied.isError
                 assert http_denied.status_code == 404
-                mcp_error = json.loads(mcp_denied.content[0].text)["error"]
+                mcp_error = json.loads(_text(mcp_denied))["error"]
                 http_error = http_denied.json()["error"]
                 assert mcp_error["category"] == http_error["category"] == "not_found"
                 assert UUID(mcp_error["correlation_id"])
@@ -2105,8 +2399,10 @@ async def test_public_mcp_binary_asset_and_document_metadata(
             {"notebook_id": str(notebook_id), "occurrence_id": str(attribution.occurrence_id)},
             config,
             principal,
+            indexed_fixture_readiness_check=_admission_check(engine),
         )
-        assert asset[0].type == "image"
+        assert isinstance(asset[0], ImageContent)
+        assert asset[0].meta is not None
         assert asset[0].meta["sourceMetadata"]["source_id"] == str(source_id)
         document = await mcp_tools.execute_mcp_tool(
             engine,
@@ -2119,8 +2415,10 @@ async def test_public_mcp_binary_asset_and_document_metadata(
             },
             config,
             principal,
+            indexed_fixture_readiness_check=_admission_check(engine),
         )
-        assert document[0].type == "resource"
+        assert isinstance(document[0], EmbeddedResource)
+        assert document[0].resource.meta is not None
         assert document[0].resource.meta["sourceMetadata"]["version_id"] == str(version_id)
     finally:
         await reader.close()

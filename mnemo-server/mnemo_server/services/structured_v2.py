@@ -13,7 +13,12 @@ from uuid import UUID, uuid4
 
 from mnemo.cursors import CursorCodecV2, CursorSigningKeyV2
 from mnemo.engine import KnowledgeEngine
-from mnemo.interfaces import ContractValidationError, OperationTimeoutError
+from mnemo.interfaces import (
+    ContractValidationError,
+    DependencyUnavailableError,
+    NotFoundError,
+    OperationTimeoutError,
+)
 from mnemo.models import (
     AdvancedRetrievalMode,
     DeduplicationPolicy,
@@ -88,30 +93,78 @@ class StructuredRetrievalApplicationService:
         scope = RetrievalScopeV2(**request.scope.model_dump())
         principal = principal or principal_from_claims(None)
         try:
-            if type(self._engine) is KnowledgeEngine:
-                await CentralAuthorizationServiceV1(self._engine).authorize_notebook(
-                    principal, scope.notebook_id, AuthorizationOperationV1.QUERY
-                )
             async with asyncio.timeout(self._config.max_structured_elapsed_milliseconds / 1000):
+                if type(self._engine) is KnowledgeEngine:
+                    await self._authorize_scope(scope, principal)
                 catalog = await self._engine.structured_retrieval.discover(
                     scope=scope,
                     schema_scan_limit=self._config.max_structured_rows_scanned,
                 )
+                if not any(
+                    item.readiness is StructuredDatasetReadiness.READY for item in catalog.datasets
+                ):
+                    raise DependencyUnavailableError(
+                        "structured projection is unavailable in the authorized scope"
+                    )
                 if request.operation is StructuredOperation.DESCRIBE:
                     response = self._describe(request, catalog)
                 elif request.operation is StructuredOperation.JOIN:
                     response = await self._join(request, catalog, principal)
                 else:
                     response = await self._query(request, catalog, principal)
+                if type(self._engine) is KnowledgeEngine and principal.authenticated:
+                    response = await self._with_source_metadata(response, principal)
+                if (
+                    len(response.model_dump_json().encode())
+                    > self._config.max_structured_response_bytes
+                ):
+                    raise ContractValidationError(
+                        "structured response exceeds the server byte ceiling; lower page_size"
+                    )
         except TimeoutError as error:
             raise OperationTimeoutError("structured retrieval deadline expired") from error
-        if type(self._engine) is KnowledgeEngine and principal.authenticated:
-            response = await self._with_source_metadata(response, principal)
-        if len(response.model_dump_json().encode()) > self._config.max_structured_response_bytes:
-            raise ContractValidationError(
-                "structured response exceeds the server byte ceiling; lower page_size"
-            )
         return response
+
+    async def _authorize_scope(self, scope: RetrievalScopeV2, principal: ServerPrincipalV1) -> None:
+        if not principal.authenticated:
+            raise PermissionError("authenticated principal is required")
+        authorization = CentralAuthorizationServiceV1(self._engine)
+        await authorization.authorize_notebook(
+            principal, scope.notebook_id, AuthorizationOperationV1.QUERY
+        )
+        for source_id in scope.source_ids:
+            if (
+                await authorization.authorize_source(
+                    principal, source_id, AuthorizationOperationV1.QUERY
+                )
+                != scope.notebook_id
+            ):
+                raise NotFoundError("authorized resource was not found")
+        associations = await self._engine.structured_retrieval.resolve_version_associations(
+            scope.notebook_id, scope.version_ids
+        )
+        permitted = tuple(
+            (version_id, document_id, source_id)
+            for version_id, document_id, source_id in associations
+            if (not scope.document_ids or document_id in scope.document_ids)
+            and (not scope.source_ids or source_id in scope.source_ids)
+        )
+        if len(permitted) > self._config.max_structured_evidence:
+            raise ContractValidationError("structured scope exceeds the authorization bound")
+        if {item[0] for item in permitted} != set(scope.version_ids) or (
+            scope.document_ids and {item[1] for item in permitted} != set(scope.document_ids)
+        ):
+            raise NotFoundError("authorized resource was not found")
+        for version_id, document_id, source_id in permitted:
+            resolved = await authorization.authorize_document(
+                principal,
+                scope.notebook_id,
+                document_id,
+                version_id,
+                AuthorizationOperationV1.QUERY,
+            )
+            if resolved.source_id != source_id:
+                raise NotFoundError("authorized resource was not found")
 
     async def _with_source_metadata(
         self, response: StructuredRetrievalResponse, principal: ServerPrincipalV1
@@ -592,7 +645,9 @@ def _selected(
         )
     selected = tuple(by_id[item] for item in dataset_ids)
     if any(item.readiness is not StructuredDatasetReadiness.READY for item in selected):
-        raise ContractValidationError("one or more structured generations are unavailable")
+        raise DependencyUnavailableError(
+            "structured generation is unavailable in the authorized scope"
+        )
     return selected
 
 

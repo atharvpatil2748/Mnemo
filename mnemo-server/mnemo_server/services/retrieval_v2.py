@@ -51,7 +51,12 @@ class EvidenceRetrievalApplicationService:
         self._config = config
 
     async def execute(
-        self, request: EvidenceSearchRequest, principal: ServerPrincipalV1 | None = None
+        self,
+        request: EvidenceSearchRequest,
+        principal: ServerPrincipalV1 | None = None,
+        *,
+        automatic_policy_version: str | None = None,
+        force_authorized: bool = False,
     ) -> EvidenceSearchResponse:
         principal = principal or principal_from_claims(None)
         plan = request.to_plan(
@@ -65,6 +70,8 @@ class EvidenceRetrievalApplicationService:
                 if self._config.production_mode
                 else None
             ),
+            automatic_policy_version=automatic_policy_version,
+            security_scope_identity=str(principal.actor_id) if force_authorized else None,
         )
         try:
             if type(self._engine) is KnowledgeEngine:
@@ -99,7 +106,7 @@ class EvidenceRetrievalApplicationService:
                             }
                         )
                     partitioned_service = self._engine.partitioned_retrieval
-                    if self._config.production_mode:
+                    if self._config.production_mode or force_authorized:
                         partitioned = await partitioned_service.execute_authorized(
                             principal=principal,
                             plan=plan,
@@ -125,7 +132,7 @@ class EvidenceRetrievalApplicationService:
                     )
                     return await self._with_authorized_metadata(response, principal)
                 retrieval = self._engine.advanced_retrieval
-                if self._config.production_mode:
+                if self._config.production_mode or force_authorized:
                     if not principal.authenticated:
                         raise PermissionError("production retrieval requires authentication")
                     if not isinstance(retrieval, PrincipalAwareAdvancedRetrievalInterfaceV2):

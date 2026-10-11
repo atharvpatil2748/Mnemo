@@ -1,0 +1,19 @@
+# INACTIVE TEMPLATE. Owner must create a separate temporary Secure MCP Tunnel.
+# Never replace the production tunnel ID or reuse its management credential.
+config_version: 1
+control_plane:
+  base_url: "https://api.openai.com"
+  api_key: "env:ORDERED_FIXTURE_CONTROL_PLANE_API_KEY"
+  tunnel_id: "OWNER_CREATED_ISOLATED_TEST_TUNNEL_ID"
+health:
+  listen_addr: "127.0.0.1:8087"
+admin_ui:
+  open_browser: false
+log:
+  level: info
+  format: json
+mcp:
+  commands:
+    - channel: main
+      # Launch from the Mnemo repository root; this is an inactive example.
+      command: 'cmd.exe /d /c "scripts/start_isolated_text_fixture.bat"'

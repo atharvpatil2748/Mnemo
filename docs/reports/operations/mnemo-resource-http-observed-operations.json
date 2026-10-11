@@ -1,0 +1,219 @@
+{
+  "format": "mnemo.http.observed-tcp-operations/1",
+  "source_manifest": "832fad3b4a3a26bf3f5bb3e3b124a067997b2d5c9fc580a4a9c3828cf5391d32",
+  "evidence": "231 passing disposable TCP tests; backend fixtures include doubles, not production mutation",
+  "operations": [
+    {
+      "method": "DELETE",
+      "path": "/v1/notebooks/{notebook_id}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/notebooks/{notebook_id}/notes/{note_id}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/notebooks/{notebook_id}/sessions/{session_id}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/notebooks/{notebook_id}/sources/{source_id}"
+    },
+    {
+      "method": "GET",
+      "path": "/config"
+    },
+    {
+      "method": "GET",
+      "path": "/config/models"
+    },
+    {
+      "method": "GET",
+      "path": "/health"
+    },
+    {
+      "method": "GET",
+      "path": "/jobs"
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/{job_id}"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/config"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/config/models"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/health"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/jobs"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/jobs/{job_id}"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/graph"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/insights"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/notes"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/notes/{note_id}"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/sessions"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/sessions/{session_id}"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/sources"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/sources/{source_id}"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/sources/{source_id}/status"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/summary"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/timeline"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/capabilities"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/asset-occurrences/{occurrence_id}/analysis"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/asset-occurrences/{occurrence_id}/content"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/documents/{document_id}/versions/{version_id}"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/documents/{document_id}/versions/{version_id}/assets"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/documents/{document_id}/versions/{version_id}/chunks/{chunk_id}"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/documents/{document_id}/versions/{version_id}/original"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/final-qa/{assistant_turn_id}/evidence"
+    },
+    {
+      "method": "PATCH",
+      "path": "/config"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/config"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/notebooks/{notebook_id}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/notebooks/{notebook_id}/notes/{note_id}"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/final-qa"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/insights/generate"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/notes"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/sessions"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/sessions/{session_id}/turns"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/sources"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/query"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/query/stream"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/search"
+    },
+    {
+      "method": "POST",
+      "path": "/v2/notebooks/{notebook_id}/documents/{document_id}/versions/{version_id}/expand"
+    },
+    {
+      "method": "POST",
+      "path": "/v2/notebooks/{notebook_id}/final-qa"
+    },
+    {
+      "method": "POST",
+      "path": "/v2/retrieval/evidence"
+    },
+    {
+      "method": "POST",
+      "path": "/v2/retrieval/structured"
+    }
+  ]
+}

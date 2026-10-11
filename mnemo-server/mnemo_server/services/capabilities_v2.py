@@ -9,8 +9,14 @@ from dataclasses import dataclass
 from typing import Final, Literal, cast
 
 from mnemo.engine import EngineState, KnowledgeEngine
-from mnemo.interfaces import ContractValidationError, PrincipalContextV1
+from mnemo.interfaces import ContractValidationError, DependencyUnavailableError, PrincipalContextV1
+from mnemo.models.multimodal import (
+    EvidenceKindV2,
+    MultimodalProviderCapabilitiesV1,
+    ProviderModalityState,
+)
 from mnemo.phase85 import CapabilityState, CapabilityStatus
+from mnemo.retrieval.advanced import AdvancedRetrievalService
 
 from mnemo_server.config import ServerConfig
 from mnemo_server.schemas.capabilities_v2 import (
@@ -66,6 +72,14 @@ _GENERATION_BACKED: Final = frozenset(
 )
 
 _SEMANTICS: Final[dict[str, _PublicSemantics]] = {
+    "automatic_query_v2": _PublicSemantics(
+        "retrieval",
+        ("canonical_text", "ocr_text", "vision_analysis", "multilingual_text", "visual_vector"),
+        retrieval_modes=("ranked", "exhaustive"),
+        continuation=True,
+        http=("/v2/retrieval/automatic",),
+        mcp=("query_notebook_v2",),
+    ),
     "v1_retrieval": _PublicSemantics(
         "retrieval",
         ("canonical_text",),
@@ -289,7 +303,21 @@ class CapabilityDiscoveryService:
             await CentralAuthorizationServiceV1(self._engine).authorize_notebook(
                 principal, request.notebook_id, AuthorizationOperationV1.RETRIEVE
             )
-        return self._document(request, scope_authorized=request.notebook_id is not None)
+        structured_available: bool | None = None
+        if request.notebook_id is not None:
+            try:
+                structured_runtime = getattr(self._engine, "structured_retrieval", None)
+                if structured_runtime is not None:
+                    structured_available = await structured_runtime.ready_for_notebook(
+                        request.notebook_id
+                    )
+            except DependencyUnavailableError:
+                structured_available = False
+        return self._document(
+            request,
+            scope_authorized=request.notebook_id is not None,
+            structured_available=structured_available,
+        )
 
     def document(self, request: CapabilityDiscoveryRequest | None = None) -> CapabilityDocument:
         """Return global metadata only; scoped metadata uses document_for_principal."""
@@ -299,7 +327,11 @@ class CapabilityDiscoveryService:
         return self._document(query, scope_authorized=False)
 
     def _document(
-        self, query: CapabilityDiscoveryRequest, *, scope_authorized: bool
+        self,
+        query: CapabilityDiscoveryRequest,
+        *,
+        scope_authorized: bool,
+        structured_available: bool | None = None,
     ) -> CapabilityDocument:
         runtime = self._engine.phase85
         selected = set(query.capability_ids)
@@ -339,12 +371,32 @@ class CapabilityDiscoveryService:
                 )
             }
         )
+        try:
+            automatic_ready = self._engine.state is EngineState.READY and isinstance(
+                getattr(self._engine, "advanced_retrieval", None), AdvancedRetrievalService
+            )
+        except DependencyUnavailableError:
+            automatic_ready = False
+        statuses["automatic_query_v2"] = CapabilityStatus(
+            capability_id="automatic_query_v2",
+            owner="Server-planned representation-complete V2 evidence query",
+            state=CapabilityState(
+                configured=True,
+                buildable=True,
+                ready=automatic_ready,
+                active=automatic_ready,
+                exposed=automatic_ready,
+            ),
+            service_registered=True,
+            dependencies=("exhaustive_retrieval", "authorization"),
+            reason_code=None if automatic_ready else "retrieval_service_unavailable",
+        )
         unknown = selected - set(statuses)
         if unknown:
             names = ", ".join(sorted(unknown))
             raise ContractValidationError(f"unknown capabilities: {names}")
         items = tuple(
-            self._capability(status, scope_authorized, statuses)
+            self._capability(status, scope_authorized, statuses, structured_available)
             for capability_id, status in sorted(statuses.items())
             if not selected or capability_id in selected
         )
@@ -454,6 +506,7 @@ class CapabilityDiscoveryService:
         status: CapabilityStatus,
         scope_authorized: bool,
         statuses: Mapping[str, CapabilityStatus],
+        structured_available: bool | None,
     ) -> CapabilityResponse:
         semantics = _SEMANTICS.get(status.capability_id, _PublicSemantics("runtime"))
         runtime = self._engine.phase85
@@ -505,6 +558,8 @@ class CapabilityDiscoveryService:
                 or not state.exposed
                 else None
             )
+            if status.capability_id == "structured_retrieval":
+                scope_available = False if not state.exposed else structured_available
         tools = exposed_tools if runtime.active_profile.mcp_enabled else ()
         next_actions = (
             tuple(
@@ -559,8 +614,16 @@ class CapabilityDiscoveryService:
                 and bool((semantics.http if runtime.active_profile.http_enabled else ()) or tools),
             ),
             registered_mcp_tools=exposed_tools,
-            supported_representations=semantics.representations if state.active else (),
-            supported_modalities=semantics.modalities if state.active else (),
+            supported_representations=(
+                tuple(item.value for item in self._engine.advanced_retrieval.active_representations)
+                if status.capability_id == "automatic_query_v2"
+                and state.active
+                and isinstance(self._engine.advanced_retrieval, AdvancedRetrievalService)
+                else semantics.representations
+                if state.active
+                else ()
+            ),
+            supported_modalities=self._supported_modalities(status, semantics),
             supported_languages=self._supported_languages(status, semantics),
             retrieval_modes=semantics.retrieval_modes,
             continuation=semantics.continuation,
@@ -568,6 +631,32 @@ class CapabilityDiscoveryService:
             recommended_tools=tools,
             next_actions=next_actions,
             unavailable_reason=None if state.active else status.reason_code or "not_active",
+        )
+
+    def _supported_modalities(
+        self, status: CapabilityStatus, semantics: _PublicSemantics
+    ) -> tuple[str, ...]:
+        if not status.state.active:
+            return ()
+        if status.capability_id != "final_qa_v2":
+            return semantics.modalities
+        try:
+            provider = getattr(self._engine, "final_qa_v2", None)
+            capabilities = provider.capabilities() if provider is not None else None
+        except DependencyUnavailableError:
+            return ()
+        if not isinstance(capabilities, MultimodalProviderCapabilitiesV1):
+            return ()
+        evidence_kinds = {
+            "text": EvidenceKindV2.CANONICAL_CHUNK,
+            "image": EvidenceKindV2.ASSET_OCCURRENCE,
+            "ocr": EvidenceKindV2.OCR_REGION,
+            "vision": EvidenceKindV2.VISION_OBSERVATION,
+        }
+        return tuple(
+            modality
+            for modality in semantics.modalities
+            if capabilities.state_for(evidence_kinds[modality]) is ProviderModalityState.SUPPORTED
         )
 
     def _supported_languages(

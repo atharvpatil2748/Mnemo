@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import sqlite3
+from collections.abc import Callable
+from contextlib import closing
+from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import mcp.types as types
 import pytest
+from mcp.server import Server
 from mnemo import EngineState, KnowledgeEngine
 from mnemo.interfaces import PrincipalContextV1
 from mnemo_server.config import ServerConfig
@@ -17,12 +23,68 @@ from mnemo_server.mcp.principal import (
     sse_principal_from_scope,
     stdio_principal,
 )
-from mnemo_server.mcp.server import create_mcp_server
-from mnemo_server.mcp.tools import execute_mcp_tool, get_mcp_tools
+from mnemo_server.mcp.server import create_mcp_server as _create_mcp_server
+from mnemo_server.mcp.tools import MCPContent, get_mcp_tools
+from mnemo_server.mcp.tools import execute_mcp_tool as _execute_mcp_tool
 from mnemo_server.services.authorization import (
     AuthorizationOperationV1,
     CentralAuthorizationServiceV1,
 )
+from pydantic import AnyUrl
+
+
+def _bind_disposable_security_index(engine: MagicMock, root: Path) -> None:
+    database = root / "security-index.db"
+    with closing(sqlite3.connect(database)) as connection:
+        connection.execute(
+            "CREATE TABLE fixture_identity(corpus_identity TEXT, generation_identity TEXT)"
+        )
+        connection.execute(
+            "INSERT INTO fixture_identity VALUES ('security-corpus-v1', 'security-generation-v1')"
+        )
+        connection.commit()
+
+    def verify() -> None:
+        if database.is_symlink() or not database.is_file():
+            raise RuntimeError("DISPOSABLE_SECURITY_INDEX_UNAVAILABLE")
+        with closing(sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)) as db:
+            identity = db.execute("SELECT * FROM fixture_identity").fetchone()
+        if identity != ("security-corpus-v1", "security-generation-v1"):
+            raise RuntimeError("DISPOSABLE_SECURITY_INDEX_IDENTITY_MISMATCH")
+
+    engine._indexed_fixture_readiness_check = verify
+
+
+def create_mcp_server(
+    engine: KnowledgeEngine,
+    config: ServerConfig | None = None,
+    principal_provider: Callable[[], PrincipalContextV1] | None = None,
+) -> Server:
+    check = getattr(engine, "_indexed_fixture_readiness_check", None)
+    return _create_mcp_server(
+        engine,
+        config=config,
+        principal_provider=principal_provider,
+        indexed_fixture_readiness_check=check,
+    )
+
+
+async def execute_mcp_tool(
+    engine: KnowledgeEngine,
+    name: str,
+    arguments: dict[str, Any] | None,
+    config: ServerConfig | None = None,
+    principal: PrincipalContextV1 | None = None,
+) -> list[MCPContent]:
+    check = getattr(engine, "_indexed_fixture_readiness_check", None)
+    return await _execute_mcp_tool(
+        engine,
+        name,
+        arguments,
+        config,
+        principal,
+        indexed_fixture_readiness_check=check,
+    )
 
 
 def production_config(**overrides: object) -> ServerConfig:
@@ -86,13 +148,15 @@ async def test_mcp_server_passes_provider_principal_to_tool() -> None:
         "mnemo_server.mcp.server.execute_mcp_tool", new=AsyncMock(return_value=[])
     ) as execute:
         await handler(request)
+    assert execute.await_args is not None
     assert execute.await_args.args[4] is expected
 
 
 @pytest.mark.anyio
-async def test_production_tool_discovery_requires_trusted_principal() -> None:
+async def test_production_tool_discovery_requires_trusted_principal(tmp_path: Path) -> None:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
+    _bind_disposable_security_index(engine, tmp_path)
     server = create_mcp_server(engine, config=production_config())
     handler = server.request_handlers[types.ListToolsRequest]
     request = types.ListToolsRequest(method="tools/list")
@@ -101,9 +165,10 @@ async def test_production_tool_discovery_requires_trusted_principal() -> None:
 
 
 @pytest.mark.anyio
-async def test_production_resource_discovery_requires_trusted_principal() -> None:
+async def test_production_resource_discovery_requires_trusted_principal(tmp_path: Path) -> None:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
+    _bind_disposable_security_index(engine, tmp_path)
     server = create_mcp_server(engine, config=production_config())
     list_handler = server.request_handlers[types.ListResourcesRequest]
     read_handler = server.request_handlers[types.ReadResourceRequest]
@@ -113,15 +178,16 @@ async def test_production_resource_discovery_requires_trusted_principal() -> Non
         await read_handler(
             types.ReadResourceRequest(
                 method="resources/read",
-                params=types.ReadResourceRequestParams(uri="mnemo://capabilities"),
+                params=types.ReadResourceRequestParams(uri=AnyUrl("mnemo://capabilities")),
             )
         )
 
 
 @pytest.mark.anyio
-async def test_authenticated_production_discovery_has_only_safe_resource() -> None:
+async def test_authenticated_production_discovery_has_only_safe_resource(tmp_path: Path) -> None:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
+    _bind_disposable_security_index(engine, tmp_path)
     principal = PrincipalContextV1(uuid4(), True)
     server = create_mcp_server(
         engine, config=production_config(), principal_provider=lambda: principal
@@ -134,9 +200,12 @@ async def test_authenticated_production_discovery_has_only_safe_resource() -> No
 
 
 @pytest.mark.anyio
-async def test_authenticated_production_resource_read_is_limited_to_capabilities() -> None:
+async def test_authenticated_production_resource_read_is_limited_to_capabilities(
+    tmp_path: Path,
+) -> None:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
+    _bind_disposable_security_index(engine, tmp_path)
     server = create_mcp_server(
         engine,
         config=production_config(),
@@ -147,7 +216,7 @@ async def test_authenticated_production_resource_read_is_limited_to_capabilities
         await handler(
             types.ReadResourceRequest(
                 method="resources/read",
-                params=types.ReadResourceRequestParams(uri="mnemo://private"),
+                params=types.ReadResourceRequestParams(uri=AnyUrl("mnemo://private")),
             )
         )
     document = MagicMock()
@@ -160,36 +229,44 @@ async def test_authenticated_production_resource_read_is_limited_to_capabilities
         result = await handler(
             types.ReadResourceRequest(
                 method="resources/read",
-                params=types.ReadResourceRequestParams(uri="mnemo://capabilities"),
+                params=types.ReadResourceRequestParams(uri=AnyUrl("mnemo://capabilities")),
             )
         )
+    assert scoped_document.await_args is not None
     assert scoped_document.await_args.args[1].authenticated
     assert "notebook_ids" in str(result.root)
     assert "private" not in str(result.root)
 
 
 @pytest.mark.anyio
-async def test_authorized_mcp_tool_rejects_missing_principal() -> None:
+async def test_authorized_mcp_tool_rejects_missing_principal(tmp_path: Path) -> None:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
+    _bind_disposable_security_index(engine, tmp_path)
     with pytest.raises(PermissionError, match="authenticated"):
         await execute_mcp_tool(engine, "search_evidence", {}, production_config())
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("tool_name", [tool.name for tool in get_mcp_tools()])
-async def test_every_production_tool_requires_transport_principal(tool_name: str) -> None:
+async def test_every_production_tool_requires_transport_principal(
+    tool_name: str, tmp_path: Path
+) -> None:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
+    _bind_disposable_security_index(engine, tmp_path)
     with pytest.raises(PermissionError, match="authenticated"):
         await execute_mcp_tool(engine, tool_name, {}, production_config())
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("tool_name", [tool.name for tool in get_mcp_tools()])
-async def test_every_production_tool_rejects_client_storage_override(tool_name: str) -> None:
+async def test_every_production_tool_rejects_client_storage_override(
+    tool_name: str, tmp_path: Path
+) -> None:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
+    _bind_disposable_security_index(engine, tmp_path)
     with pytest.raises(Exception, match="Unsupported MCP tool argument"):
         await execute_mcp_tool(
             engine,
@@ -216,10 +293,11 @@ async def test_every_production_tool_rejects_client_storage_override(tool_name: 
     ],
 )
 async def test_production_scope_rejects_unknown_resource_before_tool_execution(
-    tool_name: str, field: str
+    tool_name: str, field: str, tmp_path: Path
 ) -> None:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
+    _bind_disposable_security_index(engine, tmp_path)
     engine.storage.get_notebook = AsyncMock(return_value=None)
     engine.storage.get_source = AsyncMock(return_value=None)
     guessed_id = uuid4()
@@ -235,9 +313,10 @@ async def test_production_scope_rejects_unknown_resource_before_tool_execution(
 
 
 @pytest.mark.anyio
-async def test_nested_production_policy_override_is_rejected() -> None:
+async def test_nested_production_policy_override_is_rejected(tmp_path: Path) -> None:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
+    _bind_disposable_security_index(engine, tmp_path)
     with pytest.raises(Exception, match="Client production policy override is forbidden"):
         await execute_mcp_tool(
             engine,
@@ -257,9 +336,13 @@ async def test_nested_production_policy_override_is_rejected() -> None:
         {"scope": {"workspace_root": "../escape"}},
     ],
 )
-async def test_recursive_server_owned_policy_override_is_rejected(selector: dict) -> None:
+async def test_recursive_server_owned_policy_override_is_rejected(
+    selector: dict[str, object],
+    tmp_path: Path,
+) -> None:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
+    _bind_disposable_security_index(engine, tmp_path)
     with pytest.raises(Exception, match="Client production policy override is forbidden"):
         await execute_mcp_tool(
             engine,
@@ -271,9 +354,10 @@ async def test_recursive_server_owned_policy_override_is_rejected(selector: dict
 
 
 @pytest.mark.anyio
-async def test_timeline_source_must_belong_to_requested_notebook() -> None:
+async def test_timeline_source_must_belong_to_requested_notebook(tmp_path: Path) -> None:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
+    _bind_disposable_security_index(engine, tmp_path)
     engine.storage.get_notebook = AsyncMock(return_value=object())
     engine.storage.get_source = AsyncMock(return_value=SimpleNamespace(notebook_id=uuid4()))
     requested_notebook = uuid4()

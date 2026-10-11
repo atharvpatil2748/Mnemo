@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -34,7 +34,7 @@ def _engine() -> MagicMock:
     return engine
 
 
-def _response(notebook_id, document_id, version_id):  # type: ignore[no-untyped-def]
+def _response(notebook_id: UUID, document_id: UUID, version_id: UUID) -> DeliveryResponse:
     return DeliveryResponse(
         resource_kind=DeliveryResourceKind.DOCUMENT,
         snapshot_identity="a" * 64,
@@ -265,6 +265,9 @@ def test_wp04_cursor_configuration_rotation_and_production_validation(
     )
     monkeypatch.setenv("MNEMO_SERVER_DELIVERY_CURSOR_LEGACY_V1_OVERLAP_SECONDS", "0")
     monkeypatch.setenv("MNEMO_SERVER_PRODUCTION_MODE", "true")
+    with pytest.raises(RuntimeError, match="PRODUCTION_CORPUS_UNINDEXED"):
+        ServerConfig.from_env()
+    monkeypatch.setenv("MNEMO_SERVER_PRODUCTION_MODE", "false")
     config = ServerConfig.from_env()
     assert config.delivery_cursor_key_id == "current-2026"
     assert config.delivery_cursor_ttl_seconds == 60

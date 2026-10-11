@@ -8,7 +8,13 @@ from datetime import timedelta
 from mnemo.cursors import CursorCodecV2, CursorSigningKeyV2
 from mnemo.delivery import BoundedDocumentExpansionService
 from mnemo.engine import KnowledgeEngine
-from mnemo.interfaces import ContractValidationError, PrincipalContextV1
+from mnemo.interfaces import (
+    AssetCatalogStoreV1,
+    ContractValidationError,
+    FinalQAExecutionStoreV2,
+    PrincipalContextV1,
+    StorageInterfaceV1,
+)
 from mnemo.models import DeliveryLimits, DeliveryResponse
 
 from mnemo_server.config import ServerConfig
@@ -20,8 +26,25 @@ from mnemo_server.services.source_metadata import (
 
 
 def build_delivery_service(
-    engine: KnowledgeEngine, config: ServerConfig
+    engine: KnowledgeEngine, config: ServerConfig, principal: PrincipalContextV1 | None = None
 ) -> BoundedDocumentExpansionService:
+    registered = getattr(engine, "delivery_service", None)
+    if registered is not None:
+        if not isinstance(registered, BoundedDocumentExpansionService):
+            raise ContractValidationError("registered delivery service is incompatible")
+        return registered.for_actor(principal.actor_id) if principal is not None else registered
+    service = build_delivery_service_for_storage(engine.storage, engine.asset_catalog, config)
+    return service.for_actor(principal.actor_id) if principal is not None else service
+
+
+def build_delivery_service_for_storage(
+    storage: StorageInterfaceV1,
+    catalog: AssetCatalogStoreV1,
+    config: ServerConfig,
+    *,
+    execution_store: FinalQAExecutionStoreV2 | None = None,
+) -> BoundedDocumentExpansionService:
+    """Build the exact service shared by HTTP/MCP and lifecycle registration."""
     codec = CursorCodecV2(
         CursorSigningKeyV2(
             key_id=config.delivery_cursor_key_id,
@@ -36,8 +59,9 @@ def build_delivery_service(
         ttl=timedelta(seconds=config.delivery_cursor_ttl_seconds),
     )
     return BoundedDocumentExpansionService(
-        storage=engine.storage,
-        catalog=engine.asset_catalog,
+        storage=storage,
+        catalog=catalog,
+        execution_store=execution_store,
         limits=DeliveryLimits(
             max_document_bytes=config.max_delivery_document_bytes,
             max_asset_bytes=config.max_delivery_asset_bytes,

@@ -220,6 +220,11 @@ class AdvancedRetrievalService:
         self._reranker = reranker
         self._clock = clock
 
+    @property
+    def active_representations(self) -> tuple[EvidenceRepresentation, ...]:
+        """Representations with a composed, governed retrieval source."""
+        return tuple(self._sources)
+
     async def execute(
         self, plan: RetrievalPlanV2, *, cursor: str | None = None
     ) -> RetrievalResultSetV1:
@@ -242,6 +247,10 @@ class AdvancedRetrievalService:
         """Execute while preserving the server-owned principal to V2 sources."""
         if not principal.authenticated:
             raise PermissionError("server-derived authenticated principal is required")
+        actor_scope = str(principal.actor_id)
+        if plan.security_scope_identity not in (None, actor_scope):
+            raise PermissionError("retrieval security scope does not match the principal")
+        plan = plan.model_copy(update={"security_scope_identity": actor_scope})
         if cursor is not None and plan.mode is not AdvancedRetrievalMode.EXHAUSTIVE:
             raise ValueError("continuation cursors are only valid for exhaustive retrieval")
         started = time.perf_counter()
@@ -286,9 +295,13 @@ class AdvancedRetrievalService:
         _validate_authorization(recalled, plan)
         expanded = await self._expand_ranked(plan, recalled)
         merged = _deduplicate((*recalled, *expanded))
-        fused = _rank_fuse(merged)[: plan.budgets.fusion_limit]
+        fused = _rank_fuse(merged, source_rank_first=plan.automatic_policy_version is not None)[
+            : plan.budgets.fusion_limit
+        ]
         rerank_input = tuple(fused[: plan.budgets.rerank_limit])
         reranked = await self._rerank(plan, rerank_input)
+        if plan.automatic_policy_version is not None:
+            reranked = _diversify_occurrences(reranked)
         selected, truncated_reason = _apply_output_bounds(plan, reranked)
         unavailable = any(
             report.status is not RepresentationSearchStatus.SEARCHED for report in reports
@@ -508,6 +521,10 @@ class AdvancedRetrievalService:
         ):
             raise IntegrityError("advanced reranker changed candidate provenance")
         output_order = {item.candidate_id: index for index, item in enumerate(output)}
+        if plan.automatic_policy_version is not None:
+            # The server-owned automatic path compares independent sources.
+            # A canonical title flag cannot outrank every OCR/Vision hit.
+            return output
         return tuple(
             sorted(
                 output,
@@ -532,8 +549,35 @@ def _deduplicate(
     return tuple(merged.values())
 
 
+def _diversify_occurrences(
+    candidates: tuple[AdvancedRetrievalCandidate, ...],
+) -> tuple[AdvancedRetrievalCandidate, ...]:
+    """Present a first hit per occurrence before alternate derivation views."""
+    seen: set[tuple[object, object, object, EvidenceRepresentation]] = set()
+    first: list[AdvancedRetrievalCandidate] = []
+    alternate: list[AdvancedRetrievalCandidate] = []
+    for candidate in candidates:
+        if candidate.occurrence_id is None:
+            first.append(candidate)
+            continue
+        identity = (
+            candidate.document_id,
+            candidate.version_id,
+            candidate.occurrence_id,
+            candidate.representation,
+        )
+        if identity in seen:
+            alternate.append(candidate)
+        else:
+            seen.add(identity)
+            first.append(candidate)
+    return tuple((*first, *alternate))
+
+
 def _rank_fuse(
     candidates: tuple[AdvancedRetrievalCandidate, ...],
+    *,
+    source_rank_first: bool = False,
 ) -> tuple[AdvancedRetrievalCandidate, ...]:
     scored = tuple(
         replace(
@@ -542,6 +586,21 @@ def _rank_fuse(
         )
         for candidate in candidates
     )
+    if source_rank_first:
+        # Rank strata give every ready source's best evidence a fair chance
+        # before top-k truncation.  No incompatible raw scores or modality
+        # weights are mixed; RRF orders candidates within each stratum.
+        return tuple(
+            sorted(
+                scored,
+                key=lambda item: (
+                    min(path.source_rank for path in item.paths),
+                    -cast(float, item.fused_score),
+                    -int(item.title_match),
+                    str(item.candidate_id),
+                ),
+            )
+        )
     return tuple(
         sorted(
             scored,

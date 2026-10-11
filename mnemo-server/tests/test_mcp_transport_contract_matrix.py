@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
 import sys
 from pathlib import Path
 from subprocess import PIPE
+from typing import Any
 from uuid import UUID
 
 import anyio
@@ -16,11 +18,11 @@ from httpx import ASGITransport, AsyncClient
 from mcp.client.session import ClientSession
 from mcp.client.sse import sse_client
 from mcp.client.stdio import StdioServerParameters, stdio_client
+from mcp.types import BlobResourceContents, EmbeddedResource
 from mnemo.interfaces import PrincipalContextV1
-from mnemo_server.app import create_app
-from mnemo_server.mcp.server import create_mcp_server
+from mnemo_server.services.authorization import principal_from_claims
 from mnemo_server.services.production_storage_composition import preflight_production_storage
-from test_mcp_immutable_schema_matrix import _fixture
+from test_mcp_immutable_schema_matrix import _fixture, create_app, create_mcp_server
 
 _NOTEBOOK = str(UUID(int=1))
 _DOCUMENT = str(UUID(int=2))
@@ -104,6 +106,16 @@ def _cases(occurrence_id: UUID, ocr_id: UUID) -> dict[str, tuple[str, dict[str, 
                 "mode": "original",
             },
         ),
+        "document_text": (
+            "get_document",
+            {
+                "notebook_id": _NOTEBOOK,
+                "document_id": _DOCUMENT,
+                "version_id": _VERSION,
+                "mode": "text",
+                "max_items": 1,
+            },
+        ),
         "chunk": (
             "get_document_chunk",
             {
@@ -171,6 +183,10 @@ def _cases(occurrence_id: UUID, ocr_id: UUID) -> dict[str, tuple[str, dict[str, 
             },
         ),
         "inventory_invalid": ("list_notebooks", {"limit": True}),
+        "evaluation_role_invalid": (
+            "list_notebooks",
+            {"limit": 1, "serving_role": "evaluation", "registry_alias": "phase8_6"},
+        ),
         "summary_unknown": ("get_notebook_summary", {"notebook_id": str(UUID(int=999))}),
         "timeline_unknown": ("get_timeline", {"notebook_id": str(UUID(int=999))}),
         "insights_unknown": ("get_source_insights", {"source_id": str(UUID(int=999))}),
@@ -187,6 +203,20 @@ def _cases(occurrence_id: UUID, ocr_id: UUID) -> dict[str, tuple[str, dict[str, 
         "structured_invalid": (
             "query_structured",
             {"operation": "invalid", "scope": {"notebook_id": _NOTEBOOK}},
+        ),
+        "structured_unavailable": (
+            "query_structured",
+            {
+                "operation": "describe",
+                "scope": {"notebook_id": str(UUID(int=11)), "version_ids": [str(UUID(int=13))]},
+            },
+        ),
+        "structured_unknown": (
+            "query_structured",
+            {
+                "operation": "describe",
+                "scope": {"notebook_id": str(UUID(int=999)), "version_ids": [_VERSION]},
+            },
         ),
         "document_unknown": (
             "get_document",
@@ -244,7 +274,7 @@ def _first_difference(left: object, right: object, path: str = "root") -> str | 
 
 async def _collect(
     client: ClientSession, cases: dict[str, tuple[str, dict[str, object]]]
-) -> dict[str, tuple[bool, object]]:
+) -> dict[str, tuple[bool, Any]]:
     await client.initialize()
     assert {tool.name for tool in (await client.list_tools()).tools} == {
         "query_notebook",
@@ -261,12 +291,15 @@ async def _collect(
         "query_structured",
         "run_final_qa_v2",
         "get_capabilities",
+        "query_notebook_v2",
     }
-    observed: dict[str, tuple[bool, object]] = {}
+    # MCP responses are heterogeneous JSON documents; assertions below verify their shapes.
+    observed: dict[str, tuple[bool, Any]] = {}
     expected_errors = {
         "final_qa_invalid",
         "unknown_resource",
         "inventory_invalid",
+        "evaluation_role_invalid",
         "summary_unknown",
         "timeline_unknown",
         "insights_unknown",
@@ -275,6 +308,8 @@ async def _collect(
         "evidence_invalid",
         "capability_invalid",
         "structured_invalid",
+        "structured_unavailable",
+        "structured_unknown",
         "document_unknown",
         "asset_unknown",
         "analysis_unknown",
@@ -287,6 +322,13 @@ async def _collect(
             assert response.content[0].type == "text", label
             body = json.loads(response.content[0].text)
             assert UUID(body["error"]["correlation_id"])
+            if label == "evaluation_role_invalid":
+                assert body["error"]["category"] == "invalid_input"
+                assert "phase8_6" not in response.content[0].text
+            if label == "structured_unavailable":
+                assert body["error"]["category"] == "capability_unavailable"
+            if label == "structured_unknown":
+                assert body["error"]["category"] == "not_found"
         elif response.content[0].type == "text":
             body = json.loads(response.content[0].text)
             if label == "final_qa":
@@ -298,6 +340,35 @@ async def _collect(
     assert observed["query_synth"][1]["answer"] == "Grounded [source:1]"
     assert observed["structured"][1]["items"]
     assert observed["chunk"][1]["items"]
+    assert observed["document_text"][1]["representation"] == "parsed_text/v1"
+    assert observed["document_text"][1]["total_items"] > 0
+    # Decode real MCP native resources, not metadata-only successful responses.
+    original = observed["document_original"][1][0]["resource"]
+    truth = base64.b64decode(original["blob"], validate=True)
+    args = dict(cases["document_original"][1], max_bytes=2)
+    received = bytearray()
+    while True:
+        part = await client.call_tool("get_document", args)
+        assert not part.isError
+        content = part.content[0]
+        assert isinstance(content, EmbeddedResource)
+        resource = content.resource
+        assert isinstance(resource, BlobResourceContents)
+        raw = base64.b64decode(resource.blob, validate=True)
+        metadata = resource.meta
+        assert metadata is not None
+        assert metadata["rangeStart"] == len(received)
+        assert metadata["returnedBytes"] == len(raw)
+        received.extend(raw)
+        assert metadata["rangeEnd"] == len(received)
+        assert metadata["rangeEndExclusive"] is True
+        assert metadata["contentHash"] == hashlib.sha256(truth).hexdigest()
+        if metadata["nextCursor"] is None:
+            assert metadata["completeness"] == "complete"
+            break
+        assert metadata["completeness"] == "truncated"
+        args["cursor"] = metadata["nextCursor"]
+    assert bytes(received) == truth
     assert observed["governed_evidence"][1]["items"][0]["document_id"] == _DOCUMENT
     assert observed["governed_partition"][1]["items"][0]["document_id"] == _DOCUMENT
     assert (
@@ -392,7 +463,7 @@ async def test_same_fixture_direct_and_real_loopback_sse_contracts(
     direct_server = create_mcp_server(
         engine,
         config=config,
-        principal_provider=lambda: PrincipalContextV1(UUID(int=99), True),
+        principal_provider=lambda: principal_from_claims({"sub": "api-key"}),
         workspace_decision=workspace_decision,
     )
     c2s_send, c2s_recv = anyio.create_memory_object_stream(20)
@@ -479,7 +550,9 @@ async def test_same_fixture_http_and_public_mcp_v2_contracts(tmp_path: Path, leg
     ids = reader.analysis_ids
     cases = _cases(ids["occurrence"], ids["ocr_0"])
     server = create_mcp_server(
-        engine, config=config, principal_provider=lambda: PrincipalContextV1(UUID(int=99), True)
+        engine,
+        config=config,
+        principal_provider=lambda: principal_from_claims({"sub": "api-key"}),
     )
     c2s_send, c2s_recv = anyio.create_memory_object_stream(20)
     s2c_send, s2c_recv = anyio.create_memory_object_stream(20)
@@ -652,6 +725,12 @@ async def test_same_fixture_http_and_public_mcp_v2_contracts(tmp_path: Path, leg
                 ),
                 "structured_invalid": await http.post(
                     "/v2/retrieval/structured", json=cases["structured_invalid"][1]
+                ),
+                "structured_unavailable": await http.post(
+                    "/v2/retrieval/structured", json=cases["structured_unavailable"][1]
+                ),
+                "structured_unknown": await http.post(
+                    "/v2/retrieval/structured", json=cases["structured_unknown"][1]
                 ),
                 "capability_invalid": await http.get(
                     "/v2/capabilities", params={"capability_ids": "INVALID_CAPABILITY"}

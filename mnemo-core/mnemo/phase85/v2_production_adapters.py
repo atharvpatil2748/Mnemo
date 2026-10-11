@@ -29,8 +29,7 @@ from mnemo.models.v2_evidence_resolution import (
     V2TransformationLineageV1,
 )
 from mnemo.models.v2_retrieval_authorization import V2RetrievalAuthorizationDecisionV1
-from mnemo.phase85.v2_database_identity import GovernedV2DatabaseIdentityVerifier
-from mnemo.phase85.v2_evaluation_runtime import V2RuntimeIdentityV1
+from mnemo.phase85.v2_evaluation_runtime import V2DatabaseIdentityVerifier, V2RuntimeIdentityV1
 from mnemo.phase85.v2_readiness import V2GenerationCapability, V2GenerationEvidence
 from mnemo.retrieval.full_multilingual_v2 import MultilingualV2RetrievalCandidate
 from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
@@ -52,7 +51,7 @@ class GovernedActiveV2GenerationInspector:
         self,
         *,
         store: SQLiteV2ReadOnlyRuntimeStore,
-        verifier: GovernedV2DatabaseIdentityVerifier,
+        verifier: V2DatabaseIdentityVerifier,
         identity: V2RuntimeIdentityV1,
     ) -> None:
         self._store = store
@@ -176,6 +175,39 @@ class AuthorizedV2SourceStorageEnumerator:
             item.source_reference.identity_digest: item.source_reference for item in handles
         }
         return tuple(by_digest[key] for key in sorted(by_digest))
+
+    async def enumerate_authorized_multilingual_sources_page(
+        self, *, decision: V2RetrievalAuthorizationDecisionV1, offset: int, limit: int
+    ) -> tuple[LanguageEvidenceReferenceV3, ...]:
+        """Page exact authorized V2 identities beyond the legacy 10k ceiling."""
+        if offset < 0 or not 1 <= limit <= 10_000:
+            raise ValueError("authorized V2 source page is outside governed bounds")
+        security = self.runtime_security(decision)
+        rows = await self._store.list_authorized_v2_semantic_rows(
+            decision=decision,
+            generation_id=self._generations.language_text_generation_id,
+            limit=limit,
+            offset=offset,
+        )
+        values: dict[str, LanguageEvidenceReferenceV3] = {}
+        for row in rows:
+            handle = V2AuthorizedEvidenceHandleV1(
+                source_reference=row.source,
+                representation_reference=row.representation,
+                language_observation_references=row.language_observation_references,
+                script_observation_references=row.script_observation_references,
+                semantic_generation_id=row.generation_id,
+                runtime_security=security,
+            )
+            key = (decision.decision_fingerprint, row.source.identity_digest)
+            prior = self._handles.get(key)
+            if prior is not None and prior.representation_reference != row.representation:
+                raise ValueError("authorized V2 source has ambiguous representation lineage")
+            if row.source.identity_digest in values:
+                raise ValueError("authorized V2 source page contains duplicate identities")
+            self._handles[key] = handle
+            values[row.source.identity_digest] = row.source
+        return tuple(values[key] for key in sorted(values))
 
     async def resolve_handle(
         self,
@@ -362,9 +394,27 @@ class GovernedV2CandidateProjector:
             )
             if chunk is None:
                 raise LookupError("EVIDENCE_LINEAGE_INVALID")
+        projection = await self._store.get_authorized_v2_semantic_row(
+            decision=decision,
+            generation_id=security.generations.language_text_generation_id,
+            evidence_reference_digest=source.identity_digest,
+            representation_reference_id=candidate.representation_reference.reference_id,
+        )
+        if projection is None or projection.text != candidate.semantic_text:
+            raise LookupError("EVIDENCE_LINEAGE_INVALID")
         locator = FrozenMetadata(
             {
                 "evidence_reference_digest": source.identity_digest,
+                "evidence_id": source.evidence_id,
+                "evidence_kind": source.kind.value,
+                "source_generation_id": (
+                    None
+                    if source.source_generation_id is None
+                    else str(source.source_generation_id)
+                ),
+                "page_number": projection.position.page_number,
+                "section_index": projection.position.section_index,
+                "heading_path": list(projection.position.heading_path),
                 "representation_reference_id": str(candidate.representation_reference.reference_id),
                 "authorization_decision_fingerprint": decision.decision_fingerprint,
                 "active_alias_set_identity": security.active_alias_set_identity,
@@ -381,6 +431,7 @@ class GovernedV2CandidateProjector:
                 chunk_id=None if chunk is None else chunk.id,
                 occurrence_id=source.occurrence_id,
                 derivation_id=source.derivation_id,
+                evidence_id=source.evidence_id,
             ),
             notebook_id=source.notebook_id,
             source_id=source.source_id,
@@ -399,4 +450,5 @@ class GovernedV2CandidateProjector:
             ),
             fused_score=value.fused_score,
             final_rank=value.final_rank,
+            evidence_id=source.evidence_id,
         )

@@ -74,3 +74,41 @@ async def test_sentence_transformers_embedder_initialization_error_is_typed(
         await embedder.initialize()
     assert embedder._executor is not None
     embedder._executor.shutdown(wait=True)
+
+
+@pytest.mark.anyio
+async def test_sentence_transformers_cuda_selection_fails_closed(monkeypatch, tmp_path) -> None:
+    class Model:
+        def __init__(self, target: str, *, device: str, **kwargs: object) -> None:
+            self.device = device
+
+        def encode(self, texts, **kwargs):  # type: ignore[no-untyped-def]
+            return ((1.0, 0.0, 0.0),) * len(texts)
+
+    monkeypatch.setitem(
+        sys.modules, "sentence_transformers", SimpleNamespace(SentenceTransformer=Model)
+    )
+    monkeypatch.setattr(subject, "_LOCAL_BGE_M3_SNAPSHOT", tmp_path / "absent")
+    config = EmbeddingConfig(
+        provider="sentence-transformers", model="test-model", dimensions=3, device="cuda"
+    )
+    embedder = subject.SentenceTransformersEmbedder(config)
+    assert embedder.execution_device is None
+    assert await embedder.embed("probe") == (1.0, 0.0, 0.0)
+    assert embedder._model.device == "cuda"
+    assert embedder.execution_device == "cuda"
+    assert embedder._executor is not None
+    embedder._executor.shutdown(wait=True)
+
+    class CpuModel(Model):
+        def __init__(self, target: str, *, device: str, **kwargs: object) -> None:
+            super().__init__(target, device="cpu", **kwargs)
+
+    monkeypatch.setitem(
+        sys.modules, "sentence_transformers", SimpleNamespace(SentenceTransformer=CpuModel)
+    )
+    rejected = subject.SentenceTransformersEmbedder(config)
+    with pytest.raises(RuntimeError, match="did not load on CUDA"):
+        await rejected.initialize()
+    assert rejected._executor is not None
+    rejected._executor.shutdown(wait=True)

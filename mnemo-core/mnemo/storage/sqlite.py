@@ -1521,6 +1521,68 @@ class SQLiteStore(
             )
             return True
 
+    async def promote_index_generation_set(self, generation_ids: tuple[UUID, ...]) -> bool:
+        """Atomically publish a prevalidated, complete set of READY generations.
+
+        The caller owns cross-representation ancestry and model-space validation;
+        this final store boundary rechecks lifecycle and coverage under one write
+        transaction so partial alias promotion is impossible.
+        """
+        if not generation_ids or len(set(generation_ids)) != len(generation_ids):
+            raise ValueError("generation set must be nonempty and unique")
+        db = self._require_open()
+        async with _transaction(db):
+            rows = []
+            for generation_id in generation_ids:
+                async with db.execute(
+                    "SELECT g.capability,g.profile,g.state,g.item_count,c.expected_count,"
+                    "c.succeeded_count,c.failed_count,c.skipped_count,c.completeness "
+                    "FROM index_generations g JOIN index_generation_coverage c "
+                    "USING(generation_id) WHERE g.generation_id=?",
+                    (str(generation_id),),
+                ) as cursor:
+                    row = await cursor.fetchone()
+                if row is None or row[2] != IndexGenerationState.READY.value:
+                    return False
+                if (
+                    row[8] != "complete"
+                    or row[6] != 0
+                    or row[7] != 0
+                    or row[3] != row[4]
+                    or row[4] != row[5]
+                ):
+                    return False
+                rows.append((str(row[0]), str(row[1]), generation_id))
+            if len({(capability, profile) for capability, profile, _ in rows}) != len(rows):
+                return False
+            now = _dt_to_iso(datetime.now(UTC))
+            for capability, profile, generation_id in rows:
+                async with db.execute(
+                    "SELECT generation_id FROM active_index_generations "
+                    "WHERE capability=? AND profile=?",
+                    (capability, profile),
+                ) as cursor:
+                    active = await cursor.fetchone()
+                if active is not None and active[0] != str(generation_id):
+                    await db.execute(
+                        "UPDATE index_generations SET state=?,updated_at=? "
+                        "WHERE generation_id=? AND state=?",
+                        (
+                            IndexGenerationState.SUPERSEDED.value,
+                            now,
+                            active[0],
+                            IndexGenerationState.READY.value,
+                        ),
+                    )
+                await db.execute(
+                    "INSERT INTO active_index_generations "
+                    "(capability,profile,generation_id,promoted_at) VALUES (?,?,?,?) "
+                    "ON CONFLICT(capability,profile) DO UPDATE SET "
+                    "generation_id=excluded.generation_id,promoted_at=excluded.promoted_at",
+                    (capability, profile, str(generation_id), now),
+                )
+            return True
+
     async def get_active_index_generation(
         self, capability: str, profile: str
     ) -> IndexGeneration | None:

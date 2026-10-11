@@ -35,6 +35,7 @@ from mnemo_server.services.full_multilingual_v2_production import (
 from mnemo_server.services.full_multilingual_v2_registration import (
     ServerOwnedFullMultilingualV2RegistrationV1,
 )
+from test_v2_production_adapters_registration_ci_safe import _prepare_isolated_environment
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = (
@@ -108,32 +109,16 @@ def _builder(resolver: object) -> RerankerCandidateBuilderV1:
     )
 
 
-async def _compose() -> None:
+async def _compose(tmp_path: Path) -> None:
+    manifest_path, target, identity = _prepare_isolated_environment(tmp_path)
     verifier = GovernedV2DatabaseIdentityVerifier(
-        workspace_root=ROOT,
-        identity_manifest=MANIFEST,
+        workspace_root=tmp_path,
+        identity_manifest=manifest_path,
     )
-    target = (ROOT / verifier.artifact.target_path).resolve()
-    if not target.exists():
-        pytest.skip("Governed V2 production database not present in environment")
     artifact = verifier.artifact
-    identity = V2RuntimeIdentityV1(
-        profile_id="full_multilingual_v2_local_prebuild",
-        profile_fingerprint=artifact.profile_fingerprint,
-        vector_space_identity=artifact.vector_space_identity,
-        build_run_id=artifact.build_run_id,
-        database_identity=artifact.database_identity,
-        alias_set_digest="b3479aeaf423630abc48436ea3d23c7d37a7fdee637e53b5df86d08b972fe7c0",
-        query_preprocessing_identity="query-preprocessing",
-        document_preprocessing_identity="document-preprocessing",
-        authorization_service_id="central-v1-plus-v2",
-        provenance_validator_id="v2-provenance-validator/1",
-        reranker_public_protocol_id="multilingual-reranker/3",
-        provider_identity="sentence-transformers",
-    )
     assembler = ProductionFullMultilingualV2ServerDependencyAssemblerV1(
-        workspace_root=ROOT,
-        identity_manifest=MANIFEST,
+        workspace_root=tmp_path,
+        identity_manifest=manifest_path,
         identity=identity,
         support=V2ProductionRuntimeSupportV1(
             query_embedder=cast(Any, _NoInferenceQueryEmbedder()),
@@ -148,9 +133,7 @@ async def _compose() -> None:
         KnowledgeEngine,
         SimpleNamespace(
             config=SimpleNamespace(
-                storage=SimpleNamespace(
-                    sqlite=SimpleNamespace(path=(ROOT / verifier.artifact.target_path).resolve())
-                )
+                storage=SimpleNamespace(sqlite=SimpleNamespace(path=target.resolve()))
             )
         ),
     )
@@ -179,8 +162,8 @@ async def _compose() -> None:
 
 
 @pytest.mark.local_database
-def test_server_owned_registration_composes_real_production_adapters() -> None:
-    asyncio.run(_compose())
+def test_server_owned_registration_composes_real_production_adapters(tmp_path: Path) -> None:
+    asyncio.run(_compose(tmp_path))
 
 
 def test_production_assembler_rejects_cross_store_authorization_engine() -> None:

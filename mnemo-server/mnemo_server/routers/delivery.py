@@ -68,14 +68,17 @@ async def get_document_delivery(
     cursor: Annotated[str | None, Query()] = None,
     max_bytes: Annotated[int | None, Query(ge=1)] = None,
     max_items: Annotated[int | None, Query(ge=1)] = None,
+    mode: Annotated[str, Query(pattern="^(blocks|text)$")] = "blocks",
 ) -> DeliveryResponseBody:
     await _authorize_document(request, engine, notebook_id, document_id, version_id)
-    result = await build_delivery_service(engine, config).expand_document(
+    result = await build_delivery_service(
+        engine, config, principal_from_claims(getattr(request.state, "auth", None))
+    ).expand_document(
         DeliveryRequest(
             notebook_id=notebook_id,
             document_id=document_id,
             version_id=version_id,
-            view=DeliveryView.BLOCKS,
+            view=DeliveryView(mode),
             cursor=cursor,
             max_bytes=max_bytes,
             max_items=max_items,
@@ -99,7 +102,9 @@ async def expand_document_delivery_v2(
 ) -> DeliveryResponseBody:
     """Resolve exactly one positional selector without semantic ranking."""
     await _authorize_document(request, engine, notebook_id, document_id, version_id)
-    result = await build_delivery_service(engine, config).expand_document_v2(
+    result = await build_delivery_service(
+        engine, config, principal_from_claims(getattr(request.state, "auth", None))
+    ).expand_document_v2(
         body.to_core(notebook_id=notebook_id, document_id=document_id, version_id=version_id)
     )
     return await _response_body(request, engine, config, result)
@@ -117,7 +122,9 @@ async def get_original_document_delivery(
     max_bytes: Annotated[int | None, Query(ge=1)] = None,
 ) -> StreamingResponse:
     await _authorize_document(request, engine, notebook_id, document_id, version_id)
-    result = await build_delivery_service(engine, config).get_original_document(
+    result = await build_delivery_service(
+        engine, config, principal_from_claims(getattr(request.state, "auth", None))
+    ).get_original_document(
         DeliveryRequest(
             notebook_id=notebook_id,
             document_id=document_id,
@@ -151,7 +158,9 @@ async def get_document_chunk_delivery(
     config: ConfigDep,
 ) -> DeliveryResponseBody:
     await _authorize_document(request, engine, notebook_id, document_id, version_id)
-    result = await build_delivery_service(engine, config).get_document_chunk(
+    result = await build_delivery_service(
+        engine, config, principal_from_claims(getattr(request.state, "auth", None))
+    ).get_document_chunk(
         notebook_id=notebook_id,
         document_id=document_id,
         version_id=version_id,
@@ -175,7 +184,9 @@ async def list_document_assets_delivery(
     limit: Annotated[int | None, Query(ge=1)] = None,
 ) -> DeliveryResponseBody:
     await _authorize_document(request, engine, notebook_id, document_id, version_id)
-    result = await build_delivery_service(engine, config).list_assets(
+    result = await build_delivery_service(
+        engine, config, principal_from_claims(getattr(request.state, "auth", None))
+    ).list_assets(
         notebook_id=notebook_id,
         document_id=document_id,
         version_id=version_id,
@@ -196,7 +207,9 @@ async def get_asset_delivery(
     max_bytes: Annotated[int | None, Query(ge=1)] = None,
 ) -> StreamingResponse:
     await _authorize_notebook(request, engine, notebook_id)
-    result = await build_delivery_service(engine, config).get_asset(
+    result = await build_delivery_service(
+        engine, config, principal_from_claims(getattr(request.state, "auth", None))
+    ).get_asset(
         notebook_id=notebook_id,
         occurrence_id=occurrence_id,
         cursor=cursor,
@@ -229,7 +242,9 @@ async def get_asset_analysis_delivery(
     profile: Annotated[str | None, Query(min_length=1)] = None,
 ) -> DeliveryResponseBody:
     await _authorize_notebook(request, engine, notebook_id)
-    service = build_delivery_service(engine, config)
+    service = build_delivery_service(
+        engine, config, principal_from_claims(getattr(request.state, "auth", None))
+    )
     if selection is None and modalities is None and profile is None:
         result = await service.get_image_analysis(
             notebook_id=notebook_id,
@@ -270,10 +285,13 @@ async def get_final_qa_v2_evidence_delivery(
     cursor: Annotated[str | None, Query()] = None,
 ) -> DeliveryResponseBody:
     await _authorize_notebook(request, engine, notebook_id)
-    result = await build_delivery_service(engine, config).get_final_qa_evidence(
+    result = await build_delivery_service(
+        engine, config, principal_from_claims(getattr(request.state, "auth", None))
+    ).get_final_qa_evidence(
         notebook_id=notebook_id,
         assistant_turn_id=assistant_turn_id,
         cursor=cursor,
+        actor_id=principal_from_claims(getattr(request.state, "auth", None)).actor_id,
     )
     return await _response_body(request, engine, config, result)
 

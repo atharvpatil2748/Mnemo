@@ -115,7 +115,7 @@ class StructuredRetrievalRequest(BaseModel):
     distinct_fields: tuple[str, ...] = Field(default=(), max_length=16)
     join: StructuredJoinRequest | None = None
     cursor: str | None = Field(default=None, max_length=8192)
-    page_size: int = Field(default=100, ge=1, le=1000)
+    page_size: int = Field(default=100, strict=True, ge=1, le=1000)
 
     @field_validator("dataset_ids", "select_fields", "group_by", "distinct_fields")
     @classmethod

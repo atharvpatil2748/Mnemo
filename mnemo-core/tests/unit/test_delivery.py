@@ -8,6 +8,7 @@ import hmac
 import json
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID, uuid4
 
@@ -18,9 +19,11 @@ from mnemo.interfaces import (
     AssetCatalogStoreV1,
     ContractValidationError,
     DeliveryAuthorizationError,
+    DeliveryCursorConflictError,
     DeliveryCursorError,
     DeliveryCursorExpiredError,
     DeliveryLimitExceededError,
+    DependencyUnavailableError,
     IntegrityError,
     NotFoundError,
     Page,
@@ -59,6 +62,150 @@ from mnemo.models import (
     TextBlock,
     asset_occurrence_id,
 )
+from mnemo.storage.filesystem import FilesystemBlobStore
+
+
+@pytest.mark.anyio
+async def test_complete_ordered_text_pages_reconstruct_persisted_truth(tmp_path: Path) -> None:
+    service, storage, _, values = _fixture()
+    original = await storage.get_parsed_document(values["version_id"])
+    texts = tuple(f"Page {index}: canonical line {index}" for index in range(12))
+    persisted = replace(
+        original,
+        blocks=tuple(TextBlock(ordinal=i, text=t, page_number=i + 1) for i, t in enumerate(texts)),
+    )
+    writer = FilesystemBlobStore(tmp_path / "disposable-blobs")
+    await writer.open()
+    await writer.put_parsed_document(values["version_id"], persisted)
+    await writer.close()
+    reader = FilesystemBlobStore(tmp_path / "disposable-blobs")
+    await reader.open()
+    storage.get_parsed_document.side_effect = reader.get_parsed_document
+    scoped = service.for_actor(uuid4())
+    cursor = None
+    indices: list[int] = []
+    reconstructed = ""
+    snapshots: set[str] = set()
+    for _ in range(13):
+        page = await scoped.expand_document(
+            DeliveryRequest(
+                notebook_id=values["notebook_id"],
+                document_id=values["document_id"],
+                version_id=values["version_id"],
+                view=DeliveryView.TEXT,
+                cursor=cursor,
+                max_items=1,
+                max_bytes=1000,
+            )
+        )
+        assert page.total_items == 12
+        assert page.representation == "parsed_text/v1"
+        snapshots.add(page.snapshot_identity)
+        for item in page.items:
+            indices.append(item.index)
+            reconstructed += item.payload["text"] + item.payload["separator_after"]
+        cursor = page.next_cursor
+        if cursor is None:
+            assert page.completeness is DeliveryCompleteness.COMPLETE
+            break
+    assert indices == list(range(12))
+    assert reconstructed == "\n".join(texts)
+    assert len(snapshots) == 1
+    await reader.close()
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("view", [DeliveryView.TEXT, DeliveryView.BLOCKS])
+async def test_ordered_cursor_actor_mode_exact_limits_and_snapshot(view: DeliveryView) -> None:
+    service, storage, _, values = _fixture()
+    actor = uuid4()
+    scoped = service.for_actor(actor)
+    request = DeliveryRequest(
+        notebook_id=values["notebook_id"],
+        document_id=values["document_id"],
+        version_id=values["version_id"],
+        view=view,
+        max_items=10,
+        max_bytes=4000,
+    )
+    first = await scoped.expand_document(request)
+    assert first.next_cursor
+    continued = replace(request, cursor=first.next_cursor)
+    for changed in (
+        replace(continued, max_items=11),
+        replace(continued, max_bytes=4001),
+        replace(
+            continued, view=DeliveryView.BLOCKS if view is DeliveryView.TEXT else DeliveryView.TEXT
+        ),
+    ):
+        with pytest.raises(DeliveryCursorError):
+            await scoped.expand_document(changed)
+    with pytest.raises(DeliveryCursorError):
+        await service.for_actor(uuid4()).expand_document(continued)
+    with pytest.raises(DeliveryCursorError):
+        await scoped.expand_document(replace(continued, cursor=first.next_cursor + "x"))
+    second = await scoped.expand_document(continued)
+    replay = await scoped.expand_document(continued)
+    assert second.items == replay.items
+    assert [item.index for item in second.items] == [1]
+    assert second.next_cursor is None
+    original = await storage.get_parsed_document(values["version_id"])
+    storage.get_parsed_document.return_value = replace(
+        original,
+        blocks=(TextBlock(ordinal=0, text="changed"), TextBlock(ordinal=1, text="second")),
+    )
+    with pytest.raises(DeliveryCursorError):
+        await scoped.expand_document(continued)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("count", [0, 1])
+async def test_text_empty_single_and_oversized_unicode_never_skips(count: int) -> None:
+    service, storage, _, values = _fixture()
+    original = await storage.get_parsed_document(values["version_id"])
+    block = TextBlock(ordinal=0, text="東京🙂\n\nlast")
+    storage.get_parsed_document.return_value = replace(original, blocks=(block,) if count else ())
+    request = DeliveryRequest(
+        notebook_id=values["notebook_id"],
+        document_id=values["document_id"],
+        version_id=values["version_id"],
+        view=DeliveryView.TEXT,
+        max_bytes=1000,
+    )
+    result = await service.for_actor(uuid4()).expand_document(request)
+    assert result.total_items == count and result.next_cursor is None
+    assert result.completeness is DeliveryCompleteness.COMPLETE
+    if count:
+        assert result.items[0].payload == {"text": block.text, "separator_after": ""}
+        with pytest.raises(DeliveryLimitExceededError):
+            await service.expand_document(replace(request, max_bytes=1))
+
+
+@pytest.mark.anyio
+async def test_text_cursor_expiry() -> None:
+    _, storage, catalog, values = _fixture()
+    now = [datetime(2026, 9, 28, tzinfo=UTC)]
+    codec = CursorCodecV2(
+        CursorSigningKeyV2("text-test", b"t" * 32), ttl=timedelta(seconds=1), clock=lambda: now[0]
+    )
+    service = BoundedDocumentExpansionService(
+        storage=storage,
+        catalog=catalog,
+        limits=DeliveryLimits(max_items=1),
+        cursor_secret=b"0123456789abcdef",
+        cursor_codec=codec,
+        clock=lambda: now[0],
+    ).for_actor(uuid4())
+    request = DeliveryRequest(
+        notebook_id=values["notebook_id"],
+        document_id=values["document_id"],
+        version_id=values["version_id"],
+        view=DeliveryView.TEXT,
+    )
+    first = await service.expand_document(request)
+    now[0] += timedelta(seconds=2)
+    with pytest.raises(DeliveryCursorExpiredError):
+        await service.expand_document(replace(request, cursor=first.next_cursor))
 
 
 @dataclass(frozen=True)
@@ -260,6 +407,35 @@ def _fixture() -> tuple[BoundedDocumentExpansionService, MagicMock, MagicMock, d
 
 
 @pytest.mark.anyio
+async def test_missing_parsed_representation_is_not_unknown_document() -> None:
+    service, storage, _, values = _fixture()
+    storage.get_parsed_document.return_value = None
+    with pytest.raises(DependencyUnavailableError):
+        await service.expand_document(
+            DeliveryRequest(
+                **{key: values[key] for key in ("notebook_id", "document_id", "version_id")}
+            )
+        )
+
+
+@pytest.mark.anyio
+async def test_binary_cursor_rejects_other_authorized_actor() -> None:
+    service, _, _, values = _fixture()
+    first_actor = service.for_actor(uuid4())
+    second_actor = service.for_actor(uuid4())
+    assert service._actor_identity is None
+    request = DeliveryRequest(
+        notebook_id=values["notebook_id"],
+        document_id=values["document_id"],
+        version_id=values["version_id"],
+        view=DeliveryView.ORIGINAL,
+    )
+    first = await first_actor.get_original_document(request)
+    with pytest.raises(DeliveryCursorConflictError):
+        await second_actor.get_original_document(replace(request, cursor=first.next_cursor))
+
+
+@pytest.mark.anyio
 async def test_bounded_document_cursor_and_original_integrity() -> None:
     service, storage, catalog, values = _fixture()
     request = DeliveryRequest(
@@ -321,6 +497,17 @@ async def test_bounded_document_cursor_and_original_integrity() -> None:
     )
     assert original.content == b"0123"
     assert original.next_cursor is not None
+    with pytest.raises(DeliveryCursorConflictError):
+        await service.get_original_document(
+            DeliveryRequest(
+                notebook_id=request.notebook_id,
+                document_id=request.document_id,
+                version_id=request.version_id,
+                view=DeliveryView.ORIGINAL,
+                cursor=original.next_cursor,
+                max_bytes=20,
+            )
+        )
     remainder = await service.get_original_document(
         DeliveryRequest(
             notebook_id=request.notebook_id,
@@ -328,7 +515,6 @@ async def test_bounded_document_cursor_and_original_integrity() -> None:
             version_id=request.version_id,
             view=DeliveryView.ORIGINAL,
             cursor=original.next_cursor,
-            max_bytes=20,
         )
     )
     assert remainder.content == b"4567"
@@ -680,6 +866,48 @@ async def test_final_qa_v2_delivery_replays_immutable_snapshot_without_generatio
 
 
 @pytest.mark.anyio
+async def test_final_qa_delivery_uses_separate_store_and_checks_actor_before_snapshot() -> None:
+    _, storage, catalog, values = _fixture()
+    operational = MagicMock()
+    for name in (
+        "create_final_qa_v2_execution",
+        "put_final_qa_v2_snapshot",
+        "transition_final_qa_v2_execution",
+        "put_final_qa_v2_citations",
+        "get_final_qa_v2_snapshot",
+    ):
+        setattr(operational, name, AsyncMock())
+    actor_id, assistant_turn_id = uuid4(), uuid4()
+    operational.get_final_qa_v2_execution = AsyncMock(
+        return_value=MagicMock(
+            execution_id=uuid4(),
+            notebook_id=values["notebook_id"],
+            actor_id=actor_id,
+        )
+    )
+    service = BoundedDocumentExpansionService(
+        storage=storage,
+        catalog=catalog,
+        execution_store=operational,
+    )
+    with pytest.raises(NotFoundError):
+        await service.get_final_qa_evidence(
+            notebook_id=values["notebook_id"],
+            assistant_turn_id=assistant_turn_id,
+            actor_id=uuid4(),
+        )
+    operational.get_final_qa_v2_snapshot.assert_not_awaited()
+    operational.get_final_qa_v2_snapshot.return_value = None
+    with pytest.raises(NotFoundError, match="snapshot"):
+        await service.get_final_qa_evidence(
+            notebook_id=values["notebook_id"],
+            assistant_turn_id=assistant_turn_id,
+            actor_id=actor_id,
+        )
+    operational.get_final_qa_v2_snapshot.assert_awaited_once()
+
+
+@pytest.mark.anyio
 async def test_delivery_fail_closed_integrity_and_missing_resource_boundaries() -> None:
     service, storage, catalog, values = _fixture()
     request = DeliveryRequest(
@@ -702,7 +930,7 @@ async def test_delivery_fail_closed_integrity_and_missing_resource_boundaries() 
         )
     parsed = await storage.get_parsed_document(request.version_id)
     storage.get_parsed_document.return_value = None
-    with pytest.raises(NotFoundError):
+    with pytest.raises(DependencyUnavailableError):
         await service.expand_document(request)
     storage.get_parsed_document.return_value = parsed
     tiny = BoundedDocumentExpansionService(

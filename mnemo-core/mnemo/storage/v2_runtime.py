@@ -165,19 +165,23 @@ class SQLiteV2ReadOnlyRuntimeStore(SQLiteStore):
         decision: V2RetrievalAuthorizationDecisionV1,
         generation_id: UUID,
         limit: int,
+        offset: int = 0,
     ) -> tuple[MultilingualTextProjectionRowV2, ...]:
         _validate_decision_generation(decision, generation_id)
         if not 1 <= limit <= MAX_AUTHORIZED_V2_SEMANTIC_OVERFLOW_PROBE:
             raise ValueError("authorized V2 semantic enumeration limit is invalid")
+        if offset < 0 or offset > 200_000:
+            raise ValueError("authorized V2 semantic enumeration offset is invalid")
         clauses, params = _scope_clauses(decision.retrieval_scope)
         clauses.extend(_position_clauses(decision, params))
-        params.extend((str(generation_id), limit))
+        params.extend((str(generation_id), limit, offset))
         rows = tuple(
             await (
                 await self._require_open().execute(
                     f"""SELECT payload,payload_hash FROM language_text_projection_rows_v2
                         WHERE {" AND ".join(clauses)} AND generation_id=?
-                        ORDER BY evidence_reference_digest,representation_reference_id LIMIT ?""",
+                        ORDER BY evidence_reference_digest,representation_reference_id
+                        LIMIT ? OFFSET ?""",
                     tuple(params),
                 )
             ).fetchall()

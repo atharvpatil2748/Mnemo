@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Coroutine
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-from uuid import uuid4
+from typing import Any, TypedDict
+from uuid import UUID, uuid4
 
 import pytest
 from mnemo.interfaces.errors import ConflictError, ContractValidationError, IntegrityError
@@ -35,14 +37,21 @@ from mnemo.models import (
     asset_derivation_id,
     asset_occurrence_id,
 )
+from mnemo.phase85.projections import ProjectionBuildResult, ProjectionCoverage
 from mnemo.storage.sqlite import SQLiteStore
 
 
-def _run(coro):  # type: ignore[no-untyped-def]
+class _IngestionCall(TypedDict):
+    assets: tuple[Asset, ...]
+    binary_reference: DocumentBinaryReference
+    occurrences: tuple[AssetOccurrence, ...]
+
+
+def _run[T](coro: Coroutine[Any, Any, T]) -> T:
     return asyncio.run(coro)
 
 
-def _document(document_id, version_id, now):  # type: ignore[no-untyped-def]
+def _document(document_id: UUID, version_id: UUID, now: datetime) -> Document:
     metadata = DocumentMetadata(content_hash="a" * 64)
     version = DocumentVersion(
         version_id=version_id,
@@ -63,7 +72,9 @@ def _document(document_id, version_id, now):  # type: ignore[no-untyped-def]
     )
 
 
-def _records(now: datetime):
+def _records(
+    now: datetime,
+) -> tuple[UUID, UUID, UUID, Asset, AssetOccurrence, DocumentBinaryReference]:
     document_id, version_id, notebook_id = uuid4(), uuid4(), uuid4()
     asset = Asset(
         asset_id=uuid4(),
@@ -137,7 +148,9 @@ def test_catalog_round_trip_idempotency_isolation_and_gc(tmp_path: Path) -> None
             occurrences=(replace(occurrence, created_at=datetime.now(UTC)),),
         )
     )
-    assert _run(store.get_asset_record(asset.asset_id)).content_hash == asset.content_hash
+    persisted_asset = _run(store.get_asset_record(asset.asset_id))
+    assert persisted_asset is not None
+    assert persisted_asset.content_hash == asset.content_hash
     assert _run(store.get_document_binary_reference(version_id)) == reference
     assert (
         _run(store.get_document_binary_availability(version_id))
@@ -361,7 +374,9 @@ def test_catalog_registration_rolls_back_and_rejects_identity_mutation(tmp_path:
                 assets=(changed,), binary_reference=reference, occurrences=(occurrence,)
             )
         )
-    assert _run(store.get_asset_record(asset.asset_id)).mime_type == "image/png"
+    persisted_asset = _run(store.get_asset_record(asset.asset_id))
+    assert persisted_asset is not None
+    assert persisted_asset.mime_type == "image/png"
     assert _run(store.get_asset_occurrence(occurrence.occurrence_id)) == occurrence
     _run(store.close())
 
@@ -418,6 +433,7 @@ def test_derivation_and_generation_lifecycle(tmp_path: Path) -> None:
         )
     )
     stored = _run(store.get_asset_derivation(derivation.derivation_id))
+    assert stored is not None
     assert stored.status is AssetDerivationStatus.SUCCEEDED
     assert stored.output_payload["result"] == "opaque"
 
@@ -437,14 +453,10 @@ def test_derivation_and_generation_lifecycle(tmp_path: Path) -> None:
     assert _run(store.get_active_index_generation("asset_metadata", "baseline")) is None
     assert _run(store.promote_index_generation(first.generation_id))
     assert _run(store.promote_index_generation(second.generation_id))
-    assert (
-        _run(store.get_active_index_generation("asset_metadata", "baseline")).generation_id
-        == second.generation_id
-    )
-    assert (
-        _run(store.get_index_generation(first.generation_id)).state
-        is IndexGenerationState.SUPERSEDED
-    )
+    active = _run(store.get_active_index_generation("asset_metadata", "baseline"))
+    superseded = _run(store.get_index_generation(first.generation_id))
+    assert active is not None and active.generation_id == second.generation_id
+    assert superseded is not None and superseded.state is IndexGenerationState.SUPERSEDED
     with pytest.raises(ContractValidationError):
         _run(
             store.transition_index_generation(
@@ -503,7 +515,7 @@ def test_catalog_rejects_invalid_batches_and_missing_references(tmp_path: Path) 
     now = datetime(2026, 8, 24, tzinfo=UTC)
     document_id, version_id, _, asset, occurrence, reference = _records(now)
     _run(store.upsert_document(_document(document_id, version_id, now)))
-    invalid_calls = (
+    invalid_calls: tuple[_IngestionCall, ...] = (
         {"assets": (), "binary_reference": reference, "occurrences": ()},
         {
             "assets": (asset, asset),
@@ -645,3 +657,114 @@ def _generation(now: datetime, digest: str) -> IndexGeneration:
         created_at=now,
         updated_at=now,
     )
+
+
+def test_generation_set_requires_complete_coverage_and_unique_capabilities(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteStore(tmp_path / "atomic-generations.db")
+    _run(store.open())
+    now = datetime(2026, 8, 24, tzinfo=UTC)
+    first = _generation(now, "a" * 64)
+    second = _generation(now, "b" * 64)
+    for generation in (first, second):
+        assert _run(store.create_index_generation(generation))
+        assert _run(
+            store.transition_index_generation(
+                generation.generation_id,
+                IndexGenerationState.BUILDING,
+                IndexGenerationState.READY,
+                item_count=5,
+                checksum="d" * 64,
+            )
+        )
+    with pytest.raises(ValueError, match="nonempty and unique"):
+        _run(store.promote_index_generation_set(()))
+    with pytest.raises(ValueError, match="nonempty and unique"):
+        _run(store.promote_index_generation_set((first.generation_id, first.generation_id)))
+    assert not _run(store.promote_index_generation_set((first.generation_id,)))
+    assert _run(store.get_active_index_generation("asset_metadata", "baseline")) is None
+    _run(store.close())
+
+    # The coverage writer requires BUILDING state; keep this fixture faithful to
+    # the actual build lifecycle rather than inserting a fake READY manifest.
+    store = SQLiteStore(tmp_path / "complete-generations.db")
+    _run(store.open())
+    ready = (
+        _generation(now, "c" * 64),
+        _generation(now, "e" * 64),
+    )
+    for generation in ready:
+        assert _run(store.create_index_generation(generation))
+        coverage = ProjectionCoverage.from_result(
+            generation.generation_id,
+            ProjectionBuildResult(
+                expected_count=5,
+                succeeded_count=5,
+                failed_count=0,
+                skipped_count=0,
+                checksum="d" * 64,
+            ),
+            updated_at=now,
+        )
+        assert _run(store.put_index_generation_coverage(coverage))
+        assert _run(
+            store.transition_index_generation(
+                generation.generation_id,
+                IndexGenerationState.BUILDING,
+                IndexGenerationState.READY,
+                item_count=5,
+                checksum="d" * 64,
+            )
+        )
+    assert not _run(store.promote_index_generation_set(tuple(g.generation_id for g in ready)))
+    assert _run(store.get_active_index_generation("asset_metadata", "baseline")) is None
+    _run(store.close())
+
+
+def test_generation_set_promotes_only_compatible_complete_ready_generations(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteStore(tmp_path / "compatible-generations.db")
+    _run(store.open())
+    now = datetime(2026, 8, 24, tzinfo=UTC)
+    previous = _generation(now, "a" * 64)
+    canonical = _generation(now, "b" * 64)
+    ocr = replace(_generation(now, "c" * 64), capability="ocr")
+    for generation in (previous, canonical, ocr):
+        assert _run(store.create_index_generation(generation))
+        assert _run(
+            store.put_index_generation_coverage(
+                ProjectionCoverage.from_result(
+                    generation.generation_id,
+                    ProjectionBuildResult(
+                        expected_count=5,
+                        succeeded_count=5,
+                        failed_count=0,
+                        skipped_count=0,
+                        checksum="d" * 64,
+                    ),
+                    updated_at=now,
+                )
+            )
+        )
+        assert _run(
+            store.transition_index_generation(
+                generation.generation_id,
+                IndexGenerationState.BUILDING,
+                IndexGenerationState.READY,
+                item_count=5,
+                checksum="d" * 64,
+            )
+        )
+    assert _run(store.promote_index_generation(previous.generation_id))
+    assert _run(store.promote_index_generation_set((canonical.generation_id, ocr.generation_id)))
+    active_canonical = _run(store.get_active_index_generation("asset_metadata", "baseline"))
+    active_ocr = _run(store.get_active_index_generation("ocr", "baseline"))
+    old = _run(store.get_index_generation(previous.generation_id))
+    assert (
+        active_canonical is not None and active_canonical.generation_id == canonical.generation_id
+    )
+    assert active_ocr is not None and active_ocr.generation_id == ocr.generation_id
+    assert old is not None and old.state is IndexGenerationState.SUPERSEDED
+    _run(store.close())

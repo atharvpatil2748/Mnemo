@@ -231,6 +231,10 @@ class ServerConfig(BaseModel):
             production_enabled = True
             v2_enabled = True
         authority_root = certified_root or Path(__file__).resolve().parents[2]
+        if production_enabled:
+            from .services.production_runtime_selection import require_production_index
+
+            require_production_index(authority_root)
         certified_defaults = (
             _certified_manifest_defaults(authority_root)
             if production_enabled and v2_enabled

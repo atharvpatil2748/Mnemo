@@ -10,13 +10,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import anyio
 import pytest
 import uvicorn
+from disposable_index_admission import disposable_index_admission, mcp_text
 from httpx import ASGITransport, AsyncClient
 from mcp.client.session import ClientSession
 from mcp.client.sse import sse_client
 from mnemo import EngineState, KnowledgeEngine, MnemoConfig, __version__
 from mnemo.interfaces import Page
 from mnemo_server.config import ServerConfig
-from mnemo_server.mcp.server import create_sse_app, run_sse_server
+from mnemo_server.mcp.server import create_mcp_server, create_sse_app, run_sse_server
 
 
 @pytest.fixture
@@ -122,14 +123,14 @@ async def test_local_sse_tool_error_uses_typed_sanitized_result(
                     await client.initialize()
                     inventory = await client.call_tool("list_notebooks", {"limit": 1})
                     assert not inventory.isError
-                    assert json.loads(inventory.content[0].text)["notebooks"] == []
+                    assert json.loads(mcp_text(inventory))["notebooks"] == []
                     result = await client.call_tool("unknown_fixture_tool", {})
                     assert result.isError
-                    error = json.loads(result.content[0].text)["error"]
+                    error = json.loads(mcp_text(result))["error"]
                     assert error["category"] == "invalid_input"
                     assert error["message"] == "Request is invalid"
-                    assert "unknown_fixture_tool" not in result.content[0].text
-                    assert "fixture-only-token" not in result.content[0].text
+                    assert "unknown_fixture_tool" not in mcp_text(result)
+                    assert "fixture-only-token" not in mcp_text(result)
         finally:
             server.should_exit = True
 
@@ -188,7 +189,16 @@ def test_mcp_sse_lifespan_publishes_and_closes_v2_runtime(
         final_qa_operational_store_path=tmp_path / "operational.db",
         mcp_stdio_principal_subject="stdio",
     )
-    app = create_sse_app(config=config, engine=engine, mnemo_config=synthetic_config)
+    app = create_sse_app(
+        server=create_mcp_server(
+            engine=engine,
+            config=config,
+            indexed_fixture_readiness_check=disposable_index_admission(tmp_path / "admission"),
+        ),
+        config=config,
+        engine=engine,
+        mnemo_config=synthetic_config,
+    )
     with TestClient(app) as client:
         assert client.get("/health").json()["engine_state"] == "ready"
         assert app.state.full_multilingual_v2_runtime is installed
@@ -222,7 +232,16 @@ def test_certified_sse_rejects_injected_historical_model_before_exposure(
         api_key="synthetic-key",
         delivery_cursor_secret="x" * 32,
     )
-    app = create_sse_app(config=config, engine=engine, mnemo_config=certified)
+    app = create_sse_app(
+        server=create_mcp_server(
+            engine=engine,
+            config=config,
+            indexed_fixture_readiness_check=disposable_index_admission(tmp_path / "admission"),
+        ),
+        config=config,
+        engine=engine,
+        mnemo_config=certified,
+    )
     with (
         pytest.raises(RuntimeError, match="INJECTED_PRODUCTION_RUNTIME_MISMATCH"),
         TestClient(app),

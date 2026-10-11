@@ -1,0 +1,460 @@
+{
+  "transport": "real_certified_stdio",
+  "start_utc": "2026-09-28T10:07:32.145990+00:00",
+  "resources": {
+    "pdf-one": {
+      "bytes": 3821824,
+      "sha256": "eb4fe330163f7d89535ca48f792204a16da042bb2e4895a6030102df20a63984",
+      "snapshot": "6a93c7667c74c584f28f310e8c3c8838b0bb555bf132460005f2dea997f47945",
+      "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+      "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+      "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+      "occurrence_id": null,
+      "ranges": [
+        {
+          "start": 0,
+          "end_exclusive": 3821824,
+          "received_bytes": 3821824,
+          "sha256": "eb4fe330163f7d89535ca48f792204a16da042bb2e4895a6030102df20a63984",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\pdf-one-000.bin",
+          "completeness": "complete",
+          "start_utc": "2026-09-28T10:08:20.448631+00:00",
+          "end_utc": "2026-09-28T10:08:20.932247+00:00",
+          "request_id": "05cd703b-bce2-4bee-8d97-5f0fdd6a11f6",
+          "original_media_type": "application/pdf"
+        }
+      ]
+    },
+    "pdf-parts": {
+      "bytes": 3821824,
+      "sha256": "eb4fe330163f7d89535ca48f792204a16da042bb2e4895a6030102df20a63984",
+      "snapshot": "6a93c7667c74c584f28f310e8c3c8838b0bb555bf132460005f2dea997f47945",
+      "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+      "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+      "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+      "occurrence_id": null,
+      "ranges": [
+        {
+          "start": 0,
+          "end_exclusive": 524288,
+          "received_bytes": 524288,
+          "sha256": "bc9fb83962024f5bd322e3d9ebf4f3f0fcafeeac1271a00678ca86f42efe9348",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\pdf-parts-000.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.018908+00:00",
+          "end_utc": "2026-09-28T10:08:21.154763+00:00",
+          "request_id": "be738d56-26ad-49c4-9d22-e96da8c03775",
+          "original_media_type": "application/pdf"
+        },
+        {
+          "start": 524288,
+          "end_exclusive": 1048576,
+          "received_bytes": 524288,
+          "sha256": "cd2fa0f45874002e35b6a4c78dde5dfcf4c02608fa0e7ff6ee83984278e373b2",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\pdf-parts-001.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.160444+00:00",
+          "end_utc": "2026-09-28T10:08:21.218260+00:00",
+          "request_id": "494884b1-0f17-46a0-8b4c-2e45b09d5476",
+          "original_media_type": "application/pdf"
+        },
+        {
+          "start": 1048576,
+          "end_exclusive": 1572864,
+          "received_bytes": 524288,
+          "sha256": "878c72c712904a3cc72830e07a6ec50ccb09ca957324e74db79d13dd317172bd",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\pdf-parts-002.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.226262+00:00",
+          "end_utc": "2026-09-28T10:08:21.277693+00:00",
+          "request_id": "2a870e03-61ac-4ef6-a071-b749b79c6b62",
+          "original_media_type": "application/pdf"
+        },
+        {
+          "start": 1572864,
+          "end_exclusive": 2097152,
+          "received_bytes": 524288,
+          "sha256": "c08288c78926397f3032fd7a61fbf46473d6d5dca906acbdc44d78f88b5a3dfb",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\pdf-parts-003.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.284524+00:00",
+          "end_utc": "2026-09-28T10:08:21.361929+00:00",
+          "request_id": "1c7c7d89-11d3-45c9-bfb4-9c8cfeb48d13",
+          "original_media_type": "application/pdf"
+        },
+        {
+          "start": 2097152,
+          "end_exclusive": 2621440,
+          "received_bytes": 524288,
+          "sha256": "7f6e3e43acb8ed7d1cb1c6f9eac83b34a6cd48e98cdac1fac78bba4a3014cfb2",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\pdf-parts-004.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.368458+00:00",
+          "end_utc": "2026-09-28T10:08:21.414632+00:00",
+          "request_id": "d3a9153a-0de0-484a-bea4-ea041bf991e9",
+          "original_media_type": "application/pdf"
+        },
+        {
+          "start": 2621440,
+          "end_exclusive": 3145728,
+          "received_bytes": 524288,
+          "sha256": "fb37e439cdc443fd1e926bd0ca8e8d58371d4d333143648649c5e9c4fdd4cec2",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\pdf-parts-005.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.426129+00:00",
+          "end_utc": "2026-09-28T10:08:21.501475+00:00",
+          "request_id": "1f4180c8-8a22-44da-b797-8e2564edc258",
+          "original_media_type": "application/pdf"
+        },
+        {
+          "start": 3145728,
+          "end_exclusive": 3670016,
+          "received_bytes": 524288,
+          "sha256": "fabc264a02570471da9751abefdbaaa7a37780cbb7282e0b0a95c82d47959d4a",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\pdf-parts-006.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.508000+00:00",
+          "end_utc": "2026-09-28T10:08:21.554922+00:00",
+          "request_id": "cc18e514-2d00-4383-a9dd-df7a79765032",
+          "original_media_type": "application/pdf"
+        },
+        {
+          "start": 3670016,
+          "end_exclusive": 3821824,
+          "received_bytes": 151808,
+          "sha256": "5e257d67880abc209f6550d7e12f430eee917a529b25b343438236154abe6fe5",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\pdf-parts-007.bin",
+          "completeness": "complete",
+          "start_utc": "2026-09-28T10:08:21.557433+00:00",
+          "end_utc": "2026-09-28T10:08:21.605229+00:00",
+          "request_id": "649cfc72-055b-44ad-b0a4-4a6391541c55",
+          "original_media_type": "application/pdf"
+        }
+      ]
+    },
+    "jpeg-one": {
+      "bytes": 704901,
+      "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+      "snapshot": "7dd126af220a5406c55d705b06f2f76668d670564f5d8dd8902330f5db236d99",
+      "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+      "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+      "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+      "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+      "ranges": [
+        {
+          "start": 0,
+          "end_exclusive": 704901,
+          "received_bytes": 704901,
+          "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-one-000.bin",
+          "completeness": "complete",
+          "start_utc": "2026-09-28T10:08:21.665899+00:00",
+          "end_utc": "2026-09-28T10:08:21.741587+00:00",
+          "request_id": "02d433f5-b582-42cb-9cc9-633e21c073b2",
+          "original_media_type": "image/jpeg"
+        }
+      ]
+    },
+    "jpeg-resource": {
+      "bytes": 704901,
+      "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+      "snapshot": "7dd126af220a5406c55d705b06f2f76668d670564f5d8dd8902330f5db236d99",
+      "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+      "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+      "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+      "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+      "ranges": [
+        {
+          "start": 0,
+          "end_exclusive": 704901,
+          "received_bytes": 704901,
+          "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-resource-000.bin",
+          "completeness": "complete",
+          "start_utc": "2026-09-28T10:08:21.750098+00:00",
+          "end_utc": "2026-09-28T10:08:21.797029+00:00",
+          "request_id": "6bcc1c99-bcd9-47e0-b7e8-b5a365162457",
+          "original_media_type": "image/jpeg"
+        }
+      ]
+    },
+    "jpeg-parts": {
+      "bytes": 704901,
+      "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+      "snapshot": "7dd126af220a5406c55d705b06f2f76668d670564f5d8dd8902330f5db236d99",
+      "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+      "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+      "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+      "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+      "ranges": [
+        {
+          "start": 0,
+          "end_exclusive": 65536,
+          "received_bytes": 65536,
+          "sha256": "ef0083eaa7202a591abcba4057c93d4ed4af2e4cbc6555b5c2140cf520c5a0bd",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-parts-000.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.806179+00:00",
+          "end_utc": "2026-09-28T10:08:21.837223+00:00",
+          "request_id": "e428db99-383e-4bb2-b36a-ade5e6595073",
+          "original_media_type": "image/jpeg"
+        },
+        {
+          "start": 65536,
+          "end_exclusive": 131072,
+          "received_bytes": 65536,
+          "sha256": "2f6c38b0221834620acf74e0f25ab3c2594f05815ee8e48dfaa09c111588e1b7",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-parts-001.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.839239+00:00",
+          "end_utc": "2026-09-28T10:08:21.876114+00:00",
+          "request_id": "fe9fafb1-cdb6-45be-8d4b-73295a67bff6",
+          "original_media_type": "image/jpeg"
+        },
+        {
+          "start": 131072,
+          "end_exclusive": 196608,
+          "received_bytes": 65536,
+          "sha256": "70272d114c76d89e11f70f12b28da661b84fd3b1f336084ee2e81ba3e050c72d",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-parts-002.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.879206+00:00",
+          "end_utc": "2026-09-28T10:08:21.905140+00:00",
+          "request_id": "61557465-e6c4-4679-83f9-ca8ba5773c68",
+          "original_media_type": "image/jpeg"
+        },
+        {
+          "start": 196608,
+          "end_exclusive": 262144,
+          "received_bytes": 65536,
+          "sha256": "f4d0c321e33ed08421e8af311e02ee6b2525f1eb18a604bab71d36302f272585",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-parts-003.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.906141+00:00",
+          "end_utc": "2026-09-28T10:08:21.920361+00:00",
+          "request_id": "7fd67bca-a15f-4dd9-8647-f0ebd6700006",
+          "original_media_type": "image/jpeg"
+        },
+        {
+          "start": 262144,
+          "end_exclusive": 327680,
+          "received_bytes": 65536,
+          "sha256": "0ac0f1d4f92fee50c3254c8ea711086c1dee4aab329bf682b8d742608ef57ab1",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-parts-004.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.921376+00:00",
+          "end_utc": "2026-09-28T10:08:21.987195+00:00",
+          "request_id": "095074fe-da69-4e43-861b-2d0f1c6edd84",
+          "original_media_type": "image/jpeg"
+        },
+        {
+          "start": 327680,
+          "end_exclusive": 393216,
+          "received_bytes": 65536,
+          "sha256": "32ee7594fadde408215934ca9a46854f92354bf7bfe04ca2b922a5aa9c0d6ccf",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-parts-005.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:21.990211+00:00",
+          "end_utc": "2026-09-28T10:08:22.042081+00:00",
+          "request_id": "2412fa77-e1c4-4317-b0af-7fb85a7c2e98",
+          "original_media_type": "image/jpeg"
+        },
+        {
+          "start": 393216,
+          "end_exclusive": 458752,
+          "received_bytes": 65536,
+          "sha256": "feef62453f5a0a509fa9980927bff925860c8e9d1682950ae2576a93d9d0cdcf",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-parts-006.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:22.044081+00:00",
+          "end_utc": "2026-09-28T10:08:22.078360+00:00",
+          "request_id": "3277d6ed-4e47-4cd4-b280-f60661ce4818",
+          "original_media_type": "image/jpeg"
+        },
+        {
+          "start": 458752,
+          "end_exclusive": 524288,
+          "received_bytes": 65536,
+          "sha256": "9ca6e8942f7fb79cf6dad057d007632489f663aff72099ac544e93b7407f653a",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-parts-007.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:22.080273+00:00",
+          "end_utc": "2026-09-28T10:08:22.110152+00:00",
+          "request_id": "b582225c-9197-4e61-bab2-ae1d26acadec",
+          "original_media_type": "image/jpeg"
+        },
+        {
+          "start": 524288,
+          "end_exclusive": 589824,
+          "received_bytes": 65536,
+          "sha256": "28a1d11bd563a9c18f4493faa3b4575ad63666290f7f6dcb152e1b467ab228d6",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-parts-008.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:22.112150+00:00",
+          "end_utc": "2026-09-28T10:08:22.140383+00:00",
+          "request_id": "024b4a75-86d3-4ea8-8c63-e07f79fc088c",
+          "original_media_type": "image/jpeg"
+        },
+        {
+          "start": 589824,
+          "end_exclusive": 655360,
+          "received_bytes": 65536,
+          "sha256": "40b89fb48bfcc05a0be8874521c098e58cf30c4273ac094a9a28379a892c5ca8",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-parts-009.bin",
+          "completeness": "truncated",
+          "start_utc": "2026-09-28T10:08:22.142381+00:00",
+          "end_utc": "2026-09-28T10:08:22.170924+00:00",
+          "request_id": "716345ae-e498-4f9c-9ad9-db4267d02cbe",
+          "original_media_type": "image/jpeg"
+        },
+        {
+          "start": 655360,
+          "end_exclusive": 704901,
+          "received_bytes": 49541,
+          "sha256": "59d80d06fceb23d369087464dd06a062fda9959cc1ea9b48ad32fc2936382da6",
+          "file": "C:\\Users\\athar\\AppData\\Local\\Temp\\mnemo-reconstruction-mxeuod3h\\jpeg-parts-010.bin",
+          "completeness": "complete",
+          "start_utc": "2026-09-28T10:08:22.177945+00:00",
+          "end_utc": "2026-09-28T10:08:22.212554+00:00",
+          "request_id": "d5d33a94-6725-40c7-b87d-ec5d146592bb",
+          "original_media_type": "image/jpeg"
+        }
+      ]
+    }
+  },
+  "tools": [
+    "query_notebook",
+    "search_all_notebooks",
+    "list_notebooks",
+    "get_notebook_summary",
+    "get_source_insights",
+    "get_timeline",
+    "get_document",
+    "get_document_chunk",
+    "get_asset",
+    "get_image_analysis",
+    "search_evidence",
+    "query_structured",
+    "run_final_qa_v2",
+    "get_capabilities"
+  ],
+  "pdf_pages": 6,
+  "jpeg_dimensions": [
+    3576,
+    2512
+  ],
+  "pdf_extracted_jpeg_identical": true,
+  "analysis": {
+    "completeness": "complete",
+    "request_id": "f0333cd0-b4ac-47ec-a2f3-d01f79ac0912",
+    "records": [
+      {
+        "kind": "derived_ocr",
+        "attribution": {
+          "asset_id": "5d38b74c-7f49-54fc-9c00-cbea3d0deeb6",
+          "authority": "derived_ocr",
+          "derivation_id": "2b206dff-9a47-563c-b0f8-6a50f7715a28",
+          "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+          "generation_id": "f2a394f0-57c1-52eb-a56f-f360d11cdcf7",
+          "language": null,
+          "modality": "ocr",
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+          "script": null,
+          "source_id": "ee9dc261-3bcf-49ed-a110-8b2f9e39270f",
+          "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8"
+        },
+        "bytes": 2875,
+        "regions": 1,
+        "observations": 0
+      },
+      {
+        "kind": "derived_vision",
+        "attribution": {
+          "asset_id": "5d38b74c-7f49-54fc-9c00-cbea3d0deeb6",
+          "authority": "derived_vision",
+          "derivation_id": "ee4dbd89-ba0b-54bc-9618-786cd3d3793d",
+          "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+          "generation_id": "c5e11f9d-54f0-5f00-98fb-1f38b005e872",
+          "language": null,
+          "modality": "vision",
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+          "script": null,
+          "source_id": "ee9dc261-3bcf-49ed-a110-8b2f9e39270f",
+          "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8"
+        },
+        "bytes": 2835,
+        "regions": 0,
+        "observations": 5
+      }
+    ]
+  },
+  "representation_errors": [
+    {
+      "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+      "mode": "blocks",
+      "error": {
+        "category": "capability_unavailable",
+        "code": "delivery.representation_unavailable",
+        "correlation_id": "2761fc0e-b4a6-48fe-a96a-a02a07410f95",
+        "details": {},
+        "layer": "runtime",
+        "message": "Requested capability is not ready or unavailable",
+        "origin_code": "delivery.representation_unavailable",
+        "reason": "dependency_unavailable",
+        "retryable": false
+      },
+      "request_id": null
+    },
+    {
+      "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+      "mode": "text",
+      "error": {
+        "category": "capability_unavailable",
+        "code": "delivery.representation_unavailable",
+        "correlation_id": "5012b9a3-d2c6-48e2-94af-f02f2a001562",
+        "details": {},
+        "layer": "runtime",
+        "message": "Requested capability is not ready or unavailable",
+        "origin_code": "delivery.representation_unavailable",
+        "reason": "dependency_unavailable",
+        "retryable": false
+      },
+      "request_id": null
+    },
+    {
+      "document_id": "8abc6c73-7d1c-5248-8c28-4157de5ca51a",
+      "mode": "blocks",
+      "error": {
+        "category": "capability_unavailable",
+        "code": "delivery.representation_unavailable",
+        "correlation_id": "5b3c7ceb-4111-42f6-84bc-341224790263",
+        "details": {},
+        "layer": "runtime",
+        "message": "Requested capability is not ready or unavailable",
+        "origin_code": "delivery.representation_unavailable",
+        "reason": "dependency_unavailable",
+        "retryable": false
+      },
+      "request_id": null
+    },
+    {
+      "document_id": "8abc6c73-7d1c-5248-8c28-4157de5ca51a",
+      "mode": "text",
+      "error": {
+        "category": "capability_unavailable",
+        "code": "delivery.representation_unavailable",
+        "correlation_id": "149c667f-ae90-462f-98c8-5807ff34e8a2",
+        "details": {},
+        "layer": "runtime",
+        "message": "Requested capability is not ready or unavailable",
+        "origin_code": "delivery.representation_unavailable",
+        "reason": "dependency_unavailable",
+        "retryable": false
+      },
+      "request_id": null
+    }
+  ],
+  "end_utc": "2026-09-28T10:08:24.509489+00:00"
+}

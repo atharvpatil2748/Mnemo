@@ -191,7 +191,7 @@
     },
     {
       "id": "document_delivery", "owner": "DocumentExpansionServiceV1", "dependencies": ["exact scope", "original reference or parsed blocks", "cursor"],
-      "storage_or_index": ["canonical blocks", "original asset reference"], "http": ["V2 document blocks/original"], "mcp": ["get_document"],
+      "storage_or_index": ["canonical blocks", "original asset reference"], "http": ["V2 document blocks/original and supported full text rendering"], "mcp": ["get_document: original, blocks, text"],
       "readiness_conditions": ["exact authorized version", "available representation", "bounds"], "completeness": "Complete only after selected bounded scope terminates.", "security": ["scope/version authorization", "integrity and size checks"],
       "certification_requirements": ["full/range/tail traversal", "disconnect and cursor security"],
       "states": {"code_present": true, "configured": true, "provider_ready": null, "generation_present": null, "generation_active": null, "exposed_http": true, "exposed_mcp": true, "discoverable": true, "behaviorally_verified": false, "security_verified": true, "certified": false},

@@ -14,8 +14,7 @@ from uuid import UUID
 
 from mcp.server.stdio import stdio_server
 from mnemo.interfaces import PrincipalContextV1
-from mnemo_server.mcp.server import create_mcp_server
-from test_mcp_immutable_schema_matrix import _fixture
+from test_mcp_immutable_schema_matrix import _fixture, create_mcp_server
 
 
 async def _main(root: Path, *, legacy: bool) -> None:
@@ -28,6 +27,10 @@ async def _main(root: Path, *, legacy: bool) -> None:
         final_qa_ready=True,
         governed_multilingual=True,
     )
+    if "ordered" in sys.argv[3:]:
+        from ordered_text_fixture import install_ordered_fixture
+
+        await install_ordered_fixture(reader, root)
     server = create_mcp_server(
         engine,
         config=config,

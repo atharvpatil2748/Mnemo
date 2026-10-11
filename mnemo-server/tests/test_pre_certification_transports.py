@@ -9,6 +9,7 @@ from uuid import uuid4
 
 import mcp.types as types
 import pytest
+from disposable_index_admission import disposable_index_admission
 from httpx import ASGITransport, AsyncClient
 from mnemo.engine import EngineState
 from mnemo_server.app import create_app
@@ -91,9 +92,19 @@ async def test_http_observation_authenticates_and_exposes_no_chat_or_mutation(
         server_config=config,
         pre_certification_observation=True,
         provision_tokenizer_on_startup=False,
+        indexed_fixture_readiness_check=disposable_index_admission(tmp_path / "admission"),
+        indexed_fixture_engine_factory=lambda *_args, **_kwargs: engine,
     )
-    assert {route.path for route in app.routes if route.path.startswith("/v1")} == set()
-    assert {route.path for route in app.routes if route.path.startswith("/v2")} == set()
+    assert {
+        route.path
+        for route in app.routes
+        if hasattr(route, "path") and route.path.startswith("/v1")
+    } == set()
+    assert {
+        route.path
+        for route in app.routes
+        if hasattr(route, "path") and route.path.startswith("/v2")
+    } == set()
     async with (
         app.router.lifespan_context(app),
         AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client,
@@ -163,6 +174,7 @@ async def test_mcp_observer_exposes_one_tool_and_rejects_anonymous() -> None:
         types.ListToolsRequest(method="tools/list")
     )
     result = getattr(listed, "root", listed)
+    assert isinstance(result, types.ListToolsResult)
     assert [tool.name for tool in result.tools] == ["observe_runtime"]
     called = await server.request_handlers[types.CallToolRequest](
         types.CallToolRequest(
@@ -171,6 +183,7 @@ async def test_mcp_observer_exposes_one_tool_and_rejects_anonymous() -> None:
         )
     )
     call_result = getattr(called, "root", called)
+    assert isinstance(call_result, types.CallToolResult)
     assert call_result.isError is not True
     authority.observe.assert_awaited_once()
     unknown = await server.request_handlers[types.CallToolRequest](
@@ -180,6 +193,7 @@ async def test_mcp_observer_exposes_one_tool_and_rejects_anonymous() -> None:
         )
     )
     unknown_result = getattr(unknown, "root", unknown)
+    assert isinstance(unknown_result, types.CallToolResult)
     assert unknown_result.isError is True
     anonymous = create_pre_certification_mcp_server(
         principal_provider=lambda: principal_from_claims(None),
@@ -193,4 +207,5 @@ async def test_mcp_observer_exposes_one_tool_and_rejects_anonymous() -> None:
         )
     )
     rejection = getattr(rejected, "root", rejected)
+    assert isinstance(rejection, types.CallToolResult)
     assert rejection.isError is True

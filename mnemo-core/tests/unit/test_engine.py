@@ -777,6 +777,8 @@ def test_advanced_retrieval_composition_covers_optional_projection_paths(
     """Composition includes only active derived projections and validates V2 ownership."""
 
     class AdvancedStore:
+        generations_available = True
+
         async def advanced_canonical_snapshot(self, **_kwargs):  # type: ignore[no-untyped-def]
             return "snapshot"
 
@@ -795,6 +797,8 @@ def test_advanced_retrieval_composition_covers_optional_projection_paths(
             *,
             profile_id=None,  # type: ignore[no-untyped-def]
         ):
+            if not self.generations_available:
+                return None
             if representation is EvidenceRepresentation.VISUAL_VECTOR:
                 return "visual-generation" if profile_id == "visual-profile" else None
             return f"{representation.value}-generation"
@@ -853,6 +857,11 @@ def test_advanced_retrieval_composition_covers_optional_projection_paths(
     composed = asyncio.run(engine._compose_advanced_retrieval(resolved))
     assert composed is not None
     assert len(composed._sources) == 6  # type: ignore[attr-defined]
+    runtime = engine._compose_phase85_runtime(resolved, composed, None, False, None, None)
+    multimodal = runtime._service_registrations["multimodal_retrieval"]
+    assert multimodal.generation_active
+    assert multimodal.generation_id is not None
+    assert not multimodal.certified
 
     engine._full_multilingual_v2_readiness = SimpleNamespace(v2_exposed=True)
     engine._full_multilingual_v2_source = object()
@@ -865,6 +874,33 @@ def test_advanced_retrieval_composition_covers_optional_projection_paths(
     exposed = asyncio.run(engine._compose_advanced_retrieval(resolved))
     assert exposed is not None
     assert exposed._reranker is None  # type: ignore[attr-defined]
+    resolved.storage.generations_available = False  # type: ignore[attr-defined]
+    no_generations = asyncio.run(engine._compose_advanced_retrieval(resolved))
+    assert no_generations is not None
+    runtime = engine._compose_phase85_runtime(resolved, no_generations, None, False, None, None)
+    absent = runtime._service_registrations["multimodal_retrieval"]
+    assert not absent.ready and not absent.generation_active
+    assert absent.generation_id is None
+    assert not absent.exposed
+
+
+def test_composed_final_qa_v2_is_registered_in_same_startup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A service composed during initialize must appear in that runtime's capability view."""
+    providers = make_providers()
+    install_builtins(monkeypatch, runtime_plugin(providers))
+    engine = KnowledgeEngine(make_config(tmp_path))
+    composed = Mock()
+    monkeypatch.setattr(engine, "_compose_final_qa_v2", lambda _providers: composed)
+
+    asyncio.run(engine.initialize())
+
+    assert engine.final_qa_v2 is composed
+    status = engine.phase85.capabilities()["final_qa_v2"]
+    assert status.registered is True
+    assert status.state.configured is True
+    assert status.reason_code != "service_not_registered"
 
 
 def test_engine_properties_fail_closed_when_dependencies_missing(
@@ -1128,6 +1164,7 @@ def test_engine_compose_phase85_runtime_full_registrations(tmp_path: Path) -> No
         structured_retrieval=structured_retrieval,
         structured_ready=True,
         structured_generation_id="gen-123",
+        final_qa_v2=engine._final_qa_v2,
     )
     assert runtime is not None
     caps = set(runtime._service_registrations)
@@ -1137,6 +1174,79 @@ def test_engine_compose_phase85_runtime_full_registrations(tmp_path: Path) -> No
     assert "multimodal_retrieval" in caps
     assert "structured_retrieval" in caps
     assert "final_qa_v2" in caps
+
+
+def test_server_owned_delivery_is_registered_from_actual_service(tmp_path: Path) -> None:
+    from mnemo.interfaces import (
+        AssetCatalogStoreV1,
+        DocumentExpansionServiceV1,
+        ExactDocumentReaderV1,
+    )
+
+    class DeliveryStorage(StorageInterfaceV1, AssetCatalogStoreV1, ExactDocumentReaderV1):
+        pass
+
+    storage = create_autospec(DeliveryStorage, instance=True)
+    providers = make_providers()
+    resolved = _ResolvedProviders(
+        storage=storage,
+        embedding=providers.embedding,
+        reranker=providers.reranker,
+        planner=providers.llm,
+        synthesizer=providers.llm,
+        extractor=providers.llm,
+        classifier=providers.llm,
+        capabilities=MappingProxyType({}),
+    )
+    actual_service = create_autospec(DocumentExpansionServiceV1, instance=True)
+    factory = Mock(return_value=actual_service)
+    engine = KnowledgeEngine(make_config(tmp_path), delivery_service_factory=factory)
+    runtime = engine._compose_phase85_runtime(
+        providers=resolved,
+        advanced_retrieval=None,
+        structured_retrieval=None,
+        structured_ready=False,
+        structured_generation_id=None,
+        final_qa_v2=None,
+    )
+    factory.assert_called_once_with(storage, storage)
+    for capability_id in ("document_delivery", "exact_retrieval", "asset_delivery"):
+        registration = runtime._service_registrations[capability_id]
+        assert registration.service is actual_service
+        assert registration.ready and registration.exposed
+        assert not registration.certified
+
+
+def test_delivery_registration_rejects_incompatible_service(tmp_path: Path) -> None:
+    from mnemo.interfaces import AssetCatalogStoreV1, DocumentExpansionServiceV1
+
+    class DeliveryStorage(StorageInterfaceV1, AssetCatalogStoreV1):
+        pass
+
+    providers = make_providers()
+    storage = create_autospec(DeliveryStorage, instance=True)
+    resolved = _ResolvedProviders(
+        storage=storage,
+        embedding=providers.embedding,
+        reranker=providers.reranker,
+        planner=providers.llm,
+        synthesizer=providers.llm,
+        extractor=providers.llm,
+        classifier=providers.llm,
+        capabilities=MappingProxyType({}),
+    )
+    engine = KnowledgeEngine(make_config(tmp_path), delivery_service_factory=lambda *_: object())
+    with pytest.raises(EngineInitializationError, match="incompatible"):
+        engine._compose_phase85_runtime(resolved, None, None, False, None, None)
+
+    valid = create_autospec(DocumentExpansionServiceV1, instance=True)
+    partial_engine = KnowledgeEngine(
+        make_config(tmp_path), delivery_service_factory=lambda *_: valid
+    )
+    runtime = partial_engine._compose_phase85_runtime(resolved, None, None, False, None, None)
+    assert "document_delivery" in runtime._service_registrations
+    assert "asset_delivery" in runtime._service_registrations
+    assert "exact_retrieval" not in runtime._service_registrations
 
 
 def test_engine_compose_final_qa_and_provider_resolution_failures(tmp_path: Path) -> None:

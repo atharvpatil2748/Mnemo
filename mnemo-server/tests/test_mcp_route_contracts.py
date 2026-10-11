@@ -1,4 +1,4 @@
-"""Frozen public-route declaration and dispatch identity for the 14 MCP tools."""
+"""Public-route declaration and dispatch identity, including additive V2 query."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from mnemo_server.mcp.tools import (
 )
 
 EXPECTED_ROUTES = {
+    "query_notebook_v2": (ToolBackendRoute.V2_REPRESENTATIONS, "service"),
     "list_notebooks": (ToolBackendRoute.RETAINED_V1, "collection"),
     "get_notebook_summary": (ToolBackendRoute.RETAINED_STORAGE, "notebook"),
     "get_timeline": (ToolBackendRoute.RETAINED_STORAGE, "notebook"),
@@ -38,7 +39,7 @@ EXPECTED_ROUTES = {
 def test_registered_tools_have_one_frozen_route_and_handler() -> None:
     routes = get_mcp_route_contracts()
     assert set(routes) == {tool.name for tool in get_mcp_tools()} == set(EXPECTED_ROUTES)
-    assert len(routes) == 14
+    assert len(routes) == 15
     for name, (backend, scope) in EXPECTED_ROUTES.items():
         contract = routes[name]
         assert (contract.backend, contract.auth_scope) == (backend, scope)

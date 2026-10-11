@@ -1,0 +1,15 @@
+# Full document text — 2026-09-28
+
+D-01 confirmed root cause: both protected production versions resolve as authorized existing documents, but `CompositeStorage.get_parsed_document` delegates to filesystem parsed IR and returns None. The delivery service converted this absence into NotFoundError. Original bytes and indexed chunks are different persisted representations; neither proves a complete parsed projection.
+
+Correction: explicit DependencyUnavailableError subclass `delivery.representation_unavailable`, nonretryable, allowlisted originating code; public MCP category capability_unavailable/runtime/dependency_unavailable. Unknown/unauthorized resources remain nondisclosing safe resource errors. No protected representation generated.
+
+Additive `get_document(mode="text")`, full traversal only, and existing HTTP GET document route `?mode=text` render persisted blocks deterministically. Text/code/LaTeX/alt text are retained; tables use tab-separated cells/newline-separated rows; newline separates blocks. Each payload exposes text+separator_after; append exactly those strings. This named `parsed_text/v1` rendering is not original-file byte equivalence and not a claim of full canonical chunk enumeration. Ordered blocks expose `parsed_blocks/v1`; total_items and signed snapshot/actor/request-bound continuation remain stable. Existing selectors and14 tools remain.
+
+Disposable proof: twelve-page ParsedDocument persisted using FilesystemBlobStore, closed/reopened, traversed in twelve one-item pages. Indices0..11 once, one stable snapshot, total12, final null cursor; reconstructed text equals persisted source truth. Test `test_complete_ordered_text_pages_reconstruct_persisted_truth` in core unit delivery. Old/new persisted SQLite fixtures exercise text view and actual multipart binary codecs across direct MCP/real stdio/SSE/HTTP in the expanded public transport matrix; their parsed-block source is an explicit test fixture, not promoted production data.
+
+Production PDF and code: both text/full and blocks/full return capability_unavailable/delivery.representation_unavailable through real stdio/SSE. This is truthful unavailability, NOT a complete text success. Indexed chunks may still be fetched exactly but must not be stitched and mislabeled complete.
+
+Precise remaining action: authorize a separately governed staging run to generate/validate complete parsed IR from authoritative original sources, bind exact document/version/parser identity and verify reconstruction, then independently certify/authorize any serving-composition activation. Do not write IR into the protected corpus, alter signed artifacts, or copy evaluation parsed files under this task. Existing ingestion/put_parsed_document workflow is exercised on disposable storage. Production activation requires separate owner authorization under ADR-0077 and the certification boundary; no automatic promotion occurs.
+
+[Master record](mnemo-complete-resource-delivery-remediation.md) and [external prompt](mnemo-external-resource-reconstruction-prompt.md).

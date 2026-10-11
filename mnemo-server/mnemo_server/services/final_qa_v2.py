@@ -222,10 +222,18 @@ class FinalQAV2ApplicationService:
                 _citation(item, citation_metadata.get(item.candidate.candidate_id))
                 for item in final.citations
             ),
-            completeness=final.context_result.completeness.value,
+            completeness=(
+                "unknown"
+                if final.answer is not None and final.answer_complete is not True
+                else final.context_result.completeness.value
+            ),
             coverage={
                 "items": len(final.context_result.items),
                 "snapshot_identity": result.snapshot_identity,
+                "answer_termination": {
+                    "complete": final.answer_complete,
+                    "reason": final.termination_reason,
+                },
             },
             publication_status="published" if final.answer is not None else "no_context",
             snapshot_identity=None if snapshot is None else snapshot.payload_hash,

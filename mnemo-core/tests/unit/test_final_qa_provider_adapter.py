@@ -96,3 +96,41 @@ def test_provider_token_metadata_is_untrusted(value: object, expected: int) -> N
 def test_final_qa_provider_requires_llm_protocol() -> None:
     with pytest.raises(TypeError, match="LLMInterfaceV1"):
         LLMFinalQAV2Provider(object())  # type: ignore[arg-type]
+
+
+@pytest.mark.anyio
+async def test_finalqa_preserves_length_termination_even_with_valid_citation() -> None:
+    llm = LLM(
+        CompletionResult(
+            model="test-model",
+            text="Evidence [source:1]\n- **Code",
+            metadata=FrozenMetadata({"done_reason": "length", "eval_count": 123}),
+        )
+    )
+    result = await LLMFinalQAV2Provider(llm).complete(_request())
+    assert result.output_complete is False
+    assert result.termination_reason == "length"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "text,metadata,reason,complete",
+    [
+        ("Complete [source:1].", {"done_reason": "stop", "eval_count": 123}, "stop", True),
+        (
+            "Long complete answer [source:1].",
+            {"done_reason": "stop", "eval_count": 80},
+            "stop",
+            True,
+        ),
+        ("Cut [source:1]", {"done_reason": "length", "eval_count": 123}, "length", False),
+        ("Cut [source:1]", {"done": False}, "interrupted", False),
+        ("Cut [source:1]", {"eval_count": 123}, "length", False),
+        ("[source:1]\n- **Code", {"done_reason": "stop"}, "incomplete_markdown", False),
+        ("[source:1]\n```code", {"done_reason": "stop"}, "incomplete_markdown", False),
+    ],
+)
+async def test_finalqa_termination_classification(text, metadata, reason, complete) -> None:  # type: ignore[no-untyped-def]
+    llm = LLM(CompletionResult(model="test-model", text=text, metadata=FrozenMetadata(metadata)))
+    result = await LLMFinalQAV2Provider(llm).complete(_request())
+    assert (result.termination_reason, result.output_complete) == (reason, complete)

@@ -17,6 +17,8 @@ from mnemo.models.v2_retrieval_authorization import V2RetrievalAuthorizationDeci
 
 MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS = 10_000
 MAX_RETURNED_MULTILINGUAL_V2_CANDIDATES = 1_000
+MAX_PAGED_MULTILINGUAL_V2_VECTORS = 200_000
+MULTILINGUAL_V2_PAGE_SIZE = 2_000
 
 
 @runtime_checkable
@@ -25,6 +27,17 @@ class AuthorizedMultilingualSourceEnumeratorV2(Protocol):  # pragma: no cover
         self,
         *,
         decision: V2RetrievalAuthorizationDecisionV1,
+        limit: int,
+    ) -> tuple[LanguageEvidenceReferenceV3, ...]: ...
+
+
+@runtime_checkable
+class PagedAuthorizedMultilingualSourceEnumeratorV2(Protocol):  # pragma: no cover
+    async def enumerate_authorized_multilingual_sources_page(
+        self,
+        *,
+        decision: V2RetrievalAuthorizationDecisionV1,
+        offset: int,
         limit: int,
     ) -> tuple[LanguageEvidenceReferenceV3, ...]: ...
 
@@ -95,32 +108,85 @@ class AuthorizedMultilingualDenseRetrievalV2:
     ) -> tuple[MultilingualDenseMatchV2, ...]:
         if not 1 <= limit <= MAX_RETURNED_MULTILINGUAL_V2_CANDIDATES:
             raise ValueError("dense result limit is outside governed bounds")
-        authorized = await self._source_enumerator.enumerate_authorized_multilingual_sources(
-            decision=decision,
-            limit=MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS + 1,
+        seen_sources: set[str] = set()
+        paged_enumerator = (
+            self._source_enumerator
+            if isinstance(self._source_enumerator, PagedAuthorizedMultilingualSourceEnumeratorV2)
+            else None
         )
-        if len(authorized) > MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS:
+        offsets: range | tuple[int, ...] = (
+            range(0, MAX_PAGED_MULTILINGUAL_V2_VECTORS + 1, MULTILINGUAL_V2_PAGE_SIZE)
+            if paged_enumerator is not None
+            else (0,)
+        )
+        first_authorized = (
+            await paged_enumerator.enumerate_authorized_multilingual_sources_page(
+                decision=decision, offset=0, limit=MULTILINGUAL_V2_PAGE_SIZE
+            )
+            if paged_enumerator is not None
+            else await self._source_enumerator.enumerate_authorized_multilingual_sources(
+                decision=decision, limit=MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS + 1
+            )
+        )
+        if (
+            paged_enumerator is None
+            and len(first_authorized) > MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS
+        ):
             raise ValueError("authorized multilingual vector universe exceeds 10000")
-        if any(source.notebook_id != decision.retrieval_scope.notebook_id for source in authorized):
+        if any(
+            source.notebook_id != decision.retrieval_scope.notebook_id
+            for source in first_authorized
+        ):
             raise PermissionError("authorized source enumerator crossed notebook scope")
         query_embedding = await self._query_embedder.embed_query(
             query=query, language=query_language.value
         )
         if query_embedding.profile.vector_space != self._vector_space:
             raise ValueError("query embedding belongs to a different vector space")
-        embeddings = await self._store.list_authorized_multilingual_embeddings_v3(
-            notebook_id=decision.retrieval_scope.notebook_id,
-            generation_id=self._generation_id,
-            vector_space=self._vector_space,
-            authorized_sources=authorized,
-        )
-        authorized_digests = {item.identity_digest for item in authorized}
-        if any(item.source.identity_digest not in authorized_digests for item in embeddings):
-            raise PermissionError("embedding store returned unauthorized evidence")
-        scored = sorted(
-            ((_cosine(query_embedding.vector, item.vector), item) for item in embeddings),
-            key=lambda value: (-value[0], str(value[1].embedding_id)),
-        )[:limit]
+        scored: list[tuple[float, MultilingualEmbeddingV3]] = []
+        for offset in offsets:
+            if offset == 0 or paged_enumerator is None:
+                authorized = first_authorized
+            else:
+                authorized = await paged_enumerator.enumerate_authorized_multilingual_sources_page(
+                    decision=decision, offset=offset, limit=MULTILINGUAL_V2_PAGE_SIZE
+                )
+            if (
+                paged_enumerator is not None
+                and offset == MAX_PAGED_MULTILINGUAL_V2_VECTORS
+                and authorized
+            ):
+                raise ValueError("authorized multilingual vector universe exceeds 200000")
+            if paged_enumerator is None and len(authorized) > MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS:
+                raise ValueError("authorized multilingual vector universe exceeds 10000")
+            if any(
+                source.notebook_id != decision.retrieval_scope.notebook_id for source in authorized
+            ):
+                raise PermissionError("authorized source enumerator crossed notebook scope")
+            if not authorized:
+                break
+            page_count = len(authorized)
+            if any(source.identity_digest in seen_sources for source in authorized):
+                raise ValueError("authorized V2 source pages overlap")
+            seen_sources.update(source.identity_digest for source in authorized)
+            embeddings = await self._store.list_authorized_multilingual_embeddings_v3(
+                notebook_id=decision.retrieval_scope.notebook_id,
+                generation_id=self._generation_id,
+                vector_space=self._vector_space,
+                authorized_sources=authorized,
+            )
+            authorized_digests = {item.identity_digest for item in authorized}
+            if any(item.source.identity_digest not in authorized_digests for item in embeddings):
+                raise PermissionError("embedding store returned unauthorized evidence")
+            scored.extend(
+                (_cosine(query_embedding.vector, item.vector), item) for item in embeddings
+            )
+            scored = sorted(
+                scored,
+                key=lambda value: (-value[0], str(value[1].embedding_id)),
+            )[:limit]
+            if paged_enumerator is None or page_count < MULTILINGUAL_V2_PAGE_SIZE:
+                break
         return tuple(
             MultilingualDenseMatchV2(embedding=item, score=score, rank=index)
             for index, (score, item) in enumerate(scored, 1)

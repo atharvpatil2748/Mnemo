@@ -1,0 +1,3041 @@
+{
+  "format": "mnemo.http.acceptance-manifest/1",
+  "source_head": "5d2612fef6d26cc1e1b0547bb5bd3da6abf21187 plus unstaged working tree",
+  "credential_handling": "load existing server-owned configuration; never print credentials",
+  "runner": "scripts/verify_completed_stage_http.py",
+  "operation_count": 53,
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/v1/health",
+      "operation_id": "get_health_v1_health_get",
+      "request_body": null,
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthResponse"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "operation_id": "get_health_health_get",
+      "request_body": null,
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthResponse"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/config",
+      "operation_id": "get_config_v1_config_get",
+      "request_body": null,
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigResponse"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/config",
+      "operation_id": "update_config_v1_config_patch",
+      "request_body": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UpdateServerConfigRequest"
+            }
+          }
+        },
+        "required": true
+      },
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/config",
+      "operation_id": "get_config_config_get",
+      "request_body": null,
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigResponse"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "PATCH",
+      "path": "/config",
+      "operation_id": "update_config_config_patch",
+      "request_body": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UpdateServerConfigRequest"
+            }
+          }
+        },
+        "required": true
+      },
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/config/models",
+      "operation_id": "get_models_v1_config_models_get",
+      "request_body": null,
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelsConfigResponse"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/config/models",
+      "operation_id": "get_models_config_models_get",
+      "request_body": null,
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelsConfigResponse"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/jobs",
+      "operation_id": "list_jobs_v1_jobs_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Filter by job status",
+            "title": "Status"
+          },
+          "description": "Filter by job status"
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "description": "Page size limit",
+            "default": 20,
+            "title": "Limit"
+          },
+          "description": "Page size limit"
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Keyset pagination cursor",
+            "title": "Cursor"
+          },
+          "description": "Keyset pagination cursor"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageResponse_JobResponse_"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/jobs",
+      "operation_id": "list_jobs_jobs_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Filter by job status",
+            "title": "Status"
+          },
+          "description": "Filter by job status"
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "description": "Page size limit",
+            "default": 20,
+            "title": "Limit"
+          },
+          "description": "Page size limit"
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Keyset pagination cursor",
+            "title": "Cursor"
+          },
+          "description": "Keyset pagination cursor"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageResponse_JobResponse_"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/jobs/{job_id}",
+      "operation_id": "get_job_v1_jobs__job_id__get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "job_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Job Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/{job_id}",
+      "operation_id": "get_job_jobs__job_id__get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "job_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Job Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/query/stream",
+      "operation_id": "query_stream_sse_v1_query_stream_post",
+      "request_body": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/QueryRequest"
+            }
+          }
+        },
+        "required": true
+      },
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks",
+      "operation_id": "create_notebook_v1_notebooks_post",
+      "request_body": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CreateNotebookRequest"
+            }
+          }
+        }
+      },
+      "parameters": [],
+      "responses": {
+        "201": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotebookResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks",
+      "operation_id": "list_notebooks_v1_notebooks_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "description": "Number of items to return",
+            "default": 50,
+            "title": "Limit"
+          },
+          "description": "Number of items to return"
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Keyset cursor from previous page",
+            "title": "Cursor"
+          },
+          "description": "Keyset cursor from previous page"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageResponse_NotebookResponse_"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}",
+      "operation_id": "get_notebook_v1_notebooks__notebook_id__get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotebookResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/notebooks/{notebook_id}",
+      "operation_id": "update_notebook_v1_notebooks__notebook_id__patch",
+      "request_body": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UpdateNotebookRequest"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotebookResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/notebooks/{notebook_id}",
+      "operation_id": "delete_notebook_v1_notebooks__notebook_id__delete",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        }
+      ],
+      "responses": {
+        "204": {
+          "description": "Successful Response"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/summary",
+      "operation_id": "get_notebook_summary_v1_notebooks__notebook_id__summary_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotebookSummaryResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/timeline",
+      "operation_id": "get_notebook_timeline_v1_notebooks__notebook_id__timeline_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "description": "Max timeline events to return",
+            "default": 50,
+            "title": "Limit"
+          },
+          "description": "Max timeline events to return"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimelineResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/graph",
+      "operation_id": "get_notebook_graph_v1_notebooks__notebook_id__graph_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 500,
+            "minimum": 1,
+            "description": "Max entity nodes to return",
+            "default": 100,
+            "title": "Limit"
+          },
+          "description": "Max entity nodes to return"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityGraphResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/sources",
+      "operation_id": "ingest_source_v1_notebooks__notebook_id__sources_post",
+      "request_body": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/Body_ingest_source_v1_notebooks__notebook_id__sources_post"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        }
+      ],
+      "responses": {
+        "201": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/sources",
+      "operation_id": "list_sources_v1_notebooks__notebook_id__sources_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "description": "Number of items to return",
+            "default": 50,
+            "title": "Limit"
+          },
+          "description": "Number of items to return"
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Keyset cursor from previous page",
+            "title": "Cursor"
+          },
+          "description": "Keyset cursor from previous page"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageResponse_SourceResponse_"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/sources/{source_id}",
+      "operation_id": "get_source_v1_notebooks__notebook_id__sources__source_id__get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "source_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique source ID",
+            "title": "Source Id"
+          },
+          "description": "The unique source ID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/notebooks/{notebook_id}/sources/{source_id}",
+      "operation_id": "delete_source_v1_notebooks__notebook_id__sources__source_id__delete",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "source_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique source ID",
+            "title": "Source Id"
+          },
+          "description": "The unique source ID"
+        }
+      ],
+      "responses": {
+        "204": {
+          "description": "Successful Response"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/sources/{source_id}/status",
+      "operation_id": "get_source_status_v1_notebooks__notebook_id__sources__source_id__status_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "source_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique source ID",
+            "title": "Source Id"
+          },
+          "description": "The unique source ID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceStatusResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/sessions",
+      "operation_id": "list_sessions_v1_notebooks__notebook_id__sessions_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "description": "Page size",
+            "default": 50,
+            "title": "Limit"
+          },
+          "description": "Page size"
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Keyset pagination cursor UUID",
+            "title": "Cursor"
+          },
+          "description": "Keyset pagination cursor UUID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageResponse_SessionSummaryResponse_"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/sessions",
+      "operation_id": "create_session_v1_notebooks__notebook_id__sessions_post",
+      "request_body": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CreateSessionRequest"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        }
+      ],
+      "responses": {
+        "201": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionSummaryResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/sessions/{session_id}",
+      "operation_id": "get_session_v1_notebooks__notebook_id__sessions__session_id__get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "session_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique session ID",
+            "title": "Session Id"
+          },
+          "description": "The unique session ID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionDetailResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/notebooks/{notebook_id}/sessions/{session_id}",
+      "operation_id": "delete_session_v1_notebooks__notebook_id__sessions__session_id__delete",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "session_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique session ID",
+            "title": "Session Id"
+          },
+          "description": "The unique session ID"
+        }
+      ],
+      "responses": {
+        "204": {
+          "description": "Successful Response"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/sessions/{session_id}/turns",
+      "operation_id": "append_turn_v1_notebooks__notebook_id__sessions__session_id__turns_post",
+      "request_body": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CreateTurnRequest"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "session_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique session ID",
+            "title": "Session Id"
+          },
+          "description": "The unique session ID"
+        }
+      ],
+      "responses": {
+        "201": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TurnResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/notes",
+      "operation_id": "list_notes_v1_notebooks__notebook_id__notes_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "description": "Page size",
+            "default": 50,
+            "title": "Limit"
+          },
+          "description": "Page size"
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Keyset pagination cursor UUID",
+            "title": "Cursor"
+          },
+          "description": "Keyset pagination cursor UUID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageResponse_NoteResponse_"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/notes",
+      "operation_id": "create_note_v1_notebooks__notebook_id__notes_post",
+      "request_body": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CreateNoteRequest"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        }
+      ],
+      "responses": {
+        "201": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/notes/{note_id}",
+      "operation_id": "get_note_v1_notebooks__notebook_id__notes__note_id__get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "note_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique note ID",
+            "title": "Note Id"
+          },
+          "description": "The unique note ID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/notebooks/{notebook_id}/notes/{note_id}",
+      "operation_id": "update_note_v1_notebooks__notebook_id__notes__note_id__patch",
+      "request_body": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UpdateNoteRequest"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "note_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique note ID",
+            "title": "Note Id"
+          },
+          "description": "The unique note ID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/notebooks/{notebook_id}/notes/{note_id}",
+      "operation_id": "delete_note_v1_notebooks__notebook_id__notes__note_id__delete",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "note_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique note ID",
+            "title": "Note Id"
+          },
+          "description": "The unique note ID"
+        }
+      ],
+      "responses": {
+        "204": {
+          "description": "Successful Response"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/notebooks/{notebook_id}/insights",
+      "operation_id": "list_insights_v1_notebooks__notebook_id__insights_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "description": "Page size",
+            "default": 50,
+            "title": "Limit"
+          },
+          "description": "Page size"
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Keyset pagination cursor UUID",
+            "title": "Cursor"
+          },
+          "description": "Keyset pagination cursor UUID"
+        },
+        {
+          "name": "type",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InsightType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional filter by insight type",
+            "title": "Type"
+          },
+          "description": "Optional filter by insight type"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageResponse_InsightResponse_"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/insights/generate",
+      "operation_id": "generate_insights_v1_notebooks__notebook_id__insights_generate_post",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique notebook ID",
+            "title": "Notebook Id"
+          },
+          "description": "The unique notebook ID"
+        }
+      ],
+      "responses": {
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        },
+        "501": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/notebooks/{notebook_id}/final-qa",
+      "operation_id": "final_qa_endpoint_v1_notebooks__notebook_id__final_qa_post",
+      "request_body": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FinalQARequestBody"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Notebook Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinalQAResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v2/notebooks/{notebook_id}/final-qa",
+      "operation_id": "final_qa_v2_endpoint_v2_notebooks__notebook_id__final_qa_post",
+      "request_body": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FinalQAV2RequestBody"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Notebook Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinalQAV2Response"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/capabilities",
+      "operation_id": "get_capabilities_v2_capabilities_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "capability_ids",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capability Ids"
+          }
+        },
+        {
+          "name": "notebook_id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notebook Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CapabilityDocument"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/query",
+      "operation_id": "query_endpoint_v1_query_post",
+      "request_body": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/QueryRequest"
+            }
+          }
+        },
+        "required": true
+      },
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/search",
+      "operation_id": "search_endpoint_v1_search_post",
+      "request_body": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SearchRequest"
+            }
+          }
+        },
+        "required": true
+      },
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/documents/{document_id}/versions/{version_id}",
+      "operation_id": "get_document_delivery_v2_notebooks__notebook_id__documents__document_id__versions__version_id__get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Notebook Id"
+          }
+        },
+        {
+          "name": "document_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Document Id"
+          }
+        },
+        {
+          "name": "version_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          }
+        },
+        {
+          "name": "max_bytes",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Bytes"
+          }
+        },
+        {
+          "name": "max_items",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Items"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryResponseBody"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v2/notebooks/{notebook_id}/documents/{document_id}/versions/{version_id}/expand",
+      "operation_id": "expand_document_delivery_v2_v2_notebooks__notebook_id__documents__document_id__versions__version_id__expand_post",
+      "request_body": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/DocumentExpansionRequestBody"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Notebook Id"
+          }
+        },
+        {
+          "name": "document_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Document Id"
+          }
+        },
+        {
+          "name": "version_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryResponseBody"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "disposable_authorized_server",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/documents/{document_id}/versions/{version_id}/original",
+      "operation_id": "get_original_document_delivery_v2_notebooks__notebook_id__documents__document_id__versions__version_id__original_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Notebook Id"
+          }
+        },
+        {
+          "name": "document_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Document Id"
+          }
+        },
+        {
+          "name": "version_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          }
+        },
+        {
+          "name": "max_bytes",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Bytes"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/documents/{document_id}/versions/{version_id}/chunks/{chunk_id}",
+      "operation_id": "get_document_chunk_delivery_v2_notebooks__notebook_id__documents__document_id__versions__version_id__chunks__chunk_id__get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Notebook Id"
+          }
+        },
+        {
+          "name": "document_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Document Id"
+          }
+        },
+        {
+          "name": "version_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          }
+        },
+        {
+          "name": "chunk_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "title": "Chunk Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryResponseBody"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/documents/{document_id}/versions/{version_id}/assets",
+      "operation_id": "list_document_assets_delivery_v2_notebooks__notebook_id__documents__document_id__versions__version_id__assets_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Notebook Id"
+          }
+        },
+        {
+          "name": "document_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Document Id"
+          }
+        },
+        {
+          "name": "version_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryResponseBody"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/asset-occurrences/{occurrence_id}/content",
+      "operation_id": "get_asset_delivery_v2_notebooks__notebook_id__asset_occurrences__occurrence_id__content_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Notebook Id"
+          }
+        },
+        {
+          "name": "occurrence_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Occurrence Id"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          }
+        },
+        {
+          "name": "max_bytes",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Bytes"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/asset-occurrences/{occurrence_id}/analysis",
+      "operation_id": "get_asset_analysis_delivery_v2_notebooks__notebook_id__asset_occurrences__occurrence_id__analysis_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Notebook Id"
+          }
+        },
+        {
+          "name": "occurrence_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Occurrence Id"
+          }
+        },
+        {
+          "name": "ocr_derivation_id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Derivation Id"
+          }
+        },
+        {
+          "name": "vision_derivation_id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vision Derivation Id"
+          }
+        },
+        {
+          "name": "selection",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssetAnalysisSelection"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selection"
+          }
+        },
+        {
+          "name": "modalities",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AssetAnalysisModality"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modalities"
+          }
+        },
+        {
+          "name": "profile",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryResponseBody"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/notebooks/{notebook_id}/final-qa/{assistant_turn_id}/evidence",
+      "operation_id": "get_final_qa_v2_evidence_delivery_v2_notebooks__notebook_id__final_qa__assistant_turn_id__evidence_get",
+      "request_body": null,
+      "parameters": [
+        {
+          "name": "notebook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Notebook Id"
+          }
+        },
+        {
+          "name": "assistant_turn_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assistant Turn Id"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryResponseBody"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v2/retrieval/evidence",
+      "operation_id": "search_evidence_v2_retrieval_evidence_post",
+      "request_body": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/EvidenceSearchRequest"
+            }
+          }
+        },
+        "required": true
+      },
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvidenceSearchResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    },
+    {
+      "method": "POST",
+      "path": "/v2/retrieval/structured",
+      "operation_id": "query_structured_v2_retrieval_structured_post",
+      "request_body": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/StructuredRetrievalRequest"
+            }
+          }
+        },
+        "required": true
+      },
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StructuredRetrievalResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "safe_target": "authorized_read_only_or_operational_scope",
+      "external_result": "not_executed",
+      "schema_source": "current_create_app_openapi"
+    }
+  ]
+}

@@ -31,6 +31,12 @@ class CachedEmbeddingProvider(EmbeddingProviderV1):
         return self._provider.model_name
 
     @property
+    def execution_device(self) -> str | None:
+        """Pass through optional provider execution telemetry."""
+        value = getattr(self._provider, "execution_device", None)
+        return value if isinstance(value, str) else None
+
+    @property
     def dimensions(self) -> int:
         """Return the underlying provider's fixed vector dimension."""
         return self._provider.dimensions

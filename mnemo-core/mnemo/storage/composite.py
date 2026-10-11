@@ -277,6 +277,15 @@ class CompositeStorage:
     async def structured_projection_ready(self) -> bool:
         return await self._sql.structured_projection_ready()
 
+    async def structured_projection_ready_for_notebook(self, notebook_id: UUID) -> bool:
+        """Use the canonical SQLite readiness probe for an authorized notebook."""
+        return await self._sql.structured_projection_ready_for_notebook(notebook_id)
+
+    async def resolve_structured_version_associations(
+        self, notebook_id: UUID, version_ids: tuple[UUID, ...]
+    ) -> tuple[tuple[UUID, UUID, UUID], ...]:
+        return await self._sql.resolve_structured_version_associations(notebook_id, version_ids)
+
     async def active_structured_generation_identity(self) -> str | None:
         return await self._sql.active_structured_generation_identity()
 

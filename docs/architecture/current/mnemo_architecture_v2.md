@@ -1,22 +1,27 @@
 # Mnemo — Local Knowledge Engine
 ## Architecture Specification v2.0
 
-> **Current production note (2026-09-08):** This document remains the broad
-> architectural specification. The certified deployed path is the 44-document
-> V2 composition described by the
+> **Current production note (2026-10-10):** This document remains the broad
+> architectural specification. Production is offline and explicitly
+> `UNINDEXED`. The formerly certified 44-document V2 composition described by the
 > [single-production-path audit](../../reports/architecture/mnemo-v2-single-production-path-audit.md)
-> and governed by [ADR-0076](../../adr/active/ADR-0076-project-owner-engineering-certification-standard.md).
-> Earlier baseline examples below are historical unless that audit incorporates them.
-> Phase 8.8 is the current bounded hardening phase; Phase 9 implementation is gated
-> on Phase 8.8 verification.
+> and governed by [ADR-0076](../../adr/active/ADR-0076-project-owner-engineering-certification-standard.md)
+> was decommissioned; its signed certification is historical evidence, not
+> current serving authority. Earlier baseline examples below are historical.
+> Phase 8.8's active scope is re-baselined through Module 8.8.8 without a
+> phase-wide certification claim. Planned Phase 8.9 owns unified retrieval,
+> unfinished external parity/provenance and the Phase 9 GO/NO-GO gate; see
+> [ADR-0080](../../adr/active/ADR-0080-phase-8-9-unified-authorized-retrieval-plan.md).
+> The [reset execution record](../../reports/architecture/phase-8-9-runtime-cutover-execution.md)
+> distinguishes completed decoupling from future indexed serving.
 
 **Document Type:** Design Specification  
 **Status:** Living Design Document  
 **Project Type:** Standalone proprietary software (current project-owned tree)
 **Distribution:** All rights reserved; [current-tree policy](../../governance/active/proprietary_distribution_policy.md)
 
-**Implementation baseline:** Phases 0–8 are complete. Phase 8.5 is complete and
-certified for the exact 44-document production identity under ADR-0076: BGE-M3,
+**Historical implementation baseline:** Phases 0–8 are complete. Phase 8.5 was
+certified for its exact, now-retired 44-document production identity under ADR-0076: BGE-M3,
 BGE-reranker-v2-m3, FTS5, RRF, an internal 50-candidate reranker pool, dynamic
 public `requested_k`, central authorization, provenance, separate FinalQA
 operational persistence, durable activation/rollback, and HTTP/MCP stdio/MCP SSE
@@ -177,6 +182,27 @@ This boundary is enforced at the API level. Mnemo's REST API and MCP tool defini
 ---
 
 ## 2. High-Level Architecture Diagram
+
+The diagram below retains the broad layer layout. Its retrieval branch depicts
+the original component view, **not** a claim of current cross-notebook
+automatic search. The Phase 8.9 target refines that branch as follows:
+
+```text
+MCP adapter ────────┐
+HTTP adapter ───────┼─→ shared search application service (planned)
+future native UI ──┘       │
+                           ├─ principal + membership-backed scope authority
+                           ├─ active generation / provider capability resolver
+                           ├─ canonical + OCR + Vision + compatible visual/text
+                           ├─ typed structured planner when intent is applicable
+                           └─ bounded fusion + provenance + signed continuation
+                                      │
+                                      └─→ evidence snapshot → governed FinalQA
+```
+
+Current `query_notebook_v2`/HTTP automatic retrieval shares an application
+service for one notebook and excludes automatic structured planning. The
+membership resolver and unified cross-notebook boundary above are planned.
 
 ```
 ═══════════════════════════════════════════════════════════════════════
@@ -670,7 +696,7 @@ Registry slots:
   storage:      { "primary": CompositeStorage }
 ```
 
-The current certified V2 composition resolves its server-owned
+The formerly certified V2 composition resolved its server-owned
 `BGE_V2_M3` reranker through the governed V2 production assembler and durable
 activation authority; it does not obtain the production reranker from the
 historical V1 registry example above.
@@ -686,6 +712,15 @@ historical V1 registry example above.
 The server is built on **FastAPI** (Python). It uses **Uvicorn** as the ASGI server. It handles authentication, rate limiting, websocket connections, and streaming.
 
 ### 5.1 REST API Surface
+
+Current V2 `/v2/retrieval/automatic`, `/v2/retrieval/evidence`, and
+`/v2/retrieval/structured` routes use their respective application services;
+the first shares its service with MCP `query_notebook_v2`. They do not yet form
+one automatic multi-notebook, structured-aware API. Phase 8.9 proposes
+`POST /v2/search` and possibly separate typed structured discovery/query
+routes **after** schema, consumer and authorization review. These proposed
+names are not registered routes. V1 routes retain frozen semantics. Exact V2
+document/chunk/asset/image-analysis routes remain delivery, not search.
 
 The API is versioned at `/v1`. All requests and responses are JSON unless otherwise specified.
 
@@ -829,6 +864,14 @@ GET    /v1/jobs/{id}                    → get job status
 
 ### 5.2 MCP Server
 
+Phase 8.9 proposes canonical `search` backed by the same service as proposed
+HTTP search, retaining existing registrations during migration.
+`search_structured`, `describe_datasets`, and `answer` are design candidates,
+not registered tools. Consumer inventory and parity evidence precede any
+deprecation. Transport envelopes may differ, but scope, evidence, continuation,
+safe errors and provenance must be semantically equivalent. Future UI must
+use this shared service rather than implement private modality routing.
+
 Mnemo exposes an **MCP (Model Context Protocol) server** that can run in two modes:
 
 - **stdio mode**: For local MCP clients (Claude Desktop, VS Code extensions, ARVSAL local). Mnemo starts as a subprocess that communicates over stdin/stdout.
@@ -964,24 +1007,13 @@ Description: Report effective runtime and scope-qualified capability lifecycle s
 Returns:
   Capability states and effective configuration/store identity.
 
-Planned in Phase 8.8 — Tool: search_images
-Description: Discover authorized image occurrences through explicit OCR, caption,
-             visual-vector, or governed hybrid retrieval. Results identify assets;
-             exact binary delivery remains the responsibility of get_asset.
-Parameters:
-  notebook_id:         string
-  query:               string
-  mode:                ocr | caption | visual | hybrid
-  requested_k:         integer
-Returns:
-  ImageSearchResult[] (stable IDs, authorized source metadata, retrieval paths,
-  scores where meaningful, provenance, page/locator, and content hash)
 ```
 
-The current implementation registers 14 tools: the original six, four delivery
-tools, and four V2 retrieval/capability tools. Phase 8.8 must make every current
-contract production-valid and add one dedicated `search_images` tool, producing
-a 15-tool surface only after its implementation and verification gates pass.
+The original Phase 8.7 inventory had 14 tools; the additive working-tree
+`query_notebook_v2` is a fifteenth registration. Existing V1 query/search remain
+canonical-only. Ordinary authorized image-derived discovery is the planned
+Phase 8.9 shared-search behavior; a dedicated `search_images` tool is **not** a
+mandatory deliverable. Exact `get_asset`/`get_image_analysis` remain available.
 Registration alone never means configured, ready, active, scope-available, or
 certified. The MCP server does not expose a tool called `run_command`,
 `browse_web`, `send_email`, or any action that crosses the knowledge-engine
@@ -1002,7 +1034,7 @@ The retained V1 UI preview exposes a WebSocket endpoint at `/ws/query`. It strea
 This endpoint is the retained V1 streaming contract. It is not the authenticated
 certified V2 FinalQA transport. Phase 8.8.14b selected authenticated HTTP
 FinalQA V2 for production chat. Phase 9 may use that HTTP path after the full
-Phase 8.8 GO gate, or remain explicitly read-only; it must not silently use the
+Phase 8.9 GO gate, or remain explicitly read-only; it must not silently use the
 unauthenticated V1 socket as certified V2 chat. A V2 streaming contract would
 require a separate future design and certification.
 
@@ -1556,6 +1588,36 @@ own ADR and roadmap assignment before implementation.
 
 ## 11. Retrieval Pipeline
 
+**Current versus Phase 8.9 target.** Today `AutomaticQueryV2Service` selects
+active canonical, OCR, Vision, multilingual and compatible visual sources for
+one unambiguous notebook. It does not accept selected-document or multiple
+notebook scope, does not automatically plan typed structured queries, and does
+not itself generate an answer. `search_evidence` accepts explicit
+source/document/version filters and representation names; `query_structured`
+is a separate typed service. Canonical zero never proves OCR/Vision absence.
+V1 `query_notebook` and `search_all_notebooks` remain canonical-only.
+
+The Phase 8.9 **target** is one application boundary below MCP, HTTP and
+future UI: principal → membership-backed authorized notebook/document/version
+scope → active compatible generation resolution → automatic applicable-source
+plan → bounded retrieval/fusion → typed evidence and coverage → optional
+governed FinalQA. The client cannot supply actor, database, model or
+generation. Current central authorization checks notebook/source/document
+existence, not actor-to-notebook ownership. Multi-user fan-out remains blocked
+until membership authority is implemented; do not simply remove the existing
+one-notebook guard.
+
+The planned envelope preserves each authorized notebook membership and
+source/document/version plus either canonical chunk, occurrence/asset and
+OCR/Vision derivation, or typed dataset/row identity. It includes locator,
+generation/alias, retrieval path, rank, citation and source status. Deduplication
+must not erase notebook membership. Signed cursors bind actor, scope, policy,
+representation set, aliases, query and limits. Ranked top-k is not exhaustive
+semantic recall; complete traversal ends at a terminal cursor. Typed structured
+predicates are exact over an explicit row universe. Multilingual text uses a
+provider-compatible text space; CLIP visual vectors use their own compatible
+space and rank fusion, never raw cross-space score comparison.
+
 ADR-0040 defines the normative ordering at the Module 6.4/6.5 boundary:
 
 ```text
@@ -1814,7 +1876,7 @@ A stateless caller (no `session_id`) receives pure retrieval results with no mem
 
 Mnemo's architecture contains four specialized storage adapters; it does **not**
 require every indexed document to be replicated into all four systems. The
-current certified V2 topology is content-addressed filesystem storage plus an
+historically certified V2 topology was content-addressed filesystem storage plus an
 immutable SQLite corpus, with a separate mutable operational SQLite store for
 FinalQA execution state. Qdrant and SurrealDB are disabled optional/future
 adapters and are outside the certified production path. Canonical identity,
@@ -1833,7 +1895,7 @@ operational state, user caches, or process CWD.
 #### Qdrant — Optional Derived Vector Store
 
 Qdrant is a functional V1 vector adapter and a future scale path. It is not used
-by current certified V2 retrieval. Current V2 dense retrieval reads governed
+by the historically certified V2 retrieval. That V2 dense retrieval read governed
 BGE-M3 vectors from immutable SQLite and performs bounded exact cosine scoring
 in process. A future Qdrant activation requires a V2 projection/synchronization
 path, authorization-preserving dense-source adapter, lifecycle, rollback, and
@@ -1949,7 +2011,7 @@ projection and remain unmodified.
 
 | Question | Answer |
 |---|---|
-| What is the current certified topology? | Content-addressed filesystem + immutable SQLite corpus + separate operational SQLite. |
+| What is the current production state? | Offline and explicitly `UNINDEXED`. The former certified topology was content-addressed filesystem + immutable SQLite corpus + separate operational SQLite. |
 | Where may future UI/user writes go? | Only to ADR-0077's explicit absolute `MUTABLE_WORKSPACE` after validation and certification; otherwise production is read-only for workspace mutations. |
 | Must every file exist in all four adapters? | No. No accepted ADR establishes a four-copy invariant. |
 | Is Qdrant required by Phase 8.8 or Phase 9? | No. It remains an optional derived scale path, presently disabled. |
@@ -2321,8 +2383,8 @@ profile and must not be enabled without its own V2 lifecycle and certification.
 
 ### Standard Stack (Historical/Optional Reference Deployment)
 
-> **Historical/optional reference deployment — not the current certified V2
-> topology.** The current certified V2 deployment is content-addressed
+> **Historical/optional reference deployment — not the current unindexed
+> production state.** The formerly certified V2 deployment used content-addressed
 > filesystem storage plus an immutable SQLite corpus and a separate mutable
 > operational SQLite store. It does not yet show ADR-0077's separately mounted,
 > explicit absolute mutable workspace and therefore is not a Phase 9 write
@@ -2548,7 +2610,8 @@ As the plugin ecosystem grows, users will face incompatibility between plugin ve
 | 8.5 | **COMPLETED / CERTIFIED** | Full Multilingual V2, BGE-M3 + FTS5 + RRF, BGE-reranker-v2-m3, identity-bound authorization/evidence, provenance, FinalQA operational-store separation, durable reranker activation/rollback, and HTTP/stdio/SSE parity | Certification applies to the exact immutable 44-document production identity; the historical 94.4% evaluation is not identity-equivalent to the 83.3% production-parity result |
 | 8.6 | **COMPLETED / VALIDATED EVALUATION NOTEBOOK** | 24 governed sources across PDF, HTML, DOCX, PPTX, XLSX, CSV, JSON, and Markdown; Hindi, Marathi, and English; structure-aware chunking; 5,843 FTS rows and BGE-M3 embeddings; 161 image occurrences with complete OCR, Vision, and CLIP derivations; canonical manifest and transport validation | Evaluation-only; not merged into or exposed as the certified production corpus |
 | 8.7 | **COMPLETED CAPABILITY MILESTONE; HARDENING FOLLOW-UP REQUIRED** | Expanded MCP surface to 14 registered tools, additive retrieval/delivery contracts, notebook/asset identity propagation, FinalQA exposure, and real client exercises | The later audits found historical tunnel composition, retained-tool authorization, immutable-schema reader, metadata, capability, and parity defects; Phase 8.8 owns those corrections |
-| 8.8 | **IN PROGRESS / NOT VERIFIED** | 8.8.14a/b accepted; Module 8.8.1 startup convergence certified; Stage 5 accepted locally; corrected 8.8.5/8.8.7/8.8.2f/8.8.4/8.8.8 batch independently accepted locally; 8.8.10/8.8.11, behavioral parity, and semantic image discovery remain pending | Repository publication is not production deployment or external verification; no Phase 9 implementation or Phase 8.6 promotion |
+| 8.8 | **SCOPED CHECKPOINT / NOT PHASE-VERIFIED** | Active plan ends 8.8.8; 8.8.1 certified, 8.8.2–8 local acceptance only; 8.8.14a–c and local 8.8.10/11 evidence preserved | No Phase 9 GO or Phase 8.6 promotion inferred |
+| 8.9 | **PLANNED / NOT IMPLEMENTED AS A PHASE** | Shared authorized hybrid/structured search, scope membership, provenance and external parity | Exact-identity GO/NO-GO required before Phase 9 |
 
 The authoritative evidence is ADR-0070, ADR-0071, ADR-0073 through ADR-0076,
 the current V2 certification report, the single-production-path audit, the
@@ -2567,7 +2630,7 @@ Evidence navigation:
 - [Memory and artifact audit/cleanup](../../reports/operations/mnemo-memory-audit.md)
 - [Historical index and embedding cleanup](../../reports/operations/mnemo-historical-index-cleanup.md)
 
-The current certified production lifecycle is:
+The historical exact-identity certification lifecycle was:
 
 ```text
 DECLARED = PASS       IMPLEMENTED = PASS    CONFIGURED = PASS
@@ -2576,100 +2639,28 @@ EXPOSED = PASS        EVALUATED = PASS      VERIFIED = PASS
 CERTIFIED = PASS
 ```
 
-The durable production reranker state is `BGE_ACTIVE = TRUE` and
-`RERANKER_MODE = BGE_V2_M3`. Phase 8.8 must preserve that evidence-bound state
-while correcting transport composition and contracts.
+The former durable reranker state was `BGE_ACTIVE = TRUE` and
+`RERANKER_MODE = BGE_V2_M3` for that retired index. Those assertions are
+historical evidence, not current activation. Production now rejects serving
+at the explicit `UNINDEXED` selection gate.
 
-The completed memory/artifact and historical-index cleanups removed only
-audited disposable or superseded payloads. They preserved the certified
-production DB, both current evaluation notebooks, production configuration,
-models, and certification state; their reports are the operational evidence and
-are not duplicated here.
+At the time of those earlier memory/artifact cleanups, the certified production
+DB and two evaluation notebooks were preserved. That is a **historical
+checkpoint**, superseded by the separately allowlisted five-store reset on
+2026-10-10. The former production/evaluation index rows and aliases were then
+retired; original source corpora, source hashes/manifests, recovery snapshots,
+models, credentials, and historical certification evidence were preserved.
+See the [reset execution receipts](../../reports/architecture/phase-8-9-runtime-cutover-execution.md).
 
-### 21.2 Canonical Phase 8.8 execution order
+### 21.2 Execution authority and disposition
 
-Module numbers are stable ownership identifiers, **not implementation order**.
-The dependency tables remain binding, but this staged sequence is the canonical
-execution order when module numbering, the dependency graph, or older planning
-text appears to imply a different sequence. Tasks grouped in one stage may
-proceed in parallel only where their recorded dependencies permit it. Completing
-one task never marks a sibling or downstream task complete without its own
-implementation and evidence.
-
-1. **8.8.14a — Govern mutable workspace boundary.** Implement the ADR-0077
-   separately governed mutable filesystem + SQLite workspace from explicit
-   absolute server configuration. Until it validates and is certified,
-   production is server-enforced read-only for workspace mutations; no write may
-   target the certified corpus.
-2. **8.8.14b — Govern authenticated V2 chat.** Authenticated HTTP FinalQA V2
-   is the accepted production chat path. V2 streaming is not implemented or
-   required for the current contract; legacy V1 WebSocket/query streaming is
-   non-production.
-3. **8.8.14c — Reconcile current documentation.** After 8.8.14a and 8.8.14b
-   are accepted, align storage optionality, phase status, routes, backends, and
-   dependencies. Pre-decision documentation cleanup does not by itself complete
-   8.8.14c.
-4. **Complete Module 8.8.1 — Certified MCP Runtime Convergence, in dependency
-   order:** 8.8.1a define one production startup binding; 8.8.1b reject
-   configuration forks; 8.8.1c bind the tunnel to server-owned startup after
-   8.8.1a; and 8.8.1d capture convergence evidence after 8.8.1b.
-5. **Close the first prerequisite branches permitted by 8.8.1:**
-   - Module 8.8.2 reader work: 8.8.2a reproduce and pin the confirmed failure;
-     8.8.2b introduce one compatible read-model boundary; then 8.8.2c preserve
-     truthful locators, 8.8.2d route every affected reader, 8.8.2e add
-     schema-compatibility regression tests, and 8.8.2g prove corpus immutability.
-     Task 8.8.2f was deferred at Stage 5 acceptance until Module 8.8.7 supplied
-     typed errors; it was subsequently implemented locally and assessed in the
-     combined Stage 6 forensic audit.
-   - Module 8.8.3 authorization work: 8.8.3a require a
-     transport-authenticated principal; 8.8.3b apply central authorization to
-     all 14 tools; then 8.8.3c preserve non-disclosure and 8.8.3d reject client
-     policy overrides.
-   - Module 8.8.6 capability work: 8.8.6a expand lifecycle semantics; then
-     8.8.6b bind effective identity and 8.8.6c separate image capabilities.
-6. **Complete contracts unlocked by the prerequisite branches:**
-   - Module 8.8.5: 8.8.5a define one authorized metadata envelope; then
-     8.8.5b build one bounded resolver and 8.8.5c preserve identity semantics.
-   - Module 8.8.7: 8.8.7a define the safe error taxonomy; then 8.8.7b preserve
-     originating safe codes and 8.8.7c prevent leakage.
-   - Return to **8.8.2f** and preserve the originating safe reader/retrieval
-     error through the Module 8.8.7 taxonomy.
-   - Module 8.8.4, only after Modules 8.8.2 and 8.8.3 are complete: 8.8.4a
-     freeze each tool route; then 8.8.4b test valid requests and 8.8.4c test
-     invalid/unavailable requests; then 8.8.4d test provenance and transports.
-   - Module 8.8.8, only after Module 8.8.4: 8.8.8a inventory and freeze routes;
-     then 8.8.8b prevent historical fallback and 8.8.8c verify frozen
-     compatibility.
-7. **Verify the bounded isolation and structured-contract branches:**
-   - Module 8.8.10: 8.8.10a enforce evaluation-only selection; then 8.8.10b
-     specify the future promotion gate and 8.8.10c test Phase 8.5/8.6 isolation.
-   - Module 8.8.11: 8.8.11a validate the existing authorized typed contract;
-     then 8.8.11b return truthful unavailability and 8.8.11c keep activation out
-     of scope.
-8. **Complete Module 8.8.12 — Dedicated Semantic Image Search:** 8.8.12a
-   define discovery request/result contracts; then 8.8.12b implement OCR mode,
-   8.8.12c implement caption mode, 8.8.12d implement visual mode, and 8.8.12f
-   connect discovery to `get_asset`; after 8.8.12b–d, 8.8.12e implements
-   deterministic hybrid mode; after 8.8.12b–e, 8.8.12g proves authorization
-   before disclosure.
-9. **Certify transports and complete provenance:**
-   - Module 8.8.9, only after Modules 8.8.1–8.8.8: 8.8.9a execute the
-     HTTP/stdio/SSE/tunnel matrix; then 8.8.9b compare semantic evidence and
-     8.8.9c diagnose the long FinalQA call.
-   - Module 8.8.13: after Modules 8.8.4, 8.8.5, and 8.8.12, 8.8.13a preserve
-     the full identity chain and 8.8.13b validate citation/evidence resolution;
-     after Module 8.8.9, 8.8.13c compares transport provenance.
-10. **Run the complete Phase 8.8 acceptance gate.** Exercise all 14 existing
-    tools plus `search_images`, verify runtime identity, readers, authorization,
-    metadata, capabilities, typed errors, FinalQA, isolation, dynamic public
-    `requested_k`, image-mode no-result/partial/unavailable/multilingual behavior,
-    provenance, storage safety, and unchanged protected hashes. Qdrant,
-    SurrealDB, Phase 8.6 promotion, and Phase 9 implementation remain out of
-    scope.
-11. **8.8.14d — Issue Phase 9 readiness evidence.** Bind Modules 8.8.1–8.8.13,
-    the accepted and tested 8.8.14a–c decisions, every acceptance gate, and the
-    protected hashes into one GO/NO-GO result. Only
-    `PHASE_8_8_VERIFIED → Phase 9 GO` permits Phase 9 implementation.
+The [Engineering Roadmap](mnemo_engineering_roadmap.md) is the **sole active
+execution order**. Its Phase 8.8 scoped plan ends at Module 8.8.8. Historical
+8.8.14a–c, 8.8.10 and 8.8.11 decisions/evidence remain accepted within their
+original scope; unfinished 8.8.9/13/14d work moves to 8.9.8/7/9. Former
+8.8.12 dedicated image-search planning is retired in favor of ordinary hybrid
+search. Neither this handoff nor Module 8.8.1's certification issues a
+phase-wide 8.8 verification or Phase 9 GO.
 
 #### Phase 8.8.14a — implemented, certified, and accepted
 
@@ -2729,9 +2720,9 @@ certification report. Individual capability readiness remains separately gated.
 Stage 5's 8.8.2a–e/g, 8.8.3a–d, and 8.8.6a–c branches are locally accepted;
 this is not a production deployment or complete
 module/phase certification. Task 8.8.2f was subsequently implemented locally;
-the complete Phase 8.8 acceptance gate remains open, and 8.8.14d remains
-**PENDING**. Phase 9 is blocked until
-`PHASE_8_8_VERIFIED → Phase 9 GO`.
+the former phase-wide acceptance gate is now the Phase 8.9 integrated gate;
+8.8.14d remains **PENDING** there. Phase 9 is blocked until exact-identity
+`PHASE_8_9_GO` evidence exists.
 
 The 8.8.1 configuration contract derives the certified BGE mode, activation
 path, and FinalQA operational-store path from the existing production manifest.
@@ -2877,11 +2868,51 @@ assert an actor-to-notebook ACL or complete four-transport behavioral parity.
 | `get_asset` | Shared V2 delivery service | Lists occurrences or delivers an exact known asset |
 | `get_image_analysis` | Shared V2 delivery service | Delivers persisted authorized OCR/Vision derivations; does not perform discovery |
 | `run_final_qa_v2` | Certified V2 FinalQA service | Requires certified composition and separate operational store |
-| `search_images` *(new in 8.8)* | Dedicated authorized multimodal discovery service | OCR, caption, visual, or governed hybrid mode; results lead to `get_asset` |
+| `search_images` *(retired plan, not registered)* | No mandatory dedicated image-search tool | Phase 8.9 ordinary search considers authorized OCR/Vision/compatible visual evidence; `get_asset` remains delivery |
 
 Retained V1 contracts are not blindly rewritten as V2. They remain explicit,
 compatible, and authorized. V2 operations cannot fall back to the historical V1
 database or model profile.
+
+#### Automatic representation-complete V2 query (ADR-0079)
+
+ADR-0079 accepts a separately versioned `query_notebook_v2` application
+contract. The current working-tree service returns typed evidence and
+`answer_status=not_generated`; governed synthesis is not yet integrated. Its
+shared server-owned planner authorizes before projection
+discovery, choose canonical plus applicable active/complete OCR and Vision text
+sources regardless of query wording, and include multilingual or visual sources
+only when their model space, generation and policy are compatible. Canonical zero
+does not end the search. MCP and HTTP call the same service; native UI may do so
+later. Retained V1 query/search remain canonical-only. Derived candidates retain
+actual occurrence, derivation and generation ancestry and have no fake canonical
+chunk. Per-source outcomes distinguish searched (including zero), not applicable,
+unavailable, incomplete, failed and budget omission. Ranked top-k does not prove
+absence. The initial automatic scope is one unambiguous notebook; a real
+actor-to-notebook membership authority is still needed for private
+multi-notebook fan-out. Implementation and certification are tracked separately.
+
+The working-tree PaddleOCR 3 adapter is an opt-in `OCRProviderV1` implementation
+behind the existing worker, not a second retrieval path. It requires separately
+provisioned, hash-bound local model trees and the optional locked dependency;
+it does not activate itself or imply real-model inference is verified. OCR and
+Vision derivations still require complete governed search projections and
+compatible multilingual embeddings before the automatic V2 planner can search
+them. The historical evaluation rebuild still defaults to Tesseract and
+canonical-only evaluation embeddings; a new isolated rebuild and generation
+validation remain separate work. See [provider contract](paddleocr-provider.md).
+
+The locally implemented and independently audited structured route requires an authenticated, authorized
+notebook and validates explicit source/document/version ancestry before
+projection discovery. A missing or inactive projection/generation is a typed
+scope-qualified capability-unavailable result; a ready projection with zero
+matching rows is a valid empty result. The bounded persisted readiness probe
+qualifies `structured_retrieval.available_for_scope` without publishing dataset
+identities. The readiness probe also requires a canonical chunk covering the
+projection block, matching the executable catalog boundary; otherwise scoped
+availability is false. Registration alone is not activation or production
+certification. See the [8.8.11 local implementation](../../reports/operations/mnemo-module-8-8-11-local-implementation.md)
+and [independent correction](../../reports/operations/mnemo-stage-7-forensic-audit-remediation-and-stage-6-closure.md).
 
 The [dated Stage 6 remediation and independent reassessment](../../reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md)
 confirms local implementation of this route map and all 14 tool contracts.
@@ -2935,13 +2966,71 @@ the selected notebook.
 The local 8.8.6 implementation distinguishes tool registration from service
 construction, configuration, readiness, exposure, authorized-scope availability,
 and certification. The effective identity is server-owned and scope-qualified.
-`get_document_chunk` can be callable for a persisted authorized chunk while
-the broader `document_delivery` and `exact_retrieval` families remain
-`service_not_registered`; `get_document` is not thereby production-ready.
+The server composition now binds the actual bounded delivery service to the
+runtime registry and shares it with HTTP and MCP. Document and asset delivery
+are exposed when that service is constructed; exact retrieval is exposed only
+when the effective storage also implements the exact-document reader. These
+registration states are not proof that every authorized document has parsed
+blocks, binary bytes, or a chunk. A missing persisted representation remains
+truthfully unavailable, and none of these states implies certification.
+The resource-delivery follow-up adds an optional persisted-block `text` view
+(`parsed_text/v1`) with stable item count/order and explicit separators; it
+does not infer complete text from ranked chunks. Missing authorized parsed
+representations return `capability_unavailable / delivery.representation_unavailable`.
+Binary MCP resources expose exclusive byte ranges, returned/total sizes, full
+hash and canonical ancestry; complete images may negotiate native blob resources.
+These transfer fields are also copied into the authoritative structured `resource`
+companion (not only native content metadata), using the existing camelCase names.
+`rangeEnd` is the numeric exclusive endpoint; `rangeEndExclusive` is its boolean
+convention flag. Ordered text uses each item's `payload.text` plus
+`payload.separator_after`; structural annotations remain available in blocks.
+The [ordered-text follow-up](../../reports/operations/mnemo-ordered-text-delivery-remediation.md)
+records local mixed-content certification and the separately authorized external
+fixture prerequisite, not protected production representation activation.
+Delivery continuations bind the trusted actor and exact requested limits as well
+as the immutable snapshot and resource scope. No production parsed representation
+or evaluation-store promotion is activated by this additive delivery contract.
+Published FinalQA evidence delivery reads the same separately governed
+operational execution/snapshot store as the authenticated FinalQA service.
+The HTTP adapter binds the trusted actor and notebook before snapshot access;
+another actor's execution and an unknown execution share safe not-found behavior.
 Likewise, an exposed exhaustive `search_evidence` route is not behaviorally
 verified or certified by a bounded result with a continuation cursor. Caption,
 CLIP, and semantic image search are reported independently and are not
 activated by registration of `get_image_analysis` or `get_asset`.
+
+FinalQA V2 readiness requires shared typed evidence retrieval, authorization
+and provenance; canonical-chunk text QA does not require a visual generation
+(ADR-0064). Request-specific evidence and provider modality checks remain
+mandatory. Supported FinalQA modalities come from the composed provider, not
+from a static tool list. Multimodal readiness binds the exact active persisted
+generation identities actually composed; an asset catalog alone does not
+establish a derived generation. This read-only binding creates or activates no
+generation and does not certify a service.
+
+Exhaustive cursor limits are per response page and remain signed to the query,
+scope, actor, representation, snapshot, effective budgets, and the exact
+client-requested limits before server-owned candidate-pool normalization. A cursor
+preserves the next position, not a guarantee that every later evidence item
+fits unchanged client budgets. Items are not silently sliced or skipped. If
+the next complete item cannot fit by itself, continuation ends with a safe
+typed input-budget limitation; the client may begin a **new** traversal with
+a larger permitted budget, but cannot change limits while reusing the cursor.
+
+Evidence numeric budgets and positional page/section indexes accept JSON
+integers only, not booleans, numeric strings or coerced floats. HTTP and MCP
+share the strict DTO; malformed inputs preserve the safe typed-error boundary.
+
+FinalQA V2 citation resolution is not proof of answer completion. Provider
+length termination, an interrupted generation, or demonstrably unclosed
+Markdown is rejected before validated/published snapshots. The terminal
+`rejected_generation` execution preserves its safe originating failure on
+replay without fresh inference. Complete published answers persist their
+termination classification; public `coverage.answer_termination` reports it.
+Legacy immutable snapshots without this evidence report unknown answer
+completeness, rather than retroactively claiming complete generation. The
+partial-evidence publication policy does not authorize incomplete generated
+answers. No missing answer text is fabricated.
 
 MCP errors use safe typed categories: `invalid_input`, `unauthorized`,
 `not_found`, `capability_unavailable`, `configuration_mismatch`,
@@ -2949,51 +3038,52 @@ MCP errors use safe typed categories: `invalid_input`, `unauthorized`,
 `server_failure`. Responses preserve a stable machine code and correlation ID
 without stack traces or unauthorized existence leakage.
 
-### 21.9 Dedicated semantic image search
+### 21.9 Automatic image-derived search (Phase 8.9 target)
 
-The Phase 8.8 tool is named `search_images`, matching the existing verb-object
-tool style and distinguishing discovery from `get_asset` delivery.
+The public search contract is proposed, not registered. Existing single-notebook
+`query_notebook_v2` already plans ready OCR/Vision/compatible visual evidence;
+Phase 8.9 must extend authorized scope and integrate structured access without
+requiring modality hints. Exact asset delivery remains distinct.
 
 ```text
-                         query + notebook scope
+                    query + authorized scope
                                   │
              authorization before candidate disclosure
                                   │
           ┌───────────────┬───────┴────────┬──────────────┐
           │               │                │              │
-        OCR text       Vision caption   CLIP vector    hybrid
+        OCR text       Vision text      CLIP vector  canonical text
           │               │                │              │
           └───────────────┴──── governed RRF ─────────────┘
                                   │
-          identity-deduplicated, provenance-bearing image results
+          identity-deduplicated, provenance-bearing evidence
                                   │
                          occurrence_id / asset_id
                                   │
                               get_asset
 ```
 
-Modes are `ocr`, `caption`, `visual`, and `hybrid`:
+Internal sources include OCR, Vision text, and compatible visual vectors:
 
 - `ocr` searches text extracted from image/page occurrences.
 - `caption` searches persisted Vision captions/observations as a distinct text
   representation.
 - `visual` embeds the text query with the exact compatible CLIP text encoder and
   compares it with authorized persisted visual embeddings.
-- `hybrid` uses the existing deterministic RRF pattern across available named
-  paths. Phase 8.8 freezes contribution rules through an ADR/evidence contract;
-  it does not tune weights to a convenient result.
+- Governed RRF/fusion combines named source ranks without comparing raw BGE-M3
+  and CLIP vector scores or inventing modality weights.
 
-The minimum request is `notebook_id`, `query`, `mode`, and dynamic
-`requested_k`; existing authorized source/document filters may be reused without
-inventing filesystem filters. Results include stable notebook/source/document/
+The proposed ordinary request supplies query, authorized scope and bounded
+mode/limit, never actor, store, model or generation. Results include notebook/source/document/
 version/asset/occurrence identities, source display metadata, MIME/content hash,
 page/locator when present, contributing retrieval paths, per-path rank/score when
 meaningful, fused rank/score, derivation/generation identity, and provenance.
 Binary content is not duplicated in search responses.
 
-No modality may disclose an unauthorized occurrence. An unavailable requested
-modality returns a typed scope-qualified capability result. Hybrid behavior must
-state whether it used all requested paths or a governed permitted subset.
+No modality may disclose an unauthorized occurrence. Per-scope and
+per-representation statuses must distinguish searched-zero, unavailable,
+incomplete, failed and omitted-by-budget. No ready representation may silently
+disappear because canonical search returned zero or another source filled top-k.
 
 ### 21.10 Phase 8.6 exposure boundary
 
@@ -3009,9 +3099,22 @@ authorization memberships, compatible read model, lifecycle/capability binding,
 and fresh transport/provenance certification. Promotion never means merging the
 evaluation corpus into the certified production database.
 
+The server-owned production composition rejects a configured database or blob
+root beneath the evaluation-notebook namespace before storage is opened. The
+same namespace is protected from ADR-0077 mutable-workspace overlap. The
+separate evaluation transport resolves only integrity-bound, READY registry
+aliases; its selection is not accepted as production authority. Authenticated
+public notebook, retrieval and delivery requests retain the effective
+production store and central authorization scope. Evaluation readiness is not
+production exposure or scope availability. The [future serving-role promotion
+gate](../../governance/active/phase_8_6_serving_promotion_gate.md) records the
+required review and separately authorized activation; it is not an active
+promotion workflow.
+
 ### 21.11 Phase 9 preparation and gate
 
-Phase 8.8 resolves three prerequisite classes before Phase 9 implementation:
+Accepted Phase 8.8 decisions resolve three prerequisite classes, but the
+remaining Phase 8.9 integrated gate still blocks Phase 9 implementation:
 
 1. **Mutable workspace boundary.** ADR-0077 accepts a separately governed
    mutable filesystem + SQLite workspace from explicit absolute server
@@ -3028,16 +3131,14 @@ Phase 8.8 resolves three prerequisite classes before Phase 9 implementation:
    routing, optional Qdrant, deferred SurrealDB, and Phase 9 dependencies aligned
    across the living architecture and engineering roadmap.
 
-Phase 8.8 acceptance additionally requires all 14 existing tools plus
-`search_images` to pass valid, invalid, unavailable, authorization, provenance,
-typed-error, HTTP/stdio/SSE/tunnel, and scope tests; real long-running tunnel
-FinalQA correlation; OCR/caption/visual/hybrid image tests; notebook isolation;
-and protected-hash verification.
+Phase 8.9 acceptance owns all retained and newly approved public operations,
+external HTTP/stdio/SSE/tunnel parity, scoped hybrid/structured retrieval,
+provenance, long-running FinalQA, notebook isolation and protected hashes.
 
 ```text
-Phase 8.8 VERIFIED
+Phase 8.8 scoped checkpoint (not phase-wide certification)
         ↓
-    Phase 9 GO
+Phase 8.9 exact-identity GO/NO-GO
         ↓
 Phase 9 implementation begins
 ```

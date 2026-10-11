@@ -152,6 +152,9 @@ def resolve_certified_production_binding(
     gate does not reissue or mutate either governed artifact.
     """
     base = (root or repository_root()).resolve(strict=True)
+    from .production_runtime_selection import require_production_index
+
+    require_production_index(base)
     env = os.environ if environment is None else environment
     if any(name.startswith(_IDENTITY_ENV_PREFIXES) for name in env):
         _fail()

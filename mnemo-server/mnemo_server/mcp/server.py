@@ -10,6 +10,7 @@ import sys
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -32,6 +33,7 @@ from mnemo_server.auth import AuthMiddleware
 from mnemo_server.config import ServerConfig
 from mnemo_server.runtime_config import resolve_mnemo_runtime_config
 from mnemo_server.schemas.capabilities_v2 import CapabilityDiscoveryRequest
+from mnemo_server.services.delivery import build_delivery_service_for_storage
 from mnemo_server.services.retrieval_v2 import build_retrieval_cursor_codec
 from mnemo_server.tokenizer_provisioning import provision_tokenizer
 from mnemo_server.typed_errors import classify_public_error
@@ -149,6 +151,7 @@ class MnemoServer(Server):
     _workspace_decision: Any | None = None
     _certified_binding: Any | None = None
     _transport_label: str | None = None
+    _indexed_fixture_readiness_check: Callable[[], None] | None = None
 
 
 def create_mcp_server(
@@ -158,6 +161,7 @@ def create_mcp_server(
     workspace_decision: Any | None = None,
     certified_binding: Any | None = None,
     transport_label: str | None = None,
+    indexed_fixture_readiness_check: Callable[[], None] | None = None,
 ) -> Server:
     """Create and configure the canonical Mnemo MCP Server instance.
 
@@ -173,11 +177,25 @@ def create_mcp_server(
     server._workspace_decision = workspace_decision
     server._certified_binding = certified_binding
     server._transport_label = transport_label
+    if indexed_fixture_readiness_check is not None and engine is None:
+        raise ValueError("indexed fixture admission requires an injected engine")
+    server._indexed_fixture_readiness_check = indexed_fixture_readiness_check
     resolved_principal_provider = principal_provider
+
+    def require_current_production_selection() -> None:
+        if server._config.production_mode:
+            if server._indexed_fixture_readiness_check is not None:
+                server._indexed_fixture_readiness_check()
+                return
+            from mnemo_server.services.production_runtime_binding import repository_root
+            from mnemo_server.services.production_runtime_selection import require_production_index
+
+            require_production_index(repository_root())
 
     @server.list_tools()  # type: ignore[no-untyped-call,untyped-decorator]
     async def list_tools() -> list[types.Tool]:
         """List knowledge tools exposed by the Mnemo MCP server."""
+        require_current_production_selection()
         if server._config.full_multilingual_v2_enabled:
             require_authenticated_principal(
                 resolved_principal_provider() if resolved_principal_provider else None
@@ -197,6 +215,7 @@ def create_mcp_server(
         """Execute an authorized Mnemo MCP knowledge tool call."""
         correlation_id = uuid4()
         try:
+            require_current_production_selection()
             resolved_arguments = arguments or {}
             principal = resolved_principal_provider() if resolved_principal_provider else None
             content = await execute_mcp_tool(
@@ -208,6 +227,7 @@ def create_mcp_server(
                 server._workspace_decision,
                 server._certified_binding,
                 server._transport_label,
+                server._indexed_fixture_readiness_check,
             )
             return content, structured_content_for(name, resolved_arguments, content)
         except Exception as error:
@@ -230,11 +250,13 @@ def create_mcp_server(
     @server.list_prompts()  # type: ignore[no-untyped-call,untyped-decorator]
     async def list_prompts() -> list[types.Prompt]:
         """List prompts exposed by Mnemo."""
+        require_current_production_selection()
         return []
 
     @server.list_resources()  # type: ignore[no-untyped-call,untyped-decorator]
     async def list_resources() -> list[types.Resource]:
         """List resources exposed by Mnemo."""
+        require_current_production_selection()
         if server._config.full_multilingual_v2_enabled:
             require_authenticated_principal(
                 resolved_principal_provider() if resolved_principal_provider else None
@@ -253,6 +275,7 @@ def create_mcp_server(
 
     @server.read_resource()  # type: ignore[no-untyped-call]
     async def read_resource(uri):  # type: ignore[no-untyped-def]
+        require_current_production_selection()
         if server._config.full_multilingual_v2_enabled:
             require_authenticated_principal(
                 resolved_principal_provider() if resolved_principal_provider else None
@@ -367,6 +390,11 @@ async def run_stdio_server(
     owns_engine = engine is None
     active_engine = engine
     resolved_server_config = config or ServerConfig()
+    if resolved_server_config.production_mode:
+        from mnemo_server.services.production_runtime_binding import repository_root
+        from mnemo_server.services.production_runtime_selection import require_production_index
+
+        require_production_index(repository_root())
     production_binding = None
     observation_identity = None
     observation_authority = None
@@ -450,6 +478,11 @@ async def run_stdio_server(
             active_engine = KnowledgeEngine(
                 config=runtime_cfg,
                 final_qa_components=final_qa_components,
+                delivery_service_factory=partial(
+                    build_delivery_service_for_storage,
+                    config=resolved_server_config,
+                    execution_store=operational_store,
+                ),
                 advanced_retrieval_cursor_codec=build_retrieval_cursor_codec(
                     resolved_server_config
                 ),
@@ -609,6 +642,21 @@ def create_sse_app(
     async def lifespan(app: Starlette) -> AsyncIterator[None]:
         nonlocal active_engine, installed_v2, operational_store
         nonlocal observation_identity, observation_authority
+        if server_config.production_mode:
+            fixture_check = (
+                active_server._indexed_fixture_readiness_check
+                if isinstance(active_server, MnemoServer)
+                else None
+            )
+            if fixture_check is not None:
+                fixture_check()
+            else:
+                from mnemo_server.services.production_runtime_binding import repository_root
+                from mnemo_server.services.production_runtime_selection import (
+                    require_production_index,
+                )
+
+                require_production_index(repository_root())
         production_binding = None
         if server_config.full_multilingual_v2_enabled:
             if pre_certification_observation:
@@ -690,6 +738,11 @@ def create_sse_app(
                 active_engine = KnowledgeEngine(
                     config=runtime_config,
                     final_qa_components=final_qa_components,
+                    delivery_service_factory=partial(
+                        build_delivery_service_for_storage,
+                        config=server_config,
+                        execution_store=operational_store,
+                    ),
                     advanced_retrieval_cursor_codec=build_retrieval_cursor_codec(server_config),
                     certified_read_only=(
                         storage_composition.certified_read_only

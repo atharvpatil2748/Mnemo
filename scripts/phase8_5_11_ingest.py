@@ -272,6 +272,7 @@ async def _run(args: argparse.Namespace) -> int:
                 )
             record["duration_seconds"] = round(time.perf_counter() - started, 3)
             ingestions.append(record)
+        embedding_execution_device = getattr(engine.embedding_provider, "execution_device", None)
         phase8_5_models = {
             "vision": engine.phase85.profile_status("vision").model,
             "multilingual_embedding": engine.phase85.profile_status("multilingual_embedding").model,
@@ -290,6 +291,8 @@ async def _run(args: argparse.Namespace) -> int:
             "embedding_provider": config.embedding.provider,
             "embedding_model": config.embedding.model,
             "embedding_dimensions": config.embedding.dimensions,
+            "embedding_requested_device": config.embedding.device,
+            "embedding_execution_device": embedding_execution_device,
             "reranker_provider": config.reranker.provider,
             "reranker_model": config.reranker.model,
             "phase8_5_models": phase8_5_models,

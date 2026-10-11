@@ -113,6 +113,30 @@ def app(mock_engine: MagicMock) -> Any:
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("method", "path", "expected"),
+    [
+        ("GET", "/config", 200),
+        ("GET", "/config/models", 200),
+        ("GET", "/jobs", 200),
+        ("GET", "/jobs/00000000-0000-0000-0000-000000000000", 404),
+        ("PATCH", "/config", 422),
+        ("POST", "/v1/notebooks/00000000-0000-0000-0000-000000000000/final-qa", 422),
+    ],
+)
+async def test_legacy_system_alias_contract(
+    app: Any, method: str, path: str, expected: int
+) -> None:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.request(
+            method,
+            path,
+            **({"json": {"unknown_key": "forbidden"}} if method in {"PATCH", "POST"} else {}),
+        )
+    assert response.status_code == expected
+
+
+@pytest.mark.anyio
 async def test_health_check_all_healthy(app: Any, mock_engine: MagicMock) -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/v1/health")

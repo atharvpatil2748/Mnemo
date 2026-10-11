@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from typing import cast
 from uuid import UUID
 
-from mnemo.interfaces import ContractValidationError, IntegrityError, StructuredDatasetCatalogV1
+from mnemo.interfaces import (
+    ContractValidationError,
+    DependencyUnavailableError,
+    IntegrityError,
+    StructuredDatasetCatalogV1,
+)
 from mnemo.models import (
     AdvancedRetrievalMode,
     EvidenceRepresentation,
@@ -43,6 +49,20 @@ class StructuredDatasetRuntimeService:
 
     async def ready(self) -> bool:
         return await self._store.structured_projection_ready()
+
+    async def ready_for_notebook(self, notebook_id: UUID) -> bool | None:
+        """Return scoped readiness when the store has a bounded readiness probe."""
+        probe = getattr(self._store, "structured_projection_ready_for_notebook", None)
+        return await probe(notebook_id) if callable(probe) else None
+
+    async def resolve_version_associations(
+        self, notebook_id: UUID, version_ids: tuple[UUID, ...]
+    ) -> tuple[tuple[UUID, UUID, UUID], ...]:
+        """Fail closed when the store cannot prove a version's canonical scope."""
+        probe = getattr(self._store, "resolve_structured_version_associations", None)
+        if not callable(probe):
+            raise DependencyUnavailableError("structured version scope reader is unavailable")
+        return cast(tuple[tuple[UUID, UUID, UUID], ...], await probe(notebook_id, version_ids))
 
     async def active_generation_identity(self) -> str | None:
         return await self._store.active_structured_generation_identity()
@@ -121,7 +141,9 @@ def _select_ready(
         )
     selected = tuple(by_id[item] for item in dataset_ids)
     if any(item.readiness is not StructuredDatasetReadiness.READY for item in selected):
-        raise ContractValidationError("one or more structured generations are not active and ready")
+        raise DependencyUnavailableError(
+            "structured generation is unavailable in the authorized scope"
+        )
     return selected
 
 

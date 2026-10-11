@@ -41,6 +41,18 @@ async def test_central_notebook_authorization_is_non_enumerating() -> None:
     assert "authorized resource" in str(error.value)
 
 
+@pytest.mark.anyio
+async def test_unauthenticated_notebook_scope_is_rejected_before_lookup() -> None:
+    engine = MagicMock()
+    engine.storage.get_notebook = AsyncMock(return_value=object())
+    service = CentralAuthorizationServiceV1(engine)
+    with pytest.raises(PermissionError, match="authenticated"):
+        await service.authorize_notebook(
+            PrincipalContextV1(uuid4(), False), uuid4(), AuthorizationOperationV1.RETRIEVE
+        )
+    engine.storage.get_notebook.assert_not_called()
+
+
 def test_retrieval_security_scope_changes_canonical_cursor_fingerprint() -> None:
     notebook_id = uuid4()
     body = EvidenceSearchRequest.model_validate(

@@ -1,0 +1,1413 @@
+{
+  "schema_version": "mnemo.ordered-text.binary-transfer-evidence/1",
+  "source_content_digest": "cdf4bc9b3140d5b0b8063766e7b0bdd7f4154df9190b42aa17fec77b63d2313d",
+  "evidence_class": "actual certified local MCP; not external ChatGPT",
+  "stdio": {
+    "transport": "real_certified_stdio",
+    "start_utc": "2026-09-28T11:07:04.906191+00:00",
+    "resources": {
+      "pdf-one": {
+        "bytes": 3821824,
+        "sha256": "eb4fe330163f7d89535ca48f792204a16da042bb2e4895a6030102df20a63984",
+        "snapshot": "6a93c7667c74c584f28f310e8c3c8838b0bb555bf132460005f2dea997f47945",
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "occurrence_id": null,
+        "ranges": [
+          {
+            "start": 0,
+            "end_exclusive": 3821824,
+            "received_bytes": 3821824,
+            "sha256": "eb4fe330163f7d89535ca48f792204a16da042bb2e4895a6030102df20a63984",
+            "completeness": "complete",
+            "start_utc": "2026-09-28T11:07:25.031292+00:00",
+            "end_utc": "2026-09-28T11:07:25.201877+00:00",
+            "request_id": "8db01e8d-a319-4d00-b83d-e9dfc397c017",
+            "original_media_type": "application/pdf"
+          }
+        ]
+      },
+      "pdf-parts": {
+        "bytes": 3821824,
+        "sha256": "eb4fe330163f7d89535ca48f792204a16da042bb2e4895a6030102df20a63984",
+        "snapshot": "6a93c7667c74c584f28f310e8c3c8838b0bb555bf132460005f2dea997f47945",
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "occurrence_id": null,
+        "ranges": [
+          {
+            "start": 0,
+            "end_exclusive": 524288,
+            "received_bytes": 524288,
+            "sha256": "bc9fb83962024f5bd322e3d9ebf4f3f0fcafeeac1271a00678ca86f42efe9348",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.281998+00:00",
+            "end_utc": "2026-09-28T11:07:25.313995+00:00",
+            "request_id": "69f75a17-c8cf-4363-91ef-de0d8cb32c08",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 524288,
+            "end_exclusive": 1048576,
+            "received_bytes": 524288,
+            "sha256": "cd2fa0f45874002e35b6a4c78dde5dfcf4c02608fa0e7ff6ee83984278e373b2",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.315997+00:00",
+            "end_utc": "2026-09-28T11:07:25.343999+00:00",
+            "request_id": "6ec80eda-96f0-4bcc-9d27-f37a05a6be69",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 1048576,
+            "end_exclusive": 1572864,
+            "received_bytes": 524288,
+            "sha256": "878c72c712904a3cc72830e07a6ec50ccb09ca957324e74db79d13dd317172bd",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.345507+00:00",
+            "end_utc": "2026-09-28T11:07:25.373509+00:00",
+            "request_id": "40ac1dc2-074d-4ca4-b090-7bf64e82786a",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 1572864,
+            "end_exclusive": 2097152,
+            "received_bytes": 524288,
+            "sha256": "c08288c78926397f3032fd7a61fbf46473d6d5dca906acbdc44d78f88b5a3dfb",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.375512+00:00",
+            "end_utc": "2026-09-28T11:07:25.402290+00:00",
+            "request_id": "3f0855cb-bd9f-48db-ae97-04e5c8d5185a",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 2097152,
+            "end_exclusive": 2621440,
+            "received_bytes": 524288,
+            "sha256": "7f6e3e43acb8ed7d1cb1c6f9eac83b34a6cd48e98cdac1fac78bba4a3014cfb2",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.404291+00:00",
+            "end_utc": "2026-09-28T11:07:25.430890+00:00",
+            "request_id": "c1f34995-fb2a-4b9c-8077-b90bf0041f6e",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 2621440,
+            "end_exclusive": 3145728,
+            "received_bytes": 524288,
+            "sha256": "fb37e439cdc443fd1e926bd0ca8e8d58371d4d333143648649c5e9c4fdd4cec2",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.432892+00:00",
+            "end_utc": "2026-09-28T11:07:25.459890+00:00",
+            "request_id": "595b28a6-2c7f-4a7e-b888-0eef0d237128",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 3145728,
+            "end_exclusive": 3670016,
+            "received_bytes": 524288,
+            "sha256": "fabc264a02570471da9751abefdbaaa7a37780cbb7282e0b0a95c82d47959d4a",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.462039+00:00",
+            "end_utc": "2026-09-28T11:07:25.488553+00:00",
+            "request_id": "aa557bbb-cfdc-4383-bf31-70c96ad7a2ea",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 3670016,
+            "end_exclusive": 3821824,
+            "received_bytes": 151808,
+            "sha256": "5e257d67880abc209f6550d7e12f430eee917a529b25b343438236154abe6fe5",
+            "completeness": "complete",
+            "start_utc": "2026-09-28T11:07:25.490555+00:00",
+            "end_utc": "2026-09-28T11:07:25.514565+00:00",
+            "request_id": "aab93fcc-6d0f-41f8-b9c3-40ce44feb2a5",
+            "original_media_type": "application/pdf"
+          }
+        ]
+      },
+      "jpeg-one": {
+        "bytes": 704901,
+        "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+        "snapshot": "7dd126af220a5406c55d705b06f2f76668d670564f5d8dd8902330f5db236d99",
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+        "ranges": [
+          {
+            "start": 0,
+            "end_exclusive": 704901,
+            "received_bytes": 704901,
+            "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+            "completeness": "complete",
+            "start_utc": "2026-09-28T11:07:25.536848+00:00",
+            "end_utc": "2026-09-28T11:07:25.566684+00:00",
+            "request_id": "a9d285fb-4530-4eab-94b3-aab4b3562d5b",
+            "original_media_type": "image/jpeg"
+          }
+        ]
+      },
+      "jpeg-resource": {
+        "bytes": 704901,
+        "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+        "snapshot": "7dd126af220a5406c55d705b06f2f76668d670564f5d8dd8902330f5db236d99",
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+        "ranges": [
+          {
+            "start": 0,
+            "end_exclusive": 704901,
+            "received_bytes": 704901,
+            "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+            "completeness": "complete",
+            "start_utc": "2026-09-28T11:07:25.570686+00:00",
+            "end_utc": "2026-09-28T11:07:25.597878+00:00",
+            "request_id": "4291bd76-d7a4-475b-900a-04e26f769dec",
+            "original_media_type": "image/jpeg"
+          }
+        ]
+      },
+      "jpeg-parts": {
+        "bytes": 704901,
+        "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+        "snapshot": "7dd126af220a5406c55d705b06f2f76668d670564f5d8dd8902330f5db236d99",
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+        "ranges": [
+          {
+            "start": 0,
+            "end_exclusive": 65536,
+            "received_bytes": 65536,
+            "sha256": "ef0083eaa7202a591abcba4057c93d4ed4af2e4cbc6555b5c2140cf520c5a0bd",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.601888+00:00",
+            "end_utc": "2026-09-28T11:07:25.620418+00:00",
+            "request_id": "4204de85-e115-4062-877e-efc2f6f82437",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 65536,
+            "end_exclusive": 131072,
+            "received_bytes": 65536,
+            "sha256": "2f6c38b0221834620acf74e0f25ab3c2594f05815ee8e48dfaa09c111588e1b7",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.622420+00:00",
+            "end_utc": "2026-09-28T11:07:25.640963+00:00",
+            "request_id": "03dde0ac-5b54-4c00-a89b-ab66bb0120a0",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 131072,
+            "end_exclusive": 196608,
+            "received_bytes": 65536,
+            "sha256": "70272d114c76d89e11f70f12b28da661b84fd3b1f336084ee2e81ba3e050c72d",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.641964+00:00",
+            "end_utc": "2026-09-28T11:07:25.660472+00:00",
+            "request_id": "56dcbe80-0af1-4863-a7c3-f0c73143954b",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 196608,
+            "end_exclusive": 262144,
+            "received_bytes": 65536,
+            "sha256": "f4d0c321e33ed08421e8af311e02ee6b2525f1eb18a604bab71d36302f272585",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.662473+00:00",
+            "end_utc": "2026-09-28T11:07:25.679981+00:00",
+            "request_id": "a942d6da-b5d1-4edd-98d0-8893b5aadb24",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 262144,
+            "end_exclusive": 327680,
+            "received_bytes": 65536,
+            "sha256": "0ac0f1d4f92fee50c3254c8ea711086c1dee4aab329bf682b8d742608ef57ab1",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.685981+00:00",
+            "end_utc": "2026-09-28T11:07:25.704981+00:00",
+            "request_id": "f6346829-9358-44b7-b800-933849aa44d2",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 327680,
+            "end_exclusive": 393216,
+            "received_bytes": 65536,
+            "sha256": "32ee7594fadde408215934ca9a46854f92354bf7bfe04ca2b922a5aa9c0d6ccf",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.705982+00:00",
+            "end_utc": "2026-09-28T11:07:25.723727+00:00",
+            "request_id": "e828610a-95e0-407a-b8a7-e35e11dad6d2",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 393216,
+            "end_exclusive": 458752,
+            "received_bytes": 65536,
+            "sha256": "feef62453f5a0a509fa9980927bff925860c8e9d1682950ae2576a93d9d0cdcf",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.725691+00:00",
+            "end_utc": "2026-09-28T11:07:25.743054+00:00",
+            "request_id": "c4102d74-8b6a-4cdf-b4f7-e8ac5b06141a",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 458752,
+            "end_exclusive": 524288,
+            "received_bytes": 65536,
+            "sha256": "9ca6e8942f7fb79cf6dad057d007632489f663aff72099ac544e93b7407f653a",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.743804+00:00",
+            "end_utc": "2026-09-28T11:07:25.761823+00:00",
+            "request_id": "f3b221b0-93b9-4c61-b99a-bc64a52d07dc",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 524288,
+            "end_exclusive": 589824,
+            "received_bytes": 65536,
+            "sha256": "28a1d11bd563a9c18f4493faa3b4575ad63666290f7f6dcb152e1b467ab228d6",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.762810+00:00",
+            "end_utc": "2026-09-28T11:07:25.781308+00:00",
+            "request_id": "12386e4f-32a8-4e5b-95b5-397ce4c0ebf3",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 589824,
+            "end_exclusive": 655360,
+            "received_bytes": 65536,
+            "sha256": "40b89fb48bfcc05a0be8874521c098e58cf30c4273ac094a9a28379a892c5ca8",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:07:25.782310+00:00",
+            "end_utc": "2026-09-28T11:07:25.799328+00:00",
+            "request_id": "e24f76f4-278b-4cea-8798-9630851e17d4",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 655360,
+            "end_exclusive": 704901,
+            "received_bytes": 49541,
+            "sha256": "59d80d06fceb23d369087464dd06a062fda9959cc1ea9b48ad32fc2936382da6",
+            "completeness": "complete",
+            "start_utc": "2026-09-28T11:07:25.800328+00:00",
+            "end_utc": "2026-09-28T11:07:25.817439+00:00",
+            "request_id": "0ef27dc5-2413-40df-9ba7-add96bf0615d",
+            "original_media_type": "image/jpeg"
+          }
+        ]
+      }
+    },
+    "tools": [
+      "query_notebook",
+      "search_all_notebooks",
+      "list_notebooks",
+      "get_notebook_summary",
+      "get_source_insights",
+      "get_timeline",
+      "get_document",
+      "get_document_chunk",
+      "get_asset",
+      "get_image_analysis",
+      "search_evidence",
+      "query_structured",
+      "run_final_qa_v2",
+      "get_capabilities"
+    ],
+    "get_document_input_schema": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "description": "UUID of the document"
+        },
+        "version_id": {
+          "type": "string",
+          "description": "UUID of the document version"
+        },
+        "notebook_id": {
+          "type": "string",
+          "description": "Optional UUID of the parent notebook. Auto-resolved if unambiguous."
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "blocks",
+            "text",
+            "original"
+          ],
+          "default": "blocks",
+          "description": "original: binary bytes; blocks: persisted parsed blocks; text: ordered parsed_text/v1 rendering, full selector only. Missing persisted blocks are capability_unavailable, never inferred from search."
+        },
+        "selector": {
+          "description": "Exactly one deterministic positional selector for blocks mode. Use full, page_range, slide_range, sheet_range, block_range, chunk_range, section, from_end, or adjacent. Omit only for the legacy full-block traversal.",
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "full"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "page_range"
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "kind",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "slide_range"
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "kind",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "sheet_range"
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "kind",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "block_range"
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "kind",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "chunk_range"
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "kind",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "section"
+                },
+                "heading_path": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "kind",
+                "heading_path"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "from_end"
+                },
+                "unit": {
+                  "type": "string",
+                  "enum": [
+                    "page",
+                    "slide",
+                    "sheet",
+                    "block",
+                    "chunk",
+                    "section",
+                    "paragraph"
+                  ]
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 1
+                }
+              },
+              "required": [
+                "kind",
+                "unit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "adjacent"
+                },
+                "anchor_kind": {
+                  "type": "string",
+                  "enum": [
+                    "block",
+                    "chunk"
+                  ]
+                },
+                "block_ordinal": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "chunk_id": {
+                  "type": "string",
+                  "minLength": 64,
+                  "maxLength": 64
+                },
+                "before": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                },
+                "after": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                },
+                "include_anchor": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "required": [
+                "kind",
+                "anchor_kind"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "cursor": {
+          "type": "string",
+          "description": "Opaque next_cursor returned by the prior get_document call. Pass it unchanged; it is not a page number."
+        },
+        "max_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Requested byte ceiling, capped by server policy."
+        },
+        "max_items": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Requested block ceiling, capped by server policy."
+        }
+      },
+      "required": [
+        "document_id",
+        "version_id"
+      ]
+    },
+    "pdf_pages": 6,
+    "jpeg_dimensions": [
+      3576,
+      2512
+    ],
+    "pdf_extracted_jpeg_identical": true,
+    "analysis": {
+      "completeness": "complete",
+      "request_id": "a798ce34-e3e1-49b3-94d2-8042ccb23fa3",
+      "records": [
+        {
+          "kind": "derived_ocr",
+          "attribution": {
+            "asset_id": "5d38b74c-7f49-54fc-9c00-cbea3d0deeb6",
+            "authority": "derived_ocr",
+            "derivation_id": "2b206dff-9a47-563c-b0f8-6a50f7715a28",
+            "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+            "generation_id": "f2a394f0-57c1-52eb-a56f-f360d11cdcf7",
+            "language": null,
+            "modality": "ocr",
+            "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+            "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+            "script": null,
+            "source_id": "ee9dc261-3bcf-49ed-a110-8b2f9e39270f",
+            "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8"
+          },
+          "bytes": 2875,
+          "regions": 1,
+          "observations": 0
+        },
+        {
+          "kind": "derived_vision",
+          "attribution": {
+            "asset_id": "5d38b74c-7f49-54fc-9c00-cbea3d0deeb6",
+            "authority": "derived_vision",
+            "derivation_id": "ee4dbd89-ba0b-54bc-9618-786cd3d3793d",
+            "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+            "generation_id": "c5e11f9d-54f0-5f00-98fb-1f38b005e872",
+            "language": null,
+            "modality": "vision",
+            "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+            "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+            "script": null,
+            "source_id": "ee9dc261-3bcf-49ed-a110-8b2f9e39270f",
+            "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8"
+          },
+          "bytes": 2835,
+          "regions": 0,
+          "observations": 5
+        }
+      ]
+    },
+    "representation_errors": [
+      {
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "mode": "blocks",
+        "error": {
+          "category": "capability_unavailable",
+          "code": "delivery.representation_unavailable",
+          "correlation_id": "cc61745f-27e7-430a-b514-d6252796f5ff",
+          "details": {},
+          "layer": "runtime",
+          "message": "Requested capability is not ready or unavailable",
+          "origin_code": "delivery.representation_unavailable",
+          "reason": "dependency_unavailable",
+          "retryable": false
+        },
+        "request_id": null
+      },
+      {
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "mode": "text",
+        "error": {
+          "category": "capability_unavailable",
+          "code": "delivery.representation_unavailable",
+          "correlation_id": "8c2fcb97-c983-4671-86a0-62d32d566ce8",
+          "details": {},
+          "layer": "runtime",
+          "message": "Requested capability is not ready or unavailable",
+          "origin_code": "delivery.representation_unavailable",
+          "reason": "dependency_unavailable",
+          "retryable": false
+        },
+        "request_id": null
+      },
+      {
+        "document_id": "8abc6c73-7d1c-5248-8c28-4157de5ca51a",
+        "mode": "blocks",
+        "error": {
+          "category": "capability_unavailable",
+          "code": "delivery.representation_unavailable",
+          "correlation_id": "c5a34a50-c2cd-4a8e-bc68-fc381fd5331c",
+          "details": {},
+          "layer": "runtime",
+          "message": "Requested capability is not ready or unavailable",
+          "origin_code": "delivery.representation_unavailable",
+          "reason": "dependency_unavailable",
+          "retryable": false
+        },
+        "request_id": null
+      },
+      {
+        "document_id": "8abc6c73-7d1c-5248-8c28-4157de5ca51a",
+        "mode": "text",
+        "error": {
+          "category": "capability_unavailable",
+          "code": "delivery.representation_unavailable",
+          "correlation_id": "5e7a0044-d59e-472c-a33a-e2c34d81374f",
+          "details": {},
+          "layer": "runtime",
+          "message": "Requested capability is not ready or unavailable",
+          "origin_code": "delivery.representation_unavailable",
+          "reason": "dependency_unavailable",
+          "retryable": false
+        },
+        "request_id": null
+      }
+    ],
+    "end_utc": "2026-09-28T11:07:27.980139+00:00"
+  },
+  "sse": {
+    "transport": "real_loopback_sse",
+    "start_utc": "2026-09-28T11:08:47.616048+00:00",
+    "resources": {
+      "pdf-one": {
+        "bytes": 3821824,
+        "sha256": "eb4fe330163f7d89535ca48f792204a16da042bb2e4895a6030102df20a63984",
+        "snapshot": "6a93c7667c74c584f28f310e8c3c8838b0bb555bf132460005f2dea997f47945",
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "occurrence_id": null,
+        "ranges": [
+          {
+            "start": 0,
+            "end_exclusive": 3821824,
+            "received_bytes": 3821824,
+            "sha256": "eb4fe330163f7d89535ca48f792204a16da042bb2e4895a6030102df20a63984",
+            "completeness": "complete",
+            "start_utc": "2026-09-28T11:08:47.833143+00:00",
+            "end_utc": "2026-09-28T11:08:47.957275+00:00",
+            "request_id": "5796e45e-9d6c-4cfd-a453-f06300e082f2",
+            "original_media_type": "application/pdf"
+          }
+        ]
+      },
+      "pdf-parts": {
+        "bytes": 3821824,
+        "sha256": "eb4fe330163f7d89535ca48f792204a16da042bb2e4895a6030102df20a63984",
+        "snapshot": "6a93c7667c74c584f28f310e8c3c8838b0bb555bf132460005f2dea997f47945",
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "occurrence_id": null,
+        "ranges": [
+          {
+            "start": 0,
+            "end_exclusive": 524288,
+            "received_bytes": 524288,
+            "sha256": "bc9fb83962024f5bd322e3d9ebf4f3f0fcafeeac1271a00678ca86f42efe9348",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:47.970422+00:00",
+            "end_utc": "2026-09-28T11:08:48.008150+00:00",
+            "request_id": "22d73c9e-0361-4426-a176-d5edfe77e92b",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 524288,
+            "end_exclusive": 1048576,
+            "received_bytes": 524288,
+            "sha256": "cd2fa0f45874002e35b6a4c78dde5dfcf4c02608fa0e7ff6ee83984278e373b2",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.010067+00:00",
+            "end_utc": "2026-09-28T11:08:48.044373+00:00",
+            "request_id": "29d94d87-fd2a-42ab-9321-bc88a1f8cc37",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 1048576,
+            "end_exclusive": 1572864,
+            "received_bytes": 524288,
+            "sha256": "878c72c712904a3cc72830e07a6ec50ccb09ca957324e74db79d13dd317172bd",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.046374+00:00",
+            "end_utc": "2026-09-28T11:08:48.082633+00:00",
+            "request_id": "f7bbea70-a719-4461-a653-eef499a59d54",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 1572864,
+            "end_exclusive": 2097152,
+            "received_bytes": 524288,
+            "sha256": "c08288c78926397f3032fd7a61fbf46473d6d5dca906acbdc44d78f88b5a3dfb",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.083634+00:00",
+            "end_utc": "2026-09-28T11:08:48.117692+00:00",
+            "request_id": "53737f6a-e4ba-4128-952c-5bb087ed7c37",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 2097152,
+            "end_exclusive": 2621440,
+            "received_bytes": 524288,
+            "sha256": "7f6e3e43acb8ed7d1cb1c6f9eac83b34a6cd48e98cdac1fac78bba4a3014cfb2",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.120239+00:00",
+            "end_utc": "2026-09-28T11:08:48.154202+00:00",
+            "request_id": "39f28ae9-064b-4173-8dac-ad583a928f60",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 2621440,
+            "end_exclusive": 3145728,
+            "received_bytes": 524288,
+            "sha256": "fb37e439cdc443fd1e926bd0ca8e8d58371d4d333143648649c5e9c4fdd4cec2",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.156203+00:00",
+            "end_utc": "2026-09-28T11:08:48.191041+00:00",
+            "request_id": "a4a60b90-89f5-4c5b-8f1d-cbd21833766d",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 3145728,
+            "end_exclusive": 3670016,
+            "received_bytes": 524288,
+            "sha256": "fabc264a02570471da9751abefdbaaa7a37780cbb7282e0b0a95c82d47959d4a",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.209601+00:00",
+            "end_utc": "2026-09-28T11:08:48.242123+00:00",
+            "request_id": "f4695cdb-1389-47d5-9084-a23ce6ba580b",
+            "original_media_type": "application/pdf"
+          },
+          {
+            "start": 3670016,
+            "end_exclusive": 3821824,
+            "received_bytes": 151808,
+            "sha256": "5e257d67880abc209f6550d7e12f430eee917a529b25b343438236154abe6fe5",
+            "completeness": "complete",
+            "start_utc": "2026-09-28T11:08:48.244116+00:00",
+            "end_utc": "2026-09-28T11:08:48.270179+00:00",
+            "request_id": "24b595de-e5f5-4d64-bde9-4e5467e89a61",
+            "original_media_type": "application/pdf"
+          }
+        ]
+      },
+      "jpeg-one": {
+        "bytes": 704901,
+        "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+        "snapshot": "7dd126af220a5406c55d705b06f2f76668d670564f5d8dd8902330f5db236d99",
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+        "ranges": [
+          {
+            "start": 0,
+            "end_exclusive": 704901,
+            "received_bytes": 704901,
+            "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+            "completeness": "complete",
+            "start_utc": "2026-09-28T11:08:48.315620+00:00",
+            "end_utc": "2026-09-28T11:08:48.354575+00:00",
+            "request_id": "dd56bb34-c701-46e0-a9ab-31d45f16ca1b",
+            "original_media_type": "image/jpeg"
+          }
+        ]
+      },
+      "jpeg-resource": {
+        "bytes": 704901,
+        "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+        "snapshot": "7dd126af220a5406c55d705b06f2f76668d670564f5d8dd8902330f5db236d99",
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+        "ranges": [
+          {
+            "start": 0,
+            "end_exclusive": 704901,
+            "received_bytes": 704901,
+            "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+            "completeness": "complete",
+            "start_utc": "2026-09-28T11:08:48.361494+00:00",
+            "end_utc": "2026-09-28T11:08:48.394985+00:00",
+            "request_id": "9e42f31e-8d73-44d2-b800-45c7a489961b",
+            "original_media_type": "image/jpeg"
+          }
+        ]
+      },
+      "jpeg-parts": {
+        "bytes": 704901,
+        "sha256": "cab6378eeb056237af3b785d9421e8fb0c6c889b730b37e719dcea8247acb19a",
+        "snapshot": "7dd126af220a5406c55d705b06f2f76668d670564f5d8dd8902330f5db236d99",
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+        "ranges": [
+          {
+            "start": 0,
+            "end_exclusive": 65536,
+            "received_bytes": 65536,
+            "sha256": "ef0083eaa7202a591abcba4057c93d4ed4af2e4cbc6555b5c2140cf520c5a0bd",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.398846+00:00",
+            "end_utc": "2026-09-28T11:08:48.422036+00:00",
+            "request_id": "d6950184-d4a0-4fc3-a287-adf24c638023",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 65536,
+            "end_exclusive": 131072,
+            "received_bytes": 65536,
+            "sha256": "2f6c38b0221834620acf74e0f25ab3c2594f05815ee8e48dfaa09c111588e1b7",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.423124+00:00",
+            "end_utc": "2026-09-28T11:08:48.444094+00:00",
+            "request_id": "e07d62c0-5814-4be2-97cb-60a3cabf6314",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 131072,
+            "end_exclusive": 196608,
+            "received_bytes": 65536,
+            "sha256": "70272d114c76d89e11f70f12b28da661b84fd3b1f336084ee2e81ba3e050c72d",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.445059+00:00",
+            "end_utc": "2026-09-28T11:08:48.466067+00:00",
+            "request_id": "2132234d-0d23-41cf-818a-6132139ccd3e",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 196608,
+            "end_exclusive": 262144,
+            "received_bytes": 65536,
+            "sha256": "f4d0c321e33ed08421e8af311e02ee6b2525f1eb18a604bab71d36302f272585",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.468067+00:00",
+            "end_utc": "2026-09-28T11:08:48.488068+00:00",
+            "request_id": "3d250ffd-14f6-4967-9992-5d13a94789ab",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 262144,
+            "end_exclusive": 327680,
+            "received_bytes": 65536,
+            "sha256": "0ac0f1d4f92fee50c3254c8ea711086c1dee4aab329bf682b8d742608ef57ab1",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.489234+00:00",
+            "end_utc": "2026-09-28T11:08:48.510245+00:00",
+            "request_id": "82ef98df-aefb-4b90-923b-ba4b1755788f",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 327680,
+            "end_exclusive": 393216,
+            "received_bytes": 65536,
+            "sha256": "32ee7594fadde408215934ca9a46854f92354bf7bfe04ca2b922a5aa9c0d6ccf",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.510245+00:00",
+            "end_utc": "2026-09-28T11:08:48.531097+00:00",
+            "request_id": "6ff8986d-6fa3-4e38-9781-0e9586488528",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 393216,
+            "end_exclusive": 458752,
+            "received_bytes": 65536,
+            "sha256": "feef62453f5a0a509fa9980927bff925860c8e9d1682950ae2576a93d9d0cdcf",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.532109+00:00",
+            "end_utc": "2026-09-28T11:08:48.553122+00:00",
+            "request_id": "7e40b46a-05c3-43df-9267-bbb2595a27c1",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 458752,
+            "end_exclusive": 524288,
+            "received_bytes": 65536,
+            "sha256": "9ca6e8942f7fb79cf6dad057d007632489f663aff72099ac544e93b7407f653a",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.554221+00:00",
+            "end_utc": "2026-09-28T11:08:48.573643+00:00",
+            "request_id": "d0b51326-c6f5-4c96-8621-15cc8e46a03a",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 524288,
+            "end_exclusive": 589824,
+            "received_bytes": 65536,
+            "sha256": "28a1d11bd563a9c18f4493faa3b4575ad63666290f7f6dcb152e1b467ab228d6",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.575315+00:00",
+            "end_utc": "2026-09-28T11:08:48.595446+00:00",
+            "request_id": "4babc2c1-ca1b-44b3-a373-74bffae236bf",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 589824,
+            "end_exclusive": 655360,
+            "received_bytes": 65536,
+            "sha256": "40b89fb48bfcc05a0be8874521c098e58cf30c4273ac094a9a28379a892c5ca8",
+            "completeness": "truncated",
+            "start_utc": "2026-09-28T11:08:48.596453+00:00",
+            "end_utc": "2026-09-28T11:08:48.617042+00:00",
+            "request_id": "aaea5153-de84-46f7-81c4-2252099aa92f",
+            "original_media_type": "image/jpeg"
+          },
+          {
+            "start": 655360,
+            "end_exclusive": 704901,
+            "received_bytes": 49541,
+            "sha256": "59d80d06fceb23d369087464dd06a062fda9959cc1ea9b48ad32fc2936382da6",
+            "completeness": "complete",
+            "start_utc": "2026-09-28T11:08:48.619056+00:00",
+            "end_utc": "2026-09-28T11:08:48.640603+00:00",
+            "request_id": "41500716-9994-4350-b0e3-9306893e5f7f",
+            "original_media_type": "image/jpeg"
+          }
+        ]
+      }
+    },
+    "tools": [
+      "query_notebook",
+      "search_all_notebooks",
+      "list_notebooks",
+      "get_notebook_summary",
+      "get_source_insights",
+      "get_timeline",
+      "get_document",
+      "get_document_chunk",
+      "get_asset",
+      "get_image_analysis",
+      "search_evidence",
+      "query_structured",
+      "run_final_qa_v2",
+      "get_capabilities"
+    ],
+    "get_document_input_schema": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "description": "UUID of the document"
+        },
+        "version_id": {
+          "type": "string",
+          "description": "UUID of the document version"
+        },
+        "notebook_id": {
+          "type": "string",
+          "description": "Optional UUID of the parent notebook. Auto-resolved if unambiguous."
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "blocks",
+            "text",
+            "original"
+          ],
+          "default": "blocks",
+          "description": "original: binary bytes; blocks: persisted parsed blocks; text: ordered parsed_text/v1 rendering, full selector only. Missing persisted blocks are capability_unavailable, never inferred from search."
+        },
+        "selector": {
+          "description": "Exactly one deterministic positional selector for blocks mode. Use full, page_range, slide_range, sheet_range, block_range, chunk_range, section, from_end, or adjacent. Omit only for the legacy full-block traversal.",
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "full"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "page_range"
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "kind",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "slide_range"
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "kind",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "sheet_range"
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "kind",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "block_range"
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "kind",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "chunk_range"
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "kind",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "section"
+                },
+                "heading_path": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "kind",
+                "heading_path"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "from_end"
+                },
+                "unit": {
+                  "type": "string",
+                  "enum": [
+                    "page",
+                    "slide",
+                    "sheet",
+                    "block",
+                    "chunk",
+                    "section",
+                    "paragraph"
+                  ]
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 1
+                }
+              },
+              "required": [
+                "kind",
+                "unit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "adjacent"
+                },
+                "anchor_kind": {
+                  "type": "string",
+                  "enum": [
+                    "block",
+                    "chunk"
+                  ]
+                },
+                "block_ordinal": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "chunk_id": {
+                  "type": "string",
+                  "minLength": 64,
+                  "maxLength": 64
+                },
+                "before": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                },
+                "after": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0
+                },
+                "include_anchor": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "required": [
+                "kind",
+                "anchor_kind"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "cursor": {
+          "type": "string",
+          "description": "Opaque next_cursor returned by the prior get_document call. Pass it unchanged; it is not a page number."
+        },
+        "max_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Requested byte ceiling, capped by server policy."
+        },
+        "max_items": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Requested block ceiling, capped by server policy."
+        }
+      },
+      "required": [
+        "document_id",
+        "version_id"
+      ]
+    },
+    "pdf_pages": 6,
+    "jpeg_dimensions": [
+      3576,
+      2512
+    ],
+    "pdf_extracted_jpeg_identical": true,
+    "analysis": {
+      "completeness": "complete",
+      "request_id": "c04213ee-422e-44a4-b9ff-10f70ab9efbc",
+      "records": [
+        {
+          "kind": "derived_ocr",
+          "attribution": {
+            "asset_id": "5d38b74c-7f49-54fc-9c00-cbea3d0deeb6",
+            "authority": "derived_ocr",
+            "derivation_id": "2b206dff-9a47-563c-b0f8-6a50f7715a28",
+            "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+            "generation_id": "f2a394f0-57c1-52eb-a56f-f360d11cdcf7",
+            "language": null,
+            "modality": "ocr",
+            "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+            "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+            "script": null,
+            "source_id": "ee9dc261-3bcf-49ed-a110-8b2f9e39270f",
+            "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8"
+          },
+          "bytes": 2875,
+          "regions": 1,
+          "observations": 0
+        },
+        {
+          "kind": "derived_vision",
+          "attribution": {
+            "asset_id": "5d38b74c-7f49-54fc-9c00-cbea3d0deeb6",
+            "authority": "derived_vision",
+            "derivation_id": "ee4dbd89-ba0b-54bc-9618-786cd3d3793d",
+            "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+            "generation_id": "c5e11f9d-54f0-5f00-98fb-1f38b005e872",
+            "language": null,
+            "modality": "vision",
+            "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+            "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+            "script": null,
+            "source_id": "ee9dc261-3bcf-49ed-a110-8b2f9e39270f",
+            "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8"
+          },
+          "bytes": 2835,
+          "regions": 0,
+          "observations": 5
+        }
+      ]
+    },
+    "representation_errors": [
+      {
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "mode": "blocks",
+        "error": {
+          "category": "capability_unavailable",
+          "code": "delivery.representation_unavailable",
+          "correlation_id": "05199c81-2ce9-4b54-abb8-6372fd6776cd",
+          "details": {},
+          "layer": "runtime",
+          "message": "Requested capability is not ready or unavailable",
+          "origin_code": "delivery.representation_unavailable",
+          "reason": "dependency_unavailable",
+          "retryable": false
+        },
+        "request_id": null
+      },
+      {
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "mode": "text",
+        "error": {
+          "category": "capability_unavailable",
+          "code": "delivery.representation_unavailable",
+          "correlation_id": "821a05d9-116a-4f7e-ad8c-6ca42eb15486",
+          "details": {},
+          "layer": "runtime",
+          "message": "Requested capability is not ready or unavailable",
+          "origin_code": "delivery.representation_unavailable",
+          "reason": "dependency_unavailable",
+          "retryable": false
+        },
+        "request_id": null
+      },
+      {
+        "document_id": "8abc6c73-7d1c-5248-8c28-4157de5ca51a",
+        "mode": "blocks",
+        "error": {
+          "category": "capability_unavailable",
+          "code": "delivery.representation_unavailable",
+          "correlation_id": "b172bab6-1a66-42d2-8577-88f394eb8837",
+          "details": {},
+          "layer": "runtime",
+          "message": "Requested capability is not ready or unavailable",
+          "origin_code": "delivery.representation_unavailable",
+          "reason": "dependency_unavailable",
+          "retryable": false
+        },
+        "request_id": null
+      },
+      {
+        "document_id": "8abc6c73-7d1c-5248-8c28-4157de5ca51a",
+        "mode": "text",
+        "error": {
+          "category": "capability_unavailable",
+          "code": "delivery.representation_unavailable",
+          "correlation_id": "cbe0c1a3-558d-4434-8b0c-8733c960381b",
+          "details": {},
+          "layer": "runtime",
+          "message": "Requested capability is not ready or unavailable",
+          "origin_code": "delivery.representation_unavailable",
+          "reason": "dependency_unavailable",
+          "retryable": false
+        },
+        "request_id": null
+      }
+    ],
+    "end_utc": "2026-09-28T11:08:48.749271+00:00"
+  }
+}

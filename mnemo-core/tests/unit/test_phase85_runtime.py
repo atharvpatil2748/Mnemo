@@ -121,6 +121,34 @@ def test_optional_provider_failure_isolated_from_required_core(tmp_path: Path) -
     assert runtime.profile_status("vision").reason_code == "provider_not_registered"
 
 
+@pytest.mark.parametrize("retrieval_available", [False, True])
+def test_text_finalqa_requires_typed_retrieval_not_visual_generation(
+    tmp_path: Path, retrieval_available: bool
+) -> None:
+    active = {"canonical_ingestion", "v1_retrieval", "authorization", "provenance"}
+    if retrieval_available:
+        active.update({"exhaustive_retrieval", "completeness", "cursor_continuation"})
+    runtime = Phase85Runtime(
+        _config(tmp_path),
+        engine_ready=True,
+        active_v1_profiles=frozenset({"v1.embedding", "v1.reranker"}),
+        core_active_capabilities=frozenset(active),
+        service_registrations=(
+            Phase85ServiceRegistration(
+                capability_id="final_qa_v2",
+                service=object(),
+                ready=True,
+                activate=True,
+                exposed=True,
+            ),
+        ),
+    )
+    asyncio.run(runtime.initialize())
+    assert not runtime.capability_status("multimodal_retrieval").state.active
+    assert runtime.capability_status("final_qa_v2").state.active is retrieval_available
+    assert not runtime.capability_status("final_qa_v2").state.certified
+
+
 def test_generation_and_dependencies_gate_activation(tmp_path: Path) -> None:
     service = object()
     config = _config(tmp_path)

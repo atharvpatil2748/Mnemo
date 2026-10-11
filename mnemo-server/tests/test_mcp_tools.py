@@ -89,6 +89,7 @@ def test_mcp_tool_definitions() -> None:
         "query_structured",
         "run_final_qa_v2",
         "get_capabilities",
+        "query_notebook_v2",
     ]
 
     assert tool_names == expected_names
@@ -584,7 +585,7 @@ async def test_mcp_server_tool_listing_and_dispatch() -> None:
 
     tools_res = await list_tools_handler(types.ListToolsRequest(method="tools/list"))
     tools_result = getattr(tools_res, "root", tools_res)
-    assert len(tools_result.tools) == 14
+    assert len(tools_result.tools) == 15
 
     # 2. Test call_tool dispatch
     call_tool_handler = server.request_handlers[types.CallToolRequest]

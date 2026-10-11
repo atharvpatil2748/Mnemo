@@ -41,6 +41,7 @@ from mnemo.tokenizers import O200KBaseTokenCounter
 from pydantic import AnyUrl
 
 from mnemo_server.config import ServerConfig
+from mnemo_server.schemas.automatic_query_v2 import AutomaticQueryV2Request
 from mnemo_server.schemas.capabilities_v2 import CapabilityDiscoveryRequest
 from mnemo_server.schemas.delivery import DocumentExpansionRequestBody
 from mnemo_server.schemas.final_qa_v2 import FinalQAV2RequestBody
@@ -54,6 +55,7 @@ from mnemo_server.services.authorization import (
     ServerPrincipalV1,
     principal_from_claims,
 )
+from mnemo_server.services.automatic_query_v2 import AutomaticQueryV2ApplicationService
 from mnemo_server.services.capabilities_v2 import CapabilityDiscoveryService
 from mnemo_server.services.delivery import (
     authorized_delivery_response_body,
@@ -76,6 +78,7 @@ from mnemo_server.services.structured_v2 import StructuredRetrievalApplicationSe
 from mnemo_server.tokenizer_provisioning import provision_tokenizer
 
 from .contracts import (
+    AUTOMATIC_QUERY_V2_TOOL,
     CAPABILITIES_TOOL,
     CONTRACT_VERSION,
     FINAL_QA_V2_TOOL,
@@ -260,7 +263,16 @@ _LEGACY_TOOL_DEFINITIONS: list[types.Tool] = [
                         "Optional UUID of the parent notebook. Auto-resolved if unambiguous."
                     ),
                 },
-                "mode": {"type": "string", "enum": ["blocks", "original"], "default": "blocks"},
+                "mode": {
+                    "type": "string",
+                    "enum": ["blocks", "text", "original"],
+                    "default": "blocks",
+                    "description": (
+                        "original: binary bytes; blocks: persisted parsed blocks; text: "
+                        "ordered parsed_text/v1 rendering, full selector only. Missing "
+                        "persisted blocks are capability_unavailable, never inferred from search."
+                    ),
+                },
                 "selector": {
                     "description": (
                         "Exactly one deterministic positional selector for blocks mode. Use full, "
@@ -407,6 +419,11 @@ _LEGACY_TOOL_DEFINITIONS: list[types.Tool] = [
                     "type": "string",
                     "description": "Known occurrence UUID for original binary delivery mode.",
                 },
+                "binary_format": {
+                    "type": "string",
+                    "enum": ["auto", "resource"],
+                    "description": "Use resource for a base64 MCP blob, including complete images.",
+                },
                 "cursor": {
                     "type": "string",
                     "description": (
@@ -485,6 +502,7 @@ _TOOL_DEFINITIONS = [
     QUERY_STRUCTURED_TOOL,
     FINAL_QA_V2_TOOL,
     CAPABILITIES_TOOL,
+    AUTOMATIC_QUERY_V2_TOOL,
 ]
 
 
@@ -522,7 +540,7 @@ _TOOL_ROUTES: dict[str, ToolRouteContract]
 
 def _validate_tool_routes() -> None:
     names = [tool.name for tool in _TOOL_DEFINITIONS]
-    if len(names) != 14 or len(set(names)) != len(names) or set(names) != set(_TOOL_ROUTES):
+    if len(names) != 15 or len(set(names)) != len(names) or set(names) != set(_TOOL_ROUTES):
         raise RuntimeError("MCP tool route declaration is incomplete")
     for name, route in _TOOL_ROUTES.items():
         arity = (
@@ -699,6 +717,7 @@ def structured_content_for(
     mime_type: str | None = None
     next_cursor: str | None = None
     completeness = "complete"
+    metadata: dict[str, Any] = {}
     if isinstance(resource, types.ImageContent):
         mime_type = resource.mimeType
         metadata = resource.meta or {}
@@ -713,12 +732,35 @@ def structured_content_for(
         next_cursor = str(next_cursor_value) if next_cursor_value is not None else None
     return {
         "resource": {
+            **{
+                key: metadata[key]
+                for key in (
+                    "rangeStart",
+                    "rangeEnd",
+                    "rangeEndExclusive",
+                    "returnedBytes",
+                    "totalBytes",
+                    "contentHash",
+                    "snapshotIdentity",
+                    "originalMediaType",
+                    "notebookId",
+                    "sourceId",
+                    "documentId",
+                    "versionId",
+                    "assetId",
+                    "occurrenceId",
+                    "completeness",
+                    "nextCursor",
+                )
+                if key in metadata
+            },
             "content_type": resource.type,
             "mime_type": mime_type,
-            "notebook_id": arguments.get("notebook_id"),
-            "document_id": arguments.get("document_id"),
-            "version_id": arguments.get("version_id"),
-            "occurrence_id": arguments.get("occurrence_id"),
+            "notebook_id": metadata.get("notebookId", arguments.get("notebook_id")),
+            **({"source_id": metadata["sourceId"]} if "sourceId" in metadata else {}),
+            "document_id": metadata.get("documentId", arguments.get("document_id")),
+            "version_id": metadata.get("versionId", arguments.get("version_id")),
+            "occurrence_id": metadata.get("occurrenceId", arguments.get("occurrence_id")),
         },
         **_contract_fields(
             name,
@@ -786,8 +828,20 @@ async def execute_mcp_tool(
     workspace_decision: MutableWorkspaceDecision | None = None,
     certified_binding: CertifiedProductionBinding | None = None,
     transport: str | None = None,
+    indexed_fixture_readiness_check: Callable[[], None] | None = None,
 ) -> list[MCPContent]:
     """Execute an authorized Mnemo MCP knowledge tool call."""
+    config = server_config or ServerConfig()
+    if config.production_mode:
+        if indexed_fixture_readiness_check is not None:
+            if engine is None:
+                raise ValueError("indexed fixture admission requires an injected engine")
+            indexed_fixture_readiness_check()
+        else:
+            from mnemo_server.services.production_runtime_binding import repository_root
+            from mnemo_server.services.production_runtime_selection import require_production_index
+
+            require_production_index(repository_root())
     route = _TOOL_ROUTES.get(name)
     if route is None:
         raise ValueError(f"Unknown MCP tool: {name!r}")
@@ -798,7 +852,6 @@ async def execute_mcp_tool(
         )
 
     args = arguments or {}
-    config = server_config or ServerConfig()
     server_principal = _principal_for_call(principal, config)
     if config.full_multilingual_v2_enabled:
         _reject_client_policy_overrides(name, args)
@@ -854,6 +907,17 @@ async def _handle_search_evidence(
     ]
 
 
+async def _handle_automatic_query_v2(
+    engine: KnowledgeEngine,
+    args: dict[str, Any],
+    config: ServerConfig,
+    principal: ServerPrincipalV1,
+) -> list[MCPContent]:
+    request = AutomaticQueryV2Request.model_validate(args)
+    response = await AutomaticQueryV2ApplicationService(engine, config).execute(request, principal)
+    return [types.TextContent(type="text", text=response.model_dump_json(indent=2))]
+
+
 async def _handle_query_structured(
     engine: KnowledgeEngine,
     args: dict[str, Any],
@@ -902,8 +966,8 @@ async def _handle_get_capabilities(
     return [types.TextContent(type="text", text=response.model_dump_json(indent=2))]
 
 
-def _delivery_service(engine: KnowledgeEngine, config: ServerConfig):  # type: ignore[no-untyped-def]
-    return build_delivery_service(engine, config)
+def _delivery_service(engine: KnowledgeEngine, config: ServerConfig, principal=None):  # type: ignore[no-untyped-def]
+    return build_delivery_service(engine, config, principal)
 
 
 async def _execute_delivery_tool(
@@ -1024,8 +1088,8 @@ async def _handle_get_document(
         notebook_id = resolved_scope.notebook_id
 
     mode = args.get("mode", "blocks")
-    if mode not in {"blocks", "original"}:
-        raise ContractValidationError("Parameter 'mode' must be 'blocks' or 'original'")
+    if mode not in {"blocks", "text", "original"}:
+        raise ContractValidationError("Parameter 'mode' must be blocks, text or original")
     cursor = args.get("cursor")
     if cursor is not None and not isinstance(cursor, str):
         raise ContractValidationError("Parameter 'cursor' must be a string")
@@ -1038,7 +1102,7 @@ async def _handle_get_document(
         max_bytes=_optional_positive_int(args, "max_bytes"),
         max_items=_optional_positive_int(args, "max_items"),
     )
-    service = _delivery_service(engine, config)
+    service = _delivery_service(engine, config, principal)
     if mode == "original":
         result = await service.get_original_document(request)
         source_metadata = await _binary_source_metadata(engine, result, config, principal)
@@ -1046,7 +1110,10 @@ async def _handle_get_document(
             types.EmbeddedResource(
                 type="resource",
                 resource=types.BlobResourceContents(
-                    uri=AnyUrl(f"mnemo://documents/{document_id}/versions/{version_id}"),
+                    uri=AnyUrl(
+                        f"mnemo://documents/{document_id}/versions/{version_id}"
+                        f"/bytes/{result.range_start}-{result.range_start + len(result.content)}"
+                    ),
                     mimeType=result.media_type,
                     blob=base64.b64encode(result.content).decode("ascii"),
                     _meta={
@@ -1054,12 +1121,26 @@ async def _handle_get_document(
                         "contentHash": result.content_hash,
                         "nextCursor": result.next_cursor,
                         "totalBytes": result.total_byte_size,
+                        "rangeStart": result.range_start,
+                        "rangeEnd": result.range_start + len(result.content),
+                        "rangeEndExclusive": True,
+                        "returnedBytes": len(result.content),
+                        "snapshotIdentity": result.snapshot_identity,
+                        "originalMediaType": result.media_type,
+                        "notebookId": str(result.attribution.notebook_id),
+                        "sourceId": str(result.attribution.source_id),
+                        "documentId": str(document_id),
+                        "versionId": str(version_id),
                         "sourceMetadata": source_metadata,
                     },
                 ),
             )
         ]
     selector_raw = args.get("selector")
+    if mode == "text" and selector_raw is not None:
+        if selector_raw != {"kind": "full"}:
+            raise ContractValidationError("text view supports only full ordered traversal")
+        selector_raw = None
     selector_body: DocumentExpansionRequestBody | None = None
     if selector_raw is not None:
         if mode != "blocks":
@@ -1092,7 +1173,7 @@ async def _handle_get_document(
             "get_document",
             completeness=result.completeness.value,
             coverage={
-                "document_version": "ordered_blocks",
+                "document_version": "ordered_text" if mode == "text" else "ordered_blocks",
                 "selector": selector_raw,
                 "selection_semantics": "exact_physical_order",
             },
@@ -1156,7 +1237,7 @@ async def _handle_get_document_chunk(
             raise
         notebook_id = resolved_scope.notebook_id
 
-    result = await _delivery_service(engine, config).get_document_chunk(
+    result = await _delivery_service(engine, config, principal).get_document_chunk(
         notebook_id=notebook_id,
         document_id=document_id,
         version_id=version_id,
@@ -1204,11 +1285,14 @@ async def _handle_get_asset(
     principal: ServerPrincipalV1,
 ) -> list[MCPContent]:
     notebook_id = _parse_uuid(args.get("notebook_id"), "notebook_id")
+    binary_format = args.get("binary_format", "auto")
+    if not isinstance(binary_format, str) or binary_format not in {"auto", "resource"}:
+        raise ContractValidationError("Invalid binary format")
     occurrence_id = _optional_uuid(args, "occurrence_id")
     cursor = args.get("cursor")
     if cursor is not None and not isinstance(cursor, str):
         raise ContractValidationError("Parameter 'cursor' must be a string")
-    service = _delivery_service(engine, config)
+    service = _delivery_service(engine, config, principal)
     if occurrence_id is not None:
         result = await service.get_asset(
             notebook_id=notebook_id,
@@ -1219,12 +1303,16 @@ async def _handle_get_asset(
         source_metadata = await _binary_source_metadata(engine, result, config, principal)
         encoded = base64.b64encode(result.content).decode("ascii")
         resource_metadata = {
+            "originalMediaType": result.media_type,
             "completeness": result.completeness.value,
             "nextCursor": result.next_cursor,
             "contentHash": result.content_hash,
             "totalBytes": result.total_byte_size,
             "rangeStart": result.range_start,
             "rangeEnd": result.range_start + len(result.content),
+            "rangeEndExclusive": True,
+            "returnedBytes": len(result.content),
+            "snapshotIdentity": result.snapshot_identity,
             "notebookId": str(result.attribution.notebook_id),
             "sourceId": str(result.attribution.source_id),
             "documentId": str(result.attribution.document_id),
@@ -1236,6 +1324,7 @@ async def _handle_get_asset(
         if (
             _is_safe_complete_image_content(result.media_type, result.content)
             and result.completeness is DeliveryCompleteness.COMPLETE
+            and binary_format == "auto"
         ):
             return [
                 types.ImageContent(
@@ -1249,7 +1338,10 @@ async def _handle_get_asset(
             types.EmbeddedResource(
                 type="resource",
                 resource=types.BlobResourceContents(
-                    uri=AnyUrl(f"mnemo://asset-occurrences/{occurrence_id}"),
+                    uri=AnyUrl(
+                        f"mnemo://asset-occurrences/{occurrence_id}"
+                        f"/bytes/{result.range_start}-{result.range_start + len(result.content)}"
+                    ),
                     mimeType=(
                         "application/octet-stream"
                         if result.media_type.startswith("image/")
@@ -1317,7 +1409,7 @@ async def _handle_get_image_analysis(
     ocr_id = _optional_uuid(args, "ocr_derivation_id")
     vision_id = _optional_uuid(args, "vision_derivation_id")
     if "selection" not in args and "modalities" not in args and "profile" not in args:
-        result = await _delivery_service(engine, config).get_image_analysis(
+        result = await _delivery_service(engine, config, principal).get_image_analysis(
             notebook_id=notebook_id,
             occurrence_id=occurrence_id,
             ocr_derivation_id=ocr_id,
@@ -1337,7 +1429,7 @@ async def _handle_get_image_analysis(
             )
         except (TypeError, ValueError) as error:
             raise ContractValidationError("analysis selection is invalid") from error
-        result = await _delivery_service(engine, config).get_image_analysis_v2(
+        result = await _delivery_service(engine, config, principal).get_image_analysis_v2(
             notebook_id=notebook_id, occurrence_id=occurrence_id, selector=selector
         )
     data = await _delivery_payload(engine, result, config, principal)
@@ -1881,6 +1973,9 @@ async def _handle_get_timeline(
 # One authoritative route per registered tool. Dispatch executes these exact
 # handler references, and get_mcp_tools validates this same declaration.
 _TOOL_ROUTES = {
+    "query_notebook_v2": ToolRouteContract(
+        ToolBackendRoute.V2_REPRESENTATIONS, "service", _handle_automatic_query_v2
+    ),
     "list_notebooks": ToolRouteContract(
         ToolBackendRoute.RETAINED_V1, "collection", _handle_list_notebooks
     ),

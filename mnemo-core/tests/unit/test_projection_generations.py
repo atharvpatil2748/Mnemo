@@ -335,6 +335,27 @@ def test_complete_build_is_atomic_active_and_idempotent(tmp_path: Path) -> None:
     _run(scenario())
 
 
+def test_complete_build_can_remain_ready_without_activation(tmp_path: Path) -> None:
+    async def scenario() -> None:
+        store = SQLiteStore(tmp_path / "build-only.db")
+        await store.open()
+        coordinator = DerivedProjectionCoordinator(store, clock=lambda: NOW)
+        spec = _spec()
+        builder = _Builder(_complete(1))
+        ready = await coordinator.build_and_activate(spec, builder, activate=False)
+        assert ready.state is ProjectionLifecycleState.READY
+        assert ready.reason_code == "generation_ready_not_active"
+        assert not ready.active
+        assert await store.get_active_index_generation(spec.capability, spec.profile_id) is None
+        repeated = await coordinator.build_and_activate(spec, builder, activate=False)
+        assert not repeated.active and builder.calls == 1
+        promoted = await coordinator.build_and_activate(spec, builder)
+        assert promoted.active and builder.calls == 1
+        await store.close()
+
+    _run(scenario())
+
+
 def test_partial_and_failed_generations_never_activate(tmp_path: Path) -> None:
     async def scenario() -> None:
         store = SQLiteStore(tmp_path / "failure.db")

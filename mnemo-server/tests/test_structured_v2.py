@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import replace
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -13,8 +14,11 @@ from mnemo.engine import EngineState
 from mnemo.interfaces import (
     ConflictError,
     ContractValidationError,
+    DependencyUnavailableError,
     IntegrityError,
+    NotFoundError,
     OperationTimeoutError,
+    PrincipalContextV1,
 )
 from mnemo.models import (
     AdvancedRetrievalCandidate,
@@ -42,6 +46,7 @@ from mnemo_server.app import create_app
 from mnemo_server.config import ServerConfig
 from mnemo_server.mcp.tools import execute_mcp_tool, get_mcp_tools, structured_content_for
 from mnemo_server.schemas.structured_v2 import StructuredRetrievalRequest
+from mnemo_server.services import structured_v2 as structured_module
 from mnemo_server.services.structured_v2 import StructuredRetrievalApplicationService
 
 NOTEBOOK = UUID(int=800)
@@ -226,7 +231,7 @@ def test_http_and_mcp_contracts_are_strict_and_discoverable() -> None:
     app = create_app(server_config=ServerConfig(), provision_tokenizer_on_startup=False)
     assert "/v2/retrieval/structured" in app.openapi()["paths"]
     tools = {item.name: item for item in get_mcp_tools()}
-    assert len(tools) == 14 and "query_structured" in tools
+    assert len(tools) == 15 and "query_structured" in tools
     description = (tools["query_structured"].description or "").lower()
     assert "cpi > 8.9" in description and "arbitrary sql" in description
     assert "next_cursor" in description and tools["query_structured"].outputSchema is not None
@@ -442,7 +447,7 @@ async def test_malicious_transport_shapes_scope_and_timeout_fail_closed() -> Non
         StructuredRetrievalRequest.model_validate(
             {**_request(catalog).model_dump(mode="json"), "page_size": 1001}
         )
-    with pytest.raises(ContractValidationError, match="authorized scope"):
+    with pytest.raises(DependencyUnavailableError):
         await StructuredRetrievalApplicationService(  # type: ignore[arg-type]
             engine, ServerConfig()
         ).execute(
@@ -487,3 +492,79 @@ async def test_mcp_uses_same_application_contract_and_structured_fallback() -> N
     assert payload["operation"] == "query" and payload["completeness"] == "complete"
     assert payload["schema_version"] == payload["contract_version"]
     assert structured_content_for("query_structured", {}, content) == payload
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("readiness", [None, StructuredDatasetReadiness.INACTIVE])
+async def test_missing_or_nonready_projection_is_not_an_empty_success(readiness) -> None:  # type: ignore[no-untyped-def]
+    engine, catalog = _engine()
+    datasets = () if readiness is None else (replace(catalog.datasets[0], readiness=readiness),)
+    unavailable = StructuredDatasetCatalog(
+        scope=catalog.scope,
+        snapshot_identity=catalog.snapshot_identity,
+        datasets=datasets,
+        requested_version_ids=catalog.requested_version_ids,
+        ready_version_ids=(),
+        unavailable_version_ids=catalog.requested_version_ids,
+    )
+    engine.structured_retrieval = StructuredDatasetRuntimeService(_Store(unavailable, {}))
+    service = StructuredRetrievalApplicationService(engine, ServerConfig())  # type: ignore[arg-type]
+    with pytest.raises(DependencyUnavailableError):
+        await service.execute(_request(catalog, operation="describe", dataset_ids=[]))
+    with pytest.raises(DependencyUnavailableError):
+        await service.execute(_request(catalog))
+
+
+@pytest.mark.anyio
+async def test_explicit_nonready_dataset_fails_unavailable_even_when_another_is_ready() -> None:
+    engine, catalog = _engine()
+    ready, nonready = catalog.datasets
+    mixed = replace(
+        catalog,
+        datasets=(ready, replace(nonready, readiness=StructuredDatasetReadiness.INACTIVE)),
+    )
+    engine.structured_retrieval = StructuredDatasetRuntimeService(_Store(mixed, {}))
+    service = StructuredRetrievalApplicationService(engine, ServerConfig())  # type: ignore[arg-type]
+    with pytest.raises(DependencyUnavailableError):
+        await service.execute(_request(mixed, dataset_ids=[str(nonready.dataset_id)]))
+
+
+@pytest.mark.anyio
+async def test_explicit_source_and_document_must_share_authorized_ancestry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, catalog = _engine()
+    requested_source = UUID(int=910)
+
+    class _Authorization:
+        async def authorize_notebook(self, principal, notebook_id, operation):  # type: ignore[no-untyped-def]
+            return None
+
+        async def authorize_source(self, principal, source_id, operation):  # type: ignore[no-untyped-def]
+            return NOTEBOOK
+
+        async def authorize_document(
+            self, principal, notebook_id, document_id, version_id, operation
+        ):  # type: ignore[no-untyped-def]
+            return SimpleNamespace(source_id=UUID(int=911))
+
+    class _Runtime:
+        async def resolve_version_associations(
+            self, notebook_id: UUID, version_ids: tuple[UUID, ...]
+        ) -> tuple[tuple[UUID, UUID, UUID], ...]:
+            return ((VERSION, catalog.datasets[0].document_id, UUID(int=911)),)
+
+    monkeypatch.setattr(
+        structured_module, "CentralAuthorizationServiceV1", lambda engine: _Authorization()
+    )
+    service = StructuredRetrievalApplicationService(  # type: ignore[arg-type]
+        SimpleNamespace(structured_retrieval=_Runtime()), ServerConfig()
+    )
+    scope = catalog.scope.model_copy(
+        update={
+            "source_ids": (requested_source,),
+            "document_ids": (catalog.datasets[0].document_id,),
+        }
+    )
+    with pytest.raises(NotFoundError, match="authorized resource was not found"):
+        await service._authorize_scope(scope, PrincipalContextV1(UUID(int=1), True))

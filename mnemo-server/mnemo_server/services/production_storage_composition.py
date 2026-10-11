@@ -28,6 +28,11 @@ _GOVERNED_ROOTS: tuple[tuple[str, Path, StorageRole], ...] = (
         StorageRole.CERTIFIED_CORPUS,
     ),
     ("phase-8-5-evaluation", Path("scratch/phase8_5_wp16"), StorageRole.EVALUATION_ARTIFACT),
+    (
+        "evaluation-notebooks",
+        Path("scratch/evaluation_notebooks"),
+        StorageRole.EVALUATION_ARTIFACT,
+    ),
     ("golden-datasets", Path("goldenDataset"), StorageRole.EVALUATION_ARTIFACT),
     ("evaluation-datasets", Path("evaluationDataset"), StorageRole.EVALUATION_ARTIFACT),
 )
@@ -79,6 +84,20 @@ def preflight_production_storage(
 ) -> ProductionStorageComposition:
     """Decide all storage roles without creating or opening any storage."""
     root = application_root.resolve(strict=False)
+    if server_config.production_mode:
+        evaluation_root = (root / "scratch/evaluation_notebooks").resolve(strict=False)
+        selected_paths = (
+            mnemo_config.storage.sqlite.path,
+            mnemo_config.storage.filesystem.root,
+        )
+        if any(
+            isinstance(selected, Path)
+            and (selected if selected.is_absolute() else root / selected)
+            .resolve(strict=False)
+            .is_relative_to(evaluation_root)
+            for selected in selected_paths
+        ):
+            raise RuntimeError("EVALUATION_ONLY_STORE_NOT_SERVABLE")
     inventory = build_protected_storage_inventory(
         application_root=root,
         mnemo_config=mnemo_config,

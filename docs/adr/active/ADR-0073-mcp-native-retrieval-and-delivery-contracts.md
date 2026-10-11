@@ -56,6 +56,13 @@ Four semantic tools are added only when their backing capability is ready:
 - `get_capabilities`: scope-aware capability, readiness, generation, bounds,
   and limitation discovery. It never advertises class existence as support.
 
+ADR-0079 later authorizes one additional, separately versioned
+`query_notebook_v2` evidence-first tool. That additive decision does not
+change this ADR's retained V1 contracts or the four originally listed additive
+tools. Its server selects authorized active representations; the client cannot
+select internal sources. Implementation, deployment and certification remain
+separate gates.
+
 ### Mandatory intent guidance
 
 Every tool definition contains `when to use`, `when not to use`, bounds,

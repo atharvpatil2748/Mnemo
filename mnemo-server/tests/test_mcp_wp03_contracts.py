@@ -54,6 +54,7 @@ def test_retained_tools_keep_names_and_required_inputs() -> None:
         "query_structured",
         "run_final_qa_v2",
         "get_capabilities",
+        "query_notebook_v2",
     ]
     assert {
         name: tools[name].inputSchema.get("required", []) for name in _RETAINED_REQUIRED_INPUTS
@@ -86,6 +87,11 @@ def test_all_advertised_tools_have_structured_output_contracts() -> None:
         if tool.name == "get_capabilities":
             assert "snapshot_identity" in tool.outputSchema["required"]
             assert "capabilities" in tool.outputSchema["required"]
+            continue
+        if tool.name == "query_notebook_v2":
+            assert {"representation_decisions", "evidence"} <= set(tool.outputSchema["required"])
+            assert "answer_status" in tool.outputSchema["properties"]
+            assert "representations" not in tool.inputSchema["properties"]
             continue
         required = set(tool.outputSchema["required"])
         assert {

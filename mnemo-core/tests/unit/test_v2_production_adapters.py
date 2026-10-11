@@ -7,10 +7,12 @@ import json
 import sqlite3
 from dataclasses import replace
 from pathlib import Path
+from typing import Any, cast
 from uuid import UUID, uuid4
 
 import pytest
 from mnemo.models.advanced_retrieval import PositionalScopeV2, RetrievalScopeV2
+from mnemo.models.text_representations import ObservationReferenceV1
 from mnemo.models.v2_evidence_resolution import (
     V2GenerationSetBindingV1,
     V2RepresentationResolutionState,
@@ -28,7 +30,7 @@ from mnemo.phase85.v2_production_adapters import (
     GovernedV2CandidateProjector,
 )
 from mnemo.phase85.v2_readiness import V2GenerationCapability
-from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
+from test_v2_production_adapters_ci_safe import _setup_synthetic_store
 
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = (
@@ -79,16 +81,9 @@ def _require_production_database() -> None:
         pytest.skip("Governed V2 production database not present in environment")
 
 
-async def _exercise() -> None:
-    _require_production_database()
-    verifier = GovernedV2DatabaseIdentityVerifier(
-        workspace_root=ROOT,
-        identity_manifest=MANIFEST,
-    )
-    identity = _identity(verifier)
-    target = ROOT / verifier.artifact.target_path
+async def _exercise(tmp_path: Path) -> None:
+    store, target, verifier, identity = _setup_synthetic_store(tmp_path)
     before = target.read_bytes()
-    store = SQLiteV2ReadOnlyRuntimeStore(target)
     await store.open()
     try:
         active = await store.resolve_active_multilingual_v2_generation_set()
@@ -177,10 +172,11 @@ async def _exercise() -> None:
         assert resolution.runtime_security.database_identity == verifier.artifact.database_identity
         assert resolution.to_contract_payload()["semantic_text"] == resolution.semantic_text
         security = handles[0].runtime_security
-        for changes, message in (
+        invalid_security_cases: tuple[tuple[dict[str, Any], str], ...] = (
             ({"profile_id": ""}, "profile_id"),
             ({"model_identity": ""}, "model_identity"),
-        ):
+        )
+        for changes, message in invalid_security_cases:
             with pytest.raises(ValueError, match=message):
                 replace(security, **changes)
         with pytest.raises(ValueError, match="distinct"):
@@ -203,12 +199,20 @@ async def _exercise() -> None:
         with pytest.raises(ValueError, match="outside the authorized runtime"):
             replace(handle, semantic_generation_id=uuid4())
         with pytest.raises(ValueError, match="language observation"):
-            replace(handle, language_observation_references=(object(),))
+            replace(
+                handle,
+                language_observation_references=cast(
+                    tuple[ObservationReferenceV1, ...], (object(),)
+                ),
+            )
         with pytest.raises(ValueError, match="script observation"):
-            replace(handle, script_observation_references=(object(),))
+            replace(
+                handle,
+                script_observation_references=cast(tuple[ObservationReferenceV1, ...], (object(),)),
+            )
 
         record = resolution.record
-        for changes, message in (
+        invalid_record_cases: tuple[tuple[dict[str, Any], str], ...] = (
             ({"semantic_text": " "}, "must not be empty"),
             ({"semantic_text": "title: only"}, "title-only"),
             ({"semantic_text_content_hash": "f" * 64}, "content hash mismatch"),
@@ -223,7 +227,8 @@ async def _exercise() -> None:
                 "requires transformation lineage",
             ),
             ({"transformation_lineage": object()}, "cannot claim transformation lineage"),
-        ):
+        )
+        for changes, message in invalid_record_cases:
             with pytest.raises(ValueError, match=message):
                 replace(record, **changes)
         with pytest.raises(ValueError, match="provenance digest mismatch"):
@@ -274,8 +279,8 @@ async def _exercise() -> None:
 
 
 @pytest.mark.local_database
-def test_real_production_adapters_preserve_governed_identity_read_only() -> None:
-    asyncio.run(_exercise())
+def test_real_production_adapters_preserve_governed_identity_read_only(tmp_path: Path) -> None:
+    asyncio.run(_exercise(tmp_path))
 
 
 def test_manifest_vector_generation_names_distinct_embedding_source() -> None:
@@ -287,16 +292,9 @@ def test_manifest_vector_generation_names_distinct_embedding_source() -> None:
     assert vector["source_generation_ids"] == [embedding["generation_id"]]
 
 
-async def _exercise_limit_boundary() -> None:
-    _require_production_database()
-    verifier = GovernedV2DatabaseIdentityVerifier(
-        workspace_root=ROOT,
-        identity_manifest=MANIFEST,
-    )
-    identity = _identity(verifier)
-    target = ROOT / verifier.artifact.target_path
+async def _exercise_limit_boundary(tmp_path: Path) -> None:
+    store, target, verifier, identity = _setup_synthetic_store(tmp_path)
     before = target.read_bytes()
-    store = SQLiteV2ReadOnlyRuntimeStore(target)
     await store.open()
     try:
         active = await store.resolve_active_multilingual_v2_generation_set()
@@ -434,5 +432,5 @@ async def _exercise_limit_boundary() -> None:
 
 
 @pytest.mark.local_database
-def test_authorized_v2_semantic_enumeration_limit_boundary() -> None:
-    asyncio.run(_exercise_limit_boundary())
+def test_authorized_v2_semantic_enumeration_limit_boundary(tmp_path: Path) -> None:
+    asyncio.run(_exercise_limit_boundary(tmp_path))

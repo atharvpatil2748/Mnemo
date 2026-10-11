@@ -23,6 +23,22 @@ from mnemo_server.services.production_runtime_binding import (
     write_certified_convergence,
 )
 
+pytestmark = pytest.mark.usefixtures("_historical_binding_fixture_only")
+
+
+@pytest.fixture
+def _historical_binding_fixture_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Exercise retained historical verifier without admitting it in live startup.
+
+    The real HTTP/MCP and environment-loader selection guard is covered by
+    test_production_runtime_selection; this module tests the historical
+    certificate parser against synthetic, never-served fixture artifacts.
+    """
+    monkeypatch.setattr(
+        "mnemo_server.services.production_runtime_selection.require_production_index",
+        lambda _root: None,
+    )
+
 
 def _write(root: Path, relative: str, value: object) -> Path:
     target = root / relative

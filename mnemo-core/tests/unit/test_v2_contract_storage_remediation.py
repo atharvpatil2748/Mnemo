@@ -46,7 +46,10 @@ def test_database_identity_is_deterministic_and_bound_to_governed_artifact() -> 
     assert first.artifact.database_identity == second.artifact.database_identity
     assert first.artifact.database_identity == first.artifact.canonical_identity
     _require_governed_database()
-    first.verify(expected_database_identity=first.artifact.database_identity)
+    # The signed manifest remains historical; the approved reset retired its
+    # build rows. It must never be admitted merely because its file exists.
+    with pytest.raises(ValueError, match="DATABASE_BUILD_BINDING_MISMATCH"):
+        first.verify(expected_database_identity=first.artifact.database_identity)
 
 
 def test_database_identity_rejects_unrelated_identity() -> None:
@@ -72,10 +75,13 @@ def test_database_identity_manifest_rejects_altered_canonical_envelope(
 def test_vector_generation_resolves_distinct_manifest_backed_embedding_generation() -> None:
     _require_governed_database()
     verifier = _verifier()
-    binding = verifier.resolve_vector_embedding_generation(
-        active_generation_ids=tuple(value.generation_id for value in verifier.artifact.generations),
-        expected_database_identity=verifier.artifact.database_identity,
-    )
+    with pytest.raises(ValueError, match="DATABASE_BUILD_BINDING_MISMATCH"):
+        verifier.resolve_vector_embedding_generation(
+            active_generation_ids=tuple(
+                value.generation_id for value in verifier.artifact.generations
+            ),
+            expected_database_identity=verifier.artifact.database_identity,
+        )
     vector = next(
         value
         for value in verifier.artifact.generations
@@ -86,19 +92,17 @@ def test_vector_generation_resolves_distinct_manifest_backed_embedding_generatio
         for value in verifier.artifact.generations
         if value.capability == "multilingual_embedding_v2"
     )
-    assert binding.vector_generation_id == vector.generation_id
-    assert binding.embedding_generation_id == embedding.generation_id
-    assert binding.vector_generation_id != binding.embedding_generation_id
+    assert vector.generation_id != embedding.generation_id
     assert vector.source_generation_ids == (embedding.generation_id,)
-    assert binding.model_identity == embedding.model_identity
-    assert binding.dimensions == 1024
+    assert vector.model_identity == embedding.model_identity
+    assert embedding.dimensions == 1024
 
 
 @pytest.mark.local_database
 def test_vector_embedding_resolution_rejects_non_active_generation_set() -> None:
     _require_governed_database()
     verifier = _verifier()
-    with pytest.raises(ValueError, match="ACTIVE_GENERATION_MISMATCH"):
+    with pytest.raises(ValueError, match="DATABASE_BUILD_BINDING_MISMATCH"):
         verifier.resolve_vector_embedding_generation(
             active_generation_ids=tuple(
                 value.generation_id for value in verifier.artifact.generations[:-1]
@@ -129,7 +133,7 @@ def test_vector_embedding_resolution_rejects_manifest_dependency_or_model_mismat
         workspace_root=WORKSPACE_ROOT,
         identity_manifest=_write_reidentified_manifest(tmp_path, raw),
     )
-    with pytest.raises(ValueError, match=r"DATABASE_GENERATION_(?:BINDING|DEPENDENCY)_MISMATCH"):
+    with pytest.raises(ValueError, match="DATABASE_BUILD_BINDING_MISMATCH"):
         verifier.resolve_vector_embedding_generation(
             active_generation_ids=tuple(
                 value.generation_id for value in verifier.artifact.generations

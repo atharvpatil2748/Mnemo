@@ -140,8 +140,19 @@ def test_production_owned_builder_proves_ready_but_not_exposed() -> None:
 
 def test_readiness_rejects_corpus_as_final_qa_operational_store() -> None:
     config = resolve_mnemo_runtime_config(config_path=ROOT / "mnemo.toml")
+    # The live default is deliberately UNINDEXED and points elsewhere. Bind
+    # this narrow pre-verification path check to the historical manifest's
+    # declared target without opening or rebuilding that retired database.
+    governed = ROOT / "scratch/phase8_5_full_multilingual_v2/build-20260831-01/mnemo.db"
+    config = config.model_copy(
+        update={
+            "storage": config.storage.model_copy(
+                update={"sqlite": config.storage.sqlite.model_copy(update={"path": governed})}
+            )
+        }
+    )
     server = ServerConfig(
-        final_qa_operational_store_path=config.storage.sqlite.path,
+        final_qa_operational_store_path=governed,
     )
     with pytest.raises(RuntimeError, match="FINAL_QA_OPERATIONAL_STORE_MUST_DIFFER"):
         asyncio.run(

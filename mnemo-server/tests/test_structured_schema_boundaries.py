@@ -54,6 +54,13 @@ def test_structured_scope_and_join_identities_are_unique() -> None:
         )
 
 
+def test_structured_page_size_rejects_boolean_coercion() -> None:
+    with pytest.raises(ValidationError):
+        StructuredRetrievalRequest.model_validate(
+            {"operation": "describe", "scope": _scope(), "page_size": True}
+        )
+
+
 @pytest.mark.parametrize(
     "payload",
     (

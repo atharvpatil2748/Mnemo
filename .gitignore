@@ -10,6 +10,7 @@ venv/
 .pytest_cache/
 .ruff_cache/
 .coverage
+.coverage.*
 coverage.xml
 htmlcov/
 dist/
@@ -46,3 +47,12 @@ scratch/
 # Intentionally local protected evaluation datasets and databases
 /evaluationDataset/
 /goldenDataset/
+
+# Local-only rebuild and retirement evidence; may disclose source inventories,
+# machine-specific model paths, or historical store fingerprints.
+/config/rebuild/personal_44.sources.json
+/config/rebuild/codex_downloaded_24.sources.json
+/config/rebuild/personal_44.gpu-profile.json
+/config/rebuild/codex_downloaded_24.gpu-profile.json
+/config/decommission/*.json
+/docs/reports/operations/mnemo-two-notebook-source-checkpoint.json

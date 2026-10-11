@@ -1,0 +1,2905 @@
+{
+  "format": "mnemo.mcp.sanitized-operator-observations/1",
+  "source_manifest": "832fad3b4a3a26bf3f5bb3e3b124a067997b2d5c9fc580a4a9c3828cf5391d32",
+  "note": "actual local operator calls, not external ChatGPT; opaque cursors redacted; complete bytes independently recorded in transfer manifest",
+  "stdio": [
+    {
+      "tool": "get_capabilities",
+      "transport": "local_certified_stdio",
+      "arguments": {},
+      "start_utc": "2026-09-28T10:10:01.709497+00:00",
+      "end_utc": "2026-09-28T10:10:02.295946+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "capabilities",
+        "limitations",
+        "runtime",
+        "schema_version",
+        "scope_notebook_id",
+        "scope_qualified",
+        "snapshot_identity",
+        "task_guidance"
+      ],
+      "capability_states": [
+        {
+          "id": "asset_delivery",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "image"
+          ]
+        },
+        {
+          "id": "document_delivery",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": []
+        },
+        {
+          "id": "exact_retrieval",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": []
+        },
+        {
+          "id": "final_qa_v2",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "text",
+            "ocr",
+            "vision"
+          ]
+        },
+        {
+          "id": "multimodal_retrieval",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "text",
+            "image",
+            "ocr",
+            "vision"
+          ]
+        },
+        {
+          "id": "ocr",
+          "lifecycle": {
+            "stage": "declared",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": false,
+            "configured": false,
+            "buildable": false,
+            "ready": false,
+            "active": false,
+            "exposed": false,
+            "behaviorally_verified": false,
+            "security_verified": false,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": "profile_not_configured",
+          "modalities": []
+        }
+      ]
+    },
+    {
+      "tool": "list_notebooks",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "limit": 1
+      },
+      "start_utc": "2026-09-28T10:10:02.296510+00:00",
+      "end_utc": "2026-09-28T10:10:02.376957+00:00",
+      "is_error": false,
+      "request_id": "f7599ca9-40af-42ad-98d5-f4982468781f",
+      "error": null,
+      "completeness": "complete",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "limits",
+        "next_cursor",
+        "notebooks",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "total"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_capabilities",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe"
+      },
+      "start_utc": "2026-09-28T10:10:02.376957+00:00",
+      "end_utc": "2026-09-28T10:10:02.654796+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "capabilities",
+        "limitations",
+        "runtime",
+        "schema_version",
+        "scope_notebook_id",
+        "scope_qualified",
+        "snapshot_identity",
+        "task_guidance"
+      ],
+      "capability_states": [
+        {
+          "id": "asset_delivery",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "image"
+          ]
+        },
+        {
+          "id": "document_delivery",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": []
+        },
+        {
+          "id": "exact_retrieval",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": []
+        },
+        {
+          "id": "final_qa_v2",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "text",
+            "ocr",
+            "vision"
+          ]
+        },
+        {
+          "id": "multimodal_retrieval",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "text",
+            "image",
+            "ocr",
+            "vision"
+          ]
+        },
+        {
+          "id": "ocr",
+          "lifecycle": {
+            "stage": "declared",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": false,
+            "configured": false,
+            "buildable": false,
+            "ready": false,
+            "active": false,
+            "exposed": false,
+            "behaviorally_verified": false,
+            "security_verified": false,
+            "certified": false,
+            "available_for_scope": false
+          },
+          "reason": "profile_not_configured",
+          "modalities": []
+        }
+      ]
+    },
+    {
+      "tool": "get_notebook_summary",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe"
+      },
+      "start_utc": "2026-09-28T10:10:02.654796+00:00",
+      "end_utc": "2026-09-28T10:10:02.854193+00:00",
+      "is_error": false,
+      "request_id": "81fd72d6-fb6f-4422-a81b-869a8274d1c1",
+      "error": null,
+      "completeness": "unknown",
+      "item_count": 0,
+      "status": "empty",
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "limits",
+        "next_cursor",
+        "notebook_id",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "sources",
+        "status",
+        "summaries",
+        "summary"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_timeline",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "limit": 1
+      },
+      "start_utc": "2026-09-28T10:10:02.854193+00:00",
+      "end_utc": "2026-09-28T10:10:02.909169+00:00",
+      "is_error": false,
+      "request_id": "31e54dcf-4eee-43bb-8a65-2e288057e103",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "events",
+        "limits",
+        "next_cursor",
+        "notebook_id",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "total"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "search_all_notebooks",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "query": "buildCodePrompt",
+        "top_k": 1
+      },
+      "start_utc": "2026-09-28T10:10:02.909169+00:00",
+      "end_utc": "2026-09-28T10:10:03.219301+00:00",
+      "is_error": false,
+      "request_id": "acb71038-5849-422b-9992-6f09138349b4",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "latency_ms",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "results",
+        "schema_version",
+        "total"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "search_evidence",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "query": "buildCodePrompt",
+        "mode": "exhaustive",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+          ]
+        },
+        "representations": [
+          "canonical_text"
+        ],
+        "candidate_budget": 3,
+        "evidence_budget": 1,
+        "max_content_characters": 2000
+      },
+      "start_utc": "2026-09-28T10:10:03.219301+00:00",
+      "end_utc": "2026-09-28T10:10:03.249277+00:00",
+      "is_error": false,
+      "request_id": "5dc0f384-289f-45c0-962a-b7aa261a5b0b",
+      "error": null,
+      "completeness": "truncated",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "diagnostics",
+        "items",
+        "limits",
+        "mode",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "partitions",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "scope"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "search_evidence",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "query": "buildCodePrompt",
+        "mode": "exhaustive",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+          ]
+        },
+        "representations": [
+          "canonical_text"
+        ],
+        "candidate_budget": 3,
+        "evidence_budget": 1,
+        "max_content_characters": 2000,
+        "cursor": "<opaque cursor omitted>"
+      },
+      "start_utc": "2026-09-28T10:10:03.249277+00:00",
+      "end_utc": "2026-09-28T10:10:03.271416+00:00",
+      "is_error": false,
+      "request_id": "f8b0ff0d-8cf5-483c-80f4-9ba702df68f9",
+      "error": null,
+      "completeness": "complete",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "diagnostics",
+        "items",
+        "limits",
+        "mode",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "partitions",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "scope"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "search_evidence",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "query": "buildCodePrompt",
+        "mode": "exhaustive",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+          ]
+        },
+        "representations": [
+          "canonical_text"
+        ],
+        "candidate_budget": 4,
+        "evidence_budget": 1,
+        "max_content_characters": 2000,
+        "cursor": "<opaque cursor omitted>"
+      },
+      "start_utc": "2026-09-28T10:10:03.271416+00:00",
+      "end_utc": "2026-09-28T10:10:03.274523+00:00",
+      "is_error": true,
+      "request_id": null,
+      "error": {
+        "category": "invalid_input",
+        "code": "cursor.conflict",
+        "correlation_id": "97a9fc69-6000-4af5-b4a0-2d93d9423eec",
+        "details": {},
+        "layer": "request",
+        "message": "Request is invalid",
+        "origin_code": "cursor.conflict",
+        "reason": "cursor.conflict",
+        "retryable": false
+      },
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "error"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "search_evidence",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "query": "buildCodePrompt",
+        "mode": "exhaustive",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+          ]
+        },
+        "representations": [
+          "canonical_text"
+        ],
+        "candidate_budget": 3,
+        "evidence_budget": 1,
+        "max_content_characters": 2000,
+        "cursor": "<opaque cursor omitted>"
+      },
+      "start_utc": "2026-09-28T10:10:03.274523+00:00",
+      "end_utc": "2026-09-28T10:10:03.277113+00:00",
+      "is_error": true,
+      "request_id": null,
+      "error": {
+        "category": "invalid_input",
+        "code": "cursor.invalid",
+        "correlation_id": "fe5e182f-95f1-4e16-b064-63294e492a21",
+        "details": {},
+        "layer": "request",
+        "message": "Request is invalid",
+        "origin_code": "cursor.invalid",
+        "reason": "invalid_cursor",
+        "retryable": false
+      },
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "error"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_notebook",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "question": "buildCodePrompt",
+        "top_k": 1,
+        "synthesize": false
+      },
+      "start_utc": "2026-09-28T10:10:03.277113+00:00",
+      "end_utc": "2026-09-28T10:10:03.902721+00:00",
+      "is_error": false,
+      "request_id": "6c5ef3cf-fd49-4de2-a6b6-b8a0f5307d8d",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 1,
+      "retrieval_metadata": {
+        "chunks_retrieved": 1,
+        "chunks_used": 1,
+        "retrieval_modes_used": [
+          "dense",
+          "sparse"
+        ],
+        "latency_ms": 237
+      },
+      "citation_chunk_ids": [
+        "0d393e1b564411b75cca380f7ca0d52714adece85e7c7332bbfcc6fe6bbdbf8e"
+      ],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "answer",
+        "citations",
+        "completeness",
+        "coverage",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "retrieval_metadata",
+        "schema_version"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_notebook",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "question": "buildCodePrompt",
+        "top_k": 5,
+        "synthesize": false
+      },
+      "start_utc": "2026-09-28T10:10:03.902721+00:00",
+      "end_utc": "2026-09-28T10:10:04.518758+00:00",
+      "is_error": false,
+      "request_id": "4828129c-193d-487c-bb80-efb7d2c5b573",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 5,
+      "retrieval_metadata": {
+        "chunks_retrieved": 5,
+        "chunks_used": 5,
+        "retrieval_modes_used": [
+          "dense",
+          "sparse"
+        ],
+        "latency_ms": 121
+      },
+      "citation_chunk_ids": [
+        "0d393e1b564411b75cca380f7ca0d52714adece85e7c7332bbfcc6fe6bbdbf8e",
+        "d67e4c0ded6419fd581495f8751669299538cf88d2353feb7ff590e689885297",
+        "cb90adfce85c781b0cececf5beeaf14d00688da7547155f356fa24f6b41b4ef7",
+        "9e2133417ef70f0777ca745aabac90d540e2ffbe5a5ba3e8716e7f5d29f519a0",
+        "fb15963f2d567f17fd0972524d418f9362082f1a741686cba3291f5302bf69d4"
+      ],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "answer",
+        "citations",
+        "completeness",
+        "coverage",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "retrieval_metadata",
+        "schema_version"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_source_insights",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "source_id": "0410ba7a-28f0-47d1-9348-112ed66424b2",
+        "limit": 1
+      },
+      "start_utc": "2026-09-28T10:10:04.518758+00:00",
+      "end_utc": "2026-09-28T10:10:04.544463+00:00",
+      "is_error": false,
+      "request_id": "b30cd4a7-e6ac-4d41-9abc-5ffdb00be131",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "insights",
+        "limits",
+        "next_cursor",
+        "notebook_id",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "source_id",
+        "source_metadata",
+        "total"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_document_chunk",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "8abc6c73-7d1c-5248-8c28-4157de5ca51a",
+        "version_id": "7882f1db-a197-5c84-9b10-66b1fe2d3689",
+        "chunk_id": "d67e4c0ded6419fd581495f8751669299538cf88d2353feb7ff590e689885297"
+      },
+      "start_utc": "2026-09-28T10:10:04.544463+00:00",
+      "end_utc": "2026-09-28T10:10:04.570922+00:00",
+      "is_error": false,
+      "request_id": "13ab5871-4f51-4392-a259-dd67329045fb",
+      "error": null,
+      "completeness": "complete",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representation",
+        "request_id",
+        "resource_kind",
+        "schema_version",
+        "snapshot_identity",
+        "source_metadata",
+        "total_items",
+        "usage"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_notebook",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "question": "buildCodePrompt",
+        "top_k": 1,
+        "synthesize": true
+      },
+      "start_utc": "2026-09-28T10:10:04.570922+00:00",
+      "end_utc": "2026-09-28T10:10:15.546626+00:00",
+      "is_error": false,
+      "request_id": "5699cf02-ca77-4a8b-b577-0f44cf3a757b",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": true,
+      "citation_count": 0,
+      "retrieval_metadata": {
+        "chunks_retrieved": 1,
+        "chunks_used": 1,
+        "retrieval_modes_used": [
+          "dense",
+          "sparse"
+        ],
+        "latency_ms": 10502
+      },
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "answer",
+        "citations",
+        "completeness",
+        "coverage",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "retrieval_metadata",
+        "schema_version"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_structured",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "operation": "describe",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "092b9610-05e6-54f4-bb3f-ea8b4544a25f"
+          ],
+          "version_ids": [
+            "2190addb-b826-586f-b2be-65962e520068"
+          ]
+        },
+        "page_size": 1
+      },
+      "start_utc": "2026-09-28T10:10:15.546626+00:00",
+      "end_utc": "2026-09-28T10:10:15.750016+00:00",
+      "is_error": false,
+      "request_id": "36c908f5-9379-4b2a-aef0-9434d6dcbd4f",
+      "error": null,
+      "completeness": "complete",
+      "item_count": 31,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "contract_version",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representations_requested",
+        "representations_searched",
+        "request_id",
+        "schema_version",
+        "scope",
+        "snapshot_identity",
+        "structured"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_structured",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "operation": "query",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "092b9610-05e6-54f4-bb3f-ea8b4544a25f"
+          ],
+          "version_ids": [
+            "2190addb-b826-586f-b2be-65962e520068"
+          ]
+        },
+        "dataset_ids": [
+          "79b102a3-faa0-517a-a4fe-9bda3dc4fb51"
+        ],
+        "page_size": 1
+      },
+      "start_utc": "2026-09-28T10:10:15.750016+00:00",
+      "end_utc": "2026-09-28T10:10:15.864994+00:00",
+      "is_error": false,
+      "request_id": "7343893f-9953-4096-afa8-4b1a48627c3d",
+      "error": null,
+      "completeness": "truncated",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "contract_version",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representations_requested",
+        "representations_searched",
+        "request_id",
+        "schema_version",
+        "scope",
+        "snapshot_identity",
+        "structured"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_structured",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "operation": "query",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "092b9610-05e6-54f4-bb3f-ea8b4544a25f"
+          ],
+          "version_ids": [
+            "2190addb-b826-586f-b2be-65962e520068"
+          ]
+        },
+        "dataset_ids": [
+          "79b102a3-faa0-517a-a4fe-9bda3dc4fb51"
+        ],
+        "page_size": 1,
+        "cursor": "<opaque cursor omitted>"
+      },
+      "start_utc": "2026-09-28T10:10:15.865995+00:00",
+      "end_utc": "2026-09-28T10:10:16.009215+00:00",
+      "is_error": false,
+      "request_id": "3c9e3276-cd04-408c-bec3-9b5339a8913a",
+      "error": null,
+      "completeness": "truncated",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "contract_version",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representations_requested",
+        "representations_searched",
+        "request_id",
+        "schema_version",
+        "scope",
+        "snapshot_identity",
+        "structured"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_structured",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "operation": "query",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "092b9610-05e6-54f4-bb3f-ea8b4544a25f"
+          ],
+          "version_ids": [
+            "2190addb-b826-586f-b2be-65962e520068"
+          ]
+        },
+        "dataset_ids": [
+          "79b102a3-faa0-517a-a4fe-9bda3dc4fb51"
+        ],
+        "page_size": 1,
+        "filters": [
+          {
+            "field": "NAME",
+            "operator": "eq",
+            "value": "mnemo-probe-no-match-60591e8a-4187-4e22-bac5-0be6b254571f"
+          }
+        ]
+      },
+      "start_utc": "2026-09-28T10:10:16.009215+00:00",
+      "end_utc": "2026-09-28T10:10:16.108589+00:00",
+      "is_error": false,
+      "request_id": "a0a793ed-59bc-4fb1-8193-78203438df50",
+      "error": null,
+      "completeness": "empty",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "contract_version",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representations_requested",
+        "representations_searched",
+        "request_id",
+        "schema_version",
+        "scope",
+        "snapshot_identity",
+        "structured"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_asset",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "limit": 1
+      },
+      "start_utc": "2026-09-28T10:10:16.108589+00:00",
+      "end_utc": "2026-09-28T10:10:16.177748+00:00",
+      "is_error": false,
+      "request_id": "e8f2c23a-7217-469b-a243-7460e2cae041",
+      "error": null,
+      "completeness": "truncated",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representation",
+        "request_id",
+        "resource_kind",
+        "schema_version",
+        "snapshot_identity",
+        "source_metadata",
+        "total_items",
+        "usage"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_asset",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+        "max_bytes": 1024
+      },
+      "start_utc": "2026-09-28T10:10:16.177748+00:00",
+      "end_utc": "2026-09-28T10:10:16.229079+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [
+        {
+          "type": "binary_resource",
+          "mime_type": "application/octet-stream",
+          "returned_bytes": 1024,
+          "metadata_keys": [
+            "assetId",
+            "completeness",
+            "contentHash",
+            "documentId",
+            "nextCursor",
+            "notebookId",
+            "occurrenceId",
+            "originalMediaType",
+            "rangeEnd",
+            "rangeEndExclusive",
+            "rangeStart",
+            "returnedBytes",
+            "snapshotIdentity",
+            "sourceId",
+            "sourceMetadata",
+            "totalBytes",
+            "versionId"
+          ]
+        }
+      ],
+      "top_level_keys": [],
+      "capability_states": []
+    },
+    {
+      "tool": "get_image_analysis",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+        "selection": "latest_ready"
+      },
+      "start_utc": "2026-09-28T10:10:16.229079+00:00",
+      "end_utc": "2026-09-28T10:10:16.278081+00:00",
+      "is_error": false,
+      "request_id": "a5c8ed62-e26f-43b1-9489-9d11b383828b",
+      "error": null,
+      "completeness": "complete",
+      "item_count": 2,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representation",
+        "request_id",
+        "resource_kind",
+        "schema_version",
+        "snapshot_identity",
+        "source_metadata",
+        "total_items",
+        "usage"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_document",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "mode": "original",
+        "max_bytes": 1024
+      },
+      "start_utc": "2026-09-28T10:10:16.278081+00:00",
+      "end_utc": "2026-09-28T10:10:16.348898+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [
+        {
+          "type": "binary_resource",
+          "mime_type": "application/pdf",
+          "returned_bytes": 1024,
+          "metadata_keys": [
+            "completeness",
+            "contentHash",
+            "documentId",
+            "nextCursor",
+            "notebookId",
+            "originalMediaType",
+            "rangeEnd",
+            "rangeEndExclusive",
+            "rangeStart",
+            "returnedBytes",
+            "snapshotIdentity",
+            "sourceId",
+            "sourceMetadata",
+            "totalBytes",
+            "versionId"
+          ]
+        }
+      ],
+      "top_level_keys": [],
+      "capability_states": []
+    },
+    {
+      "tool": "run_final_qa_v2",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "session_id": "f622abc9-dfca-4877-a640-6e78f68d1bc6",
+        "user_turn_id": "1b1ac3e7-5841-4db4-9cc0-8a360c0b5250",
+        "assistant_turn_id": "27e6b3a4-3818-4e54-8a64-6da9eba41462",
+        "question": "buildCodePrompt",
+        "evidence_request_or_snapshot": {
+          "query": "buildCodePrompt",
+          "mode": "exhaustive",
+          "scope": {
+            "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+            "document_ids": [
+              "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+            ]
+          },
+          "representations": [
+            "canonical_text"
+          ],
+          "candidate_budget": 3,
+          "evidence_budget": 3,
+          "max_content_characters": 4000
+        },
+        "provider_profile": "final_qa_v2:gemma4:e4b",
+        "max_output_tokens": 1024
+      },
+      "start_utc": "2026-09-28T10:10:16.348898+00:00",
+      "end_utc": "2026-09-28T10:10:26.761335+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": "complete",
+      "item_count": 0,
+      "status": "citation_resolved",
+      "answer_present": true,
+      "citation_count": 2,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [
+        "fb15963f2d567f17fd0972524d418f9362082f1a741686cba3291f5302bf69d4",
+        "d67e4c0ded6419fd581495f8751669299538cf88d2353feb7ff590e689885297"
+      ],
+      "answer_termination": {
+        "complete": true,
+        "reason": "stop"
+      },
+      "resources": [],
+      "top_level_keys": [
+        "answer",
+        "citations",
+        "completeness",
+        "contract_version",
+        "coverage",
+        "execution_id",
+        "omissions",
+        "publication_status",
+        "recommended_next_actions",
+        "replayed",
+        "snapshot_identity",
+        "status"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "run_final_qa_v2",
+      "transport": "local_certified_stdio",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "session_id": "f622abc9-dfca-4877-a640-6e78f68d1bc6",
+        "user_turn_id": "1b1ac3e7-5841-4db4-9cc0-8a360c0b5250",
+        "assistant_turn_id": "27e6b3a4-3818-4e54-8a64-6da9eba41462",
+        "question": "buildCodePrompt",
+        "evidence_request_or_snapshot": {
+          "query": "buildCodePrompt",
+          "mode": "exhaustive",
+          "scope": {
+            "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+            "document_ids": [
+              "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+            ]
+          },
+          "representations": [
+            "canonical_text"
+          ],
+          "candidate_budget": 3,
+          "evidence_budget": 3,
+          "max_content_characters": 4000
+        },
+        "provider_profile": "final_qa_v2:gemma4:e4b",
+        "max_output_tokens": 1024
+      },
+      "start_utc": "2026-09-28T10:10:26.761335+00:00",
+      "end_utc": "2026-09-28T10:10:26.794345+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": "complete",
+      "item_count": 0,
+      "status": "citation_resolved",
+      "answer_present": true,
+      "citation_count": 2,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [
+        "fb15963f2d567f17fd0972524d418f9362082f1a741686cba3291f5302bf69d4",
+        "d67e4c0ded6419fd581495f8751669299538cf88d2353feb7ff590e689885297"
+      ],
+      "answer_termination": {
+        "complete": true,
+        "reason": "stop"
+      },
+      "resources": [],
+      "top_level_keys": [
+        "answer",
+        "citations",
+        "completeness",
+        "contract_version",
+        "coverage",
+        "execution_id",
+        "omissions",
+        "publication_status",
+        "recommended_next_actions",
+        "replayed",
+        "snapshot_identity",
+        "status"
+      ],
+      "capability_states": []
+    }
+  ],
+  "sse": [
+    {
+      "tool": "get_capabilities",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {},
+      "start_utc": "2026-09-28T10:13:31.406846+00:00",
+      "end_utc": "2026-09-28T10:13:32.176890+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "capabilities",
+        "limitations",
+        "runtime",
+        "schema_version",
+        "scope_notebook_id",
+        "scope_qualified",
+        "snapshot_identity",
+        "task_guidance"
+      ],
+      "capability_states": [
+        {
+          "id": "asset_delivery",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "image"
+          ]
+        },
+        {
+          "id": "document_delivery",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": []
+        },
+        {
+          "id": "exact_retrieval",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": []
+        },
+        {
+          "id": "final_qa_v2",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "text",
+            "ocr",
+            "vision"
+          ]
+        },
+        {
+          "id": "multimodal_retrieval",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "text",
+            "image",
+            "ocr",
+            "vision"
+          ]
+        },
+        {
+          "id": "ocr",
+          "lifecycle": {
+            "stage": "declared",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": false,
+            "configured": false,
+            "buildable": false,
+            "ready": false,
+            "active": false,
+            "exposed": false,
+            "behaviorally_verified": false,
+            "security_verified": false,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": "profile_not_configured",
+          "modalities": []
+        }
+      ]
+    },
+    {
+      "tool": "list_notebooks",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "limit": 1
+      },
+      "start_utc": "2026-09-28T10:13:32.177975+00:00",
+      "end_utc": "2026-09-28T10:13:32.341455+00:00",
+      "is_error": false,
+      "request_id": "e1429312-6cdb-41e9-b475-84f86d548023",
+      "error": null,
+      "completeness": "complete",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "limits",
+        "next_cursor",
+        "notebooks",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "total"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_capabilities",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe"
+      },
+      "start_utc": "2026-09-28T10:13:32.342447+00:00",
+      "end_utc": "2026-09-28T10:13:33.357689+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "capabilities",
+        "limitations",
+        "runtime",
+        "schema_version",
+        "scope_notebook_id",
+        "scope_qualified",
+        "snapshot_identity",
+        "task_guidance"
+      ],
+      "capability_states": [
+        {
+          "id": "asset_delivery",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "image"
+          ]
+        },
+        {
+          "id": "document_delivery",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": []
+        },
+        {
+          "id": "exact_retrieval",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": []
+        },
+        {
+          "id": "final_qa_v2",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "text",
+            "ocr",
+            "vision"
+          ]
+        },
+        {
+          "id": "multimodal_retrieval",
+          "lifecycle": {
+            "stage": "exposed",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": true,
+            "configured": true,
+            "buildable": true,
+            "ready": true,
+            "active": true,
+            "exposed": true,
+            "behaviorally_verified": false,
+            "security_verified": true,
+            "certified": false,
+            "available_for_scope": null
+          },
+          "reason": null,
+          "modalities": [
+            "text",
+            "image",
+            "ocr",
+            "vision"
+          ]
+        },
+        {
+          "id": "ocr",
+          "lifecycle": {
+            "stage": "declared",
+            "declared": true,
+            "registered": true,
+            "implemented": true,
+            "service_registered": false,
+            "configured": false,
+            "buildable": false,
+            "ready": false,
+            "active": false,
+            "exposed": false,
+            "behaviorally_verified": false,
+            "security_verified": false,
+            "certified": false,
+            "available_for_scope": false
+          },
+          "reason": "profile_not_configured",
+          "modalities": []
+        }
+      ]
+    },
+    {
+      "tool": "get_notebook_summary",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe"
+      },
+      "start_utc": "2026-09-28T10:13:33.357689+00:00",
+      "end_utc": "2026-09-28T10:13:33.850756+00:00",
+      "is_error": false,
+      "request_id": "a7253f07-8967-46ea-ba2c-68be028cd993",
+      "error": null,
+      "completeness": "unknown",
+      "item_count": 0,
+      "status": "empty",
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "limits",
+        "next_cursor",
+        "notebook_id",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "sources",
+        "status",
+        "summaries",
+        "summary"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_timeline",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "limit": 1
+      },
+      "start_utc": "2026-09-28T10:13:33.850756+00:00",
+      "end_utc": "2026-09-28T10:13:33.898902+00:00",
+      "is_error": false,
+      "request_id": "47f57043-14e8-4ce3-bd42-039247fd2fa9",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "events",
+        "limits",
+        "next_cursor",
+        "notebook_id",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "total"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "search_all_notebooks",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "query": "buildCodePrompt",
+        "top_k": 1
+      },
+      "start_utc": "2026-09-28T10:13:33.898902+00:00",
+      "end_utc": "2026-09-28T10:13:35.547120+00:00",
+      "is_error": false,
+      "request_id": "c5206c10-c4b0-438a-866d-19e9cc5b8ccd",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "latency_ms",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "results",
+        "schema_version",
+        "total"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "search_evidence",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "query": "buildCodePrompt",
+        "mode": "exhaustive",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+          ]
+        },
+        "representations": [
+          "canonical_text"
+        ],
+        "candidate_budget": 3,
+        "evidence_budget": 1,
+        "max_content_characters": 2000
+      },
+      "start_utc": "2026-09-28T10:13:35.547120+00:00",
+      "end_utc": "2026-09-28T10:13:35.621605+00:00",
+      "is_error": false,
+      "request_id": "3d43cb67-4f68-4d68-a353-b6926401e9fd",
+      "error": null,
+      "completeness": "truncated",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "diagnostics",
+        "items",
+        "limits",
+        "mode",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "partitions",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "scope"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "search_evidence",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "query": "buildCodePrompt",
+        "mode": "exhaustive",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+          ]
+        },
+        "representations": [
+          "canonical_text"
+        ],
+        "candidate_budget": 3,
+        "evidence_budget": 1,
+        "max_content_characters": 2000,
+        "cursor": "<opaque cursor omitted>"
+      },
+      "start_utc": "2026-09-28T10:13:35.621605+00:00",
+      "end_utc": "2026-09-28T10:13:35.659031+00:00",
+      "is_error": false,
+      "request_id": "ee5644bb-a7ea-48f5-83e2-84df63b55945",
+      "error": null,
+      "completeness": "complete",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "diagnostics",
+        "items",
+        "limits",
+        "mode",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "partitions",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "scope"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "search_evidence",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "query": "buildCodePrompt",
+        "mode": "exhaustive",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+          ]
+        },
+        "representations": [
+          "canonical_text"
+        ],
+        "candidate_budget": 4,
+        "evidence_budget": 1,
+        "max_content_characters": 2000,
+        "cursor": "<opaque cursor omitted>"
+      },
+      "start_utc": "2026-09-28T10:13:35.659031+00:00",
+      "end_utc": "2026-09-28T10:13:35.676394+00:00",
+      "is_error": true,
+      "request_id": null,
+      "error": {
+        "category": "invalid_input",
+        "code": "cursor.conflict",
+        "correlation_id": "252557cb-c829-463f-a510-35891b53aeb2",
+        "details": {},
+        "layer": "request",
+        "message": "Request is invalid",
+        "origin_code": "cursor.conflict",
+        "reason": "cursor.conflict",
+        "retryable": false
+      },
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "error"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "search_evidence",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "query": "buildCodePrompt",
+        "mode": "exhaustive",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+          ]
+        },
+        "representations": [
+          "canonical_text"
+        ],
+        "candidate_budget": 3,
+        "evidence_budget": 1,
+        "max_content_characters": 2000,
+        "cursor": "<opaque cursor omitted>"
+      },
+      "start_utc": "2026-09-28T10:13:35.676394+00:00",
+      "end_utc": "2026-09-28T10:13:35.687178+00:00",
+      "is_error": true,
+      "request_id": null,
+      "error": {
+        "category": "invalid_input",
+        "code": "cursor.invalid",
+        "correlation_id": "ccf5ec27-8fd2-4c16-a326-67b684f81a28",
+        "details": {},
+        "layer": "request",
+        "message": "Request is invalid",
+        "origin_code": "cursor.invalid",
+        "reason": "invalid_cursor",
+        "retryable": false
+      },
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "error"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_notebook",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "question": "buildCodePrompt",
+        "top_k": 1,
+        "synthesize": false
+      },
+      "start_utc": "2026-09-28T10:13:35.687178+00:00",
+      "end_utc": "2026-09-28T10:13:36.296423+00:00",
+      "is_error": false,
+      "request_id": "533ff1a0-ac2a-41a1-a3f6-a33ac34d549a",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 1,
+      "retrieval_metadata": {
+        "chunks_retrieved": 1,
+        "chunks_used": 1,
+        "retrieval_modes_used": [
+          "dense",
+          "sparse"
+        ],
+        "latency_ms": 111
+      },
+      "citation_chunk_ids": [
+        "0d393e1b564411b75cca380f7ca0d52714adece85e7c7332bbfcc6fe6bbdbf8e"
+      ],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "answer",
+        "citations",
+        "completeness",
+        "coverage",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "retrieval_metadata",
+        "schema_version"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_notebook",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "question": "buildCodePrompt",
+        "top_k": 5,
+        "synthesize": false
+      },
+      "start_utc": "2026-09-28T10:13:36.296423+00:00",
+      "end_utc": "2026-09-28T10:13:36.794089+00:00",
+      "is_error": false,
+      "request_id": "6619c9cd-03c4-484f-8493-fb816cbc30a6",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 5,
+      "retrieval_metadata": {
+        "chunks_retrieved": 5,
+        "chunks_used": 5,
+        "retrieval_modes_used": [
+          "dense",
+          "sparse"
+        ],
+        "latency_ms": 113
+      },
+      "citation_chunk_ids": [
+        "0d393e1b564411b75cca380f7ca0d52714adece85e7c7332bbfcc6fe6bbdbf8e",
+        "d67e4c0ded6419fd581495f8751669299538cf88d2353feb7ff590e689885297",
+        "cb90adfce85c781b0cececf5beeaf14d00688da7547155f356fa24f6b41b4ef7",
+        "9e2133417ef70f0777ca745aabac90d540e2ffbe5a5ba3e8716e7f5d29f519a0",
+        "fb15963f2d567f17fd0972524d418f9362082f1a741686cba3291f5302bf69d4"
+      ],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "answer",
+        "citations",
+        "completeness",
+        "coverage",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "retrieval_metadata",
+        "schema_version"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_source_insights",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "source_id": "0410ba7a-28f0-47d1-9348-112ed66424b2",
+        "limit": 1
+      },
+      "start_utc": "2026-09-28T10:13:36.794089+00:00",
+      "end_utc": "2026-09-28T10:13:36.825218+00:00",
+      "is_error": false,
+      "request_id": "8784c480-4390-429e-a40d-3818bf7603ac",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "insights",
+        "limits",
+        "next_cursor",
+        "notebook_id",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "schema_version",
+        "source_id",
+        "source_metadata",
+        "total"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_document_chunk",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "8abc6c73-7d1c-5248-8c28-4157de5ca51a",
+        "version_id": "7882f1db-a197-5c84-9b10-66b1fe2d3689",
+        "chunk_id": "d67e4c0ded6419fd581495f8751669299538cf88d2353feb7ff590e689885297"
+      },
+      "start_utc": "2026-09-28T10:13:36.825218+00:00",
+      "end_utc": "2026-09-28T10:13:36.867515+00:00",
+      "is_error": false,
+      "request_id": "ccc64b82-4cb3-46a1-ad79-727ab572b33a",
+      "error": null,
+      "completeness": "complete",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representation",
+        "request_id",
+        "resource_kind",
+        "schema_version",
+        "snapshot_identity",
+        "source_metadata",
+        "total_items",
+        "usage"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_notebook",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "question": "buildCodePrompt",
+        "top_k": 1,
+        "synthesize": true
+      },
+      "start_utc": "2026-09-28T10:13:36.867515+00:00",
+      "end_utc": "2026-09-28T10:13:38.301270+00:00",
+      "is_error": false,
+      "request_id": "744fc7e5-1145-4673-9a79-8c7a307b6429",
+      "error": null,
+      "completeness": "bounded",
+      "item_count": 0,
+      "status": null,
+      "answer_present": true,
+      "citation_count": 1,
+      "retrieval_metadata": {
+        "chunks_retrieved": 1,
+        "chunks_used": 1,
+        "retrieval_modes_used": [
+          "dense",
+          "sparse"
+        ],
+        "latency_ms": 939
+      },
+      "citation_chunk_ids": [
+        "0d393e1b564411b75cca380f7ca0d52714adece85e7c7332bbfcc6fe6bbdbf8e"
+      ],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "answer",
+        "citations",
+        "completeness",
+        "coverage",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "request_id",
+        "retrieval_metadata",
+        "schema_version"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_structured",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "operation": "describe",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "092b9610-05e6-54f4-bb3f-ea8b4544a25f"
+          ],
+          "version_ids": [
+            "2190addb-b826-586f-b2be-65962e520068"
+          ]
+        },
+        "page_size": 1
+      },
+      "start_utc": "2026-09-28T10:13:38.301270+00:00",
+      "end_utc": "2026-09-28T10:13:38.744935+00:00",
+      "is_error": false,
+      "request_id": "a013605c-3a38-422b-b16f-7b615e93ac78",
+      "error": null,
+      "completeness": "complete",
+      "item_count": 31,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "contract_version",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representations_requested",
+        "representations_searched",
+        "request_id",
+        "schema_version",
+        "scope",
+        "snapshot_identity",
+        "structured"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_structured",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "operation": "query",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "092b9610-05e6-54f4-bb3f-ea8b4544a25f"
+          ],
+          "version_ids": [
+            "2190addb-b826-586f-b2be-65962e520068"
+          ]
+        },
+        "dataset_ids": [
+          "79b102a3-faa0-517a-a4fe-9bda3dc4fb51"
+        ],
+        "page_size": 1
+      },
+      "start_utc": "2026-09-28T10:13:38.744935+00:00",
+      "end_utc": "2026-09-28T10:13:38.916454+00:00",
+      "is_error": false,
+      "request_id": "3b6c6080-9107-4367-86d2-6d4b8d92f76e",
+      "error": null,
+      "completeness": "truncated",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "contract_version",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representations_requested",
+        "representations_searched",
+        "request_id",
+        "schema_version",
+        "scope",
+        "snapshot_identity",
+        "structured"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_structured",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "operation": "query",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "092b9610-05e6-54f4-bb3f-ea8b4544a25f"
+          ],
+          "version_ids": [
+            "2190addb-b826-586f-b2be-65962e520068"
+          ]
+        },
+        "dataset_ids": [
+          "79b102a3-faa0-517a-a4fe-9bda3dc4fb51"
+        ],
+        "page_size": 1,
+        "cursor": "<opaque cursor omitted>"
+      },
+      "start_utc": "2026-09-28T10:13:38.916454+00:00",
+      "end_utc": "2026-09-28T10:13:39.052502+00:00",
+      "is_error": false,
+      "request_id": "0d03e2bf-fe77-4be4-9def-ea656f9c5b9b",
+      "error": null,
+      "completeness": "truncated",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "contract_version",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representations_requested",
+        "representations_searched",
+        "request_id",
+        "schema_version",
+        "scope",
+        "snapshot_identity",
+        "structured"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "query_structured",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "operation": "query",
+        "scope": {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_ids": [
+            "092b9610-05e6-54f4-bb3f-ea8b4544a25f"
+          ],
+          "version_ids": [
+            "2190addb-b826-586f-b2be-65962e520068"
+          ]
+        },
+        "dataset_ids": [
+          "79b102a3-faa0-517a-a4fe-9bda3dc4fb51"
+        ],
+        "page_size": 1,
+        "filters": [
+          {
+            "field": "NAME",
+            "operator": "eq",
+            "value": "mnemo-probe-no-match-af829f5b-c2e5-42b0-9406-72df57b6d2fa"
+          }
+        ]
+      },
+      "start_utc": "2026-09-28T10:13:39.052502+00:00",
+      "end_utc": "2026-09-28T10:13:39.239081+00:00",
+      "is_error": false,
+      "request_id": "7f9bd8ae-8349-4e62-a8d6-eff336f17a39",
+      "error": null,
+      "completeness": "empty",
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "contract_version",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representations_requested",
+        "representations_searched",
+        "request_id",
+        "schema_version",
+        "scope",
+        "snapshot_identity",
+        "structured"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_asset",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "limit": 1
+      },
+      "start_utc": "2026-09-28T10:13:39.239081+00:00",
+      "end_utc": "2026-09-28T10:13:39.429073+00:00",
+      "is_error": false,
+      "request_id": "3b7de680-9615-4181-8d41-16e11da70487",
+      "error": null,
+      "completeness": "truncated",
+      "item_count": 1,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representation",
+        "request_id",
+        "resource_kind",
+        "schema_version",
+        "snapshot_identity",
+        "source_metadata",
+        "total_items",
+        "usage"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_asset",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+        "max_bytes": 1024
+      },
+      "start_utc": "2026-09-28T10:13:39.429073+00:00",
+      "end_utc": "2026-09-28T10:13:39.593143+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [
+        {
+          "type": "binary_resource",
+          "mime_type": "application/octet-stream",
+          "returned_bytes": 1024,
+          "metadata_keys": [
+            "assetId",
+            "completeness",
+            "contentHash",
+            "documentId",
+            "nextCursor",
+            "notebookId",
+            "occurrenceId",
+            "originalMediaType",
+            "rangeEnd",
+            "rangeEndExclusive",
+            "rangeStart",
+            "returnedBytes",
+            "snapshotIdentity",
+            "sourceId",
+            "sourceMetadata",
+            "totalBytes",
+            "versionId"
+          ]
+        }
+      ],
+      "top_level_keys": [],
+      "capability_states": []
+    },
+    {
+      "tool": "get_image_analysis",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "occurrence_id": "7c31fd63-a975-51f3-bc27-0a6505649ffe",
+        "selection": "latest_ready"
+      },
+      "start_utc": "2026-09-28T10:13:39.594133+00:00",
+      "end_utc": "2026-09-28T10:13:39.800784+00:00",
+      "is_error": false,
+      "request_id": "83e974b3-01f1-4045-88ae-3251f3555b26",
+      "error": null,
+      "completeness": "complete",
+      "item_count": 2,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [],
+      "top_level_keys": [
+        "completeness",
+        "coverage",
+        "items",
+        "limits",
+        "next_cursor",
+        "omissions",
+        "operation",
+        "recommended_next_actions",
+        "representation",
+        "request_id",
+        "resource_kind",
+        "schema_version",
+        "snapshot_identity",
+        "source_metadata",
+        "total_items",
+        "usage"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "get_document",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "document_id": "135b4fd5-15cd-5a22-89db-096dcc9b55bc",
+        "version_id": "d49eb763-3bf3-54d1-aec4-bfd66ca43fe8",
+        "mode": "original",
+        "max_bytes": 1024
+      },
+      "start_utc": "2026-09-28T10:13:39.800784+00:00",
+      "end_utc": "2026-09-28T10:13:40.039189+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": null,
+      "item_count": 0,
+      "status": null,
+      "answer_present": false,
+      "citation_count": 0,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [],
+      "answer_termination": null,
+      "resources": [
+        {
+          "type": "binary_resource",
+          "mime_type": "application/pdf",
+          "returned_bytes": 1024,
+          "metadata_keys": [
+            "completeness",
+            "contentHash",
+            "documentId",
+            "nextCursor",
+            "notebookId",
+            "originalMediaType",
+            "rangeEnd",
+            "rangeEndExclusive",
+            "rangeStart",
+            "returnedBytes",
+            "snapshotIdentity",
+            "sourceId",
+            "sourceMetadata",
+            "totalBytes",
+            "versionId"
+          ]
+        }
+      ],
+      "top_level_keys": [],
+      "capability_states": []
+    },
+    {
+      "tool": "run_final_qa_v2",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "session_id": "b45a5305-3ea9-43b6-95fb-3fd64b8d9be2",
+        "user_turn_id": "94846c67-2e78-4a09-beb4-3c1a98842aa3",
+        "assistant_turn_id": "bcc97145-c6bd-4fb7-a0ae-91e9ae74a6d3",
+        "question": "buildCodePrompt",
+        "evidence_request_or_snapshot": {
+          "query": "buildCodePrompt",
+          "mode": "exhaustive",
+          "scope": {
+            "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+            "document_ids": [
+              "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+            ]
+          },
+          "representations": [
+            "canonical_text"
+          ],
+          "candidate_budget": 3,
+          "evidence_budget": 3,
+          "max_content_characters": 4000
+        },
+        "provider_profile": "final_qa_v2:gemma4:e4b",
+        "max_output_tokens": 1024
+      },
+      "start_utc": "2026-09-28T10:13:40.039189+00:00",
+      "end_utc": "2026-09-28T10:13:46.784625+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": "complete",
+      "item_count": 0,
+      "status": "citation_resolved",
+      "answer_present": true,
+      "citation_count": 2,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [
+        "fb15963f2d567f17fd0972524d418f9362082f1a741686cba3291f5302bf69d4",
+        "d67e4c0ded6419fd581495f8751669299538cf88d2353feb7ff590e689885297"
+      ],
+      "answer_termination": {
+        "complete": true,
+        "reason": "stop"
+      },
+      "resources": [],
+      "top_level_keys": [
+        "answer",
+        "citations",
+        "completeness",
+        "contract_version",
+        "coverage",
+        "execution_id",
+        "omissions",
+        "publication_status",
+        "recommended_next_actions",
+        "replayed",
+        "snapshot_identity",
+        "status"
+      ],
+      "capability_states": []
+    },
+    {
+      "tool": "run_final_qa_v2",
+      "transport": "real_loopback_certified_sse",
+      "arguments": {
+        "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+        "session_id": "b45a5305-3ea9-43b6-95fb-3fd64b8d9be2",
+        "user_turn_id": "94846c67-2e78-4a09-beb4-3c1a98842aa3",
+        "assistant_turn_id": "bcc97145-c6bd-4fb7-a0ae-91e9ae74a6d3",
+        "question": "buildCodePrompt",
+        "evidence_request_or_snapshot": {
+          "query": "buildCodePrompt",
+          "mode": "exhaustive",
+          "scope": {
+            "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+            "document_ids": [
+              "8abc6c73-7d1c-5248-8c28-4157de5ca51a"
+            ]
+          },
+          "representations": [
+            "canonical_text"
+          ],
+          "candidate_budget": 3,
+          "evidence_budget": 3,
+          "max_content_characters": 4000
+        },
+        "provider_profile": "final_qa_v2:gemma4:e4b",
+        "max_output_tokens": 1024
+      },
+      "start_utc": "2026-09-28T10:13:46.784625+00:00",
+      "end_utc": "2026-09-28T10:13:46.870317+00:00",
+      "is_error": false,
+      "request_id": null,
+      "error": null,
+      "completeness": "complete",
+      "item_count": 0,
+      "status": "citation_resolved",
+      "answer_present": true,
+      "citation_count": 2,
+      "retrieval_metadata": null,
+      "citation_chunk_ids": [
+        "fb15963f2d567f17fd0972524d418f9362082f1a741686cba3291f5302bf69d4",
+        "d67e4c0ded6419fd581495f8751669299538cf88d2353feb7ff590e689885297"
+      ],
+      "answer_termination": {
+        "complete": true,
+        "reason": "stop"
+      },
+      "resources": [],
+      "top_level_keys": [
+        "answer",
+        "citations",
+        "completeness",
+        "contract_version",
+        "coverage",
+        "execution_id",
+        "omissions",
+        "publication_status",
+        "recommended_next_actions",
+        "replayed",
+        "snapshot_identity",
+        "status"
+      ],
+      "capability_states": []
+    }
+  ]
+}

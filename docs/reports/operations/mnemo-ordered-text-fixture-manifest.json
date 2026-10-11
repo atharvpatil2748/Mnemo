@@ -1,0 +1,101 @@
+{
+  "notebook_id": "434043e6-7149-4232-86af-e72e0f8434ef",
+  "source_id": "215543fc-70aa-4ae7-8cda-870e925d1177",
+  "document_id": "cf43cabc-08f8-4ca6-ad4d-f35cbf25bf69",
+  "version_id": "b8183755-55d4-4771-8d84-2ffd0e741cee",
+  "total_items": 12,
+  "schema_version": "mnemo.isolated-text-fixture/1",
+  "endpoint": "https://rotary-tobago-michelle-filter.trycloudflare.com/mcp/",
+  "serving_role": "isolated_certification",
+  "created_utc": "2026-09-28T12:31:23.150652+00:00",
+  "expires_utc": "2026-09-30T12:31:23.150652+00:00",
+  "retention": "Auto-stop at expiry; owner removes isolated test data within seven days.",
+  "database_sha256": "acb5635fd0b0056205f16d739966613d3df46ac6ae89057ef560645d05eacc35",
+  "database_bytes": 978944,
+  "database_mtime_utc": "2026-09-28T12:31:23.2319211Z",
+  "infrastructure_source_sha256": "44c49c656e690de6945d6b89cb33e3200bd28dc65e3f8ed74527ddac598717ee",
+  "block_representation": "parsed_blocks/v1",
+  "text_representation": "parsed_text/v1",
+  "block_snapshot_identity": "4e5d9f73a2a38754865a2057587591317590a3dd28d59883a11abcb6e69d735f",
+  "text_snapshot_identity": "7405a9cd9e6139be0ce596e761e9a59075edbcfb332ceecffcc204d0ed4f8e97",
+  "expected_text": "Ordered fixture\nParagraph α — नमस्ते\n\nIntentional blank line.\nName\tValue\nCafé\t東京\ndef greeting():\n    return '🙂'\nE = mc^2\nImage alt: diagram → result\nPage seven: résumé\nSecond heading\nTabs\tand newlines\nare retained.\nFinal table\t2\nΔ\t3\n\\int_0^1 x\\,dx = \\frac12\nFinal paragraph.",
+  "text_sha256_utf8": "70f933e57255937afc39612ac54a311f7653ab9c1c7d91c20106a4db12a83493",
+  "expected_blocks": [
+    {
+      "kind": "HeadingBlock",
+      "text": "Ordered fixture",
+      "level": 1
+    },
+    {
+      "kind": "TextBlock",
+      "text": "Paragraph α — नमस्ते\n\nIntentional blank line."
+    },
+    {
+      "kind": "TableBlock",
+      "rows": [
+        [
+          "Name",
+          "Value"
+        ],
+        [
+          "Café",
+          "東京"
+        ]
+      ],
+      "header_row_count": 1
+    },
+    {
+      "kind": "CodeBlock",
+      "code": "def greeting():\n    return '🙂'",
+      "code_language": "python"
+    },
+    {
+      "kind": "EquationBlock",
+      "latex": "E = mc^2",
+      "display": true
+    },
+    {
+      "kind": "ImageBlock",
+      "alt_text": "Image alt: diagram → result",
+      "asset_id": "00000000-0000-0000-0000-000000000032"
+    },
+    {
+      "kind": "TextBlock",
+      "text": "Page seven: résumé"
+    },
+    {
+      "kind": "HeadingBlock",
+      "text": "Second heading",
+      "level": 2
+    },
+    {
+      "kind": "TextBlock",
+      "text": "Tabs\tand newlines\nare retained."
+    },
+    {
+      "kind": "TableBlock",
+      "rows": [
+        [
+          "Final table",
+          "2"
+        ],
+        [
+          "Δ",
+          "3"
+        ]
+      ],
+      "header_row_count": 0
+    },
+    {
+      "kind": "EquationBlock",
+      "latex": "\\int_0^1 x\\,dx = \\frac12",
+      "display": true
+    },
+    {
+      "kind": "TextBlock",
+      "text": "Final paragraph."
+    }
+  ],
+  "block_fields_sha256": "b2da14fd657a73dc60acf1839d96f4a9303783dbed8afd71b1346bd440c51d88",
+  "exposure": "Owner-authorized isolated HTTPS endpoint; never production federation. ChatGPT connection remains owner-controlled."
+}

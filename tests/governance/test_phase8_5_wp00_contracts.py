@@ -85,6 +85,7 @@ ADDITIVE_TOOLS = {
     "query_structured",
     "run_final_qa_v2",
     "get_capabilities",
+    "query_notebook_v2",
 }
 
 
@@ -198,7 +199,13 @@ def test_mcp_contract_freezes_retained_and_additive_tool_sets() -> None:
     assert all(tool["registered_now"] for tool in tools if tool["kind"] == "retained")
     assert {
         tool["name"] for tool in tools if tool["kind"] == "additive" and tool["registered_now"]
-    } == {"search_evidence", "query_structured", "run_final_qa_v2", "get_capabilities"}
+    } == {
+        "search_evidence",
+        "query_structured",
+        "run_final_qa_v2",
+        "get_capabilities",
+        "query_notebook_v2",
+    }
 
     output_required = set(contract["common_output_schema"]["required"])
     assert {

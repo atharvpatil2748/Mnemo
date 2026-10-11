@@ -29,6 +29,7 @@ class FinalQAExecutionState(StrEnum):
     PUBLISHED = "published"
     REJECTED_CITATION_COMPLIANCE = "rejected_citation_compliance"
     TIMED_OUT = "timed_out"
+    REJECTED_GENERATION = "rejected_generation"
 
 
 class FinalQAExecutionSnapshotPhase(StrEnum):

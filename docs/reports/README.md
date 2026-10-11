@@ -5,6 +5,20 @@ evidence unless explicitly identified as current authority.
 
 ## Current certification
 
+- [Ordered-text implementation and external prerequisites](operations/mnemo-ordered-text-delivery-remediation.md)
+- [Mixed-content ordered reconstruction](operations/mnemo-ordered-text-certification.md)
+- [Public MCP schema verification](operations/mnemo-public-mcp-schema-verification.md)
+- [Structured binary metadata exposure](operations/mnemo-binary-metadata-exposure.md)
+- [Final external ordered-text certification prompt](operations/mnemo-final-external-text-certification-prompt.md)
+
+- [Complete resource delivery remediation](operations/mnemo-complete-resource-delivery-remediation.md)
+- [Multipart binary reconstruction](operations/mnemo-multipart-binary-certification.md)
+- [Full document text contract and production limitation](operations/mnemo-full-document-text-certification.md)
+- [Direct image integrity](operations/mnemo-direct-image-integrity-certification.md)
+- [External resource reconstruction prompt](operations/mnemo-external-resource-reconstruction-prompt.md)
+
+- [Cursor/FinalQA external defect remediation and fresh local transport evidence](operations/mnemo-cursor-finalqa-external-defect-remediation.md)
+
 - [Final Mnemo V2 certification](certification/current/mnemo-v2-final-certification.md)
 - [Single production path audit](architecture/mnemo-v2-single-production-path-audit.md)
 - [Module 8.8.1 certified runtime convergence](operations/mnemo-module-8-8-1-certification.md)
@@ -65,6 +79,48 @@ without changing GitHub visibility or historical grants.
 The [Stage 6 completed-batch GitHub closure report](operations/mnemo-stage-6-github-closure.md)
 records publication, exact-SHA CI, protected-state checks and the remaining
 Stage 6 and owner-only visibility gates. It does not claim deployment.
+The [Module 8.8.10 local exposure-boundary implementation](operations/mnemo-module-8-8-10-local-implementation.md)
+records production/evaluation selection isolation and the future promotion
+gate. It is not independent forensic acceptance or production activation.
+The [Module 8.8.11 local structured-contract implementation](operations/mnemo-module-8-8-11-local-implementation.md)
+records authorized typed execution, persisted scope-qualified unavailability,
+and nonactivation. The subsequent [independent audit, applied fix and local
+Stage 6 closure](operations/mnemo-stage-7-forensic-audit-remediation-and-stage-6-closure.md)
+preserves these implementation reports as historical local claims, records
+the older/newer readiness regression, and leaves GitHub publication, deployment,
+live transport certification and Phase 8.8 acceptance separate.
+The [external-verification preparation checkpoint](operations/mnemo-stage-6-external-verification-preparation.md)
+preserves the historical rollback stop and the subsequent authorized
+forward-only restart. The [external-audit remediation](operations/mnemo-stage-6-external-audit-remediation.md)
+records the later cursor-budget, OCR-lifecycle and FinalQA-registration
+findings; its [second independent ChatGPT handoff prompt](operations/mnemo-stage-6-stage-7-external-chatgpt-verification-prompt.md)
+requires fresh external-tool evidence and does not assert external acceptance.
+The [final Stage 6 cursor and acceptance-gate audit](operations/mnemo-stage-6-final-contract-and-acceptance-gate-audit.md)
+resolves the small-budget continuation contract, records the actor-binding
+correction and separates production capability limitations from pending
+external and four-transport behavioral certification.
+The [fresh Stage 6 acceptance-gate reconciliation](operations/mnemo-stage-6-final-acceptance-gate-reconciliation.md)
+records a positive authorized production structured fixture and the
+current-source local transport matrix, while leaving authenticated external
+behavioral parity and ready FinalQA V2 certification explicitly open.
+The [completed-stage remediation record](operations/mnemo-all-completed-stages-full-system-remediation.md),
+[14-tool acceptance matrix](operations/mnemo-14-tool-external-acceptance-matrix.md),
+[HTTP route matrix](operations/mnemo-http-endpoint-acceptance-matrix.md),
+[four-transport status](operations/mnemo-final-four-transport-certification.md),
+and [independent-client prompt](operations/mnemo-final-external-chatgpt-acceptance-prompt.md)
+record delivery composition, FinalQA dependency/modality, generation-identity
+and strict numeric-input repairs, successful certified local 14-tool/HTTP
+execution, and pending external gates. The [machine-readable HTTP manifest](operations/mnemo-http-test-manifest.json)
+and opt-in local runners preserve unexecuted public/mutation checks explicitly.
+These records do not supersede signed historical evidence.
+
+[Isolated ordered-text fixture provisioning](operations/mnemo-isolated-external-text-fixture.md),
+[public schema readiness](operations/mnemo-public-text-schema-readiness.md),
+[independent ChatGPT handoff](operations/mnemo-ordered-text-external-handoff.md),
+and [independent fixture truth](operations/mnemo-ordered-text-fixture-manifest.json)
+record owner-authorized temporary test exposure, authenticated public MCP
+reconstruction and the remaining owner-controlled connector step. Test data
+is not federated into production; no external ChatGPT certification is claimed.
 
 Historical claims are not rewritten when current architecture changes. Use the
 current certification and architecture audit above for production truth.

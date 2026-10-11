@@ -46,6 +46,8 @@ def _sha256(path: Path) -> str:
 
 
 def _rows(database: Path, query: str) -> tuple[tuple[str, ...], ...]:
+    # This isolated target may still have committed derivations in its WAL.
+    # immutable=1 would silently hide them and publish incomplete coverage.
     connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
     try:
         return tuple(tuple(str(value) for value in row) for row in connection.execute(query))
@@ -119,6 +121,7 @@ async def _build_source_projection(
     source_versions: tuple[UUID, ...],
     source_generations: tuple[UUID, ...],
     builder: Any,
+    activate: bool = True,
 ) -> dict[str, Any]:
     """Run the existing immutable generation/store lifecycle for source-bound builders."""
     identity = json.dumps(
@@ -161,7 +164,7 @@ async def _build_source_projection(
         existing = await store.get_index_generation(generation_id)
         if existing is None or existing.state is not IndexGenerationState.READY:
             raise RuntimeError("deterministic projection generation is not resumable")
-        if not await store.promote_index_generation(generation_id):
+        if activate and not await store.promote_index_generation(generation_id):
             raise RuntimeError("ready projection generation could not be promoted")
         coverage = await store.get_index_generation_coverage(generation_id)
     else:
@@ -190,17 +193,17 @@ async def _build_source_projection(
             checksum=result.checksum,
         ):
             raise RuntimeError("projection generation lifecycle changed before READY")
-        if not await store.promote_index_generation(generation_id):
+        if activate and not await store.promote_index_generation(generation_id):
             raise RuntimeError("ready projection generation could not be promoted")
     if coverage is None:
         raise RuntimeError("active projection generation lacks coverage")
     return {
         "generation_id": str(generation_id),
         "state": "ready",
-        "active": True,
+        "active": activate,
         "compatible": True,
         "eligible_for_activation": True,
-        "reason_code": "generation_active",
+        "reason_code": "generation_active" if activate else "generation_ready_not_active",
         "coverage": {
             "expected_count": coverage.expected_count,
             "succeeded_count": coverage.succeeded_count,
@@ -210,6 +213,22 @@ async def _build_source_projection(
             "checksum": coverage.checksum,
         },
     }
+
+
+async def _project_structured_versions(
+    store: SQLiteStore,
+    blobs: FilesystemBlobStore,
+    version_ids: tuple[UUID, ...],
+) -> tuple[int, list[str]]:
+    changed = 0
+    missing: list[str] = []
+    for version_id in version_ids:
+        document = await blobs.get_parsed_document(version_id)
+        if document is None:
+            missing.append(str(version_id))
+            continue
+        changed += int(await store.project_structured_document(version_id, document))
+    return changed, missing
 
 
 async def _prepare(args: argparse.Namespace) -> dict[str, Any]:
@@ -247,19 +266,19 @@ async def _prepare(args: argparse.Namespace) -> dict[str, Any]:
     statuses: list[dict[str, Any]] = []
     missing_ir: list[str] = []
     try:
-        structured_changed = 0
-        for version_id in version_ids:
-            document = await blobs.get_parsed_document(version_id)
-            if document is None:
-                missing_ir.append(str(version_id))
-                continue
-            structured_changed += int(await store.project_structured_document(version_id, document))
+        # Structured tables have their own exact-version, checksum-governed
+        # generation. --build-only defers the OCR/Vision serving aliases,
+        # not this canonical-IR table projection.
+        structured_changed, missing_ir = await _project_structured_versions(
+            store, blobs, version_ids
+        )
         statuses.append(
             {
                 "capability": "structured_table",
                 "source_versions": len(version_ids),
                 "missing_ir": len(missing_ir),
                 "generations_created": structured_changed,
+                "reason_code": "projected",
             }
         )
 
@@ -298,6 +317,7 @@ async def _prepare(args: argparse.Namespace) -> dict[str, Any]:
                         sorted({item.generation_id for item in ocr_results}, key=str)
                     ),
                     builder=OCRTextProjectionBuilder(store=store, results=ocr_results),
+                    activate=not args.build_only,
                 )
             )
 
@@ -328,6 +348,7 @@ async def _prepare(args: argparse.Namespace) -> dict[str, Any]:
             status = await coordinator.build_and_activate(
                 spec,
                 VisionTextProjectionBuilder(store=store, source_generation_ids=vision_generations),
+                activate=not args.build_only,
             )
             statuses.append(_status_payload(status))
 
@@ -378,6 +399,7 @@ async def _prepare(args: argparse.Namespace) -> dict[str, Any]:
                         sorted({item.generation_id for item in embeddings}, key=str)
                     ),
                     builder=VisualVectorProjectionBuilder(store=store, embeddings=embeddings),
+                    activate=not args.build_only,
                 )
             )
     finally:
@@ -430,6 +452,7 @@ def main() -> None:
     parser.add_argument("--files", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--source-checksum", required=True)
+    parser.add_argument("--build-only", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     evidence = asyncio.run(_prepare(args))

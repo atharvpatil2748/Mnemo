@@ -321,6 +321,7 @@ class SQLiteStructuredProjectionMixin:
                  LEFT JOIN active_index_generations a ON a.generation_id=g.generation_id
                  JOIN sources s ON s.document_id=p.document_id
                  JOIN document_versions dv ON dv.version_id=p.version_id
+                   AND dv.document_id=p.document_id
                  WHERE s.notebook_id=?"""
         params: list[object] = [str(scope.notebook_id)]
         for values, expression in (
@@ -475,6 +476,46 @@ class SQLiteStructuredProjectionMixin:
                  AND c.completeness='complete' AND c.failed_count=0 LIMIT 1"""
         ) as cursor:
             return await cursor.fetchone() is not None
+
+    async def structured_projection_ready_for_notebook(self, notebook_id: UUID) -> bool:
+        """Check an authorized notebook's executable projection without enumerating data."""
+        async with self._require_open().execute(
+            """SELECT 1 FROM structured_table_projections p
+               JOIN document_versions dv ON dv.version_id=p.version_id
+                 AND dv.document_id=p.document_id
+               JOIN sources s ON s.document_id=p.document_id
+               JOIN index_generations g ON g.generation_id=p.generation_id
+               JOIN active_index_generations a ON a.generation_id=g.generation_id
+               JOIN index_generation_coverage c ON c.generation_id=g.generation_id
+               WHERE s.notebook_id=? AND g.capability='structured_table'
+                 AND g.state='ready' AND c.completeness='complete'
+                 AND c.failed_count=0
+                 AND EXISTS (
+                   SELECT 1 FROM chunks ch
+                   WHERE ch.document_id=p.document_id AND ch.version_id=p.version_id
+                     AND p.block_ordinal BETWEEN ch.source_start_ordinal
+                                             AND ch.source_end_ordinal
+                 ) LIMIT 1""",
+            (str(notebook_id),),
+        ) as cursor:
+            return await cursor.fetchone() is not None
+
+    async def resolve_structured_version_associations(
+        self, notebook_id: UUID, version_ids: tuple[UUID, ...]
+    ) -> tuple[tuple[UUID, UUID, UUID], ...]:
+        """Resolve canonical notebook/source/document/version ancestry before discovery."""
+        if not version_ids or len(version_ids) > 100:
+            raise ValueError("structured version scope must contain one through 100 versions")
+        placeholders = ",".join("?" for _ in version_ids)
+        async with self._require_open().execute(
+            "SELECT dv.version_id,dv.document_id,s.source_id "
+            "FROM document_versions dv JOIN sources s ON s.document_id=dv.document_id "
+            f"WHERE s.notebook_id=? AND dv.version_id IN ({placeholders}) "
+            "ORDER BY dv.version_id,s.source_id",
+            (str(notebook_id), *(str(item) for item in version_ids)),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return tuple((UUID(row[0]), UUID(row[1]), UUID(row[2])) for row in rows)
 
     async def active_structured_generation_identity(self) -> str | None:
         """Identify the exact complete active generation set used by the runtime."""

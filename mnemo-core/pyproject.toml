@@ -35,6 +35,7 @@ dependencies = [
 
 [project.optional-dependencies]
 reranking = ["sentence-transformers>=5.1,<6"]
+ocr-paddle = ["paddleocr==3.4.1", "paddlepaddle==3.2.2", "pillow>=11,<13", "numpy>=1.26,<3"]
 
 [project.urls]
 Homepage = "https://github.com/atharvpatil2748/Mnemo"

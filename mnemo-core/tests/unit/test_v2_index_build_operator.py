@@ -1,31 +1,47 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, cast
 from uuid import uuid4
 
 import pytest
 from mnemo.interfaces.errors import ContractValidationError, IntegrityError
-from mnemo.models import IndexGenerationState
+from mnemo.models import IndexGeneration, IndexGenerationState
 from mnemo.models.multilingual import LanguageEvidenceKindV3, LanguageObservationScope
-from mnemo.phase85.projections import ProjectionBuildResult
+from mnemo.phase85.projections import ProjectionBuildResult, ProjectionGenerationSpec
 from mnemo.phase85.v2_index_build import (
     FullMultilingualV2IndexBuildOperator,
     V2BuildArtifacts,
     V2BuildPreflight,
     _complete_result,
+    _digest,
     _encoded_dataclass_vector,
     _mapping_sequence,
     _scope,
     _vision_text,
 )
+from mnemo.retrieval.multilingual_providers import BGEM3EmbeddingProvider
+from mnemo.storage.sqlite import SQLiteStore
 
 ROOT = Path(__file__).resolve().parents[3]
 PROPOSALS = ROOT / "docs/governance/proposals/phase8_5_full_multilingual_architecture"
+
+
+def _fixture_generation_specs() -> tuple[ProjectionGenerationSpec, ...]:
+    """Use governed specification data without opening a retired build target."""
+    build = V2BuildArtifacts.load(PROPOSALS).build
+    return tuple(
+        ProjectionGenerationSpec.from_manifest_payload(item)
+        for item in _mapping_sequence(
+            build["generation_specifications"], "generation_specifications"
+        )
+    )
 
 
 def test_v2_build_artifacts_are_digest_valid_and_ready_only() -> None:
@@ -37,24 +53,146 @@ def test_v2_build_artifacts_are_digest_valid_and_ready_only() -> None:
     assert artifacts.storage["alias_namespace"] == "full_multilingual_v2_aliases"
 
 
-def _require_operator_environment() -> None:
-    source_database = ROOT / "scratch/phase8_5_wp16/eval-20260828-01/mnemo.db"
-    corpus_root = ROOT / "goldenDataset/Phase 8.5 Evaluation Corpus"
-    if not source_database.exists() or not corpus_root.exists():
-        pytest.skip("Governed WP16 source database or evaluation corpus not present in environment")
+def _disposable_operator(tmp_path: Path) -> FullMultilingualV2IndexBuildOperator:
+    """Rebind governed test artifacts to three real rows in a disposable source DB."""
+    proposal = tmp_path / "proposal"
+    proposal.mkdir()
+    artifacts = {
+        source.name: json.loads(source.read_text(encoding="utf-8"))
+        for source in PROPOSALS.glob("V2_*.json")
+    }
+    source = tmp_path / "scratch/phase8_5_wp16/eval-20260828-01/mnemo.db"
+    source.parent.mkdir(parents=True)
+    census = artifacts["V2_CORPUS_LANGUAGE_SCRIPT_REPRESENTATION_CENSUS.json"]
+    records = [
+        next(row for row in census["records"] if row["evidence_kind"] == kind)
+        for kind in ("canonical_chunk", "ocr_region", "vision_derivation")
+    ]
+    texts = ("Fixture canonical evidence", "Fixture OCR evidence", "Fixture vision evidence")
+    for record, value in zip(records, texts, strict=True):
+        record["source_content_hash"] = hashlib.sha256(value.encode()).hexdigest()
+    with sqlite3.connect(source) as connection:
+        connection.executescript(
+            "CREATE TABLE sources(document_id TEXT,source_id TEXT,notebook_id TEXT);"
+            "CREATE TABLE document_versions(version_id TEXT,created_at TEXT);"
+            "CREATE TABLE chunks(id TEXT,version_id TEXT,text TEXT,position_page_number INTEGER,"
+            "position_section_index INTEGER,heading_path TEXT);"
+            "CREATE TABLE ocr_regions(region_id TEXT,derivation_id TEXT,"
+            "text TEXT,page_number INTEGER);"
+            "CREATE TABLE ocr_results(derivation_id TEXT,document_id TEXT,version_id TEXT,"
+            "occurrence_id TEXT,generation_id TEXT,created_at TEXT);"
+            "CREATE TABLE vision_results(derivation_id TEXT,payload TEXT,created_at TEXT);"
+            "CREATE TABLE asset_occurrences(occurrence_id TEXT,locator TEXT);"
+        )
+        notebook_id = str(uuid4())
+        for record in records:
+            connection.execute(
+                "INSERT INTO sources VALUES(?,?,?)",
+                (record["document_id"], str(uuid4()), notebook_id),
+            )
+            connection.execute(
+                "INSERT INTO document_versions VALUES(?,?)",
+                (record["version_id"], "2026-09-01T00:00:00+00:00"),
+            )
+        connection.execute(
+            "INSERT INTO chunks VALUES(?,?,?,?,?,?)",
+            (records[0]["evidence_id"], records[0]["version_id"], texts[0], 1, 0, "[]"),
+        )
+        connection.execute(
+            "INSERT INTO ocr_regions VALUES(?,?,?,?)",
+            (records[1]["evidence_id"], records[1]["derivation_id"], texts[1], 1),
+        )
+        connection.execute(
+            "INSERT INTO ocr_results VALUES(?,?,?,?,?,?)",
+            (
+                records[1]["derivation_id"],
+                records[1]["document_id"],
+                records[1]["version_id"],
+                records[1]["occurrence_id"],
+                records[1]["source_generation_id"],
+                "2026-09-01T00:00:00+00:00",
+            ),
+        )
+        connection.execute(
+            "INSERT INTO vision_results VALUES(?,?,?)",
+            (
+                records[2]["derivation_id"],
+                json.dumps({"captions": [{"text": texts[2]}]}),
+                "2026-09-01T00:00:00+00:00",
+            ),
+        )
+        connection.execute(
+            "INSERT INTO asset_occurrences VALUES(?,?)",
+            (records[1]["occurrence_id"], json.dumps({"page_number": 1})),
+        )
+    corpus_root = tmp_path / "goldenDataset/Phase 8.5 Evaluation Corpus"
+    corpus_root.mkdir(parents=True)
+    corpus_file = corpus_root / "fixture.txt"
+    corpus_file.write_text("Disposable corpus", encoding="utf-8")
+    corpus_files = [
+        {
+            "name": corpus_file.name,
+            "sha256": hashlib.sha256(corpus_file.read_bytes()).hexdigest(),
+            "size": corpus_file.stat().st_size,
+        }
+    ]
+    corpus_digest = _digest(corpus_files)
+    corpus_census = artifacts["V2_CORPUS_REPRESENTATION_CENSUS.json"]
+    corpus_census["corpus_files"] = corpus_files
+    corpus_census["corpus_manifest_digest"] = corpus_digest
+    corpus_census["source_database_sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
+    census["records"] = records
+
+    def save(name: str) -> str:
+        value = artifacts[name]
+        value["artifact_digest"] = _digest(
+            {key: item for key, item in value.items() if key != "artifact_digest"}
+        )
+        (proposal / name).write_text(json.dumps(value), encoding="utf-8")
+        return str(value["artifact_digest"])
+
+    save("V2_CORPUS_REPRESENTATION_CENSUS.json")
+    census_digest = save("V2_CORPUS_LANGUAGE_SCRIPT_REPRESENTATION_CENSUS.json")
+    storage = artifacts["V2_DISPOSABLE_DATABASE_MANIFEST.json"]
+    storage["corpus_digest"] = corpus_digest
+    storage["census_digest"] = census_digest
+    storage_digest = save("V2_DISPOSABLE_DATABASE_MANIFEST.json")
+    build = artifacts["V2_BUILD_RECOVERY_ROLLBACK_MANIFEST.json"]
+    build["source_database_sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
+    build["source_corpus_digest"] = corpus_digest
+    build["source_evidence_census_digest"] = census_digest
+    build["storage_manifest_digest"] = storage_digest
+    build["expected_coverage"]["evidence_items"] = len(records)
+    build_digest = save("V2_BUILD_RECOVERY_ROLLBACK_MANIFEST.json")
+    authorization = artifacts["V2_INDEX_BUILD_AUTHORIZATION.json"]
+    authorization["corpus_digest"] = corpus_digest
+    authorization["census_digest"] = census_digest
+    authorization["storage_manifest_digest"] = storage_digest
+    authorization["build_manifest_digest"] = build_digest
+    from mnemo.phase85.v2_build_authorization import V2BuildAuthorizationV1
+
+    authorized = V2BuildAuthorizationV1(
+        **{
+            key: value
+            for key, value in authorization.items()
+            if key not in {"artifact_digest", "authorization_id", "schema_version"}
+        }
+    )
+    authorization["authorization_id"] = str(authorized.authorization_id)
+    save("V2_INDEX_BUILD_AUTHORIZATION.json")
+    for name in artifacts:
+        if not (proposal / name).exists():
+            (proposal / name).write_text(json.dumps(artifacts[name]), encoding="utf-8")
+    return FullMultilingualV2IndexBuildOperator(workspace_root=tmp_path, proposal_root=proposal)
 
 
 @pytest.mark.local_database
-def test_v2_operator_preflight_is_manifest_bound_and_non_mutating() -> None:
-    _require_operator_environment()
-    operator = FullMultilingualV2IndexBuildOperator(
-        workspace_root=ROOT,
-        proposal_root=PROPOSALS,
-    )
+def test_v2_operator_preflight_is_manifest_bound_and_non_mutating(tmp_path: Path) -> None:
+    operator = _disposable_operator(tmp_path)
     preflight = operator.preflight()
     assert (
         preflight.target
-        == (ROOT / "scratch/phase8_5_full_multilingual_v2/build-20260831-01/mnemo.db").resolve()
+        == (tmp_path / "scratch/phase8_5_full_multilingual_v2/build-20260831-01/mnemo.db").resolve()
     )
     assert [item.capability for item in preflight.generation_specs] == [
         "representation_derivation_v2",
@@ -65,19 +203,16 @@ def test_v2_operator_preflight_is_manifest_bound_and_non_mutating() -> None:
 
 
 @pytest.mark.local_database
-def test_v2_operator_loads_all_governed_evidence_kinds_without_mutation() -> None:
+def test_v2_operator_loads_all_governed_evidence_kinds_without_mutation(tmp_path: Path) -> None:
     """The identity-bound census resolves canonical, OCR, and Vision evidence."""
-    _require_operator_environment()
-    operator = FullMultilingualV2IndexBuildOperator(
-        workspace_root=ROOT,
-        proposal_root=PROPOSALS,
-    )
+    operator = _disposable_operator(tmp_path)
     preflight = operator.preflight()
     before = preflight.source_database.stat().st_size
 
     evidence = operator._load_evidence(preflight.source_database)
 
-    assert len(evidence) == operator._artifacts.build["expected_coverage"]["evidence_items"]
+    coverage = cast(dict[str, int], operator._artifacts.build["expected_coverage"])
+    assert len(evidence) == coverage["evidence_items"]
     assert {item.source.kind for item in evidence} == {
         LanguageEvidenceKindV3.CANONICAL_CHUNK,
         LanguageEvidenceKindV3.OCR_REGION,
@@ -116,7 +251,7 @@ def test_v2_vector_audit_reads_the_canonical_snapshot_envelope() -> None:
 
 def test_v2_build_helpers_validate_manifests_scopes_and_vision_payloads() -> None:
     assert _mapping_sequence([{"a": 1}], "items") == ({"a": 1},)
-    for invalid in (None, {}, ["not-an-object"]):
+    for invalid in cast(tuple[object, ...], (None, {}, ["not-an-object"])):
         with pytest.raises(ContractValidationError, match="array of objects"):
             _mapping_sequence(invalid, "items")
     assert _scope(LanguageEvidenceKindV3.CANONICAL_CHUNK) is LanguageObservationScope.CHUNK
@@ -155,8 +290,8 @@ def _audit_operator(tmp_path: Path) -> tuple[FullMultilingualV2IndexBuildOperato
         storage_manifest_digest="f" * 64,
     )
     operator = object.__new__(FullMultilingualV2IndexBuildOperator)
-    operator._root = tmp_path.resolve()  # type: ignore[attr-defined]
-    operator._artifacts = SimpleNamespace(authorization=authorization)  # type: ignore[attr-defined]
+    operator._root = tmp_path.resolve()
+    cast(Any, operator)._artifacts = SimpleNamespace(authorization=authorization)
     return operator, target
 
 
@@ -183,7 +318,7 @@ def test_build_audit_checkpoint_is_restartable_and_identity_bound(tmp_path: Path
     assert state == "ready" and datetime.fromisoformat(completed).tzinfo is not None
     assert count == 3 and len(digest) == 64
 
-    operator._artifacts.authorization.corpus_digest = "0" * 64
+    cast(Any, operator._artifacts.authorization).corpus_digest = "0" * 64
     with pytest.raises(ContractValidationError, match="authorization mismatch"):
         operator._validate_existing_target(target)
 
@@ -222,8 +357,8 @@ def test_build_audit_helpers_clone_and_fail_closed(tmp_path: Path) -> None:
 
 @pytest.mark.anyio
 async def test_v2_execute_runs_governed_stage_order_and_closes_resources(
-    tmp_path: Path, monkeypatch
-) -> None:  # type: ignore[no-untyped-def]
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from mnemo.phase85 import v2_index_build as subject
 
     target = tmp_path / "target.db"
@@ -233,7 +368,7 @@ async def test_v2_execute_runs_governed_stage_order_and_closes_resources(
         target=target,
         source_database=tmp_path / "source.db",
         corpus_root=tmp_path / "corpus",
-        generation_specs=specifications,  # type: ignore[arg-type]
+        generation_specs=cast(tuple[ProjectionGenerationSpec, ...], specifications),
     )
     events: list[str] = []
 
@@ -258,27 +393,28 @@ async def test_v2_execute_runs_governed_stage_order_and_closes_resources(
             events.append("provider-close")
 
     provider = Provider()
-    operator = object.__new__(FullMultilingualV2IndexBuildOperator)
-    operator._artifacts = SimpleNamespace(  # type: ignore[attr-defined]
+    # Dynamic stand-in isolates orchestration order from model inference.
+    operator: Any = object.__new__(FullMultilingualV2IndexBuildOperator)
+    operator._artifacts = SimpleNamespace(
         build={"expected_coverage": {"evidence_items": 2}, "vector_space_profile_identity": "space"}
     )
-    operator.preflight = lambda: preflight  # type: ignore[method-assign]
-    operator._initialize_build_audit = lambda _target: events.append("audit-init")  # type: ignore[method-assign]
-    operator._load_evidence = lambda _target: (  # type: ignore[method-assign]
+    operator.preflight = lambda: preflight
+    operator._initialize_build_audit = lambda _target: events.append("audit-init")
+    operator._load_evidence = lambda _target: (
         SimpleNamespace(excluded=False),
         SimpleNamespace(excluded=True),
     )
-    operator._embedding_provider = lambda _spec: provider  # type: ignore[method-assign]
+    operator._embedding_provider = lambda _spec: provider
 
     async def stage(name: str) -> None:
         events.append(name)
 
-    operator._build_representation = lambda *_args: stage("representation")  # type: ignore[method-assign]
-    operator._build_sparse = lambda *_args: stage("sparse")  # type: ignore[method-assign]
-    operator._build_embeddings = lambda *_args: stage("embeddings")  # type: ignore[method-assign]
-    operator._build_vector = lambda *_args: stage("vector")  # type: ignore[method-assign]
-    operator._audit = lambda *_args: {"status": "READY"}  # type: ignore[method-assign]
-    operator._finish_run = lambda _target, state: events.append(f"finish-{state}")  # type: ignore[method-assign]
+    operator._build_representation = lambda *_args: stage("representation")
+    operator._build_sparse = lambda *_args: stage("sparse")
+    operator._build_embeddings = lambda *_args: stage("embeddings")
+    operator._build_vector = lambda *_args: stage("vector")
+    operator._audit = lambda *_args: {"status": "READY"}
+    operator._finish_run = lambda _target, state: events.append(f"finish-{state}")
     monkeypatch.setattr(subject, "SQLiteStore", Store)
 
     result = await operator.execute()
@@ -304,13 +440,10 @@ async def test_v2_build_stages_persist_governed_evidence_and_vectors(
     tmp_path: Path,
 ) -> None:
     """Each build family persists identity-bound rows and completes its generation."""
-    _require_operator_environment()
-    operator = FullMultilingualV2IndexBuildOperator(
-        workspace_root=ROOT,
-        proposal_root=PROPOSALS,
-    )
+    operator = _disposable_operator(tmp_path)
     preflight = operator.preflight()
     evidence = operator._load_evidence(preflight.source_database)[:1]
+    operator._run_started_at = lambda: datetime.now(UTC)  # type: ignore[method-assign]
     specs = {item.capability: item for item in preflight.generation_specs}
     calls: list[str] = []
 
@@ -345,14 +478,14 @@ async def test_v2_build_stages_persist_governed_evidence_and_vectors(
         assert len(population) == 1  # type: ignore[arg-type]
         calls.append(f"complete:{spec.capability}")  # type: ignore[attr-defined]
 
-    operator._begin_generation = begin  # type: ignore[method-assign]
-    operator._complete_generation = complete  # type: ignore[method-assign]
+    cast(Any, operator)._begin_generation = begin
+    cast(Any, operator)._complete_generation = complete
     operator._checkpoint = lambda stage, *_args: calls.append(f"checkpoint:{stage}")  # type: ignore[method-assign]
     store = Store()
     await operator._build_representation(
-        store,
+        cast(SQLiteStore, store),
         specs["representation_derivation_v2"],
-        evidence,  # type: ignore[arg-type]
+        evidence,
     )
     await operator._build_sparse(store, specs["language_text_v2"], evidence)  # type: ignore[arg-type]
 
@@ -408,8 +541,8 @@ async def test_v2_build_stages_persist_governed_evidence_and_vectors(
 
 @pytest.mark.anyio
 async def test_v2_execute_marks_failed_and_closes_store_on_evidence_mismatch(
-    tmp_path: Path, monkeypatch
-) -> None:  # type: ignore[no-untyped-def]
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from mnemo.phase85 import v2_index_build as subject
 
     target = tmp_path / "target.db"
@@ -418,7 +551,10 @@ async def test_v2_execute_marks_failed_and_closes_store_on_evidence_mismatch(
         target=target,
         source_database=tmp_path / "source.db",
         corpus_root=tmp_path / "corpus",
-        generation_specs=tuple(SimpleNamespace(generation_id=uuid4()) for _ in range(4)),  # type: ignore[arg-type]
+        generation_specs=cast(
+            tuple[ProjectionGenerationSpec, ...],
+            tuple(SimpleNamespace(generation_id=uuid4()) for _ in range(4)),
+        ),
     )
     events: list[str] = []
 
@@ -432,14 +568,12 @@ async def test_v2_execute_marks_failed_and_closes_store_on_evidence_mismatch(
         async def close(self) -> None:
             events.append("close")
 
-    operator = object.__new__(FullMultilingualV2IndexBuildOperator)
-    operator._artifacts = SimpleNamespace(  # type: ignore[attr-defined]
-        build={"expected_coverage": {"evidence_items": 2}}
-    )
-    operator.preflight = lambda: preflight  # type: ignore[method-assign]
-    operator._initialize_build_audit = lambda _target: None  # type: ignore[method-assign]
-    operator._load_evidence = lambda _target: ()  # type: ignore[method-assign]
-    operator._finish_run = lambda _target, state: events.append(state)  # type: ignore[method-assign]
+    operator: Any = object.__new__(FullMultilingualV2IndexBuildOperator)
+    operator._artifacts = SimpleNamespace(build={"expected_coverage": {"evidence_items": 2}})
+    operator.preflight = lambda: preflight
+    operator._initialize_build_audit = lambda _target: None
+    operator._load_evidence = lambda _target: ()
+    operator._finish_run = lambda _target, state: events.append(state)
     monkeypatch.setattr(subject, "SQLiteStore", Store)
     with pytest.raises(IntegrityError, match="evidence count"):
         await operator.execute()
@@ -449,26 +583,25 @@ async def test_v2_execute_marks_failed_and_closes_store_on_evidence_mismatch(
 @pytest.mark.local_database
 @pytest.mark.anyio
 async def test_generation_start_is_restart_safe_and_contract_bound() -> None:
-    _require_operator_environment()
     operator = FullMultilingualV2IndexBuildOperator(
         workspace_root=ROOT,
         proposal_root=PROPOSALS,
     )
-    spec = operator.preflight().generation_specs[0]
+    spec = _fixture_generation_specs()[0]
     ready = spec.new_generation(datetime.now(UTC))
     ready = replace(ready, state=IndexGenerationState.READY)
     building = replace(ready, state=IndexGenerationState.BUILDING)
     failed = replace(ready, state=IndexGenerationState.FAILED)
 
     class Store:
-        existing = None
+        existing: IndexGeneration | None = None
         created = True
 
         async def get_index_generation(self, _identifier: object) -> object:
             return self.existing
 
         async def create_index_generation(self, value: object) -> bool:
-            assert value.state is IndexGenerationState.BUILDING  # type: ignore[attr-defined]
+            assert cast(IndexGeneration, value).state is IndexGenerationState.BUILDING
             return self.created
 
         async def put_index_generation_sources(self, **values: object) -> None:
@@ -496,18 +629,23 @@ async def test_generation_start_is_restart_safe_and_contract_bound() -> None:
 @pytest.mark.local_database
 @pytest.mark.anyio
 async def test_generation_completion_rejects_partial_and_failed_ready_transition() -> None:
-    _require_operator_environment()
     operator = FullMultilingualV2IndexBuildOperator(
         workspace_root=ROOT,
         proposal_root=PROPOSALS,
     )
-    preflight = operator.preflight()
-    spec = preflight.generation_specs[0]
-    evidence = operator._load_evidence(preflight.source_database)[:1]
+    spec = _fixture_generation_specs()[0]
+    evidence = (
+        SimpleNamespace(
+            language=SimpleNamespace(value="en"),
+            script_observation=SimpleNamespace(hypotheses=()),
+            representation=SimpleNamespace(representation_type=SimpleNamespace(value="canonical")),
+            source=SimpleNamespace(kind=SimpleNamespace(value="canonical_chunk")),
+        ),
+    )
     operator._run_started_at = lambda: datetime(2026, 1, 1, tzinfo=UTC)  # type: ignore[method-assign]
 
     class Store:
-        current = None
+        current: IndexGeneration | None = None
 
         async def put_index_generation_coverage(self, _value: object) -> bool:
             return True
@@ -545,21 +683,24 @@ async def test_generation_completion_rejects_partial_and_failed_ready_transition
 @pytest.mark.local_database
 @pytest.mark.anyio
 async def test_build_stages_skip_completed_generations_without_writes() -> None:
-    _require_operator_environment()
     operator = FullMultilingualV2IndexBuildOperator(
         workspace_root=ROOT,
         proposal_root=PROPOSALS,
     )
-    specs = operator.preflight().generation_specs
+    specs = _fixture_generation_specs()
 
     async def already_ready(*_args: object) -> bool:
         return False
 
-    operator._begin_generation = already_ready  # type: ignore[method-assign]
+    cast(Any, operator)._begin_generation = already_ready
     store = SimpleNamespace()
     await operator._build_representation(store, specs[0], ())  # type: ignore[arg-type]
     await operator._build_sparse(store, specs[1], ())  # type: ignore[arg-type]
-    await operator._build_embeddings(  # type: ignore[arg-type]
-        store, Path("unused"), specs[2], (), SimpleNamespace()
+    await operator._build_embeddings(
+        cast(SQLiteStore, store),
+        Path("unused"),
+        specs[2],
+        (),
+        cast(BGEM3EmbeddingProvider, SimpleNamespace()),
     )
     await operator._build_vector(store, Path("unused"), specs[3])  # type: ignore[arg-type]

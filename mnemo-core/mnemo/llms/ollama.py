@@ -18,6 +18,7 @@ from mnemo.interfaces import (
     LLMCapabilities,
     Message,
 )
+from mnemo.interfaces.errors import GenerationIncompleteError
 from mnemo.models import FrozenMetadata, JSONValue
 from mnemo.registry import PluginRegistry
 
@@ -81,6 +82,7 @@ class OllamaLLM:
         metadata = FrozenMetadata(
             {
                 "done_reason": data.get("done_reason"),
+                "done": data.get("done"),
                 "prompt_eval_count": data.get("prompt_eval_count"),
                 "eval_count": data.get("eval_count"),
             }
@@ -109,15 +111,23 @@ class OllamaLLM:
         )
         async with self._client.stream("POST", "/api/chat", json=payload) as response:
             response.raise_for_status()
+            terminal = False
             async for line in response.aiter_lines():
                 if not line:
                     continue
                 try:
-                    fragment = _content(json.loads(line), allow_empty=True)
+                    data = json.loads(line)
+                    fragment = _content(data, allow_empty=True)
                 except (TypeError, ValueError, json.JSONDecodeError) as error:
                     raise IntegrityError("Ollama returned malformed streaming JSON") from error
                 if fragment:
                     yield fragment
+                if data.get("done") is True:
+                    if data.get("done_reason") not in (None, "stop"):
+                        raise GenerationIncompleteError("Provider stream terminated prematurely")
+                    terminal = True
+            if not terminal:
+                raise GenerationIncompleteError("Provider stream ended before completion")
 
     async def health_check(self) -> HealthStatus:
         try:

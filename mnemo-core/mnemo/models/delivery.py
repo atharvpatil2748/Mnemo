@@ -32,6 +32,7 @@ class DeliveryResourceKind(StrEnum):
 
 class DeliveryView(StrEnum):
     BLOCKS = "blocks"
+    TEXT = "text"
     ORIGINAL = "original"
 
 
@@ -394,6 +395,8 @@ class DeliveryResponse:
     usage: DeliveryUsage
     omissions: tuple[str, ...] = ()
     next_cursor: str | None = None
+    total_items: int | None = None
+    representation: str | None = None
 
     def __post_init__(self) -> None:
         require_sha256(self.snapshot_identity, "snapshot_identity")

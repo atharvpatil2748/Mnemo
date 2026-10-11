@@ -6,13 +6,16 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import httpx
-import jsonschema
+import jsonschema  # type: ignore[import-untyped]  # Third-party validation API has no installed stubs.
 import pytest
+from disposable_index_admission import disposable_index_admission
 from fastapi import FastAPI
+from mcp.types import TextContent
 from mnemo import (
     EmbeddingConfig,
     EngineState,
@@ -29,6 +32,7 @@ from mnemo import (
     RerankerConfig,
     StorageConfig,
 )
+from mnemo.engine import KnowledgeEngine
 from mnemo.interfaces import NotFoundError, PrincipalContextV1
 from mnemo_server.auth import AuthMiddleware
 from mnemo_server.config import ServerConfig
@@ -196,6 +200,10 @@ async def test_capability_document_is_strict_deterministic_and_runtime_derived(
         CapabilityDiscoveryRequest.model_validate({"internal_path": "C:/secret"})
 
     capabilities = {item.capability_id: item for item in first.capabilities}
+    assert capabilities["automatic_query_v2"].lifecycle.buildable
+    assert not capabilities["automatic_query_v2"].lifecycle.ready
+    assert not capabilities["automatic_query_v2"].lifecycle.certified
+    assert not capabilities["automatic_query_v2"].transports.callable
     assert capabilities["vision"].lifecycle.configured
     assert not capabilities["vision"].lifecycle.ready
     assert capabilities["vision"].profiles[0].reason == "provider_unavailable"
@@ -292,18 +300,20 @@ async def test_http_and_mcp_share_exact_capability_document_and_structured_conte
     assert invalid.status_code == 422
 
     content = await execute_mcp_tool(engine, "get_capabilities", {}, config)
-    mcp_document = json.loads(content[0].text)  # type: ignore[union-attr]
+    assert isinstance(content[0], TextContent)
+    mcp_document = json.loads(content[0].text)
     assert mcp_document == http_result.json()
     assert structured_content_for("get_capabilities", {}, content) == mcp_document
-    assert len(get_mcp_tools()) == 14
-    assert get_mcp_tools()[-1].name == "get_capabilities"
-    assert get_mcp_tools()[-1].outputSchema == CapabilityDocument.model_json_schema()
+    assert len(get_mcp_tools()) == 15
+    assert get_mcp_tools()[-2].name == "get_capabilities"
+    assert get_mcp_tools()[-1].name == "query_notebook_v2"
+    assert get_mcp_tools()[-2].outputSchema == CapabilityDocument.model_json_schema()
 
 
 @pytest.mark.anyio
 async def test_runtime_and_advertisement_consistency(tmp_path: Path) -> None:
     engine = await _engine(tmp_path)
-    document = CapabilityDiscoveryService(engine, ServerConfig()).document()
+    document = CapabilityDiscoveryService(cast(KnowledgeEngine, engine), ServerConfig()).document()
     tools = {tool.name for tool in get_mcp_tools()}
     for capability in document.capabilities:
         if capability.transports.callable:
@@ -370,7 +380,7 @@ async def test_profile_transport_flags_are_runtime_derived(tmp_path: Path) -> No
     )
     await runtime.initialize()
     engine = SimpleNamespace(state=EngineState.READY, phase85=runtime)
-    document = CapabilityDiscoveryService(engine, ServerConfig()).document()
+    document = CapabilityDiscoveryService(cast(KnowledgeEngine, engine), ServerConfig()).document()
     advanced = next(
         item for item in document.capabilities if item.capability_id == "exhaustive_retrieval"
     )
@@ -490,7 +500,9 @@ async def test_registered_exact_chunk_route_does_not_activate_document_family(
     engine = SimpleNamespace(state=EngineState.READY, phase85=runtime)
     items = {
         item.capability_id: item
-        for item in CapabilityDiscoveryService(engine, ServerConfig()).document().capabilities
+        for item in CapabilityDiscoveryService(cast(KnowledgeEngine, engine), ServerConfig())
+        .document()
+        .capabilities
     }
     document = items["document_delivery"]
     assert document.unavailable_reason == "service_not_registered"
@@ -642,7 +654,9 @@ async def test_http_and_mcp_scope_use_trusted_principal_and_same_binding(tmp_pat
         principal,
         certified_binding=binding,
         transport="external_tunnel",
+        indexed_fixture_readiness_check=disposable_index_admission(tmp_path / "admission"),
     )
+    assert isinstance(content[0], TextContent)
     mcp_doc = json.loads(content[0].text)
     assert mcp_doc["scope_qualified"] is True
     assert mcp_doc["runtime"]["effective_identity"]["transport"] == "external_tunnel"
@@ -651,3 +665,33 @@ async def test_http_and_mcp_scope_use_trusted_principal_and_same_binding(tmp_pat
         == http_doc["runtime"]["effective_identity"]["binding_id"]
     )
     assert "private-key" not in json.dumps(mcp_doc) + json.dumps(http_doc)
+
+
+@pytest.mark.anyio
+async def test_finalqa_modalities_are_derived_from_the_composed_provider(tmp_path: Path) -> None:
+    from mnemo.models import FrozenMetadata
+    from mnemo.models.multimodal import EvidenceKindV2, MultimodalProviderCapabilitiesV1
+
+    engine = await _engine(tmp_path)
+    capabilities = MultimodalProviderCapabilitiesV1(
+        provider="test",
+        model="text-only",
+        profile="final_qa_v2:text-only",
+        configuration_digest="a" * 64,
+        modality_states=FrozenMetadata(
+            {
+                kind.value: "unsupported"
+                if kind in {EvidenceKindV2.ASSET_OCCURRENCE, EvidenceKindV2.VISUAL_VECTOR_MATCH}
+                else "supported"
+                for kind in EvidenceKindV2
+            }
+        ),
+        max_context_tokens=1000,
+        max_output_tokens=128,
+    )
+    engine.final_qa_v2 = SimpleNamespace(capabilities=lambda: capabilities)
+    document = CapabilityDiscoveryService(engine, ServerConfig()).document()
+    finalqa = next(item for item in document.capabilities if item.capability_id == "final_qa_v2")
+    assert finalqa.lifecycle.active
+    assert finalqa.supported_modalities == ("text", "ocr", "vision")
+    assert not finalqa.lifecycle.certified

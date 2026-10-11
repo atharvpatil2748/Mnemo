@@ -28,8 +28,14 @@ class SentenceTransformersEmbedder(EmbeddingProviderV1):
     def __init__(self, config: EmbeddingConfig) -> None:
         self._model_name = config.model
         self._dimensions = config.dimensions or 1024
+        self._device = config.device
         self._model: Any = None
         self._executor: ThreadPoolExecutor | None = None
+
+    @property
+    def execution_device(self) -> str | None:
+        """Return the loaded model's actual device for build attestation."""
+        return None if self._model is None else str(self._model.device)
 
     @property
     def model_name(self) -> str:
@@ -68,11 +74,13 @@ class SentenceTransformersEmbedder(EmbeddingProviderV1):
             )
             model = sentence_transformers.SentenceTransformer(
                 target,
-                device="cpu",
+                device=self._device,
                 trust_remote_code=False,
                 local_files_only=_LOCAL_BGE_M3_SNAPSHOT.exists(),
             )
             model.max_seq_length = self.max_tokens
+            if self._device == "cuda" and not str(model.device).startswith("cuda"):
+                raise RuntimeError("canonical embedding model did not load on CUDA")
             return model
 
         try:

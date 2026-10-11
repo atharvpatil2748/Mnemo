@@ -258,7 +258,7 @@ async def test_mcp_client_session_adapter_normalizes_structured_content() -> Non
     adapter = MCPClientSessionTransport(_Session(), transport_name="stdio")
     tools = await adapter.list_tools()
     result = await adapter.call_tool("get_capabilities", {})
-    assert len(tools) == 14
+    assert len(tools) == 15
     assert result == {"completeness": "complete"}
 
 

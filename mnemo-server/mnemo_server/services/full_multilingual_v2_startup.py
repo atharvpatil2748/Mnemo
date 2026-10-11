@@ -82,6 +82,11 @@ class _GovernedQueryLanguageResolverV1:
             text=query,
         )
         if observation.mixed_language or observation.language.value == "und":
+            # Short English technical queries are frequently too sparse for the
+            # conservative detector. Admit only ASCII Latin text under the
+            # profile's English query claim; never guess a Devanagari language.
+            if query.isascii() and any(char.isalpha() for char in query):
+                return LanguageCode("en")
             raise LookupError("query language is unresolved")
         return observation.language
 

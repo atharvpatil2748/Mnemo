@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 from dataclasses import replace
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -26,13 +27,66 @@ from mnemo.models import (
     DeliveryUsage,
 )
 from mnemo_server.config import ServerConfig
-from mnemo_server.mcp.tools import _execute_delivery_tool, execute_mcp_tool, get_mcp_tools
+from mnemo_server.mcp.tools import (
+    _execute_delivery_tool,
+    execute_mcp_tool,
+    get_mcp_tools,
+    structured_content_for,
+)
+from mnemo_server.services.authorization import principal_from_claims
 
 
 def _engine() -> MagicMock:
     engine = MagicMock(spec=KnowledgeEngine)
     engine.state = EngineState.READY
     return engine
+
+
+def test_binary_range_metadata_is_visible_in_structured_content() -> None:
+    metadata = {
+        "rangeStart": 5,
+        "rangeEnd": 9,
+        "rangeEndExclusive": True,
+        "returnedBytes": 4,
+        "totalBytes": 10,
+        "contentHash": "a" * 64,
+        "snapshotIdentity": "b" * 64,
+        "originalMediaType": "image/jpeg",
+        "notebookId": str(uuid4()),
+        "sourceId": str(uuid4()),
+        "documentId": str(uuid4()),
+        "versionId": str(uuid4()),
+        "occurrenceId": str(uuid4()),
+        "assetId": str(uuid4()),
+        "completeness": "truncated",
+        "nextCursor": "opaque",
+        "privatePath": "must-not-be-copied",
+    }
+    resource = types.EmbeddedResource(
+        type="resource",
+        resource=types.BlobResourceContents(
+            uri="mnemo://assets/test/bytes/5-9",
+            mimeType="application/octet-stream",
+            blob=base64.b64encode(b"1234").decode(),
+            _meta=metadata,
+        ),
+    )
+    result = structured_content_for("get_asset", {}, [resource])
+    for key, value in metadata.items():
+        if key != "privatePath":
+            assert result["resource"][key] == value
+    assert "privatePath" not in result["resource"]
+    assert result["resource"]["document_id"] == metadata["documentId"]
+
+
+def test_public_document_schema_advertises_ordered_text() -> None:
+    tool = next(tool for tool in get_mcp_tools() if tool.name == "get_document")
+    assert set(tool.inputSchema["properties"]["mode"]["enum"]) == {
+        "original",
+        "blocks",
+        "text",
+    }
+    assert "rangeStart" in tool.outputSchema["properties"]["resource"]["properties"]
 
 
 def _values():  # type: ignore[no-untyped-def]
@@ -82,6 +136,30 @@ def _values():  # type: ignore[no-untyped-def]
 
 
 @pytest.mark.anyio
+async def test_complete_image_can_negotiate_native_blob_without_byte_transformation() -> None:
+    notebook_id, _, _, occurrence_id, _, binary = _values()
+    service = MagicMock()
+    service.get_asset = AsyncMock(return_value=binary)
+    with patch("mnemo_server.mcp.tools._delivery_service", return_value=service):
+        content = await execute_mcp_tool(
+            _engine(),
+            "get_asset",
+            {
+                "notebook_id": str(notebook_id),
+                "occurrence_id": str(occurrence_id),
+                "binary_format": "resource",
+            },
+        )
+    assert isinstance(content[0], types.EmbeddedResource)
+    resource = content[0].resource
+    assert base64.b64decode(resource.blob, validate=True) == binary.content
+    assert resource.meta["returnedBytes"] == len(binary.content)
+    assert resource.meta["rangeEndExclusive"] is True
+    assert resource.meta["occurrenceId"] == str(occurrence_id)
+    assert str(resource.uri).endswith("/bytes/0-8")
+
+
+@pytest.mark.anyio
 async def test_four_additive_tools_preserve_six_frozen_tools() -> None:
     names = [item.name for item in get_mcp_tools()]
     assert names[:6] == [
@@ -101,6 +179,7 @@ async def test_four_additive_tools_preserve_six_frozen_tools() -> None:
         "query_structured",
         "run_final_qa_v2",
         "get_capabilities",
+        "query_notebook_v2",
     ]
 
 
@@ -315,7 +394,7 @@ async def test_mcp_delivery_uses_server_configured_bounds() -> None:
             },
             config,
         )
-    service_factory.assert_called_once_with(engine, config)
+    service_factory.assert_called_once_with(engine, config, principal_from_claims(None))
 
 
 @pytest.mark.anyio

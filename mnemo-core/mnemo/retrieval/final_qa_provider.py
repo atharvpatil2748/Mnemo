@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 
 from mnemo.interfaces import LLMInterfaceV1, Message, MessageRole
 from mnemo.models import FrozenMetadata
@@ -74,13 +75,37 @@ class LLMFinalQAV2Provider:
         answer_tokens = _metadata_count(result.metadata.get("eval_count")) or max(
             1, len(result.text.split())
         )
+        raw_reason = result.metadata.get("done_reason")
+        reason = (
+            raw_reason
+            if isinstance(raw_reason, str) and raw_reason in {"stop", "length"}
+            else "unknown"
+        )
+        complete = reason != "length"
+        if result.metadata.get("done") is False or (raw_reason is not None and reason == "unknown"):
+            reason, complete = "interrupted", False
+        elif reason == "unknown" and answer_tokens >= request.max_output_tokens:
+            reason, complete = "length", False
+        if complete and _incomplete_markdown(result.text):
+            reason, complete = "incomplete_markdown", False
         return MultimodalGenerationResultV1(
             answer=result.text,
             provider=self._llm.provider,
             model=self._llm.model,
             prompt_tokens=prompt_tokens,
             answer_tokens=max(1, answer_tokens),
+            termination_reason=reason,
+            output_complete=complete,
         )
+
+
+def _incomplete_markdown(answer: str) -> bool:
+    """Reject obvious unclosed formatting, never guess missing prose or repair it."""
+    if answer.count("```") % 2:
+        return True
+    prose = re.sub(r"```.*?```", "", answer, flags=re.S)
+    prose = re.sub(r"\\.", "", prose)
+    return prose.count("**") % 2 != 0 or prose.count("`") % 2 != 0
 
 
 def _metadata_count(value: object) -> int:

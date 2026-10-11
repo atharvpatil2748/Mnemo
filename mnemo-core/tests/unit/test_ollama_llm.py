@@ -80,6 +80,21 @@ async def test_health_initialization_and_streaming() -> None:
     await provider.close()
 
 
+@pytest.mark.parametrize("terminal", [None, "length"])
+async def test_interrupted_or_token_exhausted_stream_is_not_success(terminal: str | None) -> None:
+    from mnemo.interfaces.errors import GenerationIncompleteError
+
+    body = json.dumps({"message": {"content": "partial [source:1]"}}) + "\n"
+    if terminal:
+        body += (
+            json.dumps({"message": {"content": ""}, "done": True, "done_reason": terminal}) + "\n"
+        )
+    provider = _provider(httpx.MockTransport(lambda request: httpx.Response(200, text=body)))
+    with pytest.raises(GenerationIncompleteError):
+        _ = [item async for item in provider.stream("System", (), max_tokens=5)]
+    await provider.close()
+
+
 async def test_malformed_structured_output_is_integrity_failure() -> None:
     provider = _provider(
         httpx.MockTransport(

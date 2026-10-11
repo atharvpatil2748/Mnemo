@@ -1,0 +1,10 @@
+{
+  "schema": "mnemo.rebuild-language-capability/1",
+  "provider": "sentence-transformers",
+  "model": "BAAI/bge-m3",
+  "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+  "dimensions": 1024,
+  "scope": "multilingual_unenumerated",
+  "operations": ["document_embedding", "query_embedding"],
+  "claim_source_digest": "93afe5e74a3eb3bbda126867f4198978f602fc7052a1b0562d3bea5f3d023b90"
+}

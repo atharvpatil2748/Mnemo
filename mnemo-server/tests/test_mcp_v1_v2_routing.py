@@ -8,11 +8,11 @@ from uuid import UUID, uuid4
 
 import anyio
 import pytest
+from disposable_index_admission import mcp_text
 from mcp.client.session import ClientSession
 from mnemo.interfaces import PrincipalContextV1
 from mnemo_server.app import create_app
-from mnemo_server.mcp.server import create_mcp_server
-from test_mcp_immutable_schema_matrix import _fixture
+from test_mcp_immutable_schema_matrix import _fixture, create_mcp_server
 
 
 def test_http_v1_v2_public_routes_remain_distinct() -> None:
@@ -78,13 +78,13 @@ async def test_retained_v1_survives_unavailable_v2_without_historical_fallback(
                     },
                 )
                 assert not v1.isError, v1.content
-                assert "Grounded" in json.dumps(json.loads(v1.content[0].text))
+                assert "Grounded" in json.dumps(json.loads(mcp_text(v1)))
                 retained = await client.call_tool(
                     "search_all_notebooks",
                     {"notebook_id": str(notebook_id), "query": "schema", "top_k": 1},
                 )
                 assert not retained.isError
-                assert json.loads(retained.content[0].text)["results"]
+                assert json.loads(mcp_text(retained))["results"]
 
                 for name, arguments in (
                     (
@@ -129,7 +129,7 @@ async def test_retained_v1_survives_unavailable_v2_without_historical_fallback(
                 ):
                     unavailable = await client.call_tool(name, arguments)
                     assert unavailable.isError, name
-                    error = json.loads(unavailable.content[0].text)["error"]
+                    error = json.loads(mcp_text(unavailable))["error"]
                     assert error["category"] == "capability_unavailable", (name, error)
                     assert UUID(error["correlation_id"])
                     assert "Grounded" not in json.dumps(error)

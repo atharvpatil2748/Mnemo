@@ -294,6 +294,18 @@ def test_capabilities_aggregation(composite: CompositeStorage) -> None:
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("ready", [False, True])
+async def test_scoped_structured_readiness_delegates_to_sqlite(
+    composite: CompositeStorage, sql_mock: Mock, ready: bool
+) -> None:
+    notebook_id = uuid4()
+    sql_mock.structured_projection_ready_for_notebook.return_value = ready
+
+    assert await composite.structured_projection_ready_for_notebook(notebook_id) is ready
+    sql_mock.structured_projection_ready_for_notebook.assert_awaited_once_with(notebook_id)
+
+
+@pytest.mark.anyio
 async def test_single_backend_delegation(
     composite: CompositeStorage,
     fs_mock: Mock,

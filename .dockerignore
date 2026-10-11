@@ -15,5 +15,7 @@
 /mnemo-ui/coverage
 references
 data
+/scratch
+/config/production
 qdrant_storage
 surrealdb_data

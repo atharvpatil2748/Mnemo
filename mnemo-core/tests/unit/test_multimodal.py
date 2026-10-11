@@ -675,6 +675,54 @@ def test_final_qa_v2_one_corrective_retry_same_context_and_exhaustion(tmp_path: 
     _run(scenario())
 
 
+def test_incomplete_generation_with_valid_citation_is_not_published_or_regenerated(
+    tmp_path: Path,
+) -> None:
+    from mnemo.interfaces.errors import GenerationIncompleteError
+
+    class IncompleteProvider(Provider):
+        async def complete(
+            self, request: MultimodalGenerationRequestV1
+        ) -> MultimodalGenerationResultV1:
+            result = await super().complete(request)
+            return replace(result, output_complete=False, termination_reason="length")
+
+    async def scenario() -> None:
+        store = SQLiteStore(tmp_path / "incomplete.db")
+        await store.open()
+        request = _request((_candidate(),))
+        provider = IncompleteProvider(["[source:1]\n- **Code"])
+        orchestrator = _orchestrator(store, provider, Authorizer())
+        for _ in range(2):
+            with pytest.raises(GenerationIncompleteError):
+                await orchestrator.execute(request)
+        execution = await store.get_final_qa_v2_execution(request.assistant_turn_id)
+        assert (
+            execution is not None and execution.state is FinalQAExecutionState.REJECTED_GENERATION
+        )
+        assert execution.completed_at is not None and execution.failure_classification == "length"
+        assert (
+            await store.get_final_qa_v2_snapshot(
+                execution.execution_id, FinalQAExecutionSnapshotPhase.PUBLISHED
+            )
+            is None
+        )
+        assert (
+            await store.get_final_qa_v2_snapshot(
+                execution.execution_id, FinalQAExecutionSnapshotPhase.VALIDATED
+            )
+            is None
+        )
+        assert len(provider.requests) == 1
+        with pytest.raises(ConflictError):
+            await orchestrator.execute(
+                replace(request, max_output_tokens=request.max_output_tokens + 1)
+            )
+        await store.close()
+
+    _run(scenario())
+
+
 def test_final_qa_v2_no_context_and_provider_capability_omission(tmp_path: Path) -> None:
     async def scenario() -> None:
         store = SQLiteStore(tmp_path / "empty.db")

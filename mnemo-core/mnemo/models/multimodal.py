@@ -396,6 +396,8 @@ class MultimodalGenerationResultV1:
     model: str
     prompt_tokens: int
     answer_tokens: int
+    termination_reason: str = "unknown"
+    output_complete: bool = True
 
     def __post_init__(self) -> None:
         for value, name in (
@@ -406,6 +408,16 @@ class MultimodalGenerationResultV1:
             require_non_empty(value, name)
         require_non_negative(self.prompt_tokens, "prompt_tokens")
         require_positive(self.answer_tokens, "answer_tokens")
+        if self.termination_reason not in {
+            "stop",
+            "length",
+            "interrupted",
+            "unknown",
+            "incomplete_markdown",
+        }:
+            raise ValueError("invalid generation termination reason")
+        if not isinstance(self.output_complete, bool):
+            raise TypeError("output_complete must be boolean")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -461,6 +473,8 @@ class FinalQAResultV2:
     context_result: MultimodalContextBuildResultV1
     citations: tuple[EvidenceCitationV2, ...]
     retry_count: int
+    answer_complete: bool | None = None
+    termination_reason: str | None = None
 
     def __post_init__(self) -> None:
         require_non_empty(self.query, "query")

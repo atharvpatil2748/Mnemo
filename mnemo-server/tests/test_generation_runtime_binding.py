@@ -21,6 +21,7 @@ from mnemo_server.services.production_runtime_binding import (
 from test_production_credentials import _bound_chain, _provision, _registry
 
 pytest_plugins = ("test_production_runtime_binding",)
+pytestmark = pytest.mark.usefixtures("_historical_binding_fixture_only")
 
 
 def test_runtime_uses_only_active_signed_generation(

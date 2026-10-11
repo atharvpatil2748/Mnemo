@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import copy
 import hashlib
 import hmac
 import json
@@ -31,6 +32,7 @@ from mnemo.interfaces import (
     DeliveryCursorError,
     DeliveryCursorExpiredError,
     DeliveryLimitExceededError,
+    DependencyUnavailableError,
     DocumentExpansionServiceV1,
     ExactDocumentReaderV1,
     FinalQAExecutionStoreV2,
@@ -74,6 +76,13 @@ class _AuthorizedVersion:
     content_hash: str
 
 
+class DeliveryRepresentationUnavailableError(DependencyUnavailableError):
+    """An authorized document lacks the requested persisted representation."""
+
+    code = "delivery.representation_unavailable"
+    default_retryable = False
+
+
 class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
     """One fail-closed policy boundary for all Phase 8.5 delivery transports."""
 
@@ -86,6 +95,7 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
         cursor_secret: bytes = b"mnemo-local-delivery-v1",
         cursor_codec: CursorCodecV2 | None = None,
         exact_reader: ExactDocumentReaderV1 | None = None,
+        execution_store: FinalQAExecutionStoreV2 | None = None,
         legacy_cursor_overlap: timedelta = timedelta(minutes=15),
         legacy_cursor_accept_until: datetime | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
@@ -97,6 +107,10 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
         if not isinstance(cursor_secret, bytes) or len(cursor_secret) < 16:
             raise ValueError("cursor_secret must contain at least 16 bytes")
         self._storage = storage
+        self._actor_identity: str | None = None
+        if execution_store is not None and not isinstance(execution_store, FinalQAExecutionStoreV2):
+            raise TypeError("execution_store must implement FinalQAExecutionStoreV2")
+        self._execution_store = execution_store
         self._exact_reader = exact_reader
         self._catalog = catalog
         self._limits = limits or DeliveryLimits()
@@ -126,7 +140,9 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
         )
         parsed = await self._storage.get_parsed_document(request.version_id)
         if parsed is None:
-            raise NotFoundError("parsed document representation was not found")
+            raise DeliveryRepresentationUnavailableError(
+                "parsed_blocks representation is unavailable",
+            )
         reader = self._exact_reader
         if reader is None and isinstance(self._storage, ExactDocumentReaderV1):
             reader = self._storage
@@ -188,6 +204,8 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
             "document_id": str(request.document_id),
             "version_id": str(request.version_id),
             "selector": selector_value,
+            "requested_max_items": request.max_items,
+            "requested_max_bytes": request.max_bytes,
         }
         limits: dict[str, object] = {"max_items": max_items, "max_bytes": max_bytes}
         offset = self._decode_bound_cursor(
@@ -252,6 +270,8 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
             items=tuple(items),
             usage=DeliveryUsage(items=len(items), bytes=used),
             omissions=("selector_bounds_applied",) if truncated else (),
+            total_items=len(selection.units),
+            representation="parsed_blocks/v1",
             next_cursor=(
                 self._encode_bound_cursor(
                     domain="mnemo-document-expansion/v2",
@@ -264,6 +284,14 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
                 else None
             ),
         )
+
+    def for_actor(self, actor_id: UUID) -> BoundedDocumentExpansionService:
+        """Request-local cursor binding; never mutate the registered shared service."""
+        if not isinstance(actor_id, UUID):
+            raise TypeError("actor_id must be a UUID")
+        scoped = copy.copy(self)
+        scoped._actor_identity = str(actor_id)
+        return scoped
 
     def capabilities(self) -> tuple[DeliveryCapability, ...]:
         ocr = isinstance(self._storage, OCRStoreV1)
@@ -278,19 +306,25 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
                 "multilingual_retrieval",
                 hasattr(self._storage, "get_authorized_language_observation"),
             ),
-            _cap("multimodal_final_qa", hasattr(self._storage, "get_final_qa_v2_execution")),
+            _cap(
+                "multimodal_final_qa",
+                self._execution_store is not None
+                or isinstance(self._storage, FinalQAExecutionStoreV2),
+            ),
             _cap("structured_retrieval", hasattr(self._storage, "get_structured_projection")),
             _cap("streaming", True),
             _cap("binary_resources", True),
         )
 
     async def expand_document(self, request: DeliveryRequest) -> DeliveryResponse:
-        if request.view is not DeliveryView.BLOCKS:
-            raise ContractValidationError("expand_document requires the blocks view")
+        if request.view not in {DeliveryView.BLOCKS, DeliveryView.TEXT}:
+            raise ContractValidationError("expand_document requires blocks or text view")
         authorized = await self._authorize_version(request)
         parsed = await self._storage.get_parsed_document(request.version_id)
         if parsed is None:
-            raise NotFoundError("parsed document representation was not found")
+            raise DeliveryRepresentationUnavailableError(
+                "parsed_blocks representation is unavailable",
+            )
         snapshot = _snapshot(
             "document-blocks",
             request.notebook_id,
@@ -298,6 +332,7 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
             request.version_id,
             authorized.content_hash,
             _canonical_digest(parsed.blocks),
+            request.view,
         )
         max_items = min(request.max_items or self._limits.max_items, self._limits.max_items)
         max_bytes = min(
@@ -311,6 +346,9 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
             request.version_id,
             max_items,
             max_bytes,
+            request.max_items,
+            request.max_bytes,
+            request.view,
         )
         offset = self._decode_cursor(request.cursor, snapshot, fingerprint)
         items: list[DeliveryItem] = []
@@ -321,6 +359,19 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
             block = blocks[index]
             payload = _json_value(block)
             assert isinstance(payload, dict)
+            if request.view is DeliveryView.TEXT:
+                if isinstance(payload.get("rows"), list):
+                    text = "\n".join("\t".join(row) for row in payload["rows"])
+                else:
+                    text = next(
+                        (
+                            payload[key]
+                            for key in ("text", "code", "latex", "alt_text")
+                            if isinstance(payload.get(key), str)
+                        ),
+                        "",
+                    )
+                payload = {"text": text, "separator_after": "\n" if index + 1 < len(blocks) else ""}
             size = len(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode())
             if items and used + size > max_bytes:
                 break
@@ -358,6 +409,10 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
             next_cursor=self._encode_cursor(snapshot, fingerprint, next_offset)
             if truncated
             else None,
+            total_items=len(blocks),
+            representation="parsed_text/v1"
+            if request.view is DeliveryView.TEXT
+            else "parsed_blocks/v1",
         )
 
     async def get_original_document(self, request: DeliveryRequest) -> BinaryDelivery:
@@ -388,6 +443,7 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
             request.document_id,
             request.version_id,
             max_bytes,
+            request.max_bytes,
         )
         offset = self._decode_cursor(request.cursor, snapshot, fingerprint)
         _validate_cursor_offset(offset, len(content), request.cursor)
@@ -685,6 +741,7 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
             self._limits.max_response_bytes,
         )
         fingerprint = _fingerprint("asset", notebook_id, occurrence_id, effective_max_bytes)
+        fingerprint = _fingerprint(fingerprint, max_bytes)
         offset = self._decode_cursor(cursor, snapshot, fingerprint)
         _validate_cursor_offset(offset, len(content), cursor)
         part = content[offset : offset + effective_max_bytes]
@@ -807,16 +864,24 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
         notebook_id: UUID,
         assistant_turn_id: UUID,
         cursor: str | None = None,
+        actor_id: UUID | None = None,
     ) -> DeliveryResponse:
         """Deliver an immutable published V2 result without invoking retrieval or a model."""
-        if not isinstance(self._storage, FinalQAExecutionStoreV2):
+        execution_store = self._execution_store or (
+            self._storage if isinstance(self._storage, FinalQAExecutionStoreV2) else None
+        )
+        if execution_store is None:
             raise NotFoundError("Final-QA V2 delivery is unavailable")
-        execution = await self._storage.get_final_qa_v2_execution(assistant_turn_id)
+        execution = await execution_store.get_final_qa_v2_execution(assistant_turn_id)
         if execution is None:
+            raise NotFoundError("Final-QA V2 execution was not found")
+        if actor_id is not None and (
+            execution.actor_id != actor_id or execution.notebook_id != notebook_id
+        ):
             raise NotFoundError("Final-QA V2 execution was not found")
         if execution.notebook_id != notebook_id:
             raise DeliveryAuthorizationError("Final-QA V2 execution is outside notebook scope")
-        snapshot = await self._storage.get_final_qa_v2_snapshot(
+        snapshot = await execution_store.get_final_qa_v2_snapshot(
             execution.execution_id, FinalQAExecutionSnapshotPhase.PUBLISHED
         )
         if snapshot is None:
@@ -942,7 +1007,10 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
         return self._cursor_codec.encode(
             domain=domain,
             snapshot_identity=snapshot,
-            binding=binding,
+            binding={
+                **binding,
+                **({"actor": self._actor_identity} if self._actor_identity else {}),
+            },
             position={"offset": position},
             limits=limits,
         )
@@ -962,7 +1030,10 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
             state = self._cursor_codec.decode(
                 cursor,
                 expected_domain=domain,
-                expected_binding=binding,
+                expected_binding={
+                    **binding,
+                    **({"actor": self._actor_identity} if self._actor_identity else {}),
+                },
                 expected_snapshot_identity=snapshot,
                 expected_limits=limits,
             )
@@ -984,12 +1055,17 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
     def _decode_cursor(self, cursor: str | None, snapshot: str, fingerprint: str) -> int:
         if cursor is None:
             return 0
+        if self._actor_identity is not None and not cursor.startswith("mnc2."):
+            raise DeliveryCursorConflictError("unbound legacy cursor requires a new traversal")
         if cursor.startswith("mnc2."):
             try:
                 state = self._cursor_codec.decode(
                     cursor,
                     expected_domain="mnemo-delivery-cursor/v2",
-                    expected_binding={"request_fingerprint": fingerprint},
+                    expected_binding={
+                        "request_fingerprint": fingerprint,
+                        **({"actor": self._actor_identity} if self._actor_identity else {}),
+                    },
                     expected_snapshot_identity=snapshot,
                     expected_limits={},
                 )

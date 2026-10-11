@@ -136,6 +136,18 @@ class FullMultilingualRetrievalApplicationV2:
 
     application_service_id = "mnemo.full-multilingual-retrieval-application/2"
 
+    async def authorize_only(
+        self, *, principal: PrincipalContextV1, plan: RetrievalPlanV2
+    ) -> V2RetrievalAuthorizationDecisionV1:
+        """Issue the same bounded decision for deterministic V2 traversal."""
+        if not principal.authenticated:
+            raise PermissionError("V2 retrieval requires an authenticated principal")
+        decision = await self._retrieval_authorizer.authorize_v2_retrieval(
+            principal=principal, plan=plan
+        )
+        _validate_decision_for_plan(decision, principal, plan)
+        return decision
+
     def __init__(
         self,
         *,

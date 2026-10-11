@@ -10,7 +10,13 @@ from mnemo.models.multilingual import LanguageEvidenceReferenceV3
 from mnemo.models.multilingual_index import MultilingualTextProjectionRowV2
 from mnemo.models.v2_retrieval_authorization import V2RetrievalAuthorizationDecisionV1
 from mnemo.retrieval.full_multilingual_v2 import MultilingualSparseMatchV2
-from mnemo.retrieval.multilingual_dense_v2 import AuthorizedMultilingualSourceEnumeratorV2
+from mnemo.retrieval.multilingual_dense_v2 import (
+    MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS,
+    MAX_PAGED_MULTILINGUAL_V2_VECTORS,
+    MULTILINGUAL_V2_PAGE_SIZE,
+    AuthorizedMultilingualSourceEnumeratorV2,
+    PagedAuthorizedMultilingualSourceEnumeratorV2,
+)
 
 
 @runtime_checkable
@@ -57,27 +63,63 @@ class AuthorizedMultilingualSparseRetrievalV2:
     ) -> tuple[MultilingualSparseMatchV2, ...]:
         if not 1 <= limit <= 1000:
             raise ValueError("multilingual sparse result limit is outside governed bounds")
-        authorized = await self._source_enumerator.enumerate_authorized_multilingual_sources(
-            decision=decision,
-            limit=10_001,
+        ranked_rows: list[tuple[MultilingualTextProjectionRowV2, float]] = []
+        seen_sources: set[str] = set()
+        paged_enumerator = (
+            self._source_enumerator
+            if isinstance(self._source_enumerator, PagedAuthorizedMultilingualSourceEnumeratorV2)
+            else None
         )
-        if len(authorized) > 10_000:
-            raise ValueError("authorized multilingual sparse universe exceeds 10000")
-        rows = await self._store.search_authorized_multilingual_text_v2(
-            notebook_id=decision.retrieval_scope.notebook_id,
-            generation_id=self._generation_id,
-            query=plan.query,
-            authorized_sources=authorized,
-            page_start=plan.position.page_start,
-            page_end=plan.position.page_end,
-            section_indexes=plan.position.section_indexes,
-            heading_prefix=plan.position.heading_prefix,
-            limit=limit,
+        offsets = (
+            range(0, MAX_PAGED_MULTILINGUAL_V2_VECTORS + 1, MULTILINGUAL_V2_PAGE_SIZE)
+            if paged_enumerator is not None
+            else (0,)
         )
-        authorized_digests = {item.identity_digest for item in authorized}
-        if any(row.source.identity_digest not in authorized_digests for row, _ in rows):
-            raise PermissionError("multilingual sparse store returned unauthorized evidence")
+        for offset in offsets:
+            authorized = (
+                await paged_enumerator.enumerate_authorized_multilingual_sources_page(
+                    decision=decision, offset=offset, limit=MULTILINGUAL_V2_PAGE_SIZE
+                )
+                if paged_enumerator is not None
+                else await self._source_enumerator.enumerate_authorized_multilingual_sources(
+                    decision=decision, limit=MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS + 1
+                )
+            )
+            if (
+                paged_enumerator is not None
+                and offset == MAX_PAGED_MULTILINGUAL_V2_VECTORS
+                and authorized
+            ):
+                raise ValueError("authorized multilingual sparse universe exceeds 200000")
+            if paged_enumerator is None and len(authorized) > MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS:
+                raise ValueError("authorized multilingual sparse universe exceeds 10000")
+            if not authorized:
+                break
+            page_count = len(authorized)
+            if any(source.identity_digest in seen_sources for source in authorized):
+                raise ValueError("authorized V2 source pages overlap")
+            seen_sources.update(source.identity_digest for source in authorized)
+            rows = await self._store.search_authorized_multilingual_text_v2(
+                notebook_id=decision.retrieval_scope.notebook_id,
+                generation_id=self._generation_id,
+                query=plan.query,
+                authorized_sources=authorized,
+                page_start=plan.position.page_start,
+                page_end=plan.position.page_end,
+                section_indexes=plan.position.section_indexes,
+                heading_prefix=plan.position.heading_prefix,
+                limit=limit,
+            )
+            authorized_digests = {item.identity_digest for item in authorized}
+            if any(row.source.identity_digest not in authorized_digests for row, _ in rows):
+                raise PermissionError("multilingual sparse store returned unauthorized evidence")
+            ranked_rows.extend(rows)
+            ranked_rows = sorted(
+                ranked_rows, key=lambda value: (-value[1], value[0].source.identity_digest)
+            )[:limit]
+            if paged_enumerator is None or page_count < MULTILINGUAL_V2_PAGE_SIZE:
+                break
         return tuple(
             MultilingualSparseMatchV2(source=row.source, score=score, rank=index)
-            for index, (row, score) in enumerate(rows, 1)
+            for index, (row, score) in enumerate(ranked_rows, 1)
         )

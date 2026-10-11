@@ -149,6 +149,8 @@ class RetrievalPlanV2(BaseModel):
     deduplication_policy: DeduplicationPolicy = DeduplicationPolicy.AUTHORITATIVE_IDENTITY
     ranking_policy: RankingPolicyV2
     security_scope_identity: str | None = None
+    requested_limits_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    automatic_policy_version: str | None = None
 
     @field_validator("security_scope_identity")
     @classmethod
@@ -222,6 +224,7 @@ def advanced_candidate_id(
     chunk_id: str | None,
     occurrence_id: UUID | None,
     derivation_id: UUID | None,
+    evidence_id: str | None = None,
 ) -> UUID:
     derived_identity = derivation_id or occurrence_id
     authoritative = chunk_id or (None if derived_identity is None else str(derived_identity))
@@ -229,7 +232,8 @@ def advanced_candidate_id(
         raise ValueError("candidate requires an authoritative evidence identity")
     return uuid5(
         _CANDIDATE_NAMESPACE,
-        f"{representation.value}:{document_id}:{version_id}:{authoritative}",
+        f"{representation.value}:{document_id}:{version_id}:{authoritative}"
+        + ("" if evidence_id is None else f":{evidence_id}"),
     )
 
 
@@ -251,6 +255,7 @@ class AdvancedRetrievalCandidate:
     fused_score: float | None = None
     final_rank: int | None = None
     expansion_reason: str | None = None
+    evidence_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.chunk is None and self.occurrence_id is None and self.derivation_id is None:
@@ -266,6 +271,7 @@ class AdvancedRetrievalCandidate:
             chunk_id=None if self.chunk is None else self.chunk.id,
             occurrence_id=self.occurrence_id,
             derivation_id=self.derivation_id,
+            evidence_id=self.evidence_id,
         )
         if self.candidate_id != expected:
             raise ValueError("candidate_id does not match authoritative provenance")

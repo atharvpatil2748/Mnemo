@@ -5,7 +5,7 @@ Patil. All rights reserved. See the [current-tree distribution policy](../docs/g
 
 > Layer 2 Transport Adapter, REST API & Model Context Protocol (MCP) Server for the Mnemo Local Knowledge Engine.
 
-`mnemo-server` provides HTTP/REST, legacy V1 WebSocket/SSE, and **Model Context Protocol (MCP)** transport adapters for `mnemo-core`. Built with **FastAPI**, **Uvicorn**, and the standard **Model Context Protocol SDK**, it also contains the server-owned certified V2 composition, principal/authorization boundary, capability reporting, delivery adapters, and separate FinalQA operational-store wiring. Phase 8.8 must converge every externally exposed transport and tunnel on that certified composition; code registration alone is not readiness or certification evidence.
+`mnemo-server` provides HTTP/REST, legacy V1 WebSocket/SSE, and **Model Context Protocol (MCP)** transport adapters for `mnemo-core`. Built with **FastAPI**, **Uvicorn**, and the standard **Model Context Protocol SDK**, it retains the historical exact-identity V2 composition, principal/authorization boundary, capability reporting, delivery adapters, and separate FinalQA operational-store wiring. Production is presently offline and explicitly `UNINDEXED`; the former certified index has been decommissioned. Code registration and historical certification are not current serving readiness.
 
 ADR-0077 accepts a separately governed mutable filesystem + SQLite workspace
 from explicit absolute server configuration, with mandatory server-enforced
@@ -67,8 +67,8 @@ the FinalQA operational store is not a substitute user workspace.
 
 ## Current phase boundary
 
-- Phase 8.5: completed and certified for the exact 44-document V2 production identity.
-- Phase 8.6: validated evaluation notebook; not production-exposed.
+- Phase 8.5: historically certified for its exact 44-document V2 identity; index retired.
+- Phase 8.6: historically validated evaluation index retired; 24 original sources preserved.
 - Phase 8.7: completed retrospective 14-tool capability milestone.
 - Phase 8.8: in progress, not verified. ADR-0077's 8.8.14a
   workspace/read-only boundary and 8.8.14b authenticated HTTP FinalQA V2 are
@@ -79,9 +79,12 @@ the FinalQA operational store is not a substitute user workspace.
   route isolation have [independent local acceptance](../docs/reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md),
   including F-1 principal propagation and F-2 nested metadata parity. This
   batch is not thereby deployed or externally re-verified by GitHub publication.
-  Stage 6 still requires 8.8.10 and 8.8.11; behavioral tunnel parity,
-  `search_images`, and Phase 9 readiness remain pending.
-- Phase 9: planned and blocked until `Phase 8.8 VERIFIED → Phase 9 GO`.
+  Historical 8.8.10 and 8.8.11 have separate local acceptance. Unfinished
+  transport parity, provenance, and ordinary automatic image-derived search
+  belong to planned Phase 8.9; a dedicated `search_images` tool is not mandatory.
+- Phase 8.9: planned, not started; its exact-identity GO/NO-GO gate owns the
+  remaining integration and external certification work.
+- Phase 9: planned and blocked until a separate Phase 8.9 GO.
 
 See the [current architecture](../docs/architecture/current/mnemo_architecture_v2.md)
 and [engineering roadmap](../docs/architecture/current/mnemo_engineering_roadmap.md).
@@ -150,7 +153,8 @@ or conflicting required values fail closed. The optional ADR-0077 workspace
 root remains explicit and absolute; when missing or invalid, workspace mutation is
 server-enforced read-only.
 
-All 14 MCP tools are registered, but route registration does not imply that
+The 14-tool historical inventory has an additive fifteenth working-tree tool,
+`query_notebook_v2`. Registration does not imply that
 every service is configured, ready, available for an authorized scope, or
 certified. The locally accepted capability lifecycle reports these separately
 with effective server-owned identity. On the certified corpus, exact persisted

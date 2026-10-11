@@ -178,6 +178,119 @@ def test_workspace_cannot_contain_certified_database(tmp_path: Path) -> None:
     assert not (application / "governed").exists()
 
 
+@pytest.mark.parametrize(
+    "relative",
+    (
+        "scratch/evaluation_notebooks",
+        "scratch/evaluation_notebooks/phase8_6",
+        "scratch/evaluation_notebooks/phase8_6/files",
+    ),
+)
+def test_workspace_cannot_overlap_server_owned_evaluation_registry(
+    tmp_path: Path, relative: str
+) -> None:
+    config = _config(tmp_path)
+    application = tmp_path / "application"
+    target = application / relative
+    composition = preflight_production_storage(
+        application_root=application,
+        mnemo_config=config,
+        server_config=ServerConfig(mutable_workspace_root=target),
+    )
+
+    assert composition.decision.mode is WorkspaceMode.READ_ONLY
+    assert composition.decision.reason == "MUTABLE_WORKSPACE_OVERLAPS:evaluation-notebooks"
+    assert not target.exists()
+
+
+@pytest.mark.parametrize("selected", ("database", "blobs"))
+def test_production_composition_rejects_evaluation_only_store_selection(
+    tmp_path: Path, selected: str
+) -> None:
+    config = _config(tmp_path)
+    application = tmp_path / "application"
+    evaluation = application / "scratch/evaluation_notebooks/phase8_6"
+    if selected == "database":
+        storage = config.storage.model_copy(
+            update={
+                "sqlite": config.storage.sqlite.model_copy(update={"path": evaluation / "mnemo.db"})
+            }
+        )
+    else:
+        storage = config.storage.model_copy(
+            update={
+                "filesystem": config.storage.filesystem.model_copy(
+                    update={"root": evaluation / "files"}
+                )
+            }
+        )
+    selected_config = config.model_copy(update={"storage": storage})
+
+    with pytest.raises(RuntimeError, match="EVALUATION_ONLY_STORE_NOT_SERVABLE"):
+        preflight_production_storage(
+            application_root=application,
+            mnemo_config=selected_config,
+            server_config=ServerConfig(
+                production_mode=True,
+                delivery_cursor_secret="disposable-test-cursor-key-000000000000",
+            ),
+        )
+    assert not evaluation.exists()
+
+
+def test_production_selection_rejects_evaluation_symlink_alias(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    application = tmp_path / "application"
+    evaluation = application / "scratch/evaluation_notebooks/phase8_6"
+    evaluation.mkdir(parents=True)
+    alias = tmp_path / "evaluation-alias"
+    try:
+        alias.symlink_to(evaluation, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("creating a disposable directory symlink is unavailable")
+    storage = config.storage.model_copy(
+        update={"sqlite": config.storage.sqlite.model_copy(update={"path": alias / "mnemo.db"})}
+    )
+    selected_config = config.model_copy(update={"storage": storage})
+    with pytest.raises(RuntimeError, match="EVALUATION_ONLY_STORE_NOT_SERVABLE"):
+        preflight_production_storage(
+            application_root=application,
+            mnemo_config=selected_config,
+            server_config=ServerConfig(
+                production_mode=True,
+                delivery_cursor_secret="disposable-test-cursor-key-000000000000",
+            ),
+        )
+
+
+@pytest.mark.parametrize(
+    "relative",
+    (
+        Path("scratch/evaluation_notebooks/phase8_6/mnemo.db"),
+        Path("scratch/other/../evaluation_notebooks/phase8_6/mnemo.db"),
+        Path("SCRATCH/EVALUATION_NOTEBOOKS/PHASE8_6/MNEMO.DB"),
+    ),
+)
+def test_production_selection_rejects_relative_evaluation_path(
+    tmp_path: Path, relative: Path
+) -> None:
+    config = _config(tmp_path)
+    application = tmp_path / "application"
+    storage = config.storage.model_copy(
+        update={"sqlite": config.storage.sqlite.model_copy(update={"path": relative})}
+    )
+    selected = config.model_copy(update={"storage": storage})
+    with pytest.raises(RuntimeError, match="EVALUATION_ONLY_STORE_NOT_SERVABLE"):
+        preflight_production_storage(
+            application_root=application,
+            mnemo_config=selected,
+            server_config=ServerConfig(
+                production_mode=True,
+                delivery_cursor_secret="disposable-test-cursor-key-000000000000",
+            ),
+        )
+
+
 def test_every_server_owned_protected_location_rejects_workspace_equality(
     tmp_path: Path,
 ) -> None:

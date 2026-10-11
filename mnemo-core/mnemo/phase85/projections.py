@@ -400,6 +400,7 @@ class DerivedProjectionCoordinator:
         spec: ProjectionGenerationSpec,
         builder: DerivedProjectionBuilderV1,
         *,
+        activate: bool = True,
         resume_building: bool = False,
         cancelled: Callable[[], Awaitable[bool]] | None = None,
     ) -> ProjectionStatus:
@@ -418,6 +419,8 @@ class DerivedProjectionCoordinator:
             if existing.state is ProjectionLifecycleState.RUNNING and not resume_building:
                 return existing
             if existing.state is ProjectionLifecycleState.READY:
+                if not activate:
+                    return existing
                 promoted = await self._store.promote_index_generation(spec.generation_id)
                 if not promoted:
                     raise ConflictError("READY generation could not be promoted")
@@ -460,7 +463,7 @@ class DerivedProjectionCoordinator:
                 )
                 if not transitioned:
                     raise ConflictError("generation lifecycle changed before READY publication")
-                if not await self._store.promote_index_generation(spec.generation_id):
+                if activate and not await self._store.promote_index_generation(spec.generation_id):
                     raise ConflictError("READY generation could not be promoted")
                 return await self.inspect(spec)
             except BaseException as error:

@@ -16,6 +16,8 @@ from mnemo.interfaces import (
 from mnemo.models import FusedChunkResult, RetrievalFusionResult
 from mnemo.retrieval import StorageSourceAssociationReaderV1
 
+from .scope_authority import NotebookScopeAuthority
+
 _ACTOR_NAMESPACE = UUID("f3d4e4e3-b4d4-52e8-89f1-e6e8d5a32472")
 
 
@@ -44,8 +46,11 @@ class AuthorizationDecisionV1:
 class CentralAuthorizationServiceV1:
     """Apply the current notebook isolation policy without existence leakage."""
 
-    def __init__(self, engine: KnowledgeEngine) -> None:
+    def __init__(
+        self, engine: KnowledgeEngine, scope_authority: NotebookScopeAuthority | None = None
+    ) -> None:
         self._engine = engine
+        self._scope_authority = scope_authority or getattr(engine, "server_scope_authority", None)
 
     async def authorize_notebook(
         self,
@@ -56,8 +61,15 @@ class CentralAuthorizationServiceV1:
         capability: str | None = None,
         request_id: UUID | None = None,
     ) -> AuthorizationDecisionV1:
-        # Current Phase 8.5 persistence has no actor-to-notebook ownership relation.
-        # Carry the actor consistently and enforce canonical notebook membership.
+        # Production must install the persistent scope authority before lifting
+        # the UNINDEXED startup guard. Fixture/legacy callers without an
+        # authority retain the previous notebook-membership behavior.
+        if not principal.authenticated:
+            raise PermissionError("authenticated principal is required")
+        if self._scope_authority is not None and not self._scope_authority.permits(
+            principal.actor_id, notebook_id
+        ):
+            raise NotFoundError("authorized resource was not found")
         if await self._engine.storage.get_notebook(notebook_id) is None:
             raise NotFoundError("authorized resource was not found")
         return AuthorizationDecisionV1(
@@ -119,6 +131,10 @@ class CentralAuthorizationServiceV1:
                 requested = tuple(sorted({source.notebook_id for source in associations}))
             for candidate_notebook in requested:
                 if candidate_notebook is None:
+                    continue
+                if self._scope_authority is not None and not self._scope_authority.permits(
+                    principal.actor_id, candidate_notebook
+                ):
                     continue
                 try:
                     resolved = await self._engine.document_scope_resolver.resolve_document_scope(

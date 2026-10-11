@@ -82,7 +82,7 @@ async def test_certified_stdio_rejects_fork_before_tool_exposure(tmp_path: Path)
     )
     with (
         patch("mnemo_server.mcp.server.stdio_server") as stream,
-        pytest.raises(RuntimeError, match="CERTIFIED_PRODUCTION_BINDING_REJECTED"),
+        pytest.raises(RuntimeError, match="PRODUCTION_CORPUS_UNINDEXED"),
     ):
         await run_stdio_server(config=config, mnemo_config=_write_core_config(tmp_path))
     stream.assert_not_called()
@@ -126,7 +126,7 @@ async def test_certified_stdio_rejects_injected_historical_store_before_stream(
             return_value=(core_config, SimpleNamespace(binding_id="synthetic-binding")),
         ),
         patch("mnemo_server.mcp.server.stdio_server") as stream,
-        pytest.raises(RuntimeError, match="INJECTED_PRODUCTION_RUNTIME_MISMATCH"),
+        pytest.raises(RuntimeError, match="PRODUCTION_CORPUS_UNINDEXED"),
     ):
         await run_stdio_server(config=config, mnemo_config=core_config, engine=engine)
     stream.assert_not_called()
@@ -134,7 +134,7 @@ async def test_certified_stdio_rejects_injected_historical_store_before_stream(
 
 
 @pytest.mark.anyio
-async def test_certified_stdio_records_binding_only_after_transport_starts(
+async def test_certified_stdio_never_records_binding_while_unindexed(
     tmp_path: Path,
 ) -> None:
     """The actual stdio startup path records its server-owned binding after readiness."""
@@ -170,10 +170,12 @@ async def test_certified_stdio_records_binding_only_after_transport_starts(
     ):
         install.return_value = installed
         stdio.return_value.__aenter__.return_value = (MagicMock(), MagicMock())
-        await run_stdio_server(config=config, mnemo_config=core_config, engine=engine)
-    assert record.call_args.kwargs["binding"] is binding
-    assert record.call_args.kwargs["transport"] == "mcp_stdio"
-    installed.close.assert_awaited_once()
+        with pytest.raises(RuntimeError, match="PRODUCTION_CORPUS_UNINDEXED"):
+            await run_stdio_server(config=config, mnemo_config=core_config, engine=engine)
+    record.assert_not_called()
+    install.assert_not_called()
+    stdio.assert_not_called()
+    installed.close.assert_not_awaited()
 
 
 def test_create_mcp_server_metadata() -> None:
@@ -273,7 +275,7 @@ async def test_mcp_server_protocol_handshake() -> None:
 
             # The six frozen tools remain present beside four additive delivery tools.
             tools_res = await session.list_tools()
-            assert len(tools_res.tools) == 14
+            assert len(tools_res.tools) == 15
             tool_names = [t.name for t in tools_res.tools]
             assert "query_notebook" in tool_names
             assert "search_all_notebooks" in tool_names
@@ -354,7 +356,7 @@ async def test_run_stdio_server_lifecycle(tmp_path: Path) -> None:
 
 
 @pytest.mark.anyio
-async def test_production_stdio_binds_workspace_and_preserves_certified_artifacts(
+async def test_production_stdio_does_not_materialize_workspace_while_unindexed(
     tmp_path: Path,
 ) -> None:
     application = tmp_path / "application"
@@ -391,14 +393,12 @@ async def test_production_stdio_binds_workspace_and_preserves_certified_artifact
     ):
         stdio.return_value.__aenter__.return_value = (MagicMock(), MagicMock())
         stdio.return_value.__aexit__.return_value = False
-        await run_stdio_server(config=config, mnemo_config=core_config)
+        with pytest.raises(RuntimeError, match="PRODUCTION_CORPUS_UNINDEXED"):
+            await run_stdio_server(config=config, mnemo_config=core_config)
 
-    runtime_config = engine_factory.call_args.kwargs["config"]
-    assert runtime_config.storage.sqlite.path == workspace / "workspace.db"
-    assert runtime_config.storage.filesystem.root == workspace / "blobs"
-    assert engine_factory.call_args.kwargs["embedding_cache_path"] == (
-        workspace / "caches" / "embedding-cache.db"
-    )
+    engine_factory.assert_not_called()
+    stdio.assert_not_called()
+    assert not workspace.exists()
     assert (
         hashlib.sha256(core_config.storage.sqlite.path.read_bytes()).hexdigest() == before_database
     )

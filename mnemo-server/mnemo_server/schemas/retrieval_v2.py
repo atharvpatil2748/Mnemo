@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 from uuid import UUID
 
@@ -16,7 +18,7 @@ from mnemo.models import (
     RetrievalPlanV2,
     RetrievalScopeV2,
 )
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator, model_validator
 
 
 class EvidenceScopeRequest(BaseModel):
@@ -37,9 +39,9 @@ class EvidenceScopeRequest(BaseModel):
 class PositionalScopeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    page_start: int | None = Field(default=None, ge=1)
-    page_end: int | None = Field(default=None, ge=1)
-    section_indexes: tuple[int, ...] = ()
+    page_start: StrictInt | None = Field(default=None, ge=1)
+    page_end: StrictInt | None = Field(default=None, ge=1)
+    section_indexes: tuple[StrictInt, ...] = ()
     heading_prefix: tuple[str, ...] = ()
 
 
@@ -51,10 +53,10 @@ class EvidenceSearchRequest(BaseModel):
     scope: EvidenceScopeRequest
     representations: tuple[EvidenceRepresentation, ...] = Field(min_length=1)
     cursor: str | None = None
-    candidate_budget: int = Field(default=100, ge=1, le=1000)
-    evidence_budget: int = Field(default=50, ge=1, le=200)
-    max_serialized_bytes: int = Field(default=1_000_000, ge=256, le=10_000_000)
-    max_content_characters: int = Field(default=200_000, ge=1, le=2_000_000)
+    candidate_budget: StrictInt = Field(default=100, ge=1, le=1000)
+    evidence_budget: StrictInt = Field(default=50, ge=1, le=200)
+    max_serialized_bytes: StrictInt = Field(default=1_000_000, ge=256, le=10_000_000)
+    max_content_characters: StrictInt = Field(default=200_000, ge=1, le=2_000_000)
     positional_scope: PositionalScopeRequest = PositionalScopeRequest()
     expansion_policy: ExpansionPolicy = ExpansionPolicy.NONE
     deduplication_policy: DeduplicationPolicy = DeduplicationPolicy.AUTHORITATIVE_IDENTITY
@@ -96,6 +98,7 @@ class EvidenceSearchRequest(BaseModel):
         max_rerank_candidates: int = 200,
         production_candidate_pool_k: int | None = None,
         security_scope_identity: str | None = None,
+        automatic_policy_version: str | None = None,
     ) -> RetrievalPlanV2:
         requested_recall = min(self.candidate_budget, max_candidate_budget)
         recall = (
@@ -139,6 +142,19 @@ class EvidenceSearchRequest(BaseModel):
                 else RankingPolicyV2.DETERMINISTIC_STORAGE_ORDER
             ),
             security_scope_identity=security_scope_identity,
+            automatic_policy_version=automatic_policy_version,
+            requested_limits_fingerprint=hashlib.sha256(
+                json.dumps(
+                    {
+                        "candidate_budget": self.candidate_budget,
+                        "evidence_budget": self.evidence_budget,
+                        "max_serialized_bytes": self.max_serialized_bytes,
+                        "max_content_characters": self.max_content_characters,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest(),
         )
 
 

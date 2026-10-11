@@ -57,8 +57,12 @@ does not advertise an implemented capability.
 | [ADR-0076](active/ADR-0076-project-owner-engineering-certification-standard.md) | Accepted project-owner engineering certification standard for the exact Mnemo V2 production snapshot |
 | [ADR-0077](active/ADR-0077-governed-mutable-workspace-boundary.md) | Accepted, implemented, and certified separately governed mutable filesystem + SQLite workspace, with mandatory server-enforced read-only fallback |
 | [ADR-0078](active/ADR-0078-generation-aware-production-credential-lifecycle.md) | Accepted generation-aware Mnemo server credential lifecycle; implemented and certified for Module 8.8.1, with historical signed state preserved |
+| [ADR-0079](active/ADR-0079-automatic-representation-complete-v2-retrieval.md) | Accepted V2 automatic representation planning; implementation, activation and certification remain separate |
+| [ADR-0080](active/ADR-0080-phase-8-9-unified-authorized-retrieval-plan.md) | Proposed Phase 8.9 re-baseline: shared authorized cross-notebook hybrid search, transport gate, no mandatory dedicated image-search tool |
+| [ADR-0081](active/ADR-0081-pre-phase-8-9-unindexed-production-baseline.md) | Accepted pre-Phase-8.9 `UNINDEXED` baseline: historical index retirement, fail-closed selection, distinct notebook/deployment authority; no indexed-serving GO |
 
-The next available ADR number is **ADR-0079**.
+The next available ADR number is **ADR-0082**. ADR-0080 remains proposed;
+ADR-0081 is accepted for the unindexed pre-Phase-8.9 baseline only.
 
 ## Phase 8.5 references
 

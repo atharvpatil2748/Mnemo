@@ -36,6 +36,7 @@ from test_pre_certification_observation import _runtime
 from test_production_credentials import FakeSecretStore, _provision
 
 pytest_plugins = ("test_production_runtime_binding",)
+pytestmark = pytest.mark.usefixtures("_historical_binding_fixture_only")
 
 
 def _staged(

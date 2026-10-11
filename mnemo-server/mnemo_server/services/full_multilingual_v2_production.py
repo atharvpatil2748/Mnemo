@@ -23,8 +23,16 @@ from mnemo.models.v2_retrieval_authorization import (
     V2ActiveRuntimeBindingV1,
     V2RetrievalAuthorizationDecisionV1,
 )
-from mnemo.phase85.v2_database_identity import GovernedV2DatabaseIdentityVerifier
+from mnemo.phase85.isolated_v2_identity import (
+    IsolatedV2ArtifactIdentity,
+    IsolatedV2DatabaseIdentityVerifier,
+)
+from mnemo.phase85.v2_database_identity import (
+    GovernedV2DatabaseIdentityVerifier,
+    V2DatabaseArtifactIdentityV1,
+)
 from mnemo.phase85.v2_evaluation_runtime import (
+    V2DatabaseIdentityVerifier,
     V2RuntimeCompositionDependencies,
     V2RuntimeIdentityV1,
 )
@@ -163,11 +171,15 @@ class ProductionFullMultilingualV2ServerDependencyAssemblerV1:
         identity_manifest: Path,
         identity: V2RuntimeIdentityV1,
         support: V2ProductionRuntimeSupportV1,
+        isolated_verifier: IsolatedV2DatabaseIdentityVerifier | None = None,
+        isolated_database: Path | None = None,
     ) -> None:
         self._root = workspace_root
         self._manifest = identity_manifest
         self._identity = identity
         self._support = support
+        self._isolated_verifier = isolated_verifier
+        self._isolated_database = isolated_database
         self._store: SQLiteV2ReadOnlyRuntimeStore | None = None
 
     @property
@@ -189,6 +201,8 @@ class ProductionFullMultilingualV2ServerDependencyAssemblerV1:
             identity_manifest=self._manifest,
             identity=self._identity,
             support=replace(self._support, reranker=reranker),
+            isolated_verifier=self._isolated_verifier,
+            isolated_database=self._isolated_database,
         )
 
     async def assemble_v2_runtime_dependencies(
@@ -197,12 +211,22 @@ class ProductionFullMultilingualV2ServerDependencyAssemblerV1:
         engine: KnowledgeEngine,
         authorization: CentralAuthorizationServiceV1,
     ) -> V2RuntimeCompositionDependencies:
-        verifier = GovernedV2DatabaseIdentityVerifier(
-            workspace_root=self._root, identity_manifest=self._manifest
-        )
-        artifact = verifier.artifact
+        artifact: V2DatabaseArtifactIdentityV1 | IsolatedV2ArtifactIdentity
+        if self._isolated_verifier is None:
+            governed_verifier = GovernedV2DatabaseIdentityVerifier(
+                workspace_root=self._root, identity_manifest=self._manifest
+            )
+            verifier: V2DatabaseIdentityVerifier = governed_verifier
+            artifact = governed_verifier.artifact
+        else:
+            verifier = self._isolated_verifier
+            artifact = self._isolated_verifier.artifact
         engine_database = engine.config.storage.sqlite.path.resolve()
-        governed_database = (self._root / artifact.target_path).resolve()
+        governed_database = (
+            self._isolated_database.resolve()
+            if self._isolated_database is not None
+            else (self._root / artifact.target_path).resolve()
+        )
         if engine_database != governed_database:
             raise RuntimeError("PRODUCTION_STORE_CONFIGURATION_MISMATCH")
         if (

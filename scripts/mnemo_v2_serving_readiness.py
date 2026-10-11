@@ -12,6 +12,7 @@ from pathlib import Path
 
 from mnemo_server.config import ServerConfig
 from mnemo_server.runtime_config import resolve_mnemo_runtime_config
+from mnemo_server.services.production_runtime_selection import require_production_index
 from mnemo_server.services.production_store_readiness import (
     validate_production_v2_serving_readiness,
     write_readiness_artifact,
@@ -51,6 +52,9 @@ def _sha256(path: Path) -> str:
 
 async def _run(args: argparse.Namespace) -> None:
     root = args.workspace_root.resolve()
+    # Historical Phase 8.5 identities are retained as evidence, not a live
+    # production readiness target while deployment selection is UNINDEXED.
+    require_production_index(root)
     result = await validate_production_v2_serving_readiness(
         workspace_root=root,
         mnemo_config=resolve_mnemo_runtime_config(config_path=root / args.config),

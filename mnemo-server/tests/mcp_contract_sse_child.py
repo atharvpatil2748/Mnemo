@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, patch
 
 import uvicorn
 from mnemo_server.mcp.principal import session_principal
-from mnemo_server.mcp.server import create_mcp_server, create_sse_app
-from test_mcp_immutable_schema_matrix import _fixture
+from mnemo_server.mcp.server import create_sse_app
+from test_mcp_immutable_schema_matrix import _fixture, create_mcp_server
 
 
 async def _main(root: Path, legacy: bool) -> None:
@@ -24,6 +24,10 @@ async def _main(root: Path, legacy: bool) -> None:
         final_qa_ready=True,
         governed_multilingual=True,
     )
+    if "ordered" in sys.argv[3:]:
+        from ordered_text_fixture import install_ordered_fixture
+
+        await install_ordered_fixture(reader, root)
     try:
         with (
             patch(

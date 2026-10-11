@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import importlib
+import json
 import logging
 import warnings
 from collections.abc import Callable, Mapping
@@ -23,9 +25,11 @@ from mnemo.interfaces import (
     AssetCatalogStoreV1,
     AssetRecordStoreV1,
     DependencyUnavailableError,
+    DocumentExpansionServiceV1,
     DocumentScopeResolverV1,
     EmbeddingCapabilities,
     EmbeddingProviderV1,
+    ExactDocumentReaderV1,
     FinalQAExecutionStoreV1,
     FinalQAExecutionStoreV2,
     FinalQAInterfaceV1,
@@ -194,6 +198,9 @@ class KnowledgeEngine:
         final_qa_components: FinalQAComponents | None = None,
         phase85_provider_registrations: tuple[Phase85ProviderRegistration, ...] = (),
         phase85_service_registrations: tuple[Phase85ServiceRegistration, ...] = (),
+        delivery_service_factory: (
+            Callable[[StorageInterfaceV1, AssetCatalogStoreV1], DocumentExpansionServiceV1] | None
+        ) = None,
         advanced_retrieval_cursor_codec: RetrievalCursorCodec | None = None,
         visual_query_embedding_provider: VisualQueryEmbeddingProviderV1 | None = None,
         multilingual_advanced_source: object | None = None,
@@ -215,11 +222,15 @@ class KnowledgeEngine:
         self._final_qa_components = final_qa_components
         self._phase85_provider_registrations = phase85_provider_registrations
         self._phase85_service_registrations = phase85_service_registrations
+        self._delivery_service_factory = delivery_service_factory
+        self._delivery_service: DocumentExpansionServiceV1 | None = None
         self._advanced_retrieval_cursor_codec = advanced_retrieval_cursor_codec
         self._visual_query_embedding_provider = visual_query_embedding_provider
         self._multilingual_advanced_source = multilingual_advanced_source
         self._full_multilingual_v2_source = full_multilingual_v2_source
         self._full_multilingual_v2_readiness = full_multilingual_v2_readiness
+        self._internal_full_multilingual_v2 = False
+        self._full_multilingual_v2_alias_digest: str | None = None
         self._language_capability_records = language_capability_records
         if final_qa_v2 is not None and not isinstance(final_qa_v2, FinalQAInterfaceV2):
             raise TypeError("final_qa_v2 must implement FinalQAInterfaceV2")
@@ -229,6 +240,7 @@ class KnowledgeEngine:
         self._final_qa: FinalQAInterfaceV1 | None = None
         self._phase85: Phase85Runtime | None = None
         self._advanced_retrieval: AdvancedRetrievalInterfaceV1 | None = None
+        self._multimodal_generation_id: str | None = None
         self._partitioned_retrieval: PartitionedRetrievalServiceV1 | None = None
         self._comparison: DeterministicComparisonServiceV1 | None = None
         self._structured_retrieval: StructuredDatasetRuntimeService | None = None
@@ -278,6 +290,56 @@ class KnowledgeEngine:
                 raise EngineInitializationError("Full Multilingual V2 owns wrong representation")
             self._full_multilingual_v2_source = source
             self._full_multilingual_v2_readiness = readiness
+            self._full_multilingual_v2_alias_digest = getattr(source, "alias_set_digest", None)
+            self._advanced_retrieval = await self._compose_advanced_retrieval(providers)
+
+    async def install_internal_full_multilingual_v2(self, *, runtime: object) -> None:
+        """Install a verified, notebook-local Full V2 runtime without public exposure.
+
+        This is only for isolated rebuild evaluation. The server must compose the
+        runtime from the active alias with the governed factory first.
+        """
+        from mnemo.phase85.v2_evaluation_runtime import ComposedFullMultilingualV2Runtime
+
+        if not isinstance(runtime, ComposedFullMultilingualV2Runtime):
+            raise EngineInitializationError("isolated Full V2 requires a composed runtime")
+        async with self._lifecycle_lock:
+            providers = self._require_ready()
+            if self._certified_read_only or self._full_multilingual_v2_readiness is not None:
+                raise EngineInitializationError("isolated Full V2 cannot replace production")
+            if (
+                runtime.advanced_source.representation
+                is not EvidenceRepresentation.MULTILINGUAL_TEXT
+            ):
+                raise EngineInitializationError("isolated Full V2 owns wrong representation")
+            self._full_multilingual_v2_source = runtime.advanced_source
+            self._full_multilingual_v2_alias_digest = runtime.identity.alias_set_digest
+            self._internal_full_multilingual_v2 = True
+            self._advanced_retrieval = await self._compose_advanced_retrieval(providers)
+
+    @property
+    def full_multilingual_v2_alias_digest(self) -> str | None:
+        """Active, server-composed alias bound to automatic retrieval cursors."""
+        return self._full_multilingual_v2_alias_digest
+
+    async def install_internal_visual_query_provider(self, *, provider: object) -> None:
+        """Attach a compatible visual text encoder to an isolated active V2 runtime."""
+        from mnemo.interfaces.advanced_retrieval import VisualQueryEmbeddingProviderV1
+
+        if not isinstance(provider, VisualQueryEmbeddingProviderV1) or not await provider.ready():
+            raise EngineInitializationError("isolated visual query provider is not ready")
+        async with self._lifecycle_lock:
+            providers = self._require_ready()
+            if not self._internal_full_multilingual_v2 or self._certified_read_only:
+                raise EngineInitializationError("visual query installation requires isolated V2")
+            if not isinstance(providers.storage, MultimodalAdvancedStoreV1):
+                raise EngineInitializationError("isolated visual projection reader is absent")
+            generation = await providers.storage.active_multimodal_generation_identity(
+                EvidenceRepresentation.VISUAL_VECTOR, profile_id=provider.profile_id
+            )
+            if generation is None:
+                raise EngineInitializationError("matching active visual generation is absent")
+            self._visual_query_embedding_provider = provider
             self._advanced_retrieval = await self._compose_advanced_retrieval(providers)
 
     @property
@@ -302,6 +364,12 @@ class KnowledgeEngine:
         if not isinstance(storage, AssetCatalogStoreV1):
             raise DependencyUnavailableError("storage does not provide the asset catalog")
         return storage
+
+    @property
+    def delivery_service(self) -> DocumentExpansionServiceV1 | None:
+        """Return the server-owned service registered with the capability runtime."""
+        self._require_ready()
+        return self._delivery_service
 
     @property
     def asset_records(self) -> AssetRecordStoreV1:
@@ -488,6 +556,7 @@ class KnowledgeEngine:
                     structured_retrieval,
                     structured_ready,
                     structured_generation_id,
+                    final_qa_v2,
                 )
                 await phase85.initialize()
                 if not phase85.readiness().runtime_ready:
@@ -505,9 +574,11 @@ class KnowledgeEngine:
                 self._final_qa_v2 = None
                 self._phase85 = None
                 self._advanced_retrieval = None
+                self._multimodal_generation_id = None
                 self._partitioned_retrieval = None
                 self._comparison = None
                 self._structured_retrieval = None
+                self._delivery_service = None
                 self._registry = self._new_registry()
                 self._state = EngineState.FAILED
                 if isinstance(error, EngineInitializationError):
@@ -544,9 +615,11 @@ class KnowledgeEngine:
                 self._final_qa = None
                 self._phase85 = None
                 self._advanced_retrieval = None
+                self._multimodal_generation_id = None
                 self._partitioned_retrieval = None
                 self._comparison = None
                 self._structured_retrieval = None
+                self._delivery_service = None
                 return
             if self._state in (EngineState.INITIALIZING, EngineState.STOPPING):
                 raise EngineLifecycleError(f"cannot shut down while engine is {self._state.value}")
@@ -560,9 +633,11 @@ class KnowledgeEngine:
                 self._final_qa = None
                 self._phase85 = None
                 self._advanced_retrieval = None
+                self._multimodal_generation_id = None
                 self._partitioned_retrieval = None
                 self._comparison = None
                 self._structured_retrieval = None
+                self._delivery_service = None
                 self._state = EngineState.STOPPED
 
     def _compose_phase85_runtime(
@@ -572,9 +647,32 @@ class KnowledgeEngine:
         structured_retrieval: StructuredDatasetRuntimeService | None,
         structured_ready: bool,
         structured_generation_id: str | None,
+        final_qa_v2: FinalQAInterfaceV2 | None,
     ) -> Phase85Runtime:
         """Compose ADR-0074 state from already-validated V1 providers and additive services."""
         service_registrations = list(self._phase85_service_registrations)
+        if self._delivery_service_factory is not None and isinstance(
+            providers.storage, AssetCatalogStoreV1
+        ):
+            delivery = self._delivery_service_factory(providers.storage, providers.storage)
+            if not isinstance(delivery, DocumentExpansionServiceV1):
+                raise EngineInitializationError("configured delivery service is incompatible")
+            self._delivery_service = delivery
+            delivery_capabilities = ["document_delivery", "asset_delivery"]
+            if isinstance(providers.storage, ExactDocumentReaderV1):
+                delivery_capabilities.append("exact_retrieval")
+            for capability_id in delivery_capabilities:
+                if not any(item.capability_id == capability_id for item in service_registrations):
+                    service_registrations.append(
+                        Phase85ServiceRegistration(
+                            capability_id=capability_id,
+                            service=delivery,
+                            ready=True,
+                            activate=True,
+                            exposed=True,
+                            security_verified=True,
+                        )
+                    )
         if not any(item.capability_id == "capability_discovery" for item in service_registrations):
             service_registrations.append(
                 Phase85ServiceRegistration(
@@ -622,9 +720,11 @@ class KnowledgeEngine:
                 Phase85ServiceRegistration(
                     capability_id="multimodal_retrieval",
                     service=advanced_retrieval,
-                    ready=True,
-                    activate=True,
-                    exposed=True,
+                    ready=self._multimodal_generation_id is not None,
+                    activate=self._multimodal_generation_id is not None,
+                    generation_id=self._multimodal_generation_id,
+                    generation_active=self._multimodal_generation_id is not None,
+                    exposed=self._multimodal_generation_id is not None,
                     security_verified=True,
                 )
             )
@@ -643,13 +743,13 @@ class KnowledgeEngine:
                     security_verified=True,
                 )
             )
-        if self._final_qa_v2 is not None and not any(
+        if final_qa_v2 is not None and not any(
             item.capability_id == "final_qa_v2" for item in service_registrations
         ):
             service_registrations.append(
                 Phase85ServiceRegistration(
                     capability_id="final_qa_v2",
-                    service=self._final_qa_v2,
+                    service=final_qa_v2,
                     ready=True,
                     activate=True,
                     exposed=True,
@@ -688,6 +788,7 @@ class KnowledgeEngine:
     async def _compose_advanced_retrieval(
         self, providers: _ResolvedProviders
     ) -> AdvancedRetrievalInterfaceV1 | None:
+        self._multimodal_generation_id = None
         codec = self._advanced_retrieval_cursor_codec
         if codec is None or not isinstance(providers.storage, AdvancedCanonicalStoreV1):
             return None
@@ -706,6 +807,7 @@ class KnowledgeEngine:
         sources: list[AdvancedRetrievalSourceV1] = [
             CanonicalTextAdvancedSource(store=providers.storage, ranked_retriever=sparse)
         ]
+        multimodal_generations: list[tuple[str, str]] = []
         if isinstance(providers.storage, MultimodalAdvancedStoreV1):
             for representation in (
                 EvidenceRepresentation.ASSET_METADATA,
@@ -716,6 +818,9 @@ class KnowledgeEngine:
                     representation
                 )
                 if generation is not None:
+                    # Asset inventory is not a generation-backed derived representation.
+                    if representation is not EvidenceRepresentation.ASSET_METADATA:
+                        multimodal_generations.append((representation.value, generation))
                     sources.append(
                         ProjectedMultimodalAdvancedSource(
                             store=providers.storage, representation=representation
@@ -728,6 +833,9 @@ class KnowledgeEngine:
                     profile_id=visual_provider.profile_id,
                 )
                 if generation is not None:
+                    multimodal_generations.append(
+                        (EvidenceRepresentation.VISUAL_VECTOR.value, generation)
+                    )
                     sources.append(
                         ProjectedMultimodalAdvancedSource(
                             store=providers.storage,
@@ -739,7 +847,7 @@ class KnowledgeEngine:
             self._full_multilingual_v2_readiness is not None
             and self._full_multilingual_v2_readiness.v2_exposed
         )
-        if v2_exposed:
+        if v2_exposed or self._internal_full_multilingual_v2:
             multilingual_source = self._full_multilingual_v2_source
             if not isinstance(multilingual_source, AdvancedRetrievalSourceV1):
                 raise EngineInitializationError(
@@ -769,6 +877,13 @@ class KnowledgeEngine:
                     )
                 sources.append(multilingual_source)
 
+        # Bind readiness to the exact persisted identities used to compose these sources,
+        # not to the mere existence of the multimodal storage interface. No activation
+        # or generation write occurs here; missing modalities remain independently absent.
+        if multimodal_generations:
+            self._multimodal_generation_id = hashlib.sha256(
+                json.dumps(sorted(multimodal_generations), separators=(",", ":")).encode()
+            ).hexdigest()
         return cast(
             AdvancedRetrievalInterfaceV1,
             AdvancedRetrievalService(
@@ -777,7 +892,11 @@ class KnowledgeEngine:
                 # Full Multilingual V2 has already applied the governed BGE
                 # candidate contract.  Applying the legacy primary reranker a
                 # second time would make the public path differ from V2.
-                reranker=(None if v2_exposed else CanonicalAdvancedReranker(providers.reranker)),
+                reranker=(
+                    None
+                    if v2_exposed or self._internal_full_multilingual_v2
+                    else CanonicalAdvancedReranker(providers.reranker)
+                ),
             ),
         )
 

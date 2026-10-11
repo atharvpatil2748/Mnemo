@@ -7,7 +7,7 @@ import re
 import tomllib
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Annotated, ClassVar, Final, cast
+from typing import Annotated, ClassVar, Final, Literal, cast
 
 from pydantic import (
     BaseModel,
@@ -172,6 +172,7 @@ class EmbeddingConfig(_FrozenConfigModel):
     model: NonEmptyString
     dimensions: PositiveInteger
     api_base: str | None = None
+    device: Literal["cpu", "cuda"] = "cpu"
 
 
 class RerankerConfig(_FrozenConfigModel):
@@ -338,6 +339,7 @@ _ENVIRONMENT_FIELDS: Final[dict[str, tuple[_EnvironmentPath, str]]] = {
     "MNEMO_EMBEDDING_PROVIDER": (("embedding", "provider"), "string"),
     "MNEMO_EMBEDDING_MODEL": (("embedding", "model"), "string"),
     "MNEMO_EMBEDDING_DIMENSIONS": (("embedding", "dimensions"), "int"),
+    "MNEMO_EMBEDDING_DEVICE": (("embedding", "device"), "string"),
     "MNEMO_RERANKER_PROVIDER": (("reranker", "provider"), "string"),
     "MNEMO_RERANKER_MODEL": (("reranker", "model"), "string"),
     "MNEMO_MODELS_VISION_PROVIDER": (("models", "vision", "provider"), "string"),

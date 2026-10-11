@@ -122,7 +122,10 @@ _CAPABILITY_DEFINITIONS: Mapping[str, _CapabilityDefinition] = MappingProxyType(
         "capability_discovery": _CapabilityDefinition("Phase85RuntimeV1 registry"),
         "final_qa_v2": _CapabilityDefinition(
             "FinalQAInterfaceV2",
-            dependencies=("multimodal_retrieval", "authorization", "provenance"),
+            # ADR-0064 accepts canonical chunks as typed V2 evidence. Optional
+            # visual generation is not a prerequisite for a text-only answer;
+            # the application checks each requested evidence/provider modality.
+            dependencies=("exhaustive_retrieval", "authorization", "provenance"),
         ),
         "behavioral_verification": _CapabilityDefinition(
             "Blind-agent evaluation harness", code_present=False

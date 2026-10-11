@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import pytest
+from mnemo import MnemoConfig, Phase85Runtime
+from mnemo.cursors import CursorConflictError
 from mnemo.engine import EngineState
 from mnemo.interfaces import (
     AdvancedSourcePage,
@@ -28,10 +32,13 @@ from mnemo.models import (
     advanced_candidate_id,
 )
 from mnemo.retrieval import AdvancedRetrievalService, RetrievalCursorCodec
+from mnemo.retrieval.advanced import _diversify_occurrences
 from mnemo_server.app import create_app
 from mnemo_server.config import ServerConfig
 from mnemo_server.mcp.tools import execute_mcp_tool, get_mcp_tools, structured_content_for
+from mnemo_server.schemas.automatic_query_v2 import AutomaticQueryV2Request
 from mnemo_server.schemas.retrieval_v2 import EvidenceSearchRequest
+from mnemo_server.services.automatic_query_v2 import AutomaticQueryV2ApplicationService
 from mnemo_server.services.retrieval_v2 import (
     EvidenceRetrievalApplicationService,
     _match_semantics,
@@ -130,10 +137,301 @@ def _request(notebook_id: UUID, **changes: object) -> EvidenceSearchRequest:
     return EvidenceSearchRequest.model_validate(values)
 
 
+def test_automatic_occurrence_diversity_preserves_alternate_evidence() -> None:
+    notebook_id = uuid4()
+    first, unrelated, alternate = (_candidate(notebook_id, index) for index in range(3))
+    same_occurrence = uuid4()
+    first_derivation = uuid4()
+    first = replace(
+        first,
+        candidate_id=advanced_candidate_id(
+            representation=EvidenceRepresentation.OCR_TEXT,
+            document_id=first.document_id,
+            version_id=first.version_id,
+            chunk_id=None,
+            occurrence_id=same_occurrence,
+            derivation_id=first_derivation,
+        ),
+        representation=EvidenceRepresentation.OCR_TEXT,
+        chunk=None,
+        occurrence_id=same_occurrence,
+        derivation_id=first_derivation,
+    )
+    alternate_derivation = uuid4()
+    alternate = replace(
+        alternate,
+        candidate_id=advanced_candidate_id(
+            representation=EvidenceRepresentation.VISION_ANALYSIS,
+            document_id=first.document_id,
+            version_id=first.version_id,
+            chunk_id=None,
+            occurrence_id=same_occurrence,
+            derivation_id=alternate_derivation,
+        ),
+        representation=EvidenceRepresentation.VISION_ANALYSIS,
+        document_id=first.document_id,
+        version_id=first.version_id,
+        chunk=None,
+        occurrence_id=same_occurrence,
+        derivation_id=alternate_derivation,
+    )
+    ordered = _diversify_occurrences((first, alternate, unrelated))
+    # OCR and Vision are independently sourced views of the occurrence; the
+    # diversity bound demotes repeats within one representation, not across it.
+    assert ordered == (first, alternate, unrelated)
+
+
+@pytest.mark.anyio
+async def test_automatic_query_continues_after_canonical_zero() -> None:
+    notebook_id = uuid4()
+    source = _candidate(notebook_id, 0)
+    occurrence_id, derivation_id = uuid4(), uuid4()
+    ocr_candidate = replace(
+        source,
+        candidate_id=advanced_candidate_id(
+            representation=EvidenceRepresentation.OCR_TEXT,
+            document_id=source.document_id,
+            version_id=source.version_id,
+            chunk_id=None,
+            occurrence_id=occurrence_id,
+            derivation_id=derivation_id,
+        ),
+        representation=EvidenceRepresentation.OCR_TEXT,
+        chunk=None,
+        occurrence_id=occurrence_id,
+        derivation_id=derivation_id,
+    )
+
+    class OCRSource(_Source):
+        representation = EvidenceRepresentation.OCR_TEXT
+
+    async def list_notebooks(*, limit: int, cursor: str | None):
+        assert limit == 2 and cursor is None
+        return SimpleNamespace(items=(SimpleNamespace(notebook_id=notebook_id),), next_cursor=None)
+
+    async def get_notebook(identity: UUID):
+        return object() if identity == notebook_id else None
+
+    engine = SimpleNamespace(
+        state=EngineState.READY,
+        storage=SimpleNamespace(list_notebooks=list_notebooks, get_notebook=get_notebook),
+        advanced_retrieval=AdvancedRetrievalService(
+            sources=(_Source(()), OCRSource((ocr_candidate,))),
+            cursor_codec=RetrievalCursorCodec(b"automatic-query-test-signing-key!"),
+        ),
+    )
+    response = await AutomaticQueryV2ApplicationService(engine, ServerConfig()).execute(
+        AutomaticQueryV2Request(query="angular momentum formula"),
+        PrincipalContextV1(uuid4(), True),
+    )
+    assert response.evidence.items[0]["representation"] == "ocr_text"
+    assert response.evidence.items[0]["occurrence_id"] == str(occurrence_id)
+    assert response.answer_status == "not_generated"
+    assert {item.representation: item.status for item in response.representation_decisions}[
+        "ocr_text"
+    ] == "searched"
+    with pytest.raises(ContractValidationError, match="candidate_budget is too small"):
+        await AutomaticQueryV2ApplicationService(engine, ServerConfig()).execute(
+            AutomaticQueryV2Request(query="formula", candidate_budget=1),
+            PrincipalContextV1(uuid4(), True),
+        )
+    mcp_content = await execute_mcp_tool(  # type: ignore[arg-type]
+        engine,
+        "query_notebook_v2",
+        {"query": "angular momentum formula"},
+        ServerConfig(),
+        PrincipalContextV1(uuid4(), True),
+    )
+    assert json.loads(mcp_content[0].text)["evidence"]["items"][0]["representation"] == "ocr_text"
+
+
+@pytest.mark.anyio
+async def test_automatic_query_rejects_ambiguous_scope_without_revealing_generations() -> None:
+    notebook_ids = (uuid4(), uuid4())
+
+    async def list_notebooks(*, limit: int, cursor: str | None):
+        return SimpleNamespace(
+            items=tuple(SimpleNamespace(notebook_id=value) for value in notebook_ids),
+            next_cursor=None,
+        )
+
+    engine = SimpleNamespace(storage=SimpleNamespace(list_notebooks=list_notebooks))
+    with pytest.raises(Exception, match="unambiguous authorized notebook scope"):
+        await AutomaticQueryV2ApplicationService(engine, ServerConfig()).execute(
+            AutomaticQueryV2Request(query="formula"), PrincipalContextV1(uuid4(), True)
+        )
+
+
+@pytest.mark.anyio
+async def test_automatic_query_cursor_binds_actor_and_public_budget() -> None:
+    notebook_id = uuid4()
+
+    async def list_notebooks(*, limit: int, cursor: str | None):
+        return SimpleNamespace(items=(SimpleNamespace(notebook_id=notebook_id),), next_cursor=None)
+
+    async def get_notebook(identity: UUID):
+        return object() if identity == notebook_id else None
+
+    engine = SimpleNamespace(
+        storage=SimpleNamespace(list_notebooks=list_notebooks, get_notebook=get_notebook),
+        advanced_retrieval=_engine(notebook_id).advanced_retrieval,
+    )
+    service = AutomaticQueryV2ApplicationService(engine, ServerConfig())
+    actor = PrincipalContextV1(uuid4(), True)
+    request = AutomaticQueryV2Request(
+        query="target", mode="exhaustive", evidence_budget=1, candidate_budget=3
+    )
+    first = await service.execute(request, actor)
+    assert first.evidence.next_cursor is not None
+    continued = await service.execute(
+        request.model_copy(update={"cursor": first.evidence.next_cursor}), actor
+    )
+    assert continued.evidence.items[0]["chunk_id"] != first.evidence.items[0]["chunk_id"]
+    with pytest.raises(ConflictError):
+        await service.execute(
+            request.model_copy(update={"cursor": first.evidence.next_cursor}),
+            PrincipalContextV1(uuid4(), True),
+        )
+    with pytest.raises(ConflictError):
+        await service.execute(
+            request.model_copy(
+                update={"cursor": first.evidence.next_cursor, "candidate_budget": 4}
+            ),
+            actor,
+        )
+    engine.full_multilingual_v2_alias_digest = "a" * 64
+    with pytest.raises(ConflictError):
+        await service.execute(
+            request.model_copy(update={"cursor": first.evidence.next_cursor}), actor
+        )
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["candidate_budget", "evidence_budget", "max_content_characters", "max_serialized_bytes"],
+)
+@pytest.mark.parametrize("value", [True, 3.0, "3"])
+def test_evidence_numeric_budgets_reject_coercible_nonintegers(field: str, value: object) -> None:
+    from pydantic import ValidationError
+
+    if field == "max_serialized_bytes" and not isinstance(value, bool):
+        value = 512.0 if isinstance(value, float) else "512"
+    with pytest.raises(ValidationError):
+        _request(uuid4(), **{field: value})
+
+
+def test_evidence_positional_numeric_fields_reject_boolean() -> None:
+    from pydantic import ValidationError
+
+    for position in ({"page_start": True}, {"page_end": True}, {"section_indexes": [True]}):
+        with pytest.raises(ValidationError):
+            _request(uuid4(), positional_scope=position)
+
+
+def test_cursor_rejects_candidate_budget_change_below_production_pool() -> None:
+    from datetime import UTC, datetime
+
+    notebook_id = uuid4()
+    codec = RetrievalCursorCodec(b"wp07-focused-test-signing-secret!")
+    request = _request(
+        notebook_id,
+        query="buildCodePrompt",
+        candidate_budget=3,
+        evidence_budget=1,
+        max_content_characters=2000,
+    )
+    options = dict(
+        max_candidate_budget=100,
+        max_evidence_budget=50,
+        max_response_bytes=1_000_000,
+        max_content_characters=200_000,
+        production_candidate_pool_k=50,
+        security_scope_identity=str(uuid4()),
+    )
+    plan = request.to_plan(**options)
+    now = datetime.now(UTC)
+    token = codec.encode(
+        plan=plan, representation_index=0, offset=1, snapshots={"canonical_text": "a" * 64}, now=now
+    )
+    changed = request.model_copy(update={"candidate_budget": 4}).to_plan(**options)
+    assert changed.budgets == plan.budgets  # Normalization is intentionally unchanged.
+    with pytest.raises(CursorConflictError):
+        codec.decode(token, plan=changed, now=now)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("query", "other"),
+        ("mode", "ranked"),
+        ("scope", {"notebook_id": str(UUID(int=90))}),
+        ("representations", ["ocr_text"]),
+        ("candidate_budget", 4),
+        ("evidence_budget", 2),
+        ("max_content_characters", 2001),
+        ("max_serialized_bytes", 1_000_001),
+    ],
+)
+def test_signed_cursor_binds_requested_parameters_before_normalization(field, value) -> None:  # type: ignore[no-untyped-def]
+    from datetime import UTC, datetime
+
+    request = _request(uuid4(), candidate_budget=3, evidence_budget=1, max_content_characters=2000)
+    options = dict(
+        max_candidate_budget=100,
+        max_evidence_budget=50,
+        max_response_bytes=1_000_000,
+        max_content_characters=200_000,
+        production_candidate_pool_k=50,
+    )
+    plan = request.to_plan(**options)
+    codec = RetrievalCursorCodec(b"wp07-focused-test-signing-secret!")
+    now = datetime.now(UTC)
+    token = codec.encode(
+        plan=plan, representation_index=0, offset=1, snapshots={"canonical_text": "a" * 64}, now=now
+    )
+    assert codec.decode(token, plan=plan, now=now)["offset"] == 1
+    values = request.model_dump(mode="json")
+    values[field] = value
+    changed = EvidenceSearchRequest.model_validate(values).to_plan(**options)
+    with pytest.raises(CursorConflictError):
+        codec.decode(token, plan=changed, now=now)
+
+
 def test_http_contract_is_additive_and_strict() -> None:
     app = create_app(server_config=ServerConfig(), provision_tokenizer_on_startup=False)
     schema = app.openapi()["paths"]["/v2/retrieval/evidence"]["post"]
     assert schema["requestBody"]["required"] is True
+    automatic = app.openapi()["paths"]["/v2/retrieval/automatic"]["post"]
+    assert automatic["requestBody"]["required"] is True
+    names = app.openapi()["components"]["schemas"]["AutomaticQueryV2Request"]["properties"]
+    assert "query" in names
+    assert not {"notebook_id", "actor_id", "representations", "generation_id"} & set(names)
+
+
+def test_automatic_policy_version_is_signed_into_cursor_fingerprint() -> None:
+    from datetime import UTC, datetime
+
+    request = _request(uuid4())
+    options = dict(
+        max_candidate_budget=100,
+        max_evidence_budget=50,
+        max_response_bytes=1_000_000,
+        max_content_characters=200_000,
+    )
+    plan = request.to_plan(**options, automatic_policy_version="automatic-evidence-plan/v1")
+    changed = request.to_plan(**options, automatic_policy_version="automatic-evidence-plan/v2")
+    codec = RetrievalCursorCodec(b"automatic-policy-cursor-signing-key!")
+    now = datetime.now(UTC)
+    token = codec.encode(
+        plan=plan,
+        representation_index=0,
+        offset=1,
+        snapshots={"canonical_text": "a" * 64},
+        now=now,
+    )
+    assert codec.decode(token, plan=plan, now=now)["offset"] == 1
+    with pytest.raises(CursorConflictError):
+        codec.decode(token, plan=changed, now=now)
 
 
 def test_production_candidate_stage_is_governed_at_fifty() -> None:
@@ -182,6 +480,91 @@ async def test_exhaustive_application_service_has_truthful_cursor_and_terminal_s
     assert final.completeness == "complete"
     assert final.next_cursor is None
     assert [item["content"] for item in final.items] == ["target evidence 2"]
+
+
+@pytest.mark.anyio
+async def test_exhaustive_continuation_cannot_skip_an_item_exceeding_content_budget() -> None:
+    """A valid signed cursor may reach an item too large for the original budget."""
+    notebook_id = uuid4()
+    candidates = (
+        _candidate(notebook_id, 0),
+        replace(_candidate(notebook_id, 1), content="x" * 81),
+    )
+    retrieval = AdvancedRetrievalService(
+        sources=(_Source(candidates),),
+        cursor_codec=RetrievalCursorCodec(b"wp07-focused-test-signing-secret!"),
+    )
+    app = EvidenceRetrievalApplicationService(  # type: ignore[arg-type]
+        SimpleNamespace(state=EngineState.READY, advanced_retrieval=retrieval),
+        ServerConfig(),
+    )
+    first = await app.execute(_request(notebook_id, evidence_budget=1, max_content_characters=80))
+    assert first.completeness == "truncated" and first.next_cursor is not None
+    with pytest.raises(ContractValidationError, match="cannot serialize one evidence item"):
+        await app.execute(
+            _request(
+                notebook_id,
+                evidence_budget=1,
+                max_content_characters=80,
+                cursor=first.next_cursor,
+            )
+        )
+    with pytest.raises(CursorConflictError, match="cursor"):
+        await app.execute(
+            _request(
+                notebook_id,
+                evidence_budget=1,
+                max_content_characters=2000,
+                cursor=first.next_cursor,
+            )
+        )
+    restarted = await app.execute(
+        _request(notebook_id, evidence_budget=1, max_content_characters=2000)
+    )
+    completed = await app.execute(
+        _request(
+            notebook_id,
+            evidence_budget=1,
+            max_content_characters=2000,
+            cursor=restarted.next_cursor,
+        )
+    )
+    assert completed.completeness == "complete"
+    assert completed.items[0]["content"] == "x" * 81
+
+
+@pytest.mark.anyio
+async def test_unconfigured_ocr_generation_does_not_disable_persisted_ocr_search() -> None:
+    """Generation lifecycle and searching an existing OCR projection are separate facts."""
+    root = Path(__file__).resolve().parents[2]
+    runtime = Phase85Runtime(MnemoConfig.from_file(root / "mnemo.toml"), engine_ready=True)
+    assert runtime.profile_status("ocr").reason_code == "profile_not_configured"
+
+    class EmptyOCRSource(_Source):
+        representation = EvidenceRepresentation.OCR_TEXT
+
+    notebook_id = uuid4()
+    retrieval = AdvancedRetrievalService(
+        sources=(EmptyOCRSource(()),),
+        cursor_codec=RetrievalCursorCodec(b"wp07-focused-test-signing-secret!"),
+    )
+    app = EvidenceRetrievalApplicationService(  # type: ignore[arg-type]
+        SimpleNamespace(state=EngineState.READY, advanced_retrieval=retrieval),
+        ServerConfig(),
+    )
+    result = await app.execute(_request(notebook_id, representations=["ocr_text"]))
+    assert result.items == []
+    assert result.completeness == "empty"
+    assert result.coverage["representations"] == [
+        {
+            "representation": "ocr_text",
+            "status": "searched",
+            "examined": 0,
+            "returned": 0,
+            "exhausted": True,
+            "reason_code": None,
+        }
+    ]
 
 
 @pytest.mark.anyio

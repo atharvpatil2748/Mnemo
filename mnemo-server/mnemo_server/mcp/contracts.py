@@ -11,11 +11,29 @@ from typing import Any
 
 import mcp.types as types
 
+from mnemo_server.schemas.automatic_query_v2 import (
+    AutomaticQueryV2Request,
+    AutomaticQueryV2Response,
+)
 from mnemo_server.schemas.capabilities_v2 import CapabilityDiscoveryRequest, CapabilityDocument
 from mnemo_server.schemas.final_qa_v2 import FinalQAV2RequestBody
 from mnemo_server.schemas.structured_v2 import StructuredRetrievalRequest
 
 CONTRACT_VERSION = "phase8.5-mcp-v1"
+
+
+AUTOMATIC_QUERY_V2_TOOL = types.Tool(
+    name="query_notebook_v2",
+    description=(
+        "Versioned server-planned evidence query over the unique authorized notebook. "
+        "Searches canonical text and every ready active OCR, Vision, multilingual, or "
+        "compatible visual source. Returns evidence and representation decisions; "
+        "does not synthesize an answer. Client cannot choose scope or representations."
+    ),
+    inputSchema=AutomaticQueryV2Request.model_json_schema(),
+    outputSchema=AutomaticQueryV2Response.model_json_schema(),
+    annotations=types.ToolAnnotations(readOnlyHint=True),
+)
 
 
 def _description(*sections: tuple[str, str]) -> str:
@@ -89,6 +107,15 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         ("Next", "Retrieve exact cited document content when needed."),
     ),
     "get_document": _description(
+        (
+            "Modes",
+            "original returns original binary bytes; blocks traverses persisted parsed blocks "
+            "with one positional selector; text renders those blocks as parsed_text/v1 with "
+            "payload.text and payload.separator_after. text supports only full (or omitted) "
+            "selector. Text rendering is not original bytes or canonical search-chunk stitching; "
+            "missing persisted blocks are capability_unavailable. Text strips heading level, "
+            "code language, layout and table header annotations; blocks preserves those fields.",
+        ),
         (
             "Purpose",
             "Retrieve or traverse one exact authorized document version in source order, "
@@ -363,6 +390,42 @@ OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
     "get_image_analysis": output_schema("resource_kind", "items"),
     "query_structured": output_schema("items", "structured", "snapshot_identity"),
 }
+
+# Additive companion schema: binary bytes remain native MCP content, while
+# this nonsecret resource object is visible to structured-only clients too.
+for _delivery_name in ("get_document", "get_asset"):
+    OUTPUT_SCHEMAS[_delivery_name]["properties"]["resource"] = {
+        "type": "object",
+        "properties": {
+            **{
+                key: {"type": "integer", "minimum": 0}
+                for key in (
+                    "rangeStart",
+                    "rangeEnd",
+                    "returnedBytes",
+                    "totalBytes",
+                )
+            },
+            "rangeEndExclusive": {"type": "boolean", "description": "rangeEnd is exclusive"},
+            **{
+                key: {"type": "string"}
+                for key in (
+                    "contentHash",
+                    "snapshotIdentity",
+                    "originalMediaType",
+                    "notebookId",
+                    "sourceId",
+                    "documentId",
+                    "versionId",
+                    "assetId",
+                    "occurrenceId",
+                    "completeness",
+                )
+            },
+            "nextCursor": {"type": ["string", "null"]},
+        },
+        "additionalProperties": True,
+    }
 
 
 def apply_retained_contracts(tools: Iterable[types.Tool]) -> list[types.Tool]:

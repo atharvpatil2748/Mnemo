@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from mnemo_server.config import ServerConfig
+from mnemo_server.config import ServerConfig, _certified_manifest_defaults
 from pydantic import ValidationError
 
 
@@ -37,7 +37,7 @@ def test_server_config_custom_values() -> None:
 def test_server_config_frozen() -> None:
     config = ServerConfig()
     with pytest.raises(ValidationError):
-        config.host = "0.0.0.0"  # type: ignore[misc]
+        config.host = "0.0.0.0"
 
 
 def test_server_config_from_env_defaults() -> None:
@@ -103,18 +103,24 @@ def test_durable_reranker_activation_configuration_is_atomic() -> None:
         "mcp_stdio_principal_subject": "stdio-server",
     }
     with pytest.raises(ValidationError, match="both a state path and operator subject"):
-        ServerConfig(**common, reranker_activation_state_path=Path("reranker.json"))
-    config = ServerConfig(
-        **common,
-        reranker_activation_state_path=Path("reranker.json"),
-        reranker_activation_operator_subject="production-operator",
+        ServerConfig.model_validate(
+            {**common, "reranker_activation_state_path": Path("reranker.json")}
+        )
+    config = ServerConfig.model_validate(
+        {
+            **common,
+            "reranker_activation_state_path": Path("reranker.json"),
+            "reranker_activation_operator_subject": "production-operator",
+        }
     )
     assert config.reranker_activation_state_path == Path("reranker.json")
 
 
-def test_durable_reranker_activation_environment_binding(tmp_path: Path) -> None:
-    # Exercise the historical single-activation configuration in isolation; the
-    # live manifest now selects the staged credential registry instead.
+def test_historical_reranker_environment_cannot_admit_unindexed_production(
+    tmp_path: Path,
+) -> None:
+    # Historical activation metadata is not a substitute for an explicit
+    # production runtime selection in this disposable workspace.
     manifest_path = tmp_path / "config/production/full_multilingual_v2.production.json"
     manifest_path.parent.mkdir(parents=True)
     manifest_path.write_text(
@@ -139,7 +145,113 @@ def test_durable_reranker_activation_environment_binding(tmp_path: Path) -> None
         "MNEMO_SERVER_RERANKER_ACTIVATION_STATE_PATH": "reranker.json",
         "MNEMO_SERVER_RERANKER_ACTIVATION_OPERATOR_SUBJECT": "production-operator",
     }
-    with patch.dict(os.environ, env, clear=True):
-        config = ServerConfig.from_env(certified_root=tmp_path)
-    assert config.reranker_activation_state_path == Path("reranker.json")
-    assert config.reranker_activation_operator_subject == "production-operator"
+    with (
+        patch.dict(os.environ, env, clear=True),
+        pytest.raises(RuntimeError, match="PRODUCTION_RUNTIME_SELECTION_UNAVAILABLE"),
+    ):
+        ServerConfig.from_env(certified_root=tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("settings", "error"),
+    [
+        (
+            {"auth_mode": "api-key", "delivery_cursor_secret": "mnemo-local-delivery-v1"},
+            "cursor signing secret",
+        ),
+        ({"delivery_cursor_rotation_keys": (("delivery-v2", "x" * 32),)}, "key IDs"),
+        ({"delivery_cursor_rotation_keys": (("old", "short"),)}, "at least 32 bytes"),
+        ({"full_multilingual_v2_enabled": True}, "authenticated production mode"),
+        ({"full_multilingual_v2_reranker_mode": "BGE_V2_M3"}, "requires exposed"),
+        ({"reranker_activation_state_path": Path("state.json")}, "both a state path"),
+    ],
+)
+def test_security_configuration_rejects_incomplete_authority(
+    settings: dict[str, object], error: str
+) -> None:
+    base = {"delivery_cursor_secret": "x" * 32}
+    with pytest.raises(ValidationError, match=error):
+        ServerConfig.model_validate({**base, **settings})
+
+
+@pytest.mark.parametrize(
+    ("field", "error"),
+    [
+        ("full_multilingual_v2_model_cache", "explicit local model cache"),
+        ("final_qa_operational_store_path", "separate Final-QA"),
+        ("mcp_stdio_principal_subject", "MCP stdio principal"),
+    ],
+)
+def test_full_v2_requires_every_operational_prerequisite(field: str, error: str) -> None:
+    complete: dict[str, object] = {
+        "production_mode": True,
+        "auth_mode": "api-key",
+        "api_key": "fixture-key",
+        "delivery_cursor_secret": "x" * 32,
+        "full_multilingual_v2_enabled": True,
+        "full_multilingual_v2_model_cache": Path("fixture-models"),
+        "final_qa_operational_store_path": Path("fixture-operational.db"),
+        "mcp_stdio_principal_subject": "fixture-stdio",
+    }
+    complete.pop(field)
+    with pytest.raises(ValidationError, match=error):
+        ServerConfig.model_validate(complete)
+
+
+@pytest.mark.parametrize(
+    ("name", "value", "error"),
+    [
+        ("MNEMO_SERVER_MAX_UPLOAD_BYTES", "0", "positive integer"),
+        ("MNEMO_SERVER_MAX_UPLOAD_BYTES", "abc", "positive integer"),
+        ("MNEMO_SERVER_MAX_DELIVERY_DOCUMENT_BYTES", "0", "positive integer"),
+        ("MNEMO_SERVER_MAX_DELIVERY_ASSET_BYTES", "abc", "positive integer"),
+        ("MNEMO_SERVER_AUTH_MODE", "invalid", "must be one of"),
+        ("MNEMO_SERVER_DELIVERY_CURSOR_ROTATION_KEYS", "{broken", "JSON object"),
+        ("MNEMO_SERVER_DELIVERY_CURSOR_ROTATION_KEYS", "[]", "JSON object"),
+        ("MNEMO_SERVER_DELIVERY_CURSOR_LEGACY_V1_OVERLAP_SECONDS", "-1", "non-negative"),
+    ],
+)
+def test_environment_rejects_invalid_security_and_budget_values(
+    name: str, value: str, error: str
+) -> None:
+    with patch.dict(os.environ, {name: value}, clear=True), pytest.raises(ValueError, match=error):
+        ServerConfig.from_env()
+
+
+@pytest.mark.parametrize(
+    ("change", "error"),
+    [
+        ({"reranker_activation": {"active_mode": "PASS_THROUGH"}}, "UNAVAILABLE"),
+        ({"configuration_authority": {}}, "UNAVAILABLE"),
+        (
+            {
+                "configuration_authority": {
+                    "credential_registry": "registry.json",
+                    "durable_activation_state": "state.json",
+                }
+            },
+            "UNAVAILABLE",
+        ),
+        ({"final_qa_operational_store": {"path": "../outside.db"}}, "UNAVAILABLE"),
+        ({"final_qa_operational_store": {"path": "C:/absolute.db"}}, "UNAVAILABLE"),
+    ],
+)
+def test_certified_defaults_reject_ambiguous_or_escaping_authority(
+    tmp_path: Path, change: dict[str, object], error: str
+) -> None:
+    manifest: dict[str, object] = {
+        "reranker_activation": {"active_mode": "BGE_V2_M3"},
+        "configuration_authority": {"credential_registry": "registry.json"},
+        "final_qa_operational_store": {"path": "operational.db"},
+    }
+    manifest.update(change)
+    target = tmp_path / "config/production/full_multilingual_v2.production.json"
+    target.parent.mkdir(parents=True)
+    target.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match=error):
+        _certified_manifest_defaults(tmp_path)
+
+
+def test_certified_defaults_require_manifest_file(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="CONFIGURATION_UNAVAILABLE"):
+        _certified_manifest_defaults(tmp_path)

@@ -12,13 +12,15 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, Literal, cast
 from uuid import UUID, uuid4
 
 import httpx
 import pytest
+from disposable_index_admission import disposable_index_admission
 from fastapi import FastAPI, Request
 from mnemo.config import MnemoConfig
-from mnemo.engine import EngineState
+from mnemo.engine import EngineState, KnowledgeEngine
 from mnemo.interfaces import ConflictError, IntegrityError, OperationTimeoutError
 from mnemo.models import FrozenMetadata
 from mnemo.models.advanced_retrieval import RetrievalCompleteness
@@ -50,6 +52,7 @@ from mnemo_server.services.authorization import principal_from_claims
 from mnemo_server.services.final_qa_v2 import FinalQAV2ApplicationService
 
 NOTEBOOK_ID = UUID(int=10)
+FIXTURE_PRINCIPAL = principal_from_claims({"sub": "anonymous"})
 
 
 class Counter:
@@ -239,7 +242,7 @@ def retrieval(
     )
 
 
-def payload(question: str, assistant_turn_id: UUID) -> dict[str, object]:
+def payload(question: str, assistant_turn_id: UUID) -> dict[str, Any]:
     return {
         "notebook_id": str(NOTEBOOK_ID),
         "session_id": str(UUID(int=2)),
@@ -282,7 +285,7 @@ async def test_final_qa_retrieval_uses_server_owned_deadline() -> None:
 
     engine = SimpleNamespace(advanced_retrieval=SlowRetrieval())
     config = ServerConfig(max_advanced_elapsed_milliseconds=1)
-    service = FinalQAV2ApplicationService(engine, config)
+    service = FinalQAV2ApplicationService(cast(KnowledgeEngine, engine), config)
     request = EvidenceSearchRequest.model_validate(
         payload("Deadline proof", uuid4())["evidence_request_or_snapshot"]
     )
@@ -290,7 +293,7 @@ async def test_final_qa_retrieval_uses_server_owned_deadline() -> None:
         await service._retrieval_result("Deadline proof", request)
 
 
-def app_for(engine, subject: str = "anonymous") -> FastAPI:  # type: ignore[no-untyped-def]
+def app_for(engine: SimpleNamespace, subject: str = "anonymous") -> FastAPI:
     app = FastAPI()
 
     @app.middleware("http")
@@ -303,6 +306,47 @@ def app_for(engine, subject: str = "anonymous") -> FastAPI:  # type: ignore[no-u
     app.dependency_overrides[get_server_config] = lambda: ServerConfig()
     register_error_handlers(app)
     return app
+
+
+@pytest.mark.anyio
+async def test_http_incomplete_generation_is_safe_terminal_and_never_published(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    engine, store, provider, _ = fixture([])
+    question = "What is stated?"
+    result = retrieval((candidate(),), question)
+
+    async def fake_retrieval(self, query, request):  # type: ignore[no-untyped-def]
+        del self, request
+        return replace(result, query=query)
+
+    async def incomplete(request):  # type: ignore[no-untyped-def]
+        provider.requests.append(request)
+        return MultimodalGenerationResultV1(
+            answer="Evidence [source:1]\n- **Code",
+            provider="fake",
+            model="transport",
+            prompt_tokens=20,
+            answer_tokens=128,
+            termination_reason="length",
+            output_complete=False,
+        )
+
+    monkeypatch.setattr(FinalQAV2ApplicationService, "_retrieval_result", fake_retrieval)
+    monkeypatch.setattr(provider, "complete", incomplete)
+    turn_id = uuid4()
+    body = payload(question, turn_id)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app_for(engine)), base_url="http://test"
+    ) as client:
+        for _ in range(2):
+            response = await client.post(f"/v2/notebooks/{NOTEBOOK_ID}/final-qa", json=body)
+            assert response.status_code == 500
+            error = response.json()["error"]
+            assert error["code"] == "final_qa.generation_incomplete"
+            assert error["category"] == "retrieval_failure"
+            assert UUID(error["correlation_id"])
+            assert "**Code" not in response.text
+    assert len(provider.requests) == 1
+    assert store.executions[turn_id].state.value == "rejected_generation"
 
 
 @pytest.mark.anyio
@@ -350,8 +394,12 @@ async def test_http_and_mcp_replay_zero_provider_calls_and_conflict(monkeypatch)
     assert len(provider.requests) == 1
     http_execution = store.executions[turn_id]
 
-    mcp_first = await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
-    mcp_second = await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+    mcp_first = await execute_mcp_tool(
+        engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+    )
+    mcp_second = await execute_mcp_tool(
+        engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+    )
     assert mcp_first[0].text == mcp_second[0].text  # type: ignore[union-attr]
     mcp_payload = json.loads(mcp_first[0].text)  # type: ignore[union-attr]
     assert mcp_payload["execution_id"] == str(http_execution.execution_id)
@@ -360,18 +408,21 @@ async def test_http_and_mcp_replay_zero_provider_calls_and_conflict(monkeypatch)
 
     changed = payload("Different question", turn_id)
     with pytest.raises(ConflictError):
-        await execute_mcp_tool(engine, "run_final_qa_v2", changed, ServerConfig())
+        await execute_mcp_tool(
+            engine, "run_final_qa_v2", changed, ServerConfig(), principal=FIXTURE_PRINCIPAL
+        )
     with pytest.raises(Exception, match="principal_id"):
         await execute_mcp_tool(
             engine,
             "run_final_qa_v2",
             {**body, "principal_id": str(uuid4())},
             ServerConfig(),
+            principal=FIXTURE_PRINCIPAL,
         )
 
     execution = store.executions[turn_id]
     published_key = (execution.execution_id, FinalQAExecutionSnapshotPhase.PUBLISHED)
-    store.snapshots[published_key] = SimpleNamespace(payload="{corrupt")  # type: ignore[assignment]
+    store.snapshots[published_key] = SimpleNamespace(payload="{corrupt")
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app_for(engine)), base_url="http://test"
     ) as client:
@@ -398,13 +449,17 @@ async def test_transport_citation_retry_multimodal_and_multilingual(monkeypatch)
 
     monkeypatch.setattr(FinalQAV2ApplicationService, "_retrieval_result", fake_retrieval)
     body = payload(question, uuid4())
-    content = await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+    content = await execute_mcp_tool(
+        engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+    )
     assert len(provider.requests) == 2
     assert "मराठी चित्र" in provider.requests[0].rendered_context
     assert "हिन्दी पाठ" in provider.requests[0].rendered_context
     assert "occurrence" in provider.requests[0].resource_handles[0]
     assert "citation_resolved" in content[0].text  # type: ignore[union-attr]
-    await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+    await execute_mcp_tool(
+        engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+    )
     assert len(provider.requests) == 2
 
 
@@ -424,9 +479,13 @@ async def test_mcp_first_execution_and_replay_use_one_provider_call(monkeypatch)
 
     monkeypatch.setattr(FinalQAV2ApplicationService, "_retrieval_result", fake_retrieval)
     body = payload(question, uuid4())
-    first = await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+    first = await execute_mcp_tool(
+        engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+    )
     assert len(provider.requests) == 1
-    second = await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+    second = await execute_mcp_tool(
+        engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+    )
     assert len(provider.requests) == 1
     first_payload = json.loads(first[0].text)  # type: ignore[union-attr]
     second_payload = json.loads(second[0].text)  # type: ignore[union-attr]
@@ -460,12 +519,16 @@ async def test_transport_rejects_incomplete_profile_and_unauthorized_replay(monk
         incomplete_state[0] = state
         body = payload(question, uuid4())
         with pytest.raises(Exception, match="complete evidence"):
-            await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+            await execute_mcp_tool(
+                engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+            )
     assert not provider.requests
 
     body["provider_profile"] = "caller-selected:model"
     with pytest.raises(Exception, match="profile"):
-        await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+        await execute_mcp_tool(
+            engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+        )
 
     async def complete_result(self, query, request):  # type: ignore[no-untyped-def]
         del self, request
@@ -477,12 +540,16 @@ async def test_transport_rejects_incomplete_profile_and_unauthorized_replay(monk
 
     monkeypatch.setattr(FinalQAV2ApplicationService, "_retrieval_result", complete_result)
     body["provider_profile"] = "final_qa_v2:transport"
-    await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+    await execute_mcp_tool(
+        engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+    )
     assert len(provider.requests) == 1
 
     authorizer.allowed = False
     with pytest.raises(IntegrityError, match="authorization denied"):
-        await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+        await execute_mcp_tool(
+            engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+        )
     assert len(provider.requests) == 1
 
     authorizer.allowed = True
@@ -500,14 +567,18 @@ async def test_transport_rejects_incomplete_profile_and_unauthorized_replay(monk
     monkeypatch.setattr(FinalQAV2ApplicationService, "_retrieval_result", unsupported_result)
     unsupported_body = payload(question, uuid4())
     with pytest.raises(Exception, match="modalities"):
-        await execute_mcp_tool(engine, "run_final_qa_v2", unsupported_body, ServerConfig())
+        await execute_mcp_tool(
+            engine, "run_final_qa_v2", unsupported_body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+        )
     assert len(provider.requests) == 1
 
     provider.unsupported.clear()
     provider.states[EvidenceKindV2.OCR_REGION] = ProviderModalityState.UNAVAILABLE
     unavailable_body = payload(question, uuid4())
     with pytest.raises(Exception, match="modalities"):
-        await execute_mcp_tool(engine, "run_final_qa_v2", unavailable_body, ServerConfig())
+        await execute_mcp_tool(
+            engine, "run_final_qa_v2", unavailable_body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+        )
     assert len(provider.requests) == 1
 
 
@@ -520,8 +591,8 @@ async def test_transport_rejects_incomplete_profile_and_unauthorized_replay(monk
     ],
 )
 async def test_partial_publication_policy_remains_truthful(
-    monkeypatch, completeness: RetrievalCompleteness
-) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch: pytest.MonkeyPatch, completeness: RetrievalCompleteness
+) -> None:
     engine, _, provider, _ = fixture(["Grounded [source:1]"])
     question = "Bounded evidence"
     result = retrieval((candidate(),), question, completeness)
@@ -537,7 +608,9 @@ async def test_partial_publication_policy_remains_truthful(
     monkeypatch.setattr(FinalQAV2ApplicationService, "_retrieval_result", fake_retrieval)
     body = payload(question, uuid4())
     body["publication_policy"] = "allow_partial"
-    content = await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+    content = await execute_mcp_tool(
+        engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+    )
     result_body = json.loads(content[0].text)  # type: ignore[union-attr]
     assert result_body["completeness"] == completeness.value
     assert len(provider.requests) == 1
@@ -545,8 +618,8 @@ async def test_partial_publication_policy_remains_truthful(
 
 @pytest.mark.anyio
 async def test_transport_rejects_two_invalid_citation_attempts_without_replay_generation(
-    monkeypatch,
-) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     engine, _, provider, _ = fixture(["Bad [Source:1]", "Still bad [SOURCE:1]"])
     question = "Citation failure"
     result = retrieval((candidate(),), question)
@@ -562,10 +635,14 @@ async def test_transport_rejects_two_invalid_citation_attempts_without_replay_ge
     monkeypatch.setattr(FinalQAV2ApplicationService, "_retrieval_result", fake_retrieval)
     body = payload(question, uuid4())
     with pytest.raises(IntegrityError, match="citation_compliance"):
-        await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+        await execute_mcp_tool(
+            engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+        )
     assert len(provider.requests) == 2
     with pytest.raises(IntegrityError, match="citation_compliance"):
-        await execute_mcp_tool(engine, "run_final_qa_v2", body, ServerConfig())
+        await execute_mcp_tool(
+            engine, "run_final_qa_v2", body, ServerConfig(), principal=FIXTURE_PRINCIPAL
+        )
     assert len(provider.requests) == 2
 
 
@@ -591,9 +668,9 @@ def _production_chat_app(
     operational: SQLiteFinalQAOperationalStore,
     provider: Provider,
     *,
-    auth_mode: str = "api-key",
+    auth_mode: Literal["api-key", "jwt"] = "api-key",
     timeout_ms: int = 180_000,
-):  # type: ignore[no-untyped-def]
+) -> tuple[FastAPI, SimpleNamespace]:
     class NotebookReader:
         async def get_notebook(self, notebook_id: UUID):  # type: ignore[no-untyped-def]
             return object() if notebook_id == NOTEBOOK_ID else None
@@ -647,16 +724,19 @@ def _production_chat_app(
     return create_app(
         server_config=config,
         mnemo_config=core,
-        engine=engine,
+        engine=cast(KnowledgeEngine, engine),
         provision_tokenizer_on_startup=False,
+        indexed_fixture_readiness_check=disposable_index_admission(tmp_path / "admission"),
     ), engine
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("auth_mode", ["api-key", "jwt"])
 async def test_production_http_chat_authentication_replay_and_isolated_store(
-    tmp_path: Path, monkeypatch, auth_mode: str
-) -> None:  # type: ignore[no-untyped-def]
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    auth_mode: Literal["api-key", "jwt"],
+) -> None:
     operational = SQLiteFinalQAOperationalStore(tmp_path / "operational" / "final_qa_v2.db")
     await operational.open()
     provider = Provider(["Grounded [source:1]"])
@@ -786,8 +866,8 @@ async def test_production_http_chat_authentication_replay_and_isolated_store(
 
 @pytest.mark.anyio
 async def test_production_http_chat_full_deadline_records_terminal_state(
-    tmp_path: Path, monkeypatch
-) -> None:  # type: ignore[no-untyped-def]
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     class BlockingProvider(Provider):
         async def complete(self, request):  # type: ignore[no-untyped-def]
             del request
@@ -839,8 +919,8 @@ async def test_production_http_chat_full_deadline_records_terminal_state(
 
 @pytest.mark.anyio
 async def test_production_http_chat_stalled_timeout_reconciliation_fails_safely(
-    tmp_path: Path, monkeypatch
-) -> None:  # type: ignore[no-untyped-def]
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     class BlockingProvider(Provider):
         async def complete(self, request):  # type: ignore[no-untyped-def]
             del request

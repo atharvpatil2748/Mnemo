@@ -156,6 +156,65 @@ def _plan(
     )
 
 
+def test_full_v2_cursor_binds_actor_scope_and_serving_alias() -> None:
+    notebook = uuid4()
+    actor = uuid4()
+    plan = _plan(
+        notebook,
+        mode=AdvancedRetrievalMode.EXHAUSTIVE,
+        representations=(
+            EvidenceRepresentation.CANONICAL_TEXT,
+            EvidenceRepresentation.MULTILINGUAL_TEXT,
+        ),
+    ).model_copy(
+        update={
+            "security_scope_identity": str(actor),
+            "automatic_policy_version": "automatic-evidence-plan/v1:" + "a" * 64,
+        }
+    )
+    codec = RetrievalCursorCodec(b"serving-composition-cursor-key-1234")
+    token = codec.encode(
+        plan=plan,
+        representation_index=1,
+        offset=2,
+        snapshots={"canonical_text": "b" * 64},
+        now=NOW,
+    )
+    assert codec.decode(token, plan=plan, now=NOW)["offset"] == 2
+    for changed in (
+        {"security_scope_identity": str(uuid4())},
+        {"automatic_policy_version": "automatic-evidence-plan/v1:" + "c" * 64},
+        {"scope": RetrievalScopeV2(notebook_id=uuid4())},
+        {"query": "different question"},
+        {"budgets": _budgets(result_limit=4)},
+    ):
+        with pytest.raises((IntegrityError, ConflictError)):
+            codec.decode(token, plan=plan.model_copy(update=changed), now=NOW)
+
+
+def test_full_v2_ocr_regions_keep_distinct_candidate_identities() -> None:
+    document, version, occurrence, derivation = uuid4(), uuid4(), uuid4(), uuid4()
+    first = advanced_candidate_id(
+        representation=EvidenceRepresentation.MULTILINGUAL_TEXT,
+        document_id=document,
+        version_id=version,
+        chunk_id=None,
+        occurrence_id=occurrence,
+        derivation_id=derivation,
+        evidence_id="ocr-region-one",
+    )
+    second = advanced_candidate_id(
+        representation=EvidenceRepresentation.MULTILINGUAL_TEXT,
+        document_id=document,
+        version_id=version,
+        chunk_id=None,
+        occurrence_id=occurrence,
+        derivation_id=derivation,
+        evidence_id="ocr-region-two",
+    )
+    assert first != second
+
+
 def _chunk(index: int, document_id: UUID, version_id: UUID, text: str) -> Chunk:
     return Chunk(
         id=f"{index:064x}",
@@ -367,6 +426,148 @@ def test_distinct_ocr_vision_and_visual_evidence_is_not_text_deduplicated() -> N
     }
 
 
+def test_automatic_ranked_query_keeps_exact_ocr_hit_ahead_of_title_noise() -> None:
+    notebook = uuid4()
+    document, version, source, occurrence, derivation = (
+        uuid4(),
+        uuid4(),
+        uuid4(),
+        uuid4(),
+        uuid4(),
+    )
+    canonical = FakeSource(
+        EvidenceRepresentation.CANONICAL_TEXT,
+        tuple(
+            _candidate(
+                notebook_id=notebook,
+                representation=EvidenceRepresentation.CANONICAL_TEXT,
+                index=index,
+                title_match=True,
+                content=f"unrelated canonical passage {index}",
+                rank=index,
+            )
+            for index in range(1, 11)
+        ),
+    )
+    ocr = _candidate(
+        notebook_id=notebook,
+        representation=EvidenceRepresentation.OCR_TEXT,
+        index=40,
+        document_id=document,
+        version_id=version,
+        source_id=source,
+        occurrence_id=occurrence,
+        derivation_id=derivation,
+        content="Auxiliary cutting edge",
+        rank=1,
+    )
+    service = _service(canonical, FakeSource(EvidenceRepresentation.OCR_TEXT, (ocr,)))
+    plan = _plan(
+        notebook,
+        query="What is the auxiliary cutting edge?",
+        representations=(EvidenceRepresentation.CANONICAL_TEXT, EvidenceRepresentation.OCR_TEXT),
+    ).model_copy(update={"automatic_policy_version": "automatic-evidence-plan/v1:test"})
+    result = asyncio.run(service.execute(plan))
+    assert ocr.candidate_id in {item.candidate_id for item in result.results}
+    observed = next(item for item in result.results if item.candidate_id == ocr.candidate_id)
+    assert observed.chunk is None
+    assert observed.occurrence_id == occurrence
+    assert observed.derivation_id == derivation
+    assert (
+        result.diagnostics.representation_reports[1].status is RepresentationSearchStatus.SEARCHED
+    )
+
+
+def test_automatic_occurrence_diversity_preserves_ocr_and_vision_views() -> None:
+    notebook = uuid4()
+    common = {
+        "notebook_id": notebook,
+        "index": 1,
+        "document_id": uuid4(),
+        "version_id": uuid4(),
+        "source_id": uuid4(),
+        "occurrence_id": uuid4(),
+    }
+    ocr = _candidate(
+        representation=EvidenceRepresentation.OCR_TEXT,
+        derivation_id=uuid4(),
+        content="Auxiliary cutting edge",
+        **common,
+    )
+    vision = _candidate(
+        representation=EvidenceRepresentation.VISION_ANALYSIS,
+        derivation_id=uuid4(),
+        content="Diagram of cutting tool edges",
+        **common,
+    )
+    plan = _plan(
+        notebook,
+        representations=(EvidenceRepresentation.OCR_TEXT, EvidenceRepresentation.VISION_ANALYSIS),
+        budgets=_budgets(result_limit=2, rerank_limit=2),
+    ).model_copy(update={"automatic_policy_version": "automatic-evidence-plan/v1:test"})
+    result = asyncio.run(
+        _service(
+            FakeSource(EvidenceRepresentation.OCR_TEXT, (ocr,)),
+            FakeSource(EvidenceRepresentation.VISION_ANALYSIS, (vision,)),
+        ).execute(plan)
+    )
+    assert {item.representation for item in result.results} == {
+        EvidenceRepresentation.OCR_TEXT,
+        EvidenceRepresentation.VISION_ANALYSIS,
+    }
+
+
+@pytest.mark.parametrize(
+    "derived_representation",
+    [EvidenceRepresentation.OCR_TEXT, EvidenceRepresentation.VISION_ANALYSIS],
+)
+def test_automatic_query_does_not_stop_at_canonical_zero(
+    derived_representation: EvidenceRepresentation,
+) -> None:
+    notebook = uuid4()
+    derived = _candidate(
+        notebook_id=notebook,
+        representation=derived_representation,
+        index=3,
+        occurrence_id=uuid4(),
+        derivation_id=uuid4(),
+        content="Auxiliary cutting edge",
+    )
+    sources = (
+        FakeSource(EvidenceRepresentation.CANONICAL_TEXT, ()),
+        FakeSource(derived_representation, (derived,)),
+    )
+    plan = _plan(
+        notebook,
+        representations=(EvidenceRepresentation.CANONICAL_TEXT, derived_representation),
+        query="What is the auxiliary cutting edge?",
+    ).model_copy(update={"automatic_policy_version": "automatic-evidence-plan/v1:test"})
+    result = asyncio.run(_service(*sources).execute(plan))
+    assert len(result.results) == 1
+    assert result.results[0].candidate_id == derived.candidate_id
+    assert result.results[0].chunk is None
+    assert all(
+        report.status is RepresentationSearchStatus.SEARCHED
+        for report in result.diagnostics.representation_reports
+    )
+
+
+def test_automatic_genuine_zero_is_not_a_failed_representation() -> None:
+    notebook = uuid4()
+    representations = (EvidenceRepresentation.CANONICAL_TEXT, EvidenceRepresentation.OCR_TEXT)
+    plan = _plan(notebook, representations=representations).model_copy(
+        update={"automatic_policy_version": "automatic-evidence-plan/v1:test"}
+    )
+    empty_sources = tuple(FakeSource(representation, ()) for representation in representations)
+    result = asyncio.run(_service(*empty_sources).execute(plan))
+    assert result.results == ()
+    assert result.completeness is RetrievalCompleteness.EMPTY
+    assert all(
+        report.status is RepresentationSearchStatus.SEARCHED
+        for report in result.diagnostics.representation_reports
+    )
+
+
 def test_unavailable_representation_is_partial_not_no_match_or_complete() -> None:
     notebook_id = uuid4()
     canonical = FakeSource(EvidenceRepresentation.CANONICAL_TEXT, ())
@@ -506,6 +707,75 @@ def test_single_oversized_candidate_fails_instead_of_issuing_non_progress_cursor
         asyncio.run(
             _service(FakeSource(EvidenceRepresentation.CANONICAL_TEXT, (candidate,))).execute(plan)
         )
+
+
+def test_authorized_exhaustive_cursor_rejects_different_actor() -> None:
+    notebook_id = uuid4()
+    candidates = tuple(
+        _candidate(
+            notebook_id=notebook_id,
+            representation=EvidenceRepresentation.CANONICAL_TEXT,
+            index=index,
+        )
+        for index in (1, 2)
+    )
+    service = _service(FakeSource(EvidenceRepresentation.CANONICAL_TEXT, candidates))
+    plan = _plan(
+        notebook_id,
+        mode=AdvancedRetrievalMode.EXHAUSTIVE,
+        budgets=_budgets(result_limit=1),
+    )
+    first_actor = PrincipalContextV1(actor_id=uuid4(), authenticated=True)
+    second_actor = PrincipalContextV1(actor_id=uuid4(), authenticated=True)
+    first = asyncio.run(service.execute_authorized(principal=first_actor, plan=plan))
+    assert first.next_cursor is not None
+    with pytest.raises(ConflictError, match="cursor"):
+        asyncio.run(
+            service.execute_authorized(principal=second_actor, plan=plan, cursor=first.next_cursor)
+        )
+    second = asyncio.run(
+        service.execute_authorized(principal=first_actor, plan=plan, cursor=first.next_cursor)
+    )
+    assert second.next_cursor is None
+    assert second.results[0].candidate_id != first.results[0].candidate_id
+
+
+def test_exhaustive_next_item_content_budget_exact_boundary() -> None:
+    notebook_id = uuid4()
+    candidates = tuple(
+        _candidate(
+            notebook_id=notebook_id,
+            representation=EvidenceRepresentation.CANONICAL_TEXT,
+            index=index,
+            content=content,
+        )
+        for index, content in ((1, "a"), (2, "b" * 81))
+    )
+    service = _service(FakeSource(EvidenceRepresentation.CANONICAL_TEXT, candidates))
+    for budget, expected_error in ((81, False), (80, True)):
+        plan = _plan(
+            notebook_id,
+            mode=AdvancedRetrievalMode.EXHAUSTIVE,
+            budgets=_budgets(result_limit=1, max_content_characters=budget),
+        )
+        first = asyncio.run(service.execute(plan))
+        assert first.next_cursor is not None
+        if expected_error:
+            with pytest.raises(ContractValidationError, match="cannot serialize one evidence item"):
+                asyncio.run(service.execute(plan, cursor=first.next_cursor))
+        else:
+            second = asyncio.run(service.execute(plan, cursor=first.next_cursor))
+            assert second.next_cursor is None
+            assert second.completeness is RetrievalCompleteness.COMPLETE
+            assert [item.candidate_id for item in (*first.results, *second.results)] == [
+                item.candidate_id for item in candidates
+            ]
+
+    empty = asyncio.run(
+        _service(FakeSource(EvidenceRepresentation.CANONICAL_TEXT, ())).execute(plan)
+    )
+    assert empty.completeness is RetrievalCompleteness.EMPTY
+    assert empty.next_cursor is None
 
 
 def test_authorization_candidate_and_expansion_explosion_fail_closed() -> None:

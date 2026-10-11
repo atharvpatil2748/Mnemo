@@ -9,11 +9,14 @@ from uuid import UUID
 
 from mnemo.interfaces.advanced_retrieval import AdvancedRetrievalSourceV1, AdvancedSourcePage
 from mnemo.interfaces.scope import PrincipalContextV1
+from mnemo.models._shared import FrozenMetadata
 from mnemo.models.advanced_retrieval import (
     AdvancedRetrievalCandidate,
     AdvancedRetrievalMode,
     EvidenceRepresentation,
+    RetrievalPathEvidenceV2,
     RetrievalPlanV2,
+    advanced_candidate_id,
 )
 from mnemo.models.multilingual import LanguageCode
 from mnemo.models.v2_retrieval_authorization import V2RetrievalAuthorizationDecisionV1
@@ -22,6 +25,7 @@ from mnemo.retrieval.full_multilingual_v2 import (
     MultilingualV2RetrievalCandidate,
 )
 from mnemo.retrieval.language_detection import LanguageDetectorRegistryV2
+from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
 
 
 @runtime_checkable
@@ -72,6 +76,9 @@ class FullMultilingualAdvancedSourceV2:
         query_language_resolver: QueryLanguageResolverV2,
         projector: V2AdvancedCandidateProjector,
         exhaustive_fallback: AdvancedRetrievalSourceV1,
+        alias_set_digest: str | None = None,
+        exhaustive_store: SQLiteV2ReadOnlyRuntimeStore | None = None,
+        language_text_generation_id: UUID | None = None,
     ) -> None:
         if not isinstance(query_language_resolver, QueryLanguageResolverV2):
             raise TypeError("query language resolver does not implement V2 contract")
@@ -83,6 +90,9 @@ class FullMultilingualAdvancedSourceV2:
         self._query_language_resolver = query_language_resolver
         self._projector = projector
         self._exhaustive_fallback = exhaustive_fallback
+        self.alias_set_digest = alias_set_digest
+        self._exhaustive_store = exhaustive_store
+        self._language_text_generation_id = language_text_generation_id
 
     @property
     def representation(self) -> EvidenceRepresentation:
@@ -92,6 +102,10 @@ class FullMultilingualAdvancedSourceV2:
         self, plan: RetrievalPlanV2, *, offset: int, limit: int
     ) -> AdvancedSourcePage:
         if plan.mode is AdvancedRetrievalMode.EXHAUSTIVE:
+            if self._exhaustive_store is not None:
+                raise PermissionError(
+                    "Full V2 exhaustive traversal requires principal authorization"
+                )
             return await self._exhaustive_fallback.retrieve(plan, offset=offset, limit=limit)
         raise PermissionError("V2 ranked retrieval requires the server-owned principal entry point")
 
@@ -104,6 +118,10 @@ class FullMultilingualAdvancedSourceV2:
         limit: int,
     ) -> AdvancedSourcePage:
         if plan.mode is AdvancedRetrievalMode.EXHAUSTIVE:
+            if self._exhaustive_store is not None:
+                return await self._retrieve_exhaustive_authorized(
+                    principal=principal, plan=plan, offset=offset, limit=limit
+                )
             return await self._exhaustive_fallback.retrieve(plan, offset=offset, limit=limit)
         if offset != 0:
             raise ValueError("ranked Full Multilingual V2 retrieval does not support offsets")
@@ -124,6 +142,7 @@ class FullMultilingualAdvancedSourceV2:
             json.dumps(
                 {
                     "application_service_id": self._application.application_service_id,
+                    "alias_set_digest": self.alias_set_digest,
                     "plan": plan.fingerprint,
                     "candidate_ids": [str(item.candidate_id) for item in candidates],
                     "omissions": result.omissions,
@@ -139,6 +158,94 @@ class FullMultilingualAdvancedSourceV2:
             examined=result.dense_examined + result.sparse_examined,
             next_offset=None,
             exhausted=True,
+        )
+
+    async def _retrieve_exhaustive_authorized(
+        self, *, principal: PrincipalContextV1, plan: RetrievalPlanV2, offset: int, limit: int
+    ) -> AdvancedSourcePage:
+        store = self._exhaustive_store
+        generation_id = self._language_text_generation_id
+        if store is None or generation_id is None or self.alias_set_digest is None:
+            raise RuntimeError("Full V2 exhaustive source is not composed")
+        decision = await self._application.authorize_only(principal=principal, plan=plan)
+        rows = await store.list_authorized_v2_semantic_rows(
+            decision=decision, generation_id=generation_id, offset=offset, limit=limit + 1
+        )
+        candidates: list[AdvancedRetrievalCandidate] = []
+        for index, row in enumerate(rows[:limit], 1):
+            source = row.source
+            chunk = (
+                None
+                if source.chunk_id is None
+                else await store.get_authorized_v2_chunk(
+                    decision=decision, chunk_id=source.chunk_id
+                )
+            )
+            if source.chunk_id is not None and chunk is None:
+                raise LookupError("V2 canonical chunk lineage is unavailable")
+            candidates.append(
+                AdvancedRetrievalCandidate(
+                    candidate_id=advanced_candidate_id(
+                        representation=self.representation,
+                        document_id=source.document_id,
+                        version_id=source.version_id,
+                        chunk_id=source.chunk_id,
+                        occurrence_id=source.occurrence_id,
+                        derivation_id=source.derivation_id,
+                        evidence_id=source.evidence_id,
+                    ),
+                    notebook_id=source.notebook_id,
+                    source_id=source.source_id,
+                    document_id=source.document_id,
+                    version_id=source.version_id,
+                    representation=self.representation,
+                    chunk=chunk,
+                    occurrence_id=source.occurrence_id,
+                    derivation_id=source.derivation_id,
+                    evidence_id=source.evidence_id,
+                    locator=FrozenMetadata(
+                        {
+                            "evidence_id": (
+                                None if source.evidence_id is None else str(source.evidence_id)
+                            ),
+                            "evidence_kind": source.kind.value,
+                            "representation_reference_id": str(row.representation.reference_id),
+                            "generation_id": str(generation_id),
+                            "active_alias_set_identity": self.alias_set_digest,
+                            "database_identity": decision.runtime_binding.database_identity,
+                        }
+                    ),
+                    document_title=None,
+                    content=row.text,
+                    paths=(
+                        RetrievalPathEvidenceV2(
+                            path="active-full-v2-semantic-projection",
+                            source_rank=offset + index,
+                            source_score=None,
+                        ),
+                    ),
+                )
+            )
+        snapshot = hashlib.sha256(
+            json.dumps(
+                {
+                    "alias": self.alias_set_digest,
+                    "generation": str(generation_id),
+                    "database": decision.runtime_binding.database_identity,
+                    "plan": plan.fingerprint,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        has_more = len(rows) > limit
+        return AdvancedSourcePage(
+            representation=self.representation,
+            snapshot_identity=snapshot,
+            candidates=tuple(candidates),
+            examined=len(rows),
+            next_offset=offset + limit if has_more else None,
+            exhausted=not has_more,
         )
 
     async def expand(

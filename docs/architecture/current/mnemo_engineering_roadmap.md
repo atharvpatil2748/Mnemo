@@ -5,9 +5,23 @@
 **Status:** Living Implementation Tracker  
 **Scope:** Complete implementation of all four layers — mnemo-core, mnemo-server, mnemo-ui, plugins  
 
-**Current baseline (2026-09-08):** Phases 0–8 are complete. Phase 8.5 is
-complete and certified under ADR-0076 for the exact immutable 44-document V2
-production identity. Phase 8.6 is complete as a validated 24-document,
+**Current execution position (2026-10-11):** The bounded pre-Phase-8.9
+decoupling/reset retired five exact, allowlisted notebook-index stores
+(181,402 aggregate indexed-row delta), with source manifests verified 44/44
+and 24/24. Production is offline and explicitly `UNINDEXED`; historical
+certification does not select a current index. This is not Phase 8.9
+implementation, a production GO, or indexed multi-user authorization
+certification. The 181,402 figure is an aggregate indexed
+row delta, not a count of unique documents. The former scratch GPU-preflight
+venv was manually removed after the main `.venv` passed bounded CUDA checks;
+historical commands remain evidence, not current setup. Current readiness
+evidence is in the [pre-Phase-8.9 final report](../../reports/architecture/pre-phase-8-9-final-readiness-report.md).
+See the [execution record](../../reports/architecture/phase-8-9-runtime-cutover-execution.md).
+
+**Historical implementation baseline (originally 2026-09-08; re-baselined
+2026-10-09):** Phases 0–8 are complete. Phase 8.5 is
+complete and historically certified under ADR-0076 for the exact immutable,
+now-retired 44-document V2 identity. Phase 8.6 was validated as a 24-document,
 5,843-chunk format-diverse multilingual evaluation notebook and is not
 production-exposed. Phase 8.7 is the retrospective completed capability
 milestone for the expanded 14-tool MCP surface and real client exercises; later
@@ -15,9 +29,29 @@ audits identified production-composition and contract hardening that Phase 8.8
 must correct. Phase 8.8 is in progress (8.8.14a and 8.8.14b accepted;
 Module 8.8.1 certified; Stage 5 locally accepted; corrected 8.8.5/8.8.7/
 8.8.2f/8.8.4/8.8.8 batch independently accepted locally)
-but not verified. Phase 9 is
-the next implementation phase, gated on Phase 8.8 verification, the mutable
-workspace boundary, and authenticated V2 chat/FinalQA transport.
+but not verified. Phase 8.9 is the next planned implementation phase. Phase 9
+is gated on an exact-identity Phase 8.9 GO, in addition to the accepted mutable
+workspace and authenticated V2 chat boundaries.
+
+**ADR-0079 additive workstream (not a renumbering of Phase 8.8 or Product
+Stage 7):** Govern and implement representation-complete normal V2 retrieval in
+this dependency order: (1) contract/authorization approval; (2) governed
+projection path using existing OCR/Vision derivations; (3) shared automatic
+representation planner; (4) versioned V2 automatic-query application service;
+(5) fusion/diversity/provenance validation; (6) multilingual derived dense
+retrieval; (7) bounded opt-in PaddleOCR provider adapter (implemented in the
+working tree, model/runtime and corpus behavior not yet verified); (8) fresh isolated
+evaluation rebuild; (9) exhaustive validation and separate certification.
+Frozen `query_notebook` and `search_all_notebooks` remain canonical-only.
+Neither this workstream nor READY evaluation projections authorize production
+corpus mutation or Phase 8.6 promotion. Implementation and certification status
+must be recorded independently from this accepted sequence.
+Historical 14-tool inventories describe the pre-ADR-0079 baseline. The
+additive working-tree `query_notebook_v2` is the fifteenth registration;
+registration is not external certification. ADR-0080 retires dedicated
+`search_images` as a mandatory deliverable: ordinary authorized search must
+consider applicable image-derived evidence. Phase 8.8's active scope now ends
+at Module 8.8.8; the remaining integration and certification work is Phase 8.9.
 
 > *This document does not redesign the architecture. It translates the v2.0 specification into a concrete, phase-by-phase engineering execution plan.*
 
@@ -56,9 +90,9 @@ Phase 5  →  Phase 6  →  Phase 7  →  Phase 8  →  Phase 8.5  →  Phase 8.
   Embed.       Retrieval     REST API      MCP          Advanced       Evaluation
   Pipeline     Pipeline      + Streaming   Server       retrieval/MM   notebook
 
-                                      Phase 8.7  →  Phase 8.8  →  Phase 9
-                                      MCP/client    Convergence   Web UI
-                                      capability    + contracts   (next)
+                           Phase 8.7 → Phase 8.8 → Phase 8.9 → Phase 9
+                           MCP/client   scoped       unified     Web UI
+                           capability   checkpoint  retrieval  (gated)
 
      ↓             ↓             ↓
 Phase 10 →  Phase 11 →  Phase 12 →  Phase 13
@@ -221,10 +255,11 @@ the discovered correction and certification work.
 
 **Status:** **IN PROGRESS / NOT VERIFIED** — Module 8.8.1 is certified; later
 tool-contract, behavioral-parity, and phase-wide gates remain open.
-**Goal:** Converge every MCP/HTTP transport on the certified production
-composition, complete all 14 existing tool contracts, add dedicated authorized
-semantic image discovery, and close the two architectural prerequisites for
-Phase 9.
+**Re-baselined goal:** Preserve the certified runtime convergence and locally
+accepted compatibility work through Module 8.8.8. This scoped checkpoint does
+not itself certify all tools, transports, or Phase 8.8 as a whole. Modules
+8.8.10/11 retain historical local acceptance evidence but are not new work in
+the active 8.8 execution sequence. Unfinished work after 8.8.8 moves to 8.9.
 
 Phase 8.8 is bounded hardening and integration. It does not implement Phase 9,
 promote Phase 8.6, or enable Qdrant/SurrealDB production persistence.
@@ -297,36 +332,26 @@ implementation and evidence.
    is the current local verdict (2,694 passed, 18 skipped, 90.31% coverage in
    that run). Repository publication does not establish deployment or external verification.
    This does not complete Stage 6 or Phase 8.8.
-7. **Verify the bounded isolation and structured-contract branches:**
+7. **Historical local follow-on, not an active 8.8 completion dependency:**
    - Module 8.8.10: 8.8.10a enforce evaluation-only selection; then 8.8.10b
      specify the future promotion gate and 8.8.10c test Phase 8.5/8.6 isolation.
    - Module 8.8.11: 8.8.11a validate the existing authorized typed contract;
      then 8.8.11b return truthful unavailability and 8.8.11c keep activation out
-     of scope.
-8. **Complete Module 8.8.12 — Dedicated Semantic Image Search:** 8.8.12a
-   define discovery request/result contracts; then 8.8.12b implement OCR mode,
-   8.8.12c implement caption mode, 8.8.12d implement visual mode, and 8.8.12f
-   connect discovery to `get_asset`; after 8.8.12b–d, 8.8.12e implements
-   deterministic hybrid mode; after 8.8.12b–e, 8.8.12g proves authorization
-   before disclosure.
-9. **Certify transports and complete provenance:**
-   - Module 8.8.9, only after Modules 8.8.1–8.8.8: 8.8.9a execute the
-     HTTP/stdio/SSE/tunnel matrix; then 8.8.9b compare semantic evidence and
-     8.8.9c diagnose the long FinalQA call.
-   - Module 8.8.13: after Modules 8.8.4, 8.8.5, and 8.8.12, 8.8.13a preserve
-     the full identity chain and 8.8.13b validate citation/evidence resolution;
-     after Module 8.8.9, 8.8.13c compares transport provenance.
-10. **Run the complete Phase 8.8 acceptance gate.** Exercise all 14 existing
-    tools plus `search_images`, verify runtime identity, readers, authorization,
-    metadata, capabilities, typed errors, FinalQA, isolation, dynamic public
-    `requested_k`, image-mode no-result/partial/unavailable/multilingual behavior,
-    provenance, storage safety, and unchanged protected hashes. Qdrant,
-    SurrealDB, Phase 8.6 promotion, and Phase 9 implementation remain out of
-    scope.
-11. **8.8.14d — Issue Phase 9 readiness evidence.** Bind Modules 8.8.1–8.8.13,
-    the accepted and tested 8.8.14a–c decisions, every acceptance gate, and the
-    protected hashes into one GO/NO-GO result. Only
-    `PHASE_8_8_VERIFIED → Phase 9 GO` permits Phase 9 implementation.
+     of scope. Both step-7 modules are independently accepted in the
+     [dated local forensic closure](../../reports/operations/mnemo-stage-7-forensic-audit-remediation-and-stage-6-closure.md)
+     after a scoped readiness correction. Stage 6 is closed for **local
+     forensic evidence only**. The current uncommitted code was subsequently
+     restarted behind the existing tunnel on 2026-09-27; publication and
+     independent external acceptance remain pending. See the
+     [final contract audit](../../reports/operations/mnemo-stage-6-final-contract-and-acceptance-gate-audit.md).
+     The roadmap does not define this branch as “Stage 7”; Product Stage 7 is
+     a separate future architecture milestone.
+8. **Stop the active Phase 8.8 plan at Module 8.8.8.** Keep the 8.8.14a–c
+   accepted decisions and Modules 8.8.10/11 local records as historical
+   prerequisites. Do not infer `PHASE_8_8_VERIFIED`. Former 8.8.9 transport
+   parity, 8.8.13 provenance, and 8.8.14d readiness move to Phase 8.9;
+   former 8.8.12 image-discovery requirements move into automatic search,
+   without a mandatory `search_images` tool.
 
 #### Phase 8.8.14a — implemented, certified, and accepted
 
@@ -385,10 +410,10 @@ is `scratch/phase8_8_1_runtime_convergence/convergence.json`; see
 `docs/reports/operations/mnemo-module-8-8-1-certification.md`. Individual
 capability readiness is not certified by tool registration. Stage 5's 8.8.2a–e/g,
 8.8.3a–d, and 8.8.6a–c branches are locally accepted. Task 8.8.2f was
-subsequently implemented and independently assessed locally; the complete
-Phase 8.8 acceptance gate remains open.
-8.8.14d remains **PENDING**. Phase 9 is blocked until
-`PHASE_8_8_VERIFIED → Phase 9 GO`.
+subsequently implemented and independently assessed locally; this does not
+establish a phase-wide verification or Phase 9 GO.
+The former 8.8.14d readiness decision remains **PENDING** under the Phase 8.9
+exit gate. Phase 9 remains blocked until a distinct Phase 8.9 GO decision.
 
 The 8.8.1 configuration contract derives the certified BGE mode, activation
 path, and FinalQA operational-store path from the existing production manifest.
@@ -420,9 +445,48 @@ four-transport convergence gates. Module 8.8.1 is **CERTIFIED**.
 
 ---
 
+### Phase 8.9 — Unified Authorized Retrieval and Transport Certification
+
+**Status:** PLANNED / NOT IMPLEMENTED AS A PHASE / NOT CERTIFIED. ADR-0080 is
+the design authority, not a deployment or approval to mutate indexes.
+**Entry:** preserve 8.8.1 certification, 8.8.14a–c accepted decisions and the
+actual local acceptance evidence through 8.8.8; accept the Phase 8.9 contract
+and separately approve any membership-state migration. A completed isolated
+evaluation rebuild is test input, not production promotion.
+**Goal:** one authorized search application boundary for MCP, HTTP and future
+UI, with selected-document and multi-notebook no-hint retrieval, truthful
+representation coverage, typed structured operations, source-resolving
+provenance and externally evidenced transport parity.
+**Non-goals:** alter frozen V1 semantics or authored V1 IR; require a public
+`search_images`; activate Qdrant/SurrealDB; promote Phase 8.6; implement the
+native UI or Phase 9; promise perfect semantic recall or certify all languages
+from provider metadata alone.
+
+Invariants: server-derived principal, authorization before capability/scope
+disclosure, no client-selected database/model/generation/actor, active complete
+compatible generations only, separate BGE-M3 text and CLIP visual spaces,
+OCR/Vision typed candidates rather than invented canonical chunks, signed
+actor/scope/plan/alias-bound continuation, and immutable certified sources.
+
+**Canonical execution order:** (1) 8.9.1 contract/ADR and consumer inventory;
+(2) 8.9.2 membership/scope authority and 8.9.3 shared DTO/service boundary
+may design in parallel but cannot expose fan-out until both pass; (3) 8.9.4
+cross-notebook and automatic representation orchestration; (4) 8.9.5 typed
+structured integration, parallel with 8.9.6 public adapters once 8.9.3/4
+contracts freeze; (5) 8.9.7 provenance, errors, cursor and answer integration;
+(6) 8.9.8 transport/external certification; (7) 8.9.9 GO/NO-GO.
+Task-level dependencies in §2 override this summary.
+
+**Exit:** signed, machine-verifiable `PHASE_8_9_GO` only after every mandatory
+8.9.9 gate passes for the exact deployment identity. Otherwise `NO_GO`, with
+failed and unavailable coverage recorded. Phase 9 may start only after GO;
+8.8 scope re-baselining never supplies that GO.
+
+---
+
 ### Phase 9 — Web UI
 **Duration:** Weeks 31–37  
-**Status:** **NEXT IMPLEMENTATION PHASE — BLOCKED UNTIL PHASE 8.8 VERIFIED**  
+**Status:** **PLANNED — BLOCKED UNTIL PHASE 8.9 GO**
 **Goal:** React frontend is operational. Users can perform the complete NotebookLM MVP workflow: create notebook → upload document → chat → see citations — entirely through the browser.
 
 ---
@@ -1272,7 +1336,9 @@ makes Phase 8.8 the corrective hardening phase.
 reconciliation completed, Module 8.8.1 certified; Phase 8.8 not verified.
 **Entry:** Phase 8.5 certified, Phase 8.6 validated and isolated, Phase 8.7 MCP
 capability work complete, both MCP audits accepted as implementation input.  
-**Exit:** `PHASE_8_8_VERIFIED`; only then may Phase 9 begin.
+**Exit:** Scoped 8.8.1–8.8.8 checkpoint with individual evidence; no
+`PHASE_8_8_VERIFIED` or Phase 9 authorization is inferred. Phase 8.9 owns the
+integrated acceptance decision.
 
 **Module 8.8.1 — Certified MCP Runtime Convergence**
 
@@ -1393,15 +1459,21 @@ The existing tool inventory is fixed for this gate: `list_notebooks`,
 | Prevent historical fallback | Certified V2 calls cannot route to historical V1 store/model profiles | High | 8.8.8a |
 | Verify frozen compatibility | Retained V1 behavior changes only for authorization and certified read compatibility | High | 8.8.8a |
 
-**Module 8.8.9 — Transport Parity and Tunnel Certification**
+**Former Module 8.8.9 — historical allocation only.** Unfinished four-transport
+semantic parity and long FinalQA diagnosis are now Phase 8.9 tasks 8.9.8a–c.
 
-| Task | Notes | Difficulty | Dependency |
-|---|---|---|---|
-| Execute one four-transport matrix | HTTP, stdio, SSE, and existing tunnel use one effective composition | High | 8.8.1–8.8.8 |
-| Compare semantic evidence | Store/model/activation IDs, principal, candidates, ranking, citations, metadata, provenance, capabilities, errors | High | 8.8.9a |
-| Diagnose long FinalQA call | Correlate client/server start/completion, deadlines, process lifecycle, and MCP error envelope | High | 8.8.9a |
+**Historical Module 8.8.10 — Phase 8.6 Exposure Boundary (locally accepted)**
 
-**Module 8.8.10 — Phase 8.6 Exposure Boundary**
+The local 8.8.10 implementation preserves the separate evaluation registry and
+adds a pre-open production composition rejection for evaluation database/blob
+selection and ADR-0077 workspace overlap. The future promotion requirements are
+specified in the [serving-role gate](../../governance/active/phase_8_6_serving_promotion_gate.md),
+but no promotion is authorized or active. Local test evidence is recorded in the
+[8.8.10 implementation report](../../reports/operations/mnemo-module-8-8-10-local-implementation.md);
+that point-in-time report is local implementation evidence. The
+[subsequent independent assessment](../../reports/operations/mnemo-stage-7-forensic-audit-remediation-and-stage-6-closure.md)
+accepts both 8.8.10 and 8.8.11 and closes only the local Stage 6 forensic
+branch, not deployment, publication, live transport certification or Phase 8.8.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
@@ -1409,7 +1481,19 @@ The existing tool inventory is fixed for this gate: `list_notebooks`,
 | Specify future promotion gate | Serving-role decision, allowlist, authorization, read compatibility, lifecycle, and fresh parity | Medium | 8.8.10a |
 | Test isolation | Phase 8.5 production and Phase 8.6 evaluation identities never leak across scope | High | 8.8.10a |
 
-**Module 8.8.11 — Structured Retrieval Contract**
+**Historical Module 8.8.11 — Structured Retrieval Contract (locally accepted)**
+
+The existing typed HTTP/MCP service is locally verified for authorized
+exact-version projections, explicit missing/non-ready generation unavailability,
+and a separate valid-empty result. Scoped capability reporting now probes the
+persisted authorized notebook without treating registration as activation. See
+the [8.8.11 local implementation](../../reports/operations/mnemo-module-8-8-11-local-implementation.md).
+The [combined independent assessment](../../reports/operations/mnemo-stage-7-forensic-audit-remediation-and-stage-6-closure.md)
+closed the local Stage 6 branch after requiring a canonical covering chunk
+for truthful scoped capability availability. The uncommitted code was later
+restarted behind the existing tunnel; publication and independent external
+acceptance remain open. No new production projection, activation or
+promotion was created.
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
@@ -1417,46 +1501,31 @@ The existing tool inventory is fixed for this gate: `list_notebooks`,
 | Return truthful unavailability | No projection/generation is an explicit capability result, not fake empty success | Medium | 8.8.11a |
 | Keep activation out of scope | Tool registration does not activate structured retrieval as a product feature | Low | 8.8.11a |
 
-**Module 8.8.12 — Dedicated Semantic Image Search (`search_images`)**
+**Former Module 8.8.12 — retired active plan.** OCR, Vision, compatible CLIP,
+asset recovery, no-result and partial-result semantics, authorization and
+provenance now belong to 8.9.4/8.9.7. No mandatory public `search_images` is
+planned. Any separate image-discovery operation requires a later justified ADR.
 
-| Task | Notes | Difficulty | Dependency |
-|---|---|---|---|
-| Define discovery request/result contracts | `notebook_id`, text `query`, `mode`, dynamic `requested_k`; stable image/source IDs, metadata, locators, retrieval paths, scores, provenance | High | 8.8.3, 8.8.5, 8.8.6 |
-| Implement OCR mode | Search authorized OCR text and resolve results to image occurrences | High | 8.8.12a |
-| Implement caption mode | Search authorized persisted Vision caption/observation text separately from OCR | High | 8.8.12a |
-| Implement visual mode | Use the compatible CLIP text encoder and authorized persisted visual embeddings | High | 8.8.12a |
-| Implement hybrid mode | Deterministic named-path RRF, identity deduplication, contribution reporting, and explicit partial/unavailable semantics | High | 8.8.12b–d |
-| Connect discovery to delivery | `search_images` returns occurrence/asset identities; `get_asset` remains exact binary delivery | Medium | 8.8.12a |
-| Test authorization first | No OCR/caption/vector path may disclose unauthorized images | High | 8.8.12b–e |
+**Former Module 8.8.13 — historical allocation only.** Implemented provenance
+remains prerequisite evidence; missing end-to-end citation and transport
+provenance work moves to 8.9.7/8.9.8.
 
-No scoring weights are selected merely to force a desired result. Any additional
-fusion constant is frozen before evaluation and follows the existing RRF/
-identity-deduplication architecture.
-
-**Module 8.8.13 — End-to-End MCP Provenance**
-
-| Task | Notes | Difficulty | Dependency |
-|---|---|---|---|
-| Preserve full identity chain | Notebook → source → document → version → chunk/occurrence/asset → locator → representation/derivation → retrieval path | High | 8.8.4, 8.8.5, 8.8.12 |
-| Validate citation/evidence resolution | Human metadata augments but never replaces canonical IDs | High | 8.8.13a |
-| Compare transport provenance | Same semantic chain across HTTP, stdio, SSE, and tunnel | High | 8.8.9 |
-
-**Module 8.8.14 — Phase 9 Architectural Preparation**
+**Historical Module 8.8.14 — Accepted 14a–c decisions; 14d moved to 8.9.9**
 
 | Task | Notes | Difficulty | Dependency | Status |
 |---|---|---|---|---|
 | Govern mutable workspace boundary | ADR-0077's explicit absolute separately governed mutable filesystem + SQLite workspace; invalid/absent/overlapping configuration forces server-enforced read-only behavior | High | Phase 8.7 | **8.8.14a implemented / certified / accepted** |
 | Govern authenticated V2 chat | Authenticated HTTP FinalQA V2 is the production chat path; V1 WebSocket/query streaming is non-production and V2 streaming is not required | High | Canonical order after 8.8.14a | **8.8.14b implemented / certified / accepted** |
 | Reconcile current documentation | Align storage optionality, phase status, routes, backends, dependencies, and current indexes without rewriting historical evidence | Medium | Accepted 8.8.14a and 8.8.14b | **8.8.14c completed** |
-| Issue Phase 9 readiness evidence | Bind all Phase 8.8 gates and protected hashes to one GO/NO-GO result | High | 8.8.1–8.8.13, accepted and tested 8.8.14a–c, complete acceptance gate | **8.8.14d pending** |
+| Issue Phase 9 readiness evidence | Historical 8.8.14d allocation; Phase 8.9 exit gate now owns the integrated GO/NO-GO | High | Phase 8.9 integrated gate | **pending in 8.9** |
 
-#### Phase 8.8 Test and Acceptance Matrix
+#### Historical Phase 8.8 test matrix (unfinished integrated cases move to 8.9)
 
 | Gate | Required evidence |
 |---|---|
 | Runtime convergence | All four transports report the same certified configuration, production DB, model, activation, and authorization identities; mismatch startup fails closed |
 | Existing tool completeness | Each of 14 tools has real valid, invalid-input, unauthorized, unavailable, provenance, typed-error, and transport evidence appropriate to its contract |
-| Image discovery | `search_images` passes OCR, caption, CLIP visual, and hybrid queries; known-image, semantic, multilingual-where-supported, notebook scope, dynamic-k, no-result, unavailable-mode, provenance, and authorization cases |
+| Image-derived evidence | Phase 8.9 gate: ordinary authorized search covers OCR, Vision and compatible visual evidence without image hints; exact `get_asset` delivery remains separate |
 | Retrieval | Retained V1 compatibility plus certified V2 sparse/dense/hybrid/multilingual behavior; internal pool remains 50 and public `requested_k` remains dynamic |
 | Metadata | Source-oriented results carry stable IDs and truthful authorized display metadata where persisted |
 | FinalQA | Authenticated certified V2 FinalQA succeeds through the actual external tunnel with correlated duration/deadline evidence |
@@ -1474,7 +1543,8 @@ The completed [memory and artifact audit/cleanup](../../reports/operations/mnemo
 and [historical index and embedding cleanup](../../reports/operations/mnemo-historical-index-cleanup.md)
 preserved all three protected stores, production configuration, models, and
 certification state. Those audit reports remain the operational evidence; Phase
-8.8 continues to treat these hashes as immutable entry/exit gates.
+Phase 8.9 must take fresh entry/exit fingerprints for its own exact identity;
+these historical hashes are not proof of the current on-disk state.
 
 Failure is fail-closed: do not expose a divergent transport, mutate a protected
 store, downgrade authorization, silently omit a requested modality, or mark the
@@ -1488,13 +1558,143 @@ redesign, and certified V2 retrieval redesign.
 
 ---
 
+### Phase 8.9 — Unified Retrieval and External-Client Gate
+
+Each task is a separately evidenced deliverable. These are **plans**, not
+claims that the working tree or current evaluation indexes satisfy them.
+Complexity is qualitative. No task authorizes writing certified stores.
+
+**Module 8.9.1 — Contract and compatibility authority.** Entry: scoped 8.8
+checkpoint and ADR-0079; exit: reviewed versioned search/scope/evidence/error
+contract with an inventoried consumer migration. Risk: breaking V1; rollback:
+keep existing adapters and feature-gate new contract.
+
+| Task ID | Task | Implementation notes / acceptance criteria | Complexity | Dependencies | Required evidence |
+|---|---|---|---|---|---|
+| 8.9.1a | Inventory current clients/routes/tools | Enumerate live MCP registry, FastAPI routes, defaults, external consumers and exact frozen V1 semantics; identify in-process vs external evidence | Medium | 8.8.8 | Versioned inventory and contract snapshots |
+| 8.9.1b | Freeze V2 scope/evidence contract | Explicit all-authorized or selected notebooks and document/version tuples; bounded ranked/traversal modes; typed representation/partial/error report; no client actor/store/generation | High | 8.9.1a, ADR-0080 acceptance | Schema review, compatibility matrix, invalid-input fixtures |
+| 8.9.1c | Govern migration/deprecation | Preserve current names until consumers migrate; proposal `search` and `/v2/search` is not registered; direct image search optional only by later decision | Medium | 8.9.1b | Consumer sign-off and reversible migration plan |
+
+**Module 8.9.2 — Membership and authorized scope.** Entry: 8.9.1b; exit:
+real actor-to-notebook authority, not merely notebook existence. Risk:
+cross-user leakage; rollback: fail closed to existing one-notebook behavior.
+
+| Task ID | Task | Implementation notes / acceptance criteria | Complexity | Dependencies | Required evidence |
+|---|---|---|---|---|---|
+| 8.9.2a | Select membership authority | Specify persistent ownership/sharing or trusted external resolver, lifecycle, migration and revocation; separate approval before writes | High | 8.9.1b | Threat model and approved state migration |
+| 8.9.2b | Resolve authorized scope | Principal-first notebook discovery; reject unauthorized/nonexistent IDs without existence leakage; bind document/version membership | High | 8.9.2a | Cross-user, shared-source and denial tests |
+| 8.9.2c | Bind continuation and disclosure | Actor/scope/alias/policy changes invalidate signed cursors; metadata/capability disclosure uses same scope | High | 8.9.2b | Tampering, revocation and capability non-disclosure tests |
+
+**Module 8.9.3 — One shared search application contract.** Entry: 8.9.1b;
+exit: MCP/HTTP/UI-ready service boundary; no duplicate routing logic. Risk:
+transport drift; rollback: retain old adapters until parity passes.
+
+| Task ID | Task | Implementation notes / acceptance criteria | Complexity | Dependencies | Required evidence |
+|---|---|---|---|---|---|
+| 8.9.3a | Define shared request and response | Server-owned plan, typed evidence including chunk/occurrence/dataset row, coverage and safe errors | High | 8.9.1b | DTO/serialization and schema fixtures |
+| 8.9.3b | Compose existing V2 services | Reuse `AutomaticQueryV2Service`, `AdvancedRetrievalService`, structured service and generation authority; HTTP/MCP become thin adapters | High | 8.9.3a | Service integration tests and no-parallel-stack review |
+| 8.9.3c | Define answer boundary | Supply evidence snapshot to existing FinalQA path, preserving deadlines, replay/idempotency and citation policy; no invented answer from unavailable evidence | High | 8.9.3b | Grounding and publication-policy tests |
+
+**Module 8.9.4 — Scoped automatic hybrid retrieval.** Entry: 8.9.2b and
+8.9.3b; exit: bounded, authorized multi-notebook/document search. Risk:
+starvation or unauthorized fan-out; rollback: single-notebook V2 remains.
+
+| Task ID | Task | Implementation notes / acceptance criteria | Complexity | Dependencies | Required evidence |
+|---|---|---|---|---|---|
+| 8.9.4a | Resolve active per-scope generations | Authorize before alias/capability read; check coverage, language/provider compatibility and BGE/CLIP spaces | High | 8.9.2b, 8.9.3b | Active/incomplete/incompatible matrix |
+| 8.9.4b | Fan out over selected notebooks/versions | Bounded parallel/cancellable search, exact scope and partial-notebook reporting; canonical zero never terminates derived search | High | 8.9.4a | Multi-notebook, selected-document, canonical-zero fixtures |
+| 8.9.4c | Fuse and traverse | Preserve notebook membership through dedup, source-rank diversity, dynamic requested-k and signed snapshot pagination; never call top-k exhaustive | High | 8.9.4b, 8.9.2c | Stable traversal, no-starvation, shared-source and replay tests |
+| 8.9.4d | Validate modalities/languages | No-hint canonical, OCR, Vision, compatible CLIP and provider-admitted multilingual candidates; no fake chunks or raw cross-space score comparison | High | 8.9.4a–c | Real evaluation pair relevance/provenance and negative cases |
+
+**Module 8.9.5 — Structured knowledge access.** Entry: 8.9.3b and active
+structured projections; exit: typed exact operations plus governed ordinary
+question routing. Risk: approximate answers masquerading as exact predicates;
+rollback: keep typed API only when intent is ambiguous.
+
+| Task ID | Task | Implementation notes / acceptance criteria | Complexity | Dependencies | Required evidence |
+|---|---|---|---|---|---|
+| 8.9.5a | Discover authorized datasets | Reuse typed dataset descriptors, exact version/row/column identity and active projection gate | Medium | 8.9.2b, 8.9.3b | Schema discovery and unavailable-generation tests |
+| 8.9.5b | Plan structured intent | Translate only unambiguous bounded natural-language intent to typed filters/aggregations; otherwise ask/return ambiguity, never invent rows | High | 8.9.5a, 8.9.4b | Exact-row and ambiguity fixtures |
+| 8.9.5c | Present structured evidence | Preserve dataset/row provenance beside text/image evidence without conflating scores or exact predicate semantics | High | 8.9.5b, 8.9.3a | Mixed-evidence citation and cross-document tests |
+
+**Module 8.9.6 — MCP/HTTP adapters and compatibility.** Entry: 8.9.1c,
+8.9.3b and 8.9.4b; exit: common business semantics, frozen V1 adapters and
+versioned V2 operations. Risk: client breakage; rollback: retain old routes.
+
+| Task ID | Task | Implementation notes / acceptance criteria | Complexity | Dependencies | Required evidence |
+|---|---|---|---|---|---|
+| 8.9.6a | Expose canonical search | Proposed MCP `search` / HTTP `POST /v2/search` only after schema and auth review; retain `query_notebook_v2` and `search_evidence` during migration | High | 8.9.4b, 8.9.1c | MCP/ASGI parity, V1 regression and client migration tests |
+| 8.9.6b | Unify typed structured/discovery adapters | Proposed `search_structured`/`describe_datasets` and HTTP route split only if needed; retain `query_structured` until parity and consumers are verified | Medium | 8.9.5a, 8.9.1c | Route inventory, typed contract/error parity |
+| 8.9.6c | Preserve exact delivery/capability | Keep document/chunk/asset/image-analysis and authorized capability routes; UI calls shared service, not private planners | Medium | 8.9.3b, 8.9.2c | Tool/route regression and UI-boundary test |
+
+**Module 8.9.7 — Provenance, errors and answer correctness.** Carries
+unfinished 8.8.13 work; entry: 8.9.4/5 evidence model; exit: source-resolvable
+citations across representations. Risk: false attribution; rollback: suppress
+unsupported citation/answer publication.
+
+| Task ID | Task | Implementation notes / acceptance criteria | Complexity | Dependencies | Required evidence |
+|---|---|---|---|---|---|
+| 8.9.7a | Preserve full ancestry | Notebook/source/document/version → chunk or occurrence/asset/derivation or dataset/row → generation/locator/path; preserve membership after dedup | High | 8.9.4c, 8.9.5c | ID-resolution audit against stored records |
+| 8.9.7b | Unify safe error/partial semantics | Originating typed codes; searched-zero distinct from unavailable/incomplete/failed/budget; no filesystem/actor leak | High | 8.9.3a, 8.9.4b | Failure-injection and disclosure tests |
+| 8.9.7c | Ground FinalQA on evidence snapshot | Bind requested-k, deadlines, publication, citation resolution and replay/idempotency to the authorized snapshot | High | 8.9.3c, 8.9.7a–b | Long-call, citation and replay tests |
+
+**Module 8.9.8 — Real transport parity.** Carries unfinished 8.8.9 and
+8.8.13c work; entry: 8.9.6/7; exit: independently observed application,
+ASGI, MCP stdio/SSE/tunnel and deployed HTTP behavior. Risk: false
+certification from unit tests; rollback: no external certification claim.
+
+| Task ID | Task | Implementation notes / acceptance criteria | Complexity | Dependencies | Required evidence |
+|---|---|---|---|---|---|
+| 8.9.8a | Exercise real transports | Discover live tools/routes; test valid/invalid/auth/unavailable over deployed HTTP, stdio, SSE and existing tunnel where applicable | High | 8.9.6a–c, 8.9.7b | Signed transport/client observations |
+| 8.9.8b | Compare semantic parity | Same principal, alias, scope, candidate/rank/citation/provenance/capability/error semantics; account for transport envelopes | High | 8.9.8a, 8.9.7a | Machine-comparable parity report |
+| 8.9.8c | Diagnose long FinalQA | Correlate client/server start, deadlines, cancellation, process lifecycle and safe MCP/HTTP failure envelopes | High | 8.9.8a, 8.9.7c | Timed external traces and replay evidence |
+
+**Module 8.9.9 — Integrated GO/NO-GO.** Carries former 8.8.14d; entry:
+all mandatory 8.9 tasks; exit: exact-identity signed decision, never an
+inference from registration or local tests. Risk: accidental promotion;
+rollback: retain prior certified serving identity and NO_GO.
+
+| Task ID | Task | Implementation notes / acceptance criteria | Complexity | Dependencies | Required evidence |
+|---|---|---|---|---|---|
+| 8.9.9a | Run integrated acceptance | All retained/new public operations, selected/all-authorized scopes, every ready representation, typed structured, ranked/traversal, negative/error/partial and V1 compatibility | High | 8.9.4d, 8.9.5c, 8.9.6c, 8.9.7c, 8.9.8b–c | Machine-readable case matrix, failures and skips |
+| 8.9.9b | Verify protected boundaries | Evaluation-only artifacts, certified corpus/source hashes, mutable-workspace separation and no Phase 8.6 promotion | High | 8.9.9a | Before/after fingerprints and storage-role audit |
+| 8.9.9c | Issue Phase 9 decision | `PHASE_8_9_GO` only when all required cases pass for exact deployment and externally evidenced transports; otherwise `NO_GO` | High | 8.9.9a–b | Signed identity-bound GO/NO-GO report |
+
+#### Phase 8.9 public-operation migration (proposed names are not registered)
+
+| Current operation/route | Current behavior and consumers | Proposed canonical behavior | Compatibility/deprecation strategy | Authorization requirements | Validation evidence |
+|---|---|---|---|---|---|
+| `query_notebook`, `/v1/query` | One notebook, canonical chunks; existing V1 clients; defaults differ | Retain V1 | No semantic change; later migration guidance | Existing V1 principal/scope checks | Frozen-response regression and client test |
+| `search_all_notebooks`, `/v1/search` | Canonical cross-notebook search; defaults differ | Retain V1; future `search` handles hybrid | No automatic multimodal retrofit | Membership required for private fan-out | V1 compatibility and no-leak tests |
+| `query_notebook_v2`, `/v2/retrieval/automatic` | One unambiguous notebook, server-owned canonical/OCR/Vision/multilingual/conditional visual evidence | Proposed `search` / `POST /v2/search` with authorized scope | Adapter retained until consumer migration; no premature removal | Principal-first notebook/document/version scope | Contract, parity, no-hint evidence |
+| `search_evidence`, `/v2/retrieval/evidence` | Explicit scope and representation selection | Retain expert operation; shared service semantics where compatible | Keep until parity and consumer review | Exact requested scope and active generations | Cursor and provenance parity |
+| `query_structured`, `/v2/retrieval/structured` | Typed operation; exact dataset/version requirements | Proposed typed `search_structured` and `describe_datasets` APIs | Keep current typed route; split only after review | Dataset/version/row authority | Exact predicate and discovery tests |
+| `get_document`, `get_document_chunk`, `get_asset`, `get_image_analysis` and V2 delivery routes | Exact original/derived delivery, not ordinary discovery | Retain exact recovery APIs | No image-search replacement; no fake canonical IR | Occurrence/document/version membership | Binary/text reconstruction, ancestry tests |
+| `list_notebooks`, summary, insights, timeline and V1 discovery routes | Listing or bounded metadata, not exhaustive evidence | Authorized scope discovery and ancillary metadata | Retain; inspect differing defaults | Authorization before metadata | Scope/no-leak and parity tests |
+| `get_capabilities`, `/v2/capabilities` | Current scoped capability/readiness report | Truthful per-scope active/certified state | Extend versioned response only as needed | Authorize before capability disclosure | Active/incomplete/unauthorized matrix |
+| `run_final_qa_v2`, V2 FinalQA routes | Explicit evidence request and governed answer publication | Future `answer` consumes shared evidence snapshot | Keep FinalQA; no invented synthesis in V2 search | Authorized snapshot, deadline and replay binding | Grounding/citation/timeout tests |
+
+#### Phase 8.9 acceptance semantics
+
+`GO` requires complete scope and applicable-representation execution evidence,
+source-local candidate coverage, bounded ranked results **and** signed cursor
+traversal to terminal cursor. Semantic top-k is not a proof of perfect recall.
+Typed table predicates are exact over a defined eligible row universe.
+Unavailable/incomplete/budget/failed sources are distinct from searched-zero;
+mandatory coverage omissions force `NO_GO`. Provider-admitted languages require
+measured corpus queries, not an English/Hindi/Marathi allowlist. Real external
+MCP and deployed HTTP observations are separate from dispatch/ASGI tests.
+All active aliases, policies, model/vector-space identities and protected
+fingerprints are bound in the machine-verifiable report. The future UI must be
+able to call this shared service without a second retrieval planner.
+
 ### Phase 9 — Web UI
 
 **Module 9.1 — Design System and Routing**
 
 | Task | Notes | Difficulty | Dependency |
 |---|---|---|---|
-| Define design tokens | Colors, typography (Inter/Geist), spacing, radii | Medium | Phase 8.8 VERIFIED |
+| Define design tokens | Colors, typography (Inter/Geist), spacing, radii | Medium | Phase 8.9 GO |
 | Set up React Router v7 | Routes per architecture §6 | Low | 9.1a |
 | Implement API client layer | All HTTP calls in `src/api/`, using `@tanstack/query` | High | 9.1a |
 | Implement authenticated V2 HTTP FinalQA client | Bind identity, execution/replay correlation, deadline and citation rendering; V2 streaming is optional future work | High | 9.1a, 8.8.14b |
@@ -1794,7 +1994,10 @@ Phase 8.6: Validated Evaluation Notebook (not production-exposed)
 Phase 8.7: Expanded 14-Tool MCP / Client Capability
               │
               ▼
-Phase 8.8: Certified Runtime + 15-Tool Contract + Phase 9 Gates
+Phase 8.8: scoped checkpoint through Module 8.8.8 (not phase-verified)
+              │
+              ▼
+Phase 8.9: authorized unified search + external transport GO/NO-GO
               │
               ▼
 Phase 9: Web UI
@@ -1828,8 +2031,8 @@ The critical path through the project is:
 ```
 Phase 0 → Phase 1 → Phase 2 (CompositeStorage) → Phase 3 (Parsers) →
 Phase 4 (Chunkers) → Phase 5 (Embedder) → Phase 6 (Retrieval) →
-Phase 7 (REST API) → Phase 8/8.5 certified services → Phase 8.8 verified
-production/client boundary → Phase 9 UI MVP
+Phase 7 (REST API) → Phase 8/8.5 certified services → scoped Phase 8.8
+checkpoint → Phase 8.9 identity-bound GO → Phase 9 UI MVP
 ```
 
 Any delay on the critical path delays every subsequent phase. Phase 2 (CompositeStorage) and Phase 4 (Chunking Engine) are the two highest-risk modules on the critical path.
@@ -1852,8 +2055,9 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 | **Phase 8.5** | Advanced retrieval and multimodal foundations must preserve Phase 0–8 and freeze bounded API/capability contracts before UI work. |
 | **Phase 8.6** | Format-diverse multilingual evaluation validates the architecture without promoting evaluation data into production. |
 | **Phase 8.7** | Real MCP/client expansion exposes integration gaps that cannot be inferred from unit contracts alone. |
-| **Phase 8.8** | Runtime convergence, all-tool correctness, semantic image discovery, mutable-workspace governance, and authenticated V2 chat are the final bounded prerequisites for UI production integration. |
-| **Phase 9** | UI is the next implementation phase and begins only after Phase 8.8 issues a verified GO decision. It remains independent of Qdrant/SurrealDB selection. |
+| **Phase 8.8** | Scoped runtime/compatibility checkpoint through 8.8.8; accepted 8.8.14a–c retained without a phase-wide certification claim. |
+| **Phase 8.9** | Shared authorized search, multi-notebook scope, structured integration, provenance and external transport GO/NO-GO precede UI integration. |
+| **Phase 9** | UI begins only after Phase 8.9 issues an exact-identity GO decision. It remains independent of Qdrant/SurrealDB selection. |
 | **Phase 10** | Notebook features (background jobs, summaries, session memory) extend a working retrieval system. |
 | **Phase 11** | Cross-document reasoning extends the retrieval pipeline with graph-based enrichment. Placed after notebook features so the base pipeline is stable. |
 | **Phase 12** | Plugin ecosystem requires stable interfaces (Phase 1) and working implementations to test against. |
@@ -1881,7 +2085,8 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 | **M8.5 — V2 Certified** | Exact Full Multilingual V2 production composition certified | ADR-0076 evidence binds evaluation, durable BGE activation/rollback, HTTP/stdio/SSE, security, immutability, and lifecycle | Phase 8.5 |
 | **M8.6 — Evaluation Notebook Validated** | Format-diverse multilingual notebook reproducible and isolated | 24/24 sources, 5,843 embeddings, 161 OCR/Vision/CLIP occurrences, canonical manifest, transport parity, evaluation-only boundary | Phase 8.6 |
 | **M8.7 — MCP Surface Expanded** | Additive MCP capability and client milestone | 14 tools registered and real client paths exercised; discovered hardening gaps recorded without claiming full production convergence | Phase 8.7 |
-| **M8.8 — MCP Production Contract Verified** | Certified composition reaches real tunnel with 15 governed tools | Runtime convergence, compatible readers, central authorization, metadata, capabilities/errors, image search, four-transport parity, mutable workspace and authenticated V2 chat gates pass | Phase 8.8 |
+| **M8.8 — Scoped compatibility checkpoint** | Preserve certified 8.8.1 and actual local 8.8.2–8.8.8 evidence | No phase-wide certification or Phase 9 GO inferred; 8.8.14a–c remain accepted history | Phase 8.8 |
+| **M8.9 — Unified retrieval GO/NO-GO** | Authorized scoped hybrid search and transport convergence | All 8.9.9 evidence and protected-state checks pass for exact deployment identity | Phase 8.9 |
 | **M9 — UI MVP** | Full NotebookLM-equivalent workflow in browser | Create notebook → upload PDF → chat → see citations, all in browser. | Phase 9 |
 | **M10 — Notebook Complete** | Background enrichment, summaries, session memory | Upload 10 documents. Wait for background enrichment. Query using 3-turn session. Receive session-aware answer. | Phase 10 |
 | **M11 — Multi-Doc Reasoning** | Cross-document synthesis with entity graph | Query a 10-source notebook. Receive answer comparing claims across sources with per-source citations. | Phase 11 |
@@ -2057,19 +2262,34 @@ Any delay on the critical path delays every subsequent phase. Phase 2 (Composite
 
 ---
 
-### Phase 8.8 Tests
+### Phase 8.8 Tests (historical intentions; unfinished integrated cases are 8.9)
 
 | Type | Tests |
 |---|---|
 | **Startup** | HTTP, stdio, SSE, and tunnel resolve one certified configuration/store/model/activation identity; divergence fails before exposure |
 | **Tool matrix** | All 14 existing tools pass valid, invalid, unavailable, authorization, provenance, typed-error, and transport cases |
-| **Image search** | `search_images` passes OCR, caption, CLIP, and hybrid discovery, dynamic-k, no-result, unavailable-modality, multilingual-where-supported, and authorization cases |
+| **Image-derived evidence** | Deferred to Phase 8.9 ordinary no-hint search; no mandatory `search_images` tool |
 | **Security** | Anonymous/wrong principal and client principal/model/reranker/store/internal-K overrides fail without existence leakage |
-| **Parity** | Four transports agree on retrieval identities/ranking, citations, source metadata, capability state, and safe errors |
+| **Parity** | Historical 8.8.9 intent; Phase 8.9.8 owns unfinished four-transport behavioral certification |
 | **FinalQA** | Authenticated certified V2 FinalQA completes through the real tunnel with correlated server/client timeout evidence |
 | **Isolation** | Phase 8.5 production and Phase 8.6 evaluation remain separate; no cross-notebook discovery |
-| **Phase 9 gate** | ADR-0077's explicit absolute mutable workspace and mandatory server-enforced read-only fallback, plus authenticated V2 chat/FinalQA, are implemented and tested |
+| **Phase 9 gate** | ADR-0077 workspace and authenticated V2 chat are accepted prerequisites; only Phase 8.9.9 may issue GO |
 | **Protected state** | Production, Phase 8.5, and Phase 8.6 database hashes remain unchanged |
+
+---
+
+### Phase 8.9 Tests (planned integrated acceptance)
+
+| Type | Required evidence and failure condition |
+|---|---|
+| Scope/security | Membership-backed selected/all-authorized notebook and document/version scope; unauthorized or nonexistent resources cannot leak identities/capabilities; any leak is NO_GO |
+| Representation | No-hint canonical/OCR/Vision/compatible visual and provider-admitted multilingual queries; canonical zero does not terminate; missing applicable source or false coverage is NO_GO |
+| Structured | Authorized schema discovery, exact row filters/aggregations and governed natural-language intent; fabricated/approximate exact rows are NO_GO |
+| Ranking/traversal | Requested-k, source diversity, no-starvation, signed cursor to terminal page, actor/scope/alias replay rejection; omissions are NO_GO |
+| Provenance/FinalQA | Every citation resolves to original chunk or occurrence/derivation or dataset row; replay/deadline/publication rules hold; false citation is NO_GO |
+| Public parity | All retained and new approved MCP/HTTP operations: dispatch and ASGI tests plus separate real stdio/SSE/tunnel/external-client and deployed HTTP observations; missing required transport is NO_GO |
+| Compatibility/safety | Frozen V1 semantics, exact delivery, evaluation-only isolation, protected source/store fingerprints, workspace role separation; mutation or fallback is NO_GO |
+| UI boundary | A future UI can call the shared service without another retrieval planner; implementation of the UI itself is Phase 9 |
 
 ---
 
@@ -2570,16 +2790,21 @@ EPIC 8.8: MCP Production Convergence and Contract Correctness
     ISSUE: 8.8.11 validate structured retrieval availability contract
 
   FEATURE 8.8.D: Image Discovery, Provenance, and Transport Certification
-    ISSUE: 8.8.12 implement authorized OCR/caption/CLIP/hybrid search_images
-    ISSUE: 8.8.9 certify HTTP, stdio, SSE, and existing tunnel parity
-    ISSUE: 8.8.13 verify end-to-end MCP provenance
+    HISTORICAL: 8.8.10/11 locally accepted; unfinished 8.8.9/13 moved to 8.9
+    RETIRED: 8.8.12 mandatory search_images; requirements folded into 8.9.4/7
 
   FEATURE 8.8.E: Acceptance and Phase 9 Readiness
-    ISSUE: Run the complete 15-tool Phase 8.8 acceptance gate
-    ISSUE: 8.8.14d issue Phase 9 readiness evidence
+    HISTORICAL: 8.8.14d pending; readiness moved to 8.9.9
 
   EXECUTION NOTE: Follow the canonical Phase 8.8 execution order above; module
     numbers and this project grouping do not override task dependencies or order.
+
+EPIC 8.9: Unified Authorized Retrieval and Transport Certification
+  ISSUE: 8.9.1–3 govern contract, membership/scope and shared service
+  ISSUE: 8.9.4–5 implement scoped hybrid and typed structured integration
+  ISSUE: 8.9.6–7 converge adapters, provenance, errors and answer evidence
+  ISSUE: 8.9.8 externally verify transports and long FinalQA
+  ISSUE: 8.9.9 issue exact-identity GO/NO-GO; no implicit promotion
 
 EPIC 9: mnemo-ui — Web Interface
   FEATURE 9.1: Foundation
@@ -2706,7 +2931,8 @@ These rules are non-negotiable. Any violation is a bug, not a style preference.
 | **P8.5 — Advanced V2** | Complete | Very High | Controlled | Exact production identity is certified; binding changes require recertification |
 | **P8.6 — Evaluation** | Complete | High | Controlled | Evaluation-only identity and production isolation must remain explicit |
 | **P8.7 — MCP Expansion** | Complete | High | High follow-up | Real clients revealed configuration, authorization, and reader-contract gaps |
-| **P8.8 — MCP Convergence** | TBD during planning | Very High | **HIGH** | Tunnel identity convergence, 14 current tools plus planned `search_images` (15 only after implementation and verification), authorization, image retrieval, and Phase 9 data/chat boundaries |
+| **P8.8 — Scoped MCP checkpoint** | Existing work | High | **HIGH** | 8.8.1 certified; 8.8.2–8 local acceptance is not external certification |
+| **P8.9 — Unified retrieval** | Planned | Very High | **HIGH** | Membership authority, cross-notebook fusion, structured integration, external parity and protected-state gate |
 | **P9 — Web UI** | 7 weeks | High | Medium | Frontend state complexity; streaming rendering |
 | **P10 — Notebook** | 5 weeks | High | Medium | Background workers, incremental indexing correctness |
 | **P11 — Cross-doc** | 4 weeks | High | **HIGH** | Entity normalization is hard; graph quality depends on LLM quality |
@@ -2954,33 +3180,39 @@ were intentionally excluded from Module 1.1 by ADR-0001.
 
 ### Phase 8.8 — MCP Production Convergence and Contract Correctness
 
-This checklist is grouped by module for coverage tracking; it is **not** an
-execution-order list. Execute it only in the canonical Phase 8.8 sequence above.
+This is a scoped status ledger, **not** an open implementation checklist or an
+execution order. The active Phase 8.8 plan stops at Module 8.8.8. A checked
+local-acceptance item does not certify that module or the phase in production.
 
-- ☑ Converge HTTP, stdio, SSE, and existing tunnel on certified V2 composition
-- □ Add immutable certified-schema-compatible shared readers
-- □ Apply authenticated principal and central authorization to all remote tools
-- □ Complete valid/invalid/unavailable/error/provenance contracts for all 14 tools
-- □ Add reusable authorized source metadata/filename envelope
-- □ Make capability state scope-qualified and certification-aware
-- □ Implement safe typed MCP error taxonomy and correlation
-- □ Freeze explicit V1/V2 route declaration for every tool
-- □ Certify four-transport parity and long-running tunnel FinalQA
-- □ Enforce Phase 8.6 evaluation-only boundary
-- □ Make structured retrieval truthfully available or unavailable by scope
-- □ Implement and verify `search_images` OCR/caption/CLIP/hybrid discovery
-- □ Verify end-to-end identity/provenance chains
-- ☑ Implement and certify ADR-0077's explicit absolute mutable workspace,
-  typed storage-role separation, and mandatory server-enforced read-only fallback
-- ☑ Govern authenticated HTTP FinalQA V2 for Phase 9 production chat; V1
-  WebSocket/query streaming remains non-production and V2 streaming is optional
-- ☑ Reconcile current documentation after accepted 8.8.14a and 8.8.14b
-- □ Verify protected production/Phase 8.5/Phase 8.6 hashes unchanged
-- □ **[MILESTONE M8.8] PHASE_8_8_VERIFIED and Phase 9 GO issued**
+- ☑ 8.8.1 — signed runtime convergence certified for its exact identity.
+- ☑ 8.8.2–8.8.8 — scoped local implementation/acceptance evidence retained;
+  external semantic parity and phase-wide certification were **not** granted.
+- ☑ 8.8.14a — ADR-0077 mutable-workspace boundary accepted and certified.
+- ☑ 8.8.14b — authenticated HTTP FinalQA V2 chat decision accepted/certified.
+- ☑ 8.8.14c — historical documentation reconciliation completed.
+- ☑ Historical follow-on 8.8.10 — evaluation-only exposure boundary locally
+  accepted; it is not a new active Phase 8.8 completion dependency.
+- ☑ Historical follow-on 8.8.11 — scoped structured-contract availability
+  locally accepted; it is not a new active Phase 8.8 completion dependency.
+- **Not issued:** `PHASE_8_8_VERIFIED`; the scoped checkpoint does not itself
+  grant Phase 9 GO. Former 8.8.9, 8.8.13, and 8.8.14d obligations are tracked
+  under Phase 8.9 below. Former mandatory 8.8.12 `search_images` is retired.
+
+### Phase 8.9 — Unified Authorized Retrieval
+
+- □ Accept ADR-0080 and 8.9.1 contract/consumer inventory
+- □ Approve and verify 8.9.2 membership authority before multi-notebook fan-out
+- □ Complete 8.9.3–5 shared service, hybrid scope and typed structured path
+- □ Complete 8.9.6–7 adapters, provenance, errors and grounded answer boundary
+- □ 8.9.4/7 ordinary no-hint OCR/Vision/compatible visual retrieval and full
+  evidence ancestry; retain V1 query/search semantics.
+- □ 8.9.8 certify real HTTP/stdio/SSE/tunnel parity, long-running FinalQA,
+  and external-client behavior; local dispatch is not certification.
+- □ Issue 8.9.9 exact-identity `PHASE_8_9_GO` or `NO_GO`
 
 ### Phase 9 — Web UI
 
-- □ Confirm Phase 8.8 GO evidence before implementation begins
+- □ Confirm Phase 8.9 GO evidence before implementation begins
 - □ Design tokens + typography
 - □ React Router v7 routes
 - □ API client layer (`@tanstack/query`)

@@ -197,14 +197,18 @@ class BGEM3EmbeddingProvider:
         generation_id: UUID,
         cache_folder: Path,
         runtime_loader: Callable[[Path], Any] | None = None,
+        device: str = "cpu",
     ) -> None:
         _validate_embedding_component(component)
         if not isinstance(cache_folder, Path):
             raise TypeError("cache_folder must be a Path")
+        if device not in {"cpu", "cuda"}:
+            raise ValueError("BGE-M3 device must be cpu or cuda")
         self._component = component
         self._generation_id = generation_id
         self._cache_folder = cache_folder
         self._runtime_loader = runtime_loader
+        self._device = device
         self._runtime: Any | None = None
         self._executor: ThreadPoolExecutor | None = None
         self._lock = asyncio.Lock()
@@ -388,10 +392,12 @@ class BGEM3EmbeddingProvider:
                 ) from error
             model = sentence_transformers.SentenceTransformer(
                 str(snapshot),
-                device="cpu",
+                device=self._device,
                 trust_remote_code=False,
                 local_files_only=True,
             )
+            if self._device == "cuda" and str(model.device).split(":", 1)[0] != "cuda":
+                raise DependencyUnavailableError("BGE-M3 did not load on the required GPU")
             model.max_seq_length = BGE_M3_MAX_CONTEXT
             runtime = _BGEM3Runtime(model)
         probe = tuple(tuple(float(value) for value in row) for row in runtime.encode(("probe",)))

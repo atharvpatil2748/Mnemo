@@ -51,7 +51,7 @@ async def test_mcp_protocol_conformance_handshake() -> None:
 
             # Tool listing
             tools_result = await session.list_tools()
-            assert len(tools_result.tools) == 14
+            assert len(tools_result.tools) == 15
             tool_names = {t.name for t in tools_result.tools}
             assert tool_names == {
                 "query_notebook",
@@ -68,6 +68,7 @@ async def test_mcp_protocol_conformance_handshake() -> None:
                 "query_structured",
                 "run_final_qa_v2",
                 "get_capabilities",
+                "query_notebook_v2",
             }
 
             tg.cancel_scope.cancel()
@@ -77,7 +78,7 @@ async def test_mcp_protocol_conformance_handshake() -> None:
 async def test_mcp_tool_schemas_compliance() -> None:
     """Verify that all tool schemas comply with standard MCP JSON-schema specifications."""
     tools = get_mcp_tools()
-    assert len(tools) == 14
+    assert len(tools) == 15
 
     for tool in tools:
         assert isinstance(tool.name, str) and tool.name
@@ -188,7 +189,7 @@ async def test_mcp_real_stdio_subprocess_handshake(tmp_path: Path) -> None:
         info = getattr(init_res, "server_info", getattr(init_res, "serverInfo", None))
         assert info.name == "mnemo-mcp"
         tools_res = await session.list_tools()
-        assert len(tools_res.tools) == 14
+        assert len(tools_res.tools) == 15
         tool_names = {t.name for t in tools_res.tools}
         assert "list_notebooks" in tool_names
         assert "query_notebook" in tool_names

@@ -66,7 +66,7 @@ Knowledge doesn't live in silos. If you maintain multiple notebooks—like *Mach
 
 Users shouldn't be forced into a "10 documents per notebook" mental model.
 
-Mnemo's **architectural target** is to support **100,000 documents and 20 million chunks**. The current certified V2 topology uses a content-addressed filesystem, an immutable SQLite corpus (FTS5 plus governed BGE-M3 vectors), and a separate mutable FinalQA operational SQLite store. ADR-0077's separately governed mutable filesystem + SQLite user workspace and mandatory read-only fallback are implemented and certified. Qdrant is an optional future vector-scale path, and SurrealDB is a partial future graph path; neither is a current production prerequisite.
+Mnemo's **architectural target** is to support **100,000 documents and 20 million chunks**. The formerly certified V2 topology used a content-addressed filesystem, an immutable SQLite corpus (FTS5 plus governed BGE-M3 vectors), and a separate mutable FinalQA operational SQLite store. That exact historical index was retired on 2026-10-10; its certification is retained as historical evidence, not current serving authority. ADR-0077's separately governed mutable filesystem + SQLite user workspace and mandatory read-only fallback are implemented and certified. Qdrant is an optional future vector-scale path, and SurrealDB is a partial future graph path; neither is a current production prerequisite.
 
 *(Note: These scale benchmarks are an architectural target, not a currently benchmarked capability. Formal benchmarking will occur during Phase 13 production hardening.)*
 
@@ -74,10 +74,16 @@ Mnemo's **architectural target** is to support **100,000 documents and 20 millio
 
 Mnemo strictly enforces a layered, provider-independent architecture where no layer may call upward.
 
-### Certified production runtime
+### Production baseline: offline and unindexed
 
-Mnemo V2 is certified and active for the 44-document production store. HTTP,
-MCP stdio, and MCP SSE are transport adapters over one production application:
+Production selection is explicitly `UNINDEXED` in
+[`config/production/runtime-selection.json`](config/production/runtime-selection.json).
+HTTP and MCP reject retrieval before loading a historical binding, including
+when HTTP lifespan startup is bypassed. No production notebook or index is
+currently available. The former 44-document V2 certification describes a
+retired, exact-identity deployment; it does **not** authorize this unindexed
+baseline or a future index. That historical composition used HTTP,
+MCP stdio, and MCP SSE as transport adapters over one application:
 server-derived authorization → BGE-M3 and SQLite FTS5 retrieval → RRF → the
 top 50 fused candidates → BGE-reranker-v2-m3 → governed ContextBuilder →
 FinalQA. The caller's `requested_k` remains dynamic and is distinct from the
@@ -87,13 +93,21 @@ Without a valid, separately governed ADR-0077 workspace configuration,
 production workspace mutations remain server-enforced read-only. Ollama supplies local FinalQA and vision roles; its
 model storage is external to Mnemo's reranker lifecycle.
 
-The canonical declarative configuration is
+The retained **historical** declarative configuration is
 [`config/production/full_multilingual_v2.production.json`](config/production/full_multilingual_v2.production.json),
-with runtime settings in [`mnemo.toml`](mnemo.toml), pinned model identities in
+which is not a fallback or a setup instruction. Current relative, unindexed
+runtime settings are in [`mnemo.toml`](mnemo.toml); historical pinned model identities are in
 [`config/model_profiles/full_multilingual_v2_profiles.toml`](config/model_profiles/full_multilingual_v2_profiles.toml),
 and signed mutable activation/lifecycle records referenced by that manifest.
 See the [single-production-path audit](docs/reports/architecture/mnemo-v2-single-production-path-audit.md)
 and [final certification report](docs/reports/certification/current/mnemo-v2-final-certification.md).
+The [pre-Phase-8.9 reset record](docs/reports/architecture/phase-8-9-runtime-cutover-execution.md)
+describes the five decommissioned stores. Future production and user notebooks
+need explicit, server-controlled ownership/grants and a separately governed
+index-publication lifecycle; the current `UNINDEXED` guard does not certify
+indexed multi-user serving. Existing V1 and V2 contracts remain historical
+code capabilities and can be exercised in disposable fixtures, not against a
+live production index.
 
 ```text
 User / AI Assistant / Antigravity / Client
@@ -170,11 +184,12 @@ Mnemo is in active engineering development. Every module is rigorously tested be
 | Embedding Pipeline | ✅ Released | Content-addressed embedding cache and batch vector generation (Phase 5) |
 | Hybrid Retrieval & Grounded QA | ✅ Implemented and validated | Title-aware sparse retrieval, optional dense retrieval, fusion/reranking, strict persisted Final QA, citation correction, immutable replay (ADRs 0052–0057). |
 | REST API & Streaming | ✅ Released; Phase 8.8 hardening in progress | Milestone M7 REST and legacy V1 WebSocket/SSE exist. Authenticated HTTP FinalQA V2 is the accepted production chat path; V1 streaming is non-production and V2 streaming is optional future work. |
-| Native MCP Integration | ✅ 14 tools registered; 8.8.1 runtime convergence certified | Six retained knowledge tools, four bounded delivery tools, and four V2 evidence/capability/FinalQA tools over stdio/SSE. Stage 5 and the 8.8.5/8.8.7/8.8.2f/8.8.4/8.8.8 batch have local acceptance, including F-1 principal propagation and F-2 nested metadata parity. GitHub publication does not establish deployment or external verification of the batch. Four-transport behavioral parity remains separate. |
-| Advanced Retrieval & Multimodal Foundation | ✅ Implemented & evaluated for their scoped evidence | Phase 8.5 is certified for its exact 44-document production identity. OCR, Vision, and CLIP evaluation foundations do not imply callable production image services; BGE-M3 is governed separately. Dedicated semantic image discovery through MCP is not exposed and is planned as `search_images` in Phase 8.8. |
-| Phase 8.6 evaluation notebook | ✅ Validated; evaluation-only | Format-diverse multilingual corpus with structure-aware chunking, OCR, Vision, CLIP, BGE-M3, provenance, canonical manifests, isolation, and transport validation; not production-exposed. |
-| Phase 8.8 | 🚧 In progress, not verified | 8.8.14a/b accepted; 8.8.14c reconciled; 8.8.1 startup convergence certified. [Stage 5](docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md) is locally accepted. The five-module Stage 6 [remediation batch](docs/reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md) is independently accepted locally; 8.8.10 and 8.8.11 remain mandatory for Stage 6 closure. Production deployment, external re-verification, 8.8.9 behavioral parity, and `search_images` remain separate. |
-| Web UI | 📋 Planned after Phase 8.8 verification | Phase 9 is the next implementation phase, but has not started. |
+| Native MCP Integration | ✅ 15 registered in the working tree; 8.8.1 runtime convergence certified | Historical 14-tool inventory plus additive `query_notebook_v2`. Stage 5 and the 8.8.5/8.8.7/8.8.2f/8.8.4/8.8.8 batch have local acceptance, not phase-wide or external certification. Four-transport behavioral parity moves to Phase 8.9. |
+| Advanced Retrieval & Multimodal Foundation | ✅ Scoped historical implementation; no current production index | Phase 8.5 certification applied to its exact, now-retired identity. V2 automatic query can consider ready OCR/Vision and compatible visual/multilingual evidence within one notebook in suitable isolated data; multi-notebook, selected-document and automatic structured search remain Phase 8.9 plans. No mandatory `search_images` is planned. |
+| Phase 8.6 evaluation corpus | ✅ Historically validated; index retired | The 24 original sources and rebuild manifest remain; the previously validated evaluation index was decommissioned and is not production-exposed. |
+| Phase 8.8 | 🚧 Scoped checkpoint, not phase-verified | Active roadmap stops at 8.8.8. 8.8.1 is certified; 8.8.2–8.8.8 have local acceptance evidence, not phase-wide external certification. 8.8.14a–c and locally accepted 8.8.10/11 remain historical evidence. |
+| Phase 8.9 | 📋 Planned, not implemented/certified | Governed shared search, membership-backed scope, automatic hybrid/structured retrieval, provenance and real transport parity; exact-identity GO/NO-GO gates Phase 9. |
+| Web UI | 📋 Planned after Phase 8.9 GO | Phase 9 has not started. |
 | Cross-Doc Reasoning | 📋 Planned | Phase 11 |
 
 ## Quick Start
@@ -197,6 +212,12 @@ Mnemo does not bundle the asset, and chunking never accesses the network.
 
 ### 2. Start the REST & Streaming Server
 
+**Current operational boundary:** Production is offline and explicitly
+`UNINDEXED`. The commands below describe entry points, not an available indexed
+retrieval deployment. Notebook-scoped production serving fails closed until a
+separately authorized, verified publication exists; do not point these commands
+at a historical evaluation database or retired signed binding.
+
 ```console
 # Start the HTTP/REST and WebSocket server (port 8000)
 mnemo serve
@@ -207,8 +228,9 @@ curl -s http://127.0.0.1:8000/health
 
 ### 3. Run the Native MCP Server
 
-Mnemo currently registers 14 Model Context Protocol tools: six retained
-knowledge tools, four bounded delivery tools, and four V2 tools. Registration
+Mnemo currently registers 15 Model Context Protocol tools: six retained
+knowledge tools, four bounded delivery tools, four earlier V2 tools, and the
+additive `query_notebook_v2` working-tree tool. Registration
 does not by itself prove configured/ready/active/exposed/scope-available state;
 Phase 8.8 owns that production-contract convergence.
 
@@ -235,12 +257,31 @@ mnemo-mcp --transport sse --host 127.0.0.1 --port 8001
 - `query_structured`: Execute allowlisted typed structured retrieval when its projection is available.
 - `run_final_qa_v2`: Execute or replay authenticated, persisted FinalQA V2.
 - `get_capabilities`: Report truthful lifecycle and scope-qualified capability state.
+- `query_notebook_v2` (working tree, not yet deployed/certified): Server-planned
+  canonical plus active derived evidence over one unambiguous authorized notebook;
+  returns evidence and coverage, not a synthesized answer.
 
-Phase 8.8 plans one additional tool, `search_images`, for OCR, caption/Vision,
-CLIP text-to-image, and governed hybrid discovery. It becomes a 15-tool surface
-only after implementation and verification. `search_images` will return stable
-notebook/source/document/version/occurrence/asset identities and human-readable
-metadata where available; `get_asset` remains exact binary delivery.
+PaddleOCR is an opt-in `OCRProviderV1` implementation in
+`mnemo-core/mnemo/ocr_paddle.py`. Its optional `mnemo-core[ocr-paddle]` dependency
+does not install or activate an OCR generation by itself. An operator must
+provision approved local detection/recognition model trees, bind their hashes and
+the package/model revision in a new OCR profile, run the governed worker on a
+new isolated notebook, and build complete projections before V2 can search the
+results. The former Phase 8.5 production and Phase 8.6 evaluation indexes are
+retired; their original source corpora remain. Any future isolated rebuild must
+verify its selected OCR provider, model/runtime, and derived search coverage.
+Cross-language quality
+and grounded V2 answer generation are not certified by this adapter.
+
+The Phase 8.9 target is one shared authorized search application service for
+MCP, HTTP and future UI. It should consider canonical, OCR, Vision, compatible
+CLIP/multilingual and applicable structured evidence without modality hints.
+The currently registered `query_notebook_v2` is evidence-first and limited to
+one unambiguous notebook; it is not yet cross-notebook or automatic structured
+search. Frozen V1 `query_notebook`/`search_all_notebooks` remain canonical-only.
+`get_asset` and `get_image_analysis` remain exact recovery operations. The
+former dedicated `search_images` plan is retired as a mandatory tool; proposed
+`search`/`POST /v2/search` are not yet registered. See [ADR-0080](docs/adr/active/ADR-0080-phase-8-9-unified-authorized-retrieval-plan.md).
 
 Tool registration is not proof that a service is configured, callable for an
 authorized scope, or certified. In particular, exact persisted
@@ -270,6 +311,14 @@ uv run ruff check .
 uv run mypy mnemo-core/mnemo mnemo-server/mnemo_server
 uv run pytest
 ```
+
+On the existing Windows checkout, run tests through the selected interpreter:
+`.\.venv\Scripts\python.exe -m pytest`. This ensures its `pytest-cov` plugin
+handles the coverage options in `pytest.ini`; a bare `pytest` may resolve to a
+different installation and reject `--cov`. The former
+`scratch/.venv-gpu-preflight` was manually removed. The optional CUDA preflight
+now selects `.venv/Scripts/python.exe` and fails closed when it is missing;
+see the [pre-Phase-8.9 readiness report](docs/reports/architecture/pre-phase-8-9-final-readiness-report.md).
 
 ### 6. Build the Packages
 ```shell
@@ -317,10 +366,11 @@ Mnemo's roadmap is structured to ensure every phase produces a runnable, testabl
 
 * **COMPLETED (Phases 0–8):** Core scaffolding, storage, canonical ingestion, deterministic V2 chunking, embedding pipeline, hybrid retrieval & grounded QA (Milestone M6), REST/WebSocket APIs & Auth (Milestone M7), and Native MCP Server (Milestone M8) are complete and certified.
 * **COMPLETED/CERTIFIED (Phase 8.5):** Exact 44-document V2 production composition, production-parity evaluation, durable BGE activation/rollback, authenticated FinalQA, and transport parity. Historical Golden evaluation and later production-parity evaluation remain distinct evidence identities.
-* **COMPLETED/VALIDATED (Phase 8.6):** Isolated 24-document format-diverse multilingual evaluation notebook; not production-exposed.
+* **HISTORICALLY VALIDATED (Phase 8.6):** The isolated 24-document format-diverse multilingual evaluation index was validated for its exact identity and later decommissioned; its original sources remain. It is not production-exposed.
 * **COMPLETED CAPABILITY MILESTONE (Phase 8.7):** 14 registered MCP tools and real client exercises. Defects discovered by the later audits are Phase 8.8 inputs, not retroactive Phase 8.7 claims.
-* **CURRENT HARDENING (Phase 8.8):** In progress, not verified. Mutable-workspace and authenticated HTTP FinalQA V2 chat gates are accepted; Module 8.8.1 startup convergence is certified. Stage 5 and the corrected five-module Stage 6 batch are accepted locally. Stage 6 still requires 8.8.10 evaluation isolation and 8.8.11 structured-contract verification; 8.8.9 live behavioral parity and later Phase 8.8 gates remain separate. See the [Stage 5 acceptance](docs/reports/operations/mnemo-phase-8-8-stage-5-acceptance.md) and [Stage 6 remediation acceptance](docs/reports/operations/mnemo-stage-6-forensic-remediation-and-acceptance.md).
-* **NEXT IMPLEMENTATION AFTER VERIFICATION (Phase 9):** Web UI React frontend. Phase 9 starts only after `Phase 8.8 VERIFIED → Phase 9 GO`.
+* **PHASE 8.8 CHECKPOINT:** Active scope ends at 8.8.8; 8.8.1 runtime is certified, 8.8.2–8.8.8 have scoped local acceptance. 8.8.14a–c and 8.8.10/11 accepted work remains historical evidence, not a phase-wide verification.
+* **NEXT PLANNED PHASE (8.9):** Shared authorized retrieval and external-client certification. Transport parity, provenance and Phase 9 readiness formerly assigned to 8.8.9/13/14d belong here. The [Engineering Roadmap](docs/architecture/current/mnemo_engineering_roadmap.md) is authoritative.
+* **PHASE 9:** Web UI begins only after the exact-identity Phase 8.9 GO gate; it has not started.
 * **FUTURE (Phases 10–13):** Notebook features, cross-document reasoning, plugin ecosystem, and production hardening.
 
 See the complete execution plan in the [Engineering Roadmap](docs/architecture/current/mnemo_engineering_roadmap.md).

@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+from disposable_index_admission import disposable_index_admission
 from httpx import ASGITransport, AsyncClient
 from mnemo import MnemoConfig, __version__
 from mnemo.engine import EngineInitializationError, EngineState, KnowledgeEngine
@@ -173,7 +174,9 @@ async def test_app_lifespan_rejects_engine_that_does_not_reach_ready() -> None:
 
 
 @pytest.mark.anyio
-async def test_production_without_workspace_is_read_only_for_mutation_routes() -> None:
+async def test_production_without_workspace_is_read_only_for_mutation_routes(
+    tmp_path: Path,
+) -> None:
     engine = _make_mock_engine()
     engine.config = MagicMock()
     engine.certified_read_only = True
@@ -189,6 +192,7 @@ async def test_production_without_workspace_is_read_only_for_mutation_routes() -
         server_config=config,
         engine=engine,
         provision_tokenizer_on_startup=False,
+        indexed_fixture_readiness_check=disposable_index_admission(tmp_path / "admission"),
     )
 
     async with (
@@ -207,7 +211,7 @@ async def test_production_without_workspace_is_read_only_for_mutation_routes() -
 
 
 @pytest.mark.anyio
-async def test_production_rejects_injected_writable_certified_engine() -> None:
+async def test_production_rejects_injected_writable_certified_engine(tmp_path: Path) -> None:
     engine = _make_mock_engine()
     engine.config = MagicMock()
     engine.certified_read_only = False
@@ -218,6 +222,7 @@ async def test_production_rejects_injected_writable_certified_engine() -> None:
         ),
         engine=engine,
         provision_tokenizer_on_startup=False,
+        indexed_fixture_readiness_check=disposable_index_admission(tmp_path / "admission"),
     )
 
     with pytest.raises(RuntimeError, match="UNSAFE_INJECTED_PRODUCTION_STORAGE"):
@@ -243,6 +248,7 @@ async def test_production_rejects_read_only_historical_engine_before_initializat
         mnemo_config=certified,
         engine=engine,
         provision_tokenizer_on_startup=False,
+        indexed_fixture_readiness_check=disposable_index_admission(tmp_path / "admission"),
     )
 
     with pytest.raises(RuntimeError, match="INJECTED_PRODUCTION_RUNTIME_MISMATCH"):
@@ -271,6 +277,7 @@ async def test_rejected_workspace_startup_creates_no_storage_artifacts(tmp_path:
         mnemo_config=core_config,
         engine=engine,
         provision_tokenizer_on_startup=False,
+        indexed_fixture_readiness_check=disposable_index_admission(tmp_path / "admission"),
     )
 
     async with app.router.lifespan_context(app):
@@ -286,7 +293,7 @@ async def test_rejected_workspace_startup_creates_no_storage_artifacts(tmp_path:
 
 @pytest.mark.anyio
 async def test_valid_production_workspace_binds_mutations_to_workspace(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
     application = tmp_path / "application"
     application.mkdir()
@@ -302,7 +309,6 @@ async def test_valid_production_workspace_binds_mutations_to_workspace(
     engine = _make_mock_engine()
     engine.storage.upsert_notebook = AsyncMock()
     engine_factory = MagicMock(return_value=engine)
-    monkeypatch.setattr("mnemo_server.app.KnowledgeEngine", engine_factory)
     api_key = "workspace-boundary-test-key"
     config = ServerConfig(
         production_mode=True,
@@ -315,6 +321,8 @@ async def test_valid_production_workspace_binds_mutations_to_workspace(
         server_config=config,
         mnemo_config=core_config,
         provision_tokenizer_on_startup=False,
+        indexed_fixture_readiness_check=disposable_index_admission(tmp_path / "admission"),
+        indexed_fixture_engine_factory=engine_factory,
     )
 
     async with (
@@ -371,7 +379,11 @@ def test_every_workspace_mutation_route_is_gated() -> None:
     for router in (notebooks_router, sources_router, notes_router, sessions_router):
         for route in router.routes:
             dependencies = getattr(route, "dependencies", ())
-            if any(item.dependency is require_mutable_workspace for item in dependencies):
+            if (
+                any(item.dependency is require_mutable_workspace for item in dependencies)
+                and hasattr(route, "path")
+                and hasattr(route, "methods")
+            ):
                 actual.update((method, f"/v1{route.path}") for method in route.methods)
     assert actual == expected
 
@@ -430,6 +442,7 @@ async def test_app_lifespan_installs_and_closes_governed_v2_runtime(
         server_config=config,
         engine=engine,
         provision_tokenizer_on_startup=False,
+        indexed_fixture_readiness_check=disposable_index_admission(tmp_path / "admission"),
     )
     async with app.router.lifespan_context(app):
         assert app.state.full_multilingual_v2_runtime is installed

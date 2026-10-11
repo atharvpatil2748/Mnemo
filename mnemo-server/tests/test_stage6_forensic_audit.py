@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from mcp.types import TextContent
+from mnemo.engine import KnowledgeEngine
 from mnemo.interfaces import ContractValidationError, PrincipalContextV1
 from mnemo.interfaces.advanced_retrieval import AdvancedSourcePage
 from mnemo.interfaces.errors import NotFoundError
@@ -23,9 +26,33 @@ from mnemo.retrieval import (
     PartitionedRetrievalServiceV1,
     RetrievalCursorCodec,
 )
-from mnemo_server.app import create_app
-from mnemo_server.mcp.tools import execute_mcp_tool
-from test_mcp_immutable_schema_matrix import _fixture
+from mnemo_server.config import ServerConfig
+from mnemo_server.mcp.tools import execute_mcp_tool as _execute_mcp_tool
+from test_mcp_immutable_schema_matrix import _fixture, create_app
+
+
+async def execute_mcp_tool(
+    engine: KnowledgeEngine,
+    name: str,
+    arguments: dict[str, Any] | None,
+    *,
+    server_config: ServerConfig | None = None,
+    principal: PrincipalContextV1 | None = None,
+) -> list[TextContent]:
+    """Dispatch through the real tool handler admitted by this disposable engine."""
+    check = getattr(engine, "_disposable_index_readiness_check", None)
+    if check is None:
+        raise ValueError("disposable indexed engine admission is missing")
+    content = await _execute_mcp_tool(
+        engine,
+        name,
+        arguments,
+        server_config=server_config,
+        principal=principal,
+        indexed_fixture_readiness_check=check,
+    )
+    assert all(isinstance(item, TextContent) for item in content)
+    return [item for item in content if isinstance(item, TextContent)]
 
 
 class _PrincipalOnlySource:
@@ -238,7 +265,7 @@ async def test_explicit_partitions_fail_closed_before_governed_retrieval(
     engine._partitioned_retrieval = PartitionedRetrievalServiceV1(retrieval)
     notebook_id, document_id, version_id, _, _ = identities[0]
     foreign_document_id = identities[1][1]
-    common = {
+    common: dict[str, Any] = {
         "query": "schema",
         "mode": "ranked",
         "scope": {"notebook_id": str(notebook_id)},
@@ -247,7 +274,7 @@ async def test_explicit_partitions_fail_closed_before_governed_retrieval(
     }
 
     async def request(ids: list[str], *, version: str | None = None) -> None:
-        scope = {**common["scope"]}
+        scope: dict[str, Any] = {**common["scope"]}
         if version is not None:
             scope["version_ids"] = [version]
         await execute_mcp_tool(

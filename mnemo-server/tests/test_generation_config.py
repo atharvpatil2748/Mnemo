@@ -29,6 +29,17 @@ def _manifest(root: Path) -> None:
 
 def _env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, store: FakeSecretStore) -> None:
     _manifest(tmp_path)
+    selection = tmp_path / "config/production/runtime-selection.json"
+    selection.write_text(
+        json.dumps(
+            {
+                "schema": "mnemo.production-runtime-selection/1",
+                "deployment_key": "fixture",
+                "state": "UNINDEXED",
+            }
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(credential_module, "WindowsCredentialStore", lambda: store)
     for name in (
         "MNEMO_SERVER_AUTH_MODE",
@@ -43,7 +54,7 @@ def _env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, store: FakeSecretStore
     monkeypatch.setenv("MNEMO_SERVER_FULL_MULTILINGUAL_V2_MODEL_CACHE", str(tmp_path / "cache"))
 
 
-def test_certified_config_uses_active_generation_without_environment_secrets(
+def test_unindexed_config_rejects_even_valid_historical_generation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     registry, store = _registry(tmp_path)
@@ -53,17 +64,12 @@ def test_certified_config_uses_active_generation_without_environment_secrets(
     registry.validate_with_evidence(generation_id=record.generation_id, authority=authority)
     registry.promote(generation_id=record.generation_id, authority=authority)
     _env(monkeypatch, tmp_path, store)
-    config = ServerConfig.from_env(certified_production=True, certified_root=tmp_path)
-    assert config.credential_generation_id == record.generation_id
-    assert config.credential_registry_path == registry.path
-    assert config.auth_mode == "api-key"
-    assert config.api_key == registry.retrieve(record.generation_id, CredentialKind.API_KEY)
-    assert config.reranker_activation_operator_subject == record.owner_subject
-    assert config.mcp_stdio_principal_subject == record.service_subject
-    assert config.reranker_activation_state_path == authority.artifact_paths[0]
+    assert registry.retrieve(record.generation_id, CredentialKind.API_KEY)
+    with pytest.raises(RuntimeError, match="PRODUCTION_CORPUS_UNINDEXED"):
+        ServerConfig.from_env(certified_production=True, certified_root=tmp_path)
 
 
-def test_certified_config_rejects_secret_env_fork(
+def test_unindexed_config_rejects_before_secret_env_fork(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     registry, store = _registry(tmp_path)
@@ -74,14 +80,14 @@ def test_certified_config_rejects_secret_env_fork(
     registry.promote(generation_id=record.generation_id, authority=authority)
     _env(monkeypatch, tmp_path, store)
     monkeypatch.setenv("MNEMO_SERVER_API_KEY", "conflicting-value-not-printed")
-    with pytest.raises(ValueError, match="CREDENTIAL_FORK_REJECTED"):
+    with pytest.raises(RuntimeError, match="PRODUCTION_CORPUS_UNINDEXED"):
         ServerConfig.from_env(certified_production=True, certified_root=tmp_path)
 
 
-def test_certified_config_rejects_missing_active_generation(
+def test_unindexed_config_rejects_before_missing_generation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _, store = _registry(tmp_path)
     _env(monkeypatch, tmp_path, store)
-    with pytest.raises(RuntimeError, match="ACTIVE_CREDENTIAL_UNAVAILABLE"):
+    with pytest.raises(RuntimeError, match="PRODUCTION_CORPUS_UNINDEXED"):
         ServerConfig.from_env(certified_production=True, certified_root=tmp_path)

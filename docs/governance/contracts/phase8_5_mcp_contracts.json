@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "status": "WP-13_CAPABILITY_DISCOVERY_EXPOSED_RUNTIME_DERIVED",
-  "authority": "ADR-0073",
+  "authority": "ADR-0073; additive automatic query governed by ADR-0079",
   "transport_policy": {
     "authoritative": "MCP structured content",
     "json_fallback": "Canonical JSON with identical identifiers, provenance, completeness, continuation, limits, omissions, and recommended actions",
@@ -82,9 +82,13 @@
       "use_when": ["The exact document/version is known", "The request asks for full, page/range, first/last, from-end, or exact structural content"],
       "do_not_use_when": ["Discovering a relevant document from natural language", "Semantic or exhaustive matching across documents"],
       "required_inputs": ["document_id", "version_id"], "optional_inputs": ["notebook_id", "mode", "selector", "cursor", "max_bytes", "max_items"],
-      "result_items": ["notebook_id", "source/document/version IDs", "ordered blocks or original resource", "physical locators", "snapshot", "completeness", "next_cursor"],
+      "modes": ["original", "blocks", "text"],
+      "mode_selectors": {"original": "Original binary byte selection; ranges use end-exclusive offsets.", "blocks": "Persisted ordered parsed blocks; full and supported structural selectors.", "text": "Full or omitted selector only; ordered rendering of persisted parsed blocks, not stitched search chunks."},
+      "text_reconstruction": "Concatenate each item payload.text followed by payload.separator_after in returned index order; follow unchanged cursors to the terminal page. Heading level, code language and layout annotations are not preserved in plain-text rendering; retain blocks for structural fidelity.",
+      "binary_structured_metadata": ["rangeStart", "rangeEndExclusive", "returnedBytes", "totalBytes", "contentHash", "snapshotIdentity", "originalMediaType", "notebookId", "sourceId", "documentId", "versionId", "completeness", "nextCursor"],
+      "result_items": ["notebook_id", "source/document/version IDs", "ordered blocks, rendered text items or original resource", "physical locators", "snapshot", "completeness", "next_cursor"],
       "completeness": "Continue unchanged next_cursor until null for full traversal; selector scope must terminate complete or report typed limitation.",
-      "recommended_chain": ["Use search_all_notebooks/search_evidence to discover IDs.", "For full/end requests, continue until selector completion; do not answer from search snippets."], "compatibility": "Existing no-selector blocks/original modes and optional safe notebook resolution remain compatible."
+      "recommended_chain": ["Use search_all_notebooks/search_evidence to discover IDs.", "For full/end requests, continue until selector completion; do not answer from search snippets."], "compatibility": "Existing no-selector blocks/original modes and optional safe notebook resolution remain compatible. Text mode is additive; absent persisted representations return delivery.representation_unavailable, not fabricated document text."
     },
     {
       "name": "get_document_chunk", "kind": "retained", "registered_now": true, "responsibility": "Return one exact authorized canonical chunk and ancestry.",
@@ -136,6 +140,15 @@
       "result_items": ["execution ID", "answer", "EvidenceCitationV2 mappings", "retrieval/context completeness", "immutable fingerprint", "replay state"],
       "completeness": "Propagates evidence/context completeness; failed citation compliance publishes no assistant snapshot.",
       "recommended_chain": ["Retrieve exact/structured/multimodal evidence first unless the accepted request contract performs deterministic retrieval."], "compatibility": "Additive and reuses ADR-0054/ADR-0056; V1 Final-QA unchanged."
+    },
+    {
+      "name": "query_notebook_v2", "kind": "additive", "registered_now": true, "responsibility": "Server-selected evidence query over one unambiguous authorized notebook; canonical, ready OCR/Vision, compatible multilingual/visual sources are considered without modality hints.",
+      "use_when": ["A normal question may be answered by canonical or derived image evidence without the client selecting representations."],
+      "do_not_use_when": ["A synthesized persisted answer is required", "The server cannot resolve one unambiguous authorized notebook", "Complete corpus absence must be proved by ranked top-k"],
+      "required_inputs": ["query"], "optional_inputs": ["mode", "cursor", "candidate_budget", "evidence_budget", "max_serialized_bytes", "max_content_characters"],
+      "result_items": ["evidence envelope", "representation decision report", "answer_status=not_generated"],
+      "completeness": "Ranked top-k is bounded, not proof of absence; exhaustive cursor is signed to actor, scope, policy version, representation set, query and limits.",
+      "recommended_chain": ["Use returned typed evidence and provenance; obtain governed synthesis separately when needed."], "compatibility": "Additive ADR-0079 contract; V1 query_notebook and search_all_notebooks remain unchanged."
     },
     {
       "name": "get_capabilities", "kind": "additive", "registered_now": true, "responsibility": "Return truthful scope-aware Phase 8.5 readiness, active generation, bounds, and limitations.",

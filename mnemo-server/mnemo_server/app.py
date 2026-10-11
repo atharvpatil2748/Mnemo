@@ -4,14 +4,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from mnemo import __version__
 from mnemo.config import MnemoConfig
 from mnemo.engine import EngineState, FinalQAComponents, KnowledgeEngine
@@ -39,6 +41,7 @@ from .routers import (
 )
 from .runtime_config import resolve_mnemo_runtime_config
 from .services import JobService
+from .services.delivery import build_delivery_service_for_storage
 from .services.retrieval_v2 import build_retrieval_cursor_codec
 from .tokenizer_provisioning import provision_tokenizer
 
@@ -54,11 +57,30 @@ def create_app(
     reranker_activation_evidence: object | None = None,
     provision_tokenizer_on_startup: bool = True,
     pre_certification_observation: bool = False,
+    indexed_fixture_readiness_check: Callable[[], None] | None = None,
+    indexed_fixture_engine_factory: Callable[..., KnowledgeEngine] | None = None,
 ) -> FastAPI:
     """Create and configure the FastAPI application for mnemo-server."""
     if pre_certification_observation and (engine is not None or final_qa_components is not None):
         raise RuntimeError("PRE_CERTIFICATION_INJECTED_RUNTIME_REJECTED")
     resolved_server_config = server_config or ServerConfig.from_env()
+    if (
+        indexed_fixture_readiness_check is not None
+        and engine is None
+        and indexed_fixture_engine_factory is None
+    ):
+        raise ValueError("indexed fixture admission requires an injected engine or factory")
+    if indexed_fixture_engine_factory is not None and indexed_fixture_readiness_check is None:
+        raise ValueError("indexed fixture factory requires disposable index admission")
+
+    def require_selected_index() -> None:
+        if indexed_fixture_readiness_check is not None:
+            indexed_fixture_readiness_check()
+            return
+        from .services.production_runtime_binding import repository_root
+        from .services.production_runtime_selection import require_production_index
+
+        require_production_index(repository_root())
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -68,6 +90,8 @@ def create_app(
         operational_store = None
         production_binding = None
         observation_authority = None
+        if resolved_server_config.production_mode:
+            require_selected_index()
         if resolved_server_config.full_multilingual_v2_enabled:
             supplied_config = (
                 mnemo_config if mnemo_config is not None else (engine.config if engine else None)
@@ -163,9 +187,16 @@ def create_app(
                     )
                     resolved_components = None
 
-            active_engine = KnowledgeEngine(
+            active_engine = (indexed_fixture_engine_factory or KnowledgeEngine)(
                 runtime_config,
                 final_qa_components=resolved_components,
+                delivery_service_factory=partial(
+                    build_delivery_service_for_storage,
+                    config=resolved_server_config,
+                    execution_store=(
+                        resolved_components.operational_store_v2 if resolved_components else None
+                    ),
+                ),
                 advanced_retrieval_cursor_codec=build_retrieval_cursor_codec(
                     resolved_server_config
                 ),
@@ -297,6 +328,22 @@ def create_app(
         AuthMiddleware,
         config=resolved_server_config,
     )
+
+    if resolved_server_config.production_mode:
+
+        @app.middleware("http")
+        async def refuse_unindexed_production(
+            request: Request, call_next: Callable[[Request], Awaitable[Response]]
+        ) -> Response:
+            """Protect request dispatch even when ASGI lifespan was not entered."""
+            try:
+                require_selected_index()
+            except RuntimeError:
+                return JSONResponse(
+                    status_code=503,
+                    content={"error": {"code": "PRODUCTION_CORPUS_UNINDEXED"}},
+                )
+            return await call_next(request)
 
     # Register ADR-0049 standardized error handlers
     register_error_handlers(app)

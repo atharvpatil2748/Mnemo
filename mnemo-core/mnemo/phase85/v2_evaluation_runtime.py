@@ -42,6 +42,7 @@ from mnemo.retrieval.multilingual_sparse_v2 import (
     AuthorizedMultilingualSparseRetrievalV2,
     MultilingualTextProjectionStoreV2,
 )
+from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
 
 
 class V2RuntimeCompositionError(RuntimeError):
@@ -229,6 +230,15 @@ class FullMultilingualV2EvaluationRuntimeFactory:
             query_language_resolver=self._dependencies.query_language_resolver,
             projector=self._dependencies.projector,
             exhaustive_fallback=self._dependencies.exhaustive_fallback,  # type: ignore[arg-type]
+            alias_set_digest=self._identity.alias_set_digest,
+            exhaustive_store=(
+                self._dependencies.embedding_store
+                if isinstance(self._dependencies.embedding_store, SQLiteV2ReadOnlyRuntimeStore)
+                else None
+            ),
+            language_text_generation_id=_generation_id(
+                ordered, V2GenerationCapability.LANGUAGE_TEXT
+            ),
         )
         return ComposedFullMultilingualV2Runtime(
             application=application,

@@ -1,10 +1,10 @@
 [storage.filesystem]
 enabled = true
-root = "data/canonical_production/blobs"
+root = "data/notebook_runtime/blobs"
 
 [storage.sqlite]
 enabled = true
-path = "scratch/phase8_5_full_multilingual_v2/build-20260831-01/mnemo.db"
+path = "data/notebook_runtime/mnemo.db"
 
 [storage.qdrant]
 enabled = false

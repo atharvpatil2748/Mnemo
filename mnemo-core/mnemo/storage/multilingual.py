@@ -332,6 +332,24 @@ class SQLiteMultilingualMixin:
             ),
         )
 
+    async def get_representation_observation_v1(
+        self, observation_id: UUID
+    ) -> RepresentationObservationV1 | None:
+        """Read an immutable observation for idempotent governed rebuilds."""
+        row = await (
+            await self._require_open().execute(
+                "SELECT payload,payload_hash FROM representation_observations_v1 "
+                "WHERE observation_id=?",
+                (str(observation_id),),
+            )
+        ).fetchone()
+        value = _typed(
+            _decode_checked(row), RepresentationObservationV1, "representation observation"
+        )
+        if value is not None and value.observation_id != observation_id:
+            raise StorageError("persisted representation observation identity mismatch")
+        return value
+
     async def put_representation_observation(
         self, observation: RepresentationObservationV1
     ) -> bool:
@@ -590,6 +608,15 @@ class SQLiteMultilingualMixin:
                 raise ConflictError("V2 first-activation recovery authorization mismatch")
             await db.execute("DELETE FROM active_multilingual_v2_alias_set WHERE singleton=1")
         return True
+
+    async def resolve_active_multilingual_v2_alias_digest(self) -> str | None:
+        """Read the active, typed-authorized Full V2 alias identity."""
+        row = await (
+            await self._require_open().execute(
+                "SELECT alias_set_digest FROM active_multilingual_v2_alias_set WHERE singleton=1"
+            )
+        ).fetchone()
+        return None if row is None else str(row[0])
 
     async def resolve_active_multilingual_v2_generation_set(self) -> tuple[UUID, ...] | None:
         """Resolve only a complete, typed-authorized active V2 alias set."""

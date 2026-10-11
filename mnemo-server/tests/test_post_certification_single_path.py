@@ -22,7 +22,7 @@ def _json(path: Path) -> dict[str, Any]:
 
 
 @pytest.mark.local_database
-def test_canonical_manifest_matches_signed_active_certified_state() -> None:
+def test_historical_certification_cannot_reactivate_retired_production_state() -> None:
     if not (ACTIVATION.exists() and CERTIFICATION.exists()):
         pytest.skip("Operational certification artifacts not present in environment")
     manifest = _json(MANIFEST)
@@ -31,12 +31,13 @@ def test_canonical_manifest_matches_signed_active_certified_state() -> None:
 
     lifecycle = manifest["lifecycle"]
     assert isinstance(lifecycle, dict)
+    assert lifecycle["evaluated"] is True  # retained historical evidence
     assert all(
-        lifecycle[key] is True
+        lifecycle[key] is False
         for key in (
+            "active_generation_alias",
             "v2_transport_exposed",
             "bge_reranker_activated",
-            "evaluated",
             "verified",
             "certified",
         )
@@ -46,6 +47,8 @@ def test_canonical_manifest_matches_signed_active_certified_state() -> None:
     assert manifest["corpus"]["database_identity"] == certification["production_store_identity"]
     assert manifest["reranker"]["revision"] == certification["bge_revision"]
     assert manifest["reranker"]["pair_policy"] == certification["pair_policy"]
+    selection = _json(ROOT / "config/production/runtime-selection.json")
+    assert selection["state"] == "UNINDEXED"
 
 
 def test_core_outer_slot_is_model_free_and_v2_owns_production_reranking() -> None:
