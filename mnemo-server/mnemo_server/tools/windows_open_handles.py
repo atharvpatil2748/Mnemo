@@ -35,10 +35,10 @@ def processes_using_files(paths: tuple[Path, ...]) -> tuple[int, ...]:
     evidence as no consumers. Paths must already have been resolved and
     allowlisted by the caller.
     """
-    if os.name != "nt":
-        raise RuntimeError("WINDOWS_FILE_USER_PROBE_UNAVAILABLE")
     if not paths:
         raise ValueError("file-user probe requires paths")
+    if os.name != "nt":
+        raise RuntimeError("WINDOWS_FILE_USER_PROBE_UNAVAILABLE")
     # WinDLL is absent from non-Windows ctypes, including its type stubs.
     loader = getattr(ctypes, "WinDLL", None)
     if loader is None:

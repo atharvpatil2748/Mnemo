@@ -234,6 +234,8 @@ def test_environment_rejects_invalid_security_and_budget_values(
         ),
         ({"final_qa_operational_store": {"path": "../outside.db"}}, "UNAVAILABLE"),
         ({"final_qa_operational_store": {"path": "C:/absolute.db"}}, "UNAVAILABLE"),
+        ({"final_qa_operational_store": {"path": "C:relative.db"}}, "UNAVAILABLE"),
+        ({"final_qa_operational_store": {"path": "..\\outside.db"}}, "UNAVAILABLE"),
     ],
 )
 def test_certified_defaults_reject_ambiguous_or_escaping_authority(

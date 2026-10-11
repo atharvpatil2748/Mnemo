@@ -19,3 +19,9 @@ def test_live_file_user_is_reported(tmp_path: Path) -> None:
 def test_empty_probe_is_rejected() -> None:
     with pytest.raises(ValueError):
         processes_using_files(())
+
+
+@pytest.mark.skipif(os.name == "nt", reason="non-Windows refusal")
+def test_non_windows_probe_fails_closed(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match="WINDOWS_FILE_USER_PROBE_UNAVAILABLE"):
+        processes_using_files((tmp_path / "fixture.db",))

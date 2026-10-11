@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Literal
 from uuid import UUID
 
@@ -37,7 +37,9 @@ def _certified_manifest_defaults(root: Path) -> tuple[str, Path | None, Path, Pa
             not isinstance(value, str)
             or not value
             or Path(value).is_absolute()
+            or bool(PureWindowsPath(value).drive or PureWindowsPath(value).root)
             or ".." in Path(value).parts
+            or ".." in PureWindowsPath(value).parts
             for value in paths
         ):
             raise ValueError("invalid certified operational path")

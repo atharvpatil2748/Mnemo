@@ -92,9 +92,10 @@ def preflight_production_storage(
         )
         if any(
             isinstance(selected, Path)
-            and (selected if selected.is_absolute() else root / selected)
-            .resolve(strict=False)
-            .is_relative_to(evaluation_root)
+            and _within_evaluation_root(
+                (selected if selected.is_absolute() else root / selected).resolve(strict=False),
+                evaluation_root,
+            )
             for selected in selected_paths
         ):
             raise RuntimeError("EVALUATION_ONLY_STORE_NOT_SERVABLE")
@@ -116,6 +117,13 @@ def preflight_production_storage(
             embedding_cache_path=None,
         )
     return _mutable_composition(mnemo_config, inventory, decision)
+
+
+def _within_evaluation_root(selected: Path, evaluation_root: Path) -> bool:
+    """Fail closed for case aliases even when checked on a case-sensitive host."""
+    root_key = evaluation_root.as_posix().casefold().rstrip("/")
+    selected_key = selected.as_posix().casefold()
+    return selected_key == root_key or selected_key.startswith(f"{root_key}/")
 
 
 def build_protected_storage_inventory(

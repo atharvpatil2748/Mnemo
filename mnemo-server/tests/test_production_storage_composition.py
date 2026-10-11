@@ -11,6 +11,7 @@ from mnemo.engine import KnowledgeEngine
 from mnemo_server.config import ServerConfig
 from mnemo_server.services.mutable_workspace import StorageRole, WorkspaceMode
 from mnemo_server.services.production_storage_composition import (
+    _within_evaluation_root,
     build_protected_storage_inventory,
     preflight_production_storage,
 )
@@ -289,6 +290,14 @@ def test_production_selection_rejects_relative_evaluation_path(
                 delivery_cursor_secret="disposable-test-cursor-key-000000000000",
             ),
         )
+
+
+def test_evaluation_root_case_alias_has_platform_independent_boundary(tmp_path: Path) -> None:
+    evaluation = tmp_path / "scratch/evaluation_notebooks"
+    assert _within_evaluation_root(
+        tmp_path / "SCRATCH/EVALUATION_NOTEBOOKS/phase8_6/mnemo.db", evaluation
+    )
+    assert not _within_evaluation_root(tmp_path / "scratch/evaluation_notebooks-other", evaluation)
 
 
 def test_every_server_owned_protected_location_rejects_workspace_equality(
