@@ -39,7 +39,11 @@ def processes_using_files(paths: tuple[Path, ...]) -> tuple[int, ...]:
         raise RuntimeError("WINDOWS_FILE_USER_PROBE_UNAVAILABLE")
     if not paths:
         raise ValueError("file-user probe requires paths")
-    library = ctypes.WinDLL("Rstrtmgr")
+    # WinDLL is absent from non-Windows ctypes, including its type stubs.
+    loader = getattr(ctypes, "WinDLL", None)
+    if loader is None:
+        raise RuntimeError("WINDOWS_FILE_USER_PROBE_UNAVAILABLE")
+    library = loader("Rstrtmgr")
     session = wintypes.DWORD()
     key = ctypes.create_unicode_buffer(33)
     started = library.RmStartSession(ctypes.byref(session), 0, key)

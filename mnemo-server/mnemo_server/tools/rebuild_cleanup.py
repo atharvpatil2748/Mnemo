@@ -10,8 +10,15 @@ import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol, cast
 from uuid import NAMESPACE_URL, uuid5
+
+
+class _WindowsFileLock(Protocol):
+    LK_NBLCK: int
+    LK_UNLCK: int
+
+    def locking(self, fd: int, mode: int, nbytes: int) -> None: ...
 
 
 def _link_or_junction(path: Path) -> bool:
@@ -45,8 +52,8 @@ def exclusive_rebuild_lock(workspace: Path) -> Iterator[None]:
         lock.seek(0)
         try:
             if os.name == "nt":
-                import msvcrt
-
+                # The module is Windows-only; Linux type stubs omit its API.
+                msvcrt = cast(_WindowsFileLock, importlib.import_module("msvcrt"))
                 msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
             else:
                 fcntl = importlib.import_module("fcntl")
