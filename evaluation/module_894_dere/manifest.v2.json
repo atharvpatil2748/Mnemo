@@ -1,0 +1,163 @@
+{
+  "schema_version": "mnemo.dere/2",
+  "protocol_version": "DERE-2",
+  "judgment_method": "DETERMINISTIC_ENGINEERING",
+  "human_adjudication_claimed": false,
+  "baseline_manifest_sha256": "9f697e417ceb65c96d47be8a1c52bfbc909f7c94a07d9a26a38add2830875113",
+  "snapshot": "phase8_5_11/eval-20260825-02",
+  "source_manifest_sha256": "50264ae4d080a6607467399ee65e00e74af6f782d161969e06f1d81abc9318c9",
+  "inventory_sha256": "c1058c67bcd21c9d89fd190daa6bf695efa96be6f83ab9f1d54f161227be4ef5",
+  "active_alias": "7e43fa2879c1ce1eab714adb082f94a1bad1466d19b37f14220f6ffb9e40b4d9",
+  "k": 10,
+  "cases": [
+    {
+      "case_id": "DERE-894-ENMR-CANONICAL-001",
+      "case_type": "single_target",
+      "inventory_ids": [
+        "P85-EVAL-ENMR-001"
+      ],
+      "query": "How did the author spend their sixth grade year according to the personal reflection?",
+      "query_language": "en",
+      "target_language": "mr",
+      "targets": [
+        {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+          "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+          "evidence_kind": "canonical_chunk",
+          "evidence_id": "523c5c88b522ce818212ffc42241706b731a767bb4dc5045ffa1a99e3392a0ca",
+          "source_id": "9cfa0b9f-3e36-406a-8e33-27fed891a54b",
+          "source_file_sha256": "31addf387d13de26e3b155e1fc6ee65d5f554cfdfb4281951c56e9482b6f8085",
+          "evidence_content_sha256": "79d8b0a7f0dd89bfffef100682b2c8cef6221c968fce181b796739fe0180af9d"
+        }
+      ]
+    },
+    {
+      "case_id": "DERE-894-V2-MRMR-002",
+      "case_type": "single_target",
+      "inventory_ids": [
+        "P85-EVAL-MRMR-002"
+      ],
+      "query": "\u0936\u093e\u0930\u094d\u0926\u0941\u0932\u0928\u0947 \u0905\u0925\u0930\u094d\u0935\u0932\u093e \u0924\u093f\u0918\u093e\u0902\u0938\u093e\u0920\u0940 \u091f\u093e\u0933\u094d\u092f\u093e \u0935\u093e\u091c\u0935\u0923\u093e\u0931\u094d\u092f\u093e \u092e\u0941\u0932\u0940\u0902\u092c\u0926\u094d\u0926\u0932 \u0915\u093e\u092f \u0938\u093e\u0902\u0917\u093f\u0924\u0932\u0947 \u0906\u0923\u093f \u0924\u094d\u092f\u093e\u0932\u093e \u0928\u093f\u092f\u0924\u0940\u091a\u093e \u092e\u093e\u0938\u094d\u091f\u0930\u0938\u094d\u091f\u094d\u0930\u094b\u0915 \u0915\u093e \u092e\u094d\u0939\u091f\u0932\u0947?",
+      "query_language": "mr",
+      "target_language": "mr",
+      "targets": [
+        {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+          "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+          "evidence_kind": "canonical_chunk",
+          "evidence_id": "84da15c958cbabadfb3e8449db384c64169af3dc5d21c3b848b04ced049b3851",
+          "source_id": "9cfa0b9f-3e36-406a-8e33-27fed891a54b",
+          "source_file_sha256": "31addf387d13de26e3b155e1fc6ee65d5f554cfdfb4281951c56e9482b6f8085",
+          "evidence_content_sha256": "47a73e13658c199f2c4a23421e14cb387ac8e32bca13bafb68c2c99e85502d93"
+        }
+      ]
+    },
+    {
+      "case_id": "DERE-894-V2-ENEN-001",
+      "case_type": "single_target",
+      "inventory_ids": [
+        "P85-EVAL-ENEN-001"
+      ],
+      "query": "What is ARVSAL and what are its core architectural components in Atharv Patil's resume?",
+      "query_language": "en",
+      "target_language": "en",
+      "targets": [
+        {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+          "version_id": "738e9121-2179-500e-bd3d-da587e8de9c5",
+          "evidence_kind": "canonical_chunk",
+          "evidence_id": "b6f0215d3ec2e2ec8d07633781c2c9861946ec54bdcefca43f9694f0ad91e0b8",
+          "source_id": "bbf24827-d6c4-4a9f-b543-64b42ac81a5b",
+          "source_file_sha256": "985c582edf8eba0a91a4305f9ecb6cd9db5bc5d6dde2a9024f8e99d6a5a89a2d",
+          "evidence_content_sha256": "f2f0739cfca7ad3cdd90068f294808b63b8f18dfbadd73a48cefd863f245da5f"
+        }
+      ]
+    },
+    {
+      "case_id": "DERE-894-V2-ENEN-004",
+      "case_type": "single_target",
+      "inventory_ids": [
+        "P85-EVAL-ENEN-004"
+      ],
+      "query": "Why does server.js warn that concurrent large model allocations cause VirtualAlloc fatal errors?",
+      "query_language": "en",
+      "target_language": "en",
+      "targets": [
+        {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+          "evidence_kind": "canonical_chunk",
+          "evidence_id": "1a6459587d97ca23a2521baad0b4b93264ae1e52242db6254df2420986db7083",
+          "source_id": "5958ce78-8f40-4483-a176-a1d9a6c5297b",
+          "source_file_sha256": "f96c9795d07630d9e1e8b6ffcc2cc3b4513de671dd3ec2e21a1d446be1e83796",
+          "evidence_content_sha256": "e2d48d43fe21700739c2866a80e0f6cc5e48c39e2b23ff1b9b6aca985cc19c62"
+        }
+      ]
+    },
+    {
+      "case_id": "DERE-894-V2-ENEN-008",
+      "case_type": "single_target",
+      "inventory_ids": [
+        "P85-EVAL-ENEN-008"
+      ],
+      "query": "When does llmPrompt.js allow providing full mathematical solutions to students?",
+      "query_language": "en",
+      "target_language": "en",
+      "targets": [
+        {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+          "version_id": "109911b1-0bac-5bce-af3f-4d8b99b13c32",
+          "evidence_kind": "canonical_chunk",
+          "evidence_id": "3077c89507278f4f600112d9fe5f3ec126cb918613fec70c495714ffa4911e0c",
+          "source_id": "43b64225-2464-4d41-8e8f-803333c8e280",
+          "source_file_sha256": "b4144d9061eb3db83cb0a3ea36edc031c4f4c62883d2043fe4f954fe1df0cec2",
+          "evidence_content_sha256": "2393526bcf093ba38b5175f15d67e4118defe00c29b5a526f21d087399a2b91d"
+        }
+      ]
+    },
+    {
+      "case_id": "DERE-894-V2-ENEN-005+ENEN-006",
+      "case_type": "compound_control",
+      "inventory_ids": [
+        "P85-EVAL-ENEN-005",
+        "P85-EVAL-ENEN-006"
+      ],
+      "query": "How is the /command endpoint configured with AbortController in server.js? How does server.js handle uncaughtException events in Node.js?",
+      "query_language": "en",
+      "target_language": "en",
+      "targets": [
+        {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+          "evidence_kind": "canonical_chunk",
+          "evidence_id": "7bb832e402d3643f1b2d0a1b246b52aa6cd38c6271f717da286f77977ea781ae",
+          "source_id": "5958ce78-8f40-4483-a176-a1d9a6c5297b",
+          "source_file_sha256": "f96c9795d07630d9e1e8b6ffcc2cc3b4513de671dd3ec2e21a1d446be1e83796",
+          "evidence_content_sha256": "e202b91e5406c03dca880db7d2528e872dd16ae9eda80d8e4ed85349ef2f6c2d"
+        },
+        {
+          "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+          "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+          "version_id": "c42eccba-7fc1-5f9b-9d07-92bf8253e4ce",
+          "evidence_kind": "canonical_chunk",
+          "evidence_id": "b7cb9b4f0e36845fe270a15b69794253c274f48a0c5b8176b23d2720d5911fa9",
+          "source_id": "5958ce78-8f40-4483-a176-a1d9a6c5297b",
+          "source_file_sha256": "f96c9795d07630d9e1e8b6ffcc2cc3b4513de671dd3ec2e21a1d446be1e83796",
+          "evidence_content_sha256": "5298c347fa5fb34a5fba7197af63aad22b98ae6b8914f4c1493f9b42ad37e389"
+        }
+      ]
+    }
+  ],
+  "negative_controls": {
+    "wrong_notebook": "00000000-0000-0000-0000-000000000001",
+    "ungranted_actor": "00000000-0000-0000-0000-000000000003",
+    "wrong_version": "use a verified version of a different document paired with the target document"
+  },
+  "offline_comparison_gate": "At least two independently sourced documents per compared language direction, and more than one authorized notebook for measured cross-notebook fairness. Compound controls are not independent."
+}

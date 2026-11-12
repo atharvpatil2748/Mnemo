@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from mnemo.models.advanced_retrieval import PositionalScopeV2, RetrievalScopeV2
+from mnemo.models.text_representations import RepresentationObservationV1
 from mnemo.models.v2_evidence_resolution import V2GenerationSetBindingV1
 from mnemo.models.v2_retrieval_authorization import (
     V2ActiveRuntimeBindingV1,
@@ -75,6 +76,42 @@ def _setup_synthetic_store(
         provider_identity="sentence-transformers",
     )
     return store, db_path, verifier, identity
+
+
+@pytest.mark.anyio
+async def test_observation_batch_deduplicates_lookups_without_skipping_validation(
+    tmp_path: Path,
+) -> None:
+    store, _db_path, _verifier, _identity = _setup_synthetic_store(tmp_path)
+    await store.open()
+    try:
+        row = await (
+            await store._require_open().execute(
+                "SELECT observation_id FROM representation_observations_v1 LIMIT 1"
+            )
+        ).fetchone()
+        assert row is not None
+        observation_id = UUID(str(row[0]))
+        statements: list[str] = []
+        await store._require_open().set_trace_callback(statements.append)
+        loaded = await store._load_observation_payloads(
+            "representation_observations_v1",
+            (observation_id,) * 100,
+            RepresentationObservationV1,
+            "representation observation",
+        )
+        assert set(loaded) == {str(observation_id)}
+        assert isinstance(loaded[str(observation_id)], RepresentationObservationV1)
+        assert sum("FROM representation_observations_v1" in item for item in statements) == 1
+        with pytest.raises(Exception, match="missing representation observation"):
+            await store._load_observation_payloads(
+                "representation_observations_v1",
+                (UUID(int=0),),
+                RepresentationObservationV1,
+                "representation observation",
+            )
+    finally:
+        await store.close()
 
 
 @pytest.mark.anyio

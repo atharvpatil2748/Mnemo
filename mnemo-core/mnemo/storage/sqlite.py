@@ -74,6 +74,7 @@ from mnemo.storage.chunk_read_model import CHUNK_READ_FAILURE, ChunkReadModel
 from mnemo.storage.multilingual import (
     MULTILINGUAL_SCHEMA_STATEMENTS,
     MULTILINGUAL_V2_SCHEMA_STATEMENTS,
+    V2_SEMANTIC_PAGE_INDEX_SQL,
     SQLiteMultilingualMixin,
 )
 from mnemo.storage.multimodal import MULTIMODAL_SCHEMA_STATEMENTS, SQLiteMultimodalMixin
@@ -91,13 +92,9 @@ from mnemo.storage.structured import (
 )
 from mnemo.storage.vision import VISION_SCHEMA_STATEMENTS, SQLiteVisionMixin
 
-_SCHEMA_VERSION = 16
+_SCHEMA_VERSION = 17
 
 _SCHEMA_SQL = """
-PRAGMA foreign_keys = ON;
-PRAGMA journal_mode = WAL;
-PRAGMA synchronous = NORMAL;
-
 CREATE TABLE IF NOT EXISTS schema_versions (
     version INTEGER PRIMARY KEY,
     applied_at TEXT NOT NULL
@@ -462,6 +459,23 @@ async def _transaction(db: aiosqlite.Connection) -> AsyncIterator[None]:
         raise
 
 
+async def _enable_wal_mode(db: aiosqlite.Connection) -> None:
+    """Coordinate concurrent first openers during SQLite's WAL transition."""
+    for attempt in range(10):
+        try:
+            async with db.execute("PRAGMA journal_mode = WAL;") as cursor:
+                row = await cursor.fetchone()
+            if row is None or str(row[0]).lower() != "wal":
+                raise StorageError("SQLite WAL mode is unavailable")
+            return
+        except sqlite3.OperationalError as exc:
+            # SQLite may return BUSY immediately while another connection
+            # changes the journal mode despite a configured busy timeout.
+            if exc.sqlite_errorcode != sqlite3.SQLITE_BUSY or attempt == 9:
+                raise
+            await asyncio.sleep(0.02 * (attempt + 1))
+
+
 def _iso_to_dt(iso_str: str) -> datetime:
     return datetime.fromisoformat(iso_str)
 
@@ -630,6 +644,7 @@ class SQLiteStore(
         self._multimodal_lock = asyncio.Lock()
         self._multilingual_lock = asyncio.Lock()
         self._projection_generation_lock = asyncio.Lock()
+        self._notebook_write_lock = asyncio.Lock()
 
     def _require_open(self) -> aiosqlite.Connection:
         if self._db is None:
@@ -647,9 +662,10 @@ class SQLiteStore(
         self._db = await aiosqlite.connect(self._db_path)
         try:
             # Enable WAL mode, foreign keys, and busy timeout per connection
-            await self._db.execute("PRAGMA foreign_keys = ON;")
-            await self._db.execute("PRAGMA journal_mode = WAL;")
             await self._db.execute("PRAGMA busy_timeout = 60000;")
+            await self._db.execute("PRAGMA foreign_keys = ON;")
+            await _enable_wal_mode(self._db)
+            await self._db.execute("PRAGMA synchronous = NORMAL;")
             await self._migrate()
             await self._inspect_chunk_read_model_if_present()
         except BaseException:
@@ -680,13 +696,17 @@ class SQLiteStore(
         ) as cursor:
             row = await cursor.fetchone()
             if row is None:
-                # First run, initialize schema
-                await db.executescript(_SCHEMA_SQL)
-                await db.execute(
-                    "INSERT INTO schema_versions (version, applied_at) VALUES (?, ?)",
-                    (_SCHEMA_VERSION, datetime.now().isoformat()),
+                # executescript commits any pending transaction before executing.
+                # Keep schema creation and its version marker inside one explicit
+                # cross-process SQLite transaction. A second first opener waits,
+                # then observes the complete schema or takes over after rollback.
+                await db.executescript(
+                    "BEGIN EXCLUSIVE;\n"
+                    + _SCHEMA_SQL
+                    + "\nINSERT OR IGNORE INTO schema_versions (version, applied_at) "
+                    + f"VALUES ({_SCHEMA_VERSION}, strftime('%Y-%m-%dT%H:%M:%f', 'now'));\n"
+                    + "COMMIT;"
                 )
-                await db.commit()
                 return
         async with db.execute("SELECT MAX(version) FROM schema_versions") as cursor:
             version_row = await cursor.fetchone()
@@ -900,6 +920,13 @@ class SQLiteStore(
                 await db.execute(
                     "INSERT INTO schema_versions (version, applied_at) VALUES (?, ?)",
                     (16, datetime.now(UTC).isoformat()),
+                )
+        if current_version < 17:
+            async with _transaction(db):
+                await db.execute(V2_SEMANTIC_PAGE_INDEX_SQL)
+                await db.execute(
+                    "INSERT INTO schema_versions (version, applied_at) VALUES (?, ?)",
+                    (17, datetime.now(UTC).isoformat()),
                 )
 
     async def close(self) -> None:
@@ -1600,6 +1627,22 @@ class SQLiteStore(
             row = await cursor.fetchone()
         return None if row is None else _index_generation_from_row(row)
 
+    async def list_active_index_generations(self, capability: str) -> tuple[IndexGeneration, ...]:
+        """Read every active profile for one capability without changing alias state."""
+        db = self._require_open()
+        async with db.execute(
+            """SELECT g.generation_id, g.capability, g.profile, g.schema_version,
+                      g.input_scope, g.provider_identity, g.model_identity,
+                      g.configuration_digest, g.dimensions, g.state, g.item_count,
+                      g.checksum, g.created_at, g.updated_at
+               FROM active_index_generations a
+               JOIN index_generations g ON g.generation_id=a.generation_id
+               WHERE a.capability=? ORDER BY g.profile,g.generation_id""",
+            (capability,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return tuple(_index_generation_from_row(row) for row in rows)
+
     async def add_asset_gc_reference(
         self, asset_id: UUID, reference_kind: str, reference_id: str
     ) -> None:
@@ -1958,8 +2001,29 @@ class SQLiteStore(
     # NotebookRepository Methods
     # -------------------------------------------------------------------------
 
+    async def insert_notebook_if_absent(self, notebook: Notebook) -> None:
+        """Create once; unlike upsert, never replace a concurrent notebook."""
+        db = self._require_open()
+        async with self._notebook_write_lock, _transaction(db):
+            await db.execute(
+                "INSERT INTO notebooks (notebook_id, title, description, created_at, "
+                "updated_at, metadata) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    str(notebook.notebook_id),
+                    notebook.title,
+                    notebook.description,
+                    _dt_to_iso(notebook.created_at),
+                    _dt_to_iso(notebook.updated_at),
+                    json.dumps(thaw_json(notebook.metadata)),
+                ),
+            )
+
     async def upsert_notebook(self, notebook: Notebook) -> None:
         """Insert or replace a notebook snapshot."""
+        async with self._notebook_write_lock:
+            await self._upsert_notebook_unlocked(notebook)
+
+    async def _upsert_notebook_unlocked(self, notebook: Notebook) -> None:
         db = self._require_open()
 
         async with db.execute(
@@ -2007,6 +2071,10 @@ class SQLiteStore(
 
     async def delete_notebook(self, notebook_id: UUID) -> bool:
         """Delete a notebook and report whether it existed."""
+        async with self._notebook_write_lock:
+            return await self._delete_notebook_unlocked(notebook_id)
+
+    async def _delete_notebook_unlocked(self, notebook_id: UUID) -> bool:
         db = self._require_open()
         notebook_key = str(notebook_id)
 

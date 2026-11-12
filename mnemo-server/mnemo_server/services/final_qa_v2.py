@@ -17,7 +17,6 @@ from mnemo.interfaces import (
     OperationTimeoutError,
     StorageError,
 )
-from mnemo.interfaces.advanced_retrieval import PrincipalAwareAdvancedRetrievalInterfaceV2
 from mnemo.models import FrozenMetadata
 from mnemo.models.advanced_retrieval import RetrievalCompleteness
 from mnemo.models.final_qa_execution import FinalQAExecutionSnapshotPhase, FinalQAExecutionState
@@ -40,7 +39,12 @@ from .authorization import (
     AuthorizationOperationV1,
     CentralAuthorizationServiceV1,
     ServerPrincipalV1,
+    principal_from_claims,
 )
+from .authorized_scope import AuthorizedNotebookScopeResolver
+from .retrieval_v2 import EvidenceRetrievalApplicationService
+from .scope_authority import SQLiteNotebookScopeAuthority
+from .shared_search import SharedSearchApplicationService
 from .source_metadata import (
     AuthorizedSourceMetadataResolverV1,
     SourceMetadataReferenceV1,
@@ -112,6 +116,22 @@ class FinalQAV2ApplicationService:
         if body.evidence_request_or_snapshot.scope.notebook_id != notebook_id:
             raise ContractValidationError("evidence scope notebook does not match path")
         authorization = CentralAuthorizationServiceV1(self._engine)
+        scope_authority = getattr(self._engine, "server_scope_authority", None)
+        membership = None
+        if scope_authority is not None:
+            if not isinstance(scope_authority, SQLiteNotebookScopeAuthority):
+                raise PermissionError("trusted membership authority is unavailable")
+            membership = (
+                await AuthorizedNotebookScopeResolver(
+                    self._engine.storage, scope_authority
+                ).resolve(principal, (notebook_id,))
+            )[0]
+            # FinalQA publication mutates durable execution state; readers remain read-only.
+            if not scope_authority.permits(principal.actor_id, notebook_id, operation="write"):
+                raise NotFoundError("authorized resource was not found")
+            await EvidenceRetrievalApplicationService(
+                self._engine, self._config
+            ).validate_acl_request(body.evidence_request_or_snapshot, principal)
         await authorization.authorize_notebook(
             principal, notebook_id, AuthorizationOperationV1.FINAL_QA
         )
@@ -136,13 +156,33 @@ class FinalQAV2ApplicationService:
         capabilities = profile()
         if body.provider_profile != capabilities.profile:
             raise ContractValidationError("requested Final-QA provider profile is unavailable")
-        result = (
-            await self._retrieval_result_authorized(
+        if membership is not None:
+            result = await self._retrieval_result_authorized(
+                body.question,
+                body.evidence_request_or_snapshot,
+                principal,
+                membership_revision=membership.membership_revision,
+            )
+        elif self._config.production_mode:
+            result = await self._retrieval_result_authorized(
                 body.question, body.evidence_request_or_snapshot, principal
             )
-            if self._config.production_mode
-            else await self._retrieval_result(body.question, body.evidence_request_or_snapshot)
+        else:
+            result = await self._retrieval_result(body.question, body.evidence_request_or_snapshot)
+        authorized_snapshot = await SharedSearchApplicationService(
+            self._engine, self._config
+        ).bind_answer_snapshot(
+            result,
+            principal,
+            notebook_id,
+            None if membership is None else membership.membership_revision,
         )
+        result = authorized_snapshot.result
+        if membership is not None:
+            if not isinstance(scope_authority, SQLiteNotebookScopeAuthority):
+                raise PermissionError("trusted membership authority is unavailable")
+            if not scope_authority.permits(principal.actor_id, notebook_id, operation="write"):
+                raise NotFoundError("authorized resource was not found")
         unavailable = tuple(
             item.kind.value
             for item in result.candidates
@@ -212,6 +252,14 @@ class FinalQAV2ApplicationService:
         snapshot = await store.get_final_qa_v2_snapshot(
             final.execution_id, FinalQAExecutionSnapshotPhase.PUBLISHED
         )
+        if membership is not None:
+            if not isinstance(scope_authority, SQLiteNotebookScopeAuthority):
+                raise PermissionError("trusted membership authority is unavailable")
+            await AuthorizedNotebookScopeResolver(self._engine.storage, scope_authority).revalidate(
+                principal, (membership,)
+            )
+            if not scope_authority.permits(principal.actor_id, notebook_id, operation="write"):
+                raise NotFoundError("authorized resource was not found")
         return FinalQAV2Response(
             contract_version="mnemo.final-qa-v2/1",
             execution_id=final.execution_id,
@@ -290,25 +338,12 @@ class FinalQAV2ApplicationService:
     async def _retrieval_result(
         self, question: str, request: EvidenceSearchRequest
     ) -> MultimodalRetrievalResultV2:
-        try:
-            async with asyncio.timeout(self._config.max_advanced_elapsed_milliseconds / 1000):
-                raw = await self._engine.advanced_retrieval.execute(
-                    request.to_plan(
-                        max_candidate_budget=self._config.max_advanced_candidate_budget,
-                        max_evidence_budget=self._config.max_advanced_evidence_budget,
-                        max_response_bytes=self._config.max_advanced_response_bytes,
-                        max_content_characters=self._config.max_advanced_content_characters,
-                        max_rerank_candidates=self._config.production_rerank_candidate_limit,
-                        production_candidate_pool_k=(
-                            self._config.production_rerank_candidate_limit
-                            if self._config.production_mode
-                            else None
-                        ),
-                    ),
-                    cursor=request.cursor,
-                )
-        except TimeoutError as error:
-            raise OperationTimeoutError("Final-QA evidence retrieval exceeded deadline") from error
+        raw = await SharedSearchApplicationService(self._engine, self._config).retrieve_for_answer(
+            request,
+            principal_from_claims(None),
+            membership_revision=None,
+            authorized=False,
+        )
         return _multimodal_result(question, raw)
 
     async def _retrieval_result_authorized(
@@ -316,30 +351,11 @@ class FinalQAV2ApplicationService:
         question: str,
         request: EvidenceSearchRequest,
         principal: ServerPrincipalV1,
+        membership_revision: int | None = None,
     ) -> MultimodalRetrievalResultV2:
-        if not principal.authenticated:
-            raise PermissionError("production FinalQA requires authentication")
-        retrieval = self._engine.advanced_retrieval
-        if not isinstance(retrieval, PrincipalAwareAdvancedRetrievalInterfaceV2):
-            raise DependencyUnavailableError(
-                "production retrieval lacks the principal-aware V2 entry point"
-            )
-        try:
-            async with asyncio.timeout(self._config.max_advanced_elapsed_milliseconds / 1000):
-                raw = await retrieval.execute_authorized(
-                    principal=principal,
-                    plan=request.to_plan(
-                        max_candidate_budget=self._config.max_advanced_candidate_budget,
-                        max_evidence_budget=self._config.max_advanced_evidence_budget,
-                        max_response_bytes=self._config.max_advanced_response_bytes,
-                        max_content_characters=self._config.max_advanced_content_characters,
-                        max_rerank_candidates=self._config.production_rerank_candidate_limit,
-                        production_candidate_pool_k=self._config.production_rerank_candidate_limit,
-                    ),
-                    cursor=request.cursor,
-                )
-        except TimeoutError as error:
-            raise OperationTimeoutError("Final-QA evidence retrieval exceeded deadline") from error
+        raw = await SharedSearchApplicationService(self._engine, self._config).retrieve_for_answer(
+            request, principal, membership_revision=membership_revision, authorized=True
+        )
         return _multimodal_result(question, raw)
 
 

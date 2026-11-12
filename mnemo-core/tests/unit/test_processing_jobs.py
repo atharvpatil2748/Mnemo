@@ -1201,7 +1201,7 @@ def test_schema_8_upgrade_idempotency_and_rollback(tmp_path: Path, monkeypatch) 
     _run(store.open())
     _run(store.close())
     with sqlite3.connect(path) as db:
-        assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (16,)
+        assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (17,)
         assert db.execute(
             "SELECT name FROM sqlite_master WHERE name='processing_jobs'"
         ).fetchone() == ("processing_jobs",)

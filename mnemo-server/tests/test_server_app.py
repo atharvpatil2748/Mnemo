@@ -14,7 +14,12 @@ from disposable_index_admission import disposable_index_admission
 from httpx import ASGITransport, AsyncClient
 from mnemo import MnemoConfig, __version__
 from mnemo.engine import EngineInitializationError, EngineState, KnowledgeEngine
-from mnemo.interfaces import ConflictError, ContractValidationError, NotFoundError
+from mnemo.interfaces import (
+    ConflictError,
+    ContractValidationError,
+    DependencyUnavailableError,
+    NotFoundError,
+)
 from mnemo.models import Notebook, Session, Turn, TurnRole
 from mnemo_server.app import create_app
 from mnemo_server.config import ServerConfig
@@ -607,6 +612,18 @@ async def test_final_qa_service_is_a_thin_adapter_and_marks_new_then_replay() ->
     )
     replay_with_persisted_tail = await FinalQAService(engine).execute(notebook_id, body)
     assert replay_with_persisted_tail.execution == "replay"
+
+
+@pytest.mark.anyio
+async def test_v1_final_qa_direct_service_cannot_bypass_attached_acl() -> None:
+    """The legacy in-process service must deny before reading or persisting data."""
+    engine = _make_mock_engine()
+    engine.server_scope_authority = object()
+    body = FinalQARequestBody(session_id=uuid4(), user_turn_id=uuid4(), assistant_turn_id=uuid4())
+    with pytest.raises(DependencyUnavailableError, match="principal-aware"):
+        await FinalQAService(engine).execute(uuid4(), body)
+    engine.storage.get_notebook.assert_not_called()
+    engine.storage.get_session.assert_not_called()
 
 
 @pytest.mark.anyio

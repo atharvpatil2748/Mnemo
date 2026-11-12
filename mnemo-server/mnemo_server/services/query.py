@@ -39,7 +39,15 @@ from mnemo_server.schemas.query import (
     QueryResponse,
     RetrievalMetadataResponse,
 )
-from mnemo_server.services.authorization import CentralAuthorizationServiceV1
+from mnemo_server.services.authorization import (
+    AuthorizationOperationV1,
+    CentralAuthorizationServiceV1,
+)
+from mnemo_server.services.authorized_scope import (
+    AuthorizedNotebookScope,
+    AuthorizedNotebookScopeResolver,
+)
+from mnemo_server.services.scope_authority import SQLiteNotebookScopeAuthority
 from mnemo_server.services.source_metadata import (
     AuthorizedSourceMetadataResolverV1,
     SourceMetadataReferenceV1,
@@ -72,6 +80,18 @@ class QueryService:
         """Execute evidence retrieval and optional grounded answer synthesis."""
         if principal is not None and not principal.authenticated:
             raise PermissionError("authenticated query principal is required")
+        authority = getattr(self._engine, "server_scope_authority", None)
+        scope_resolver = None
+        scopes: tuple[AuthorizedNotebookScope, ...] = ()
+        if authority is not None:
+            if not isinstance(authority, SQLiteNotebookScopeAuthority) or principal is None:
+                raise PermissionError("trusted membership authority is unavailable")
+            scope_resolver = AuthorizedNotebookScopeResolver(self._engine.storage, authority)
+            scopes = await scope_resolver.resolve(
+                principal, (request.notebook_id,) if request.notebook_id is not None else None
+            )
+            if not scopes:
+                raise NotFoundError("authorized resource was not found")
         start_time = time.perf_counter()
 
         # 1. Notebook Scope Validation
@@ -220,6 +240,18 @@ class QueryService:
 
         latency_ms = max(1, int((time.perf_counter() - start_time) * 1000))
         modes_used = sorted({sq.retrieval_mode.value for sq in plan.sub_queries})
+
+        if scope_resolver is not None and principal is not None:
+            authorization = CentralAuthorizationServiceV1(self._engine)
+            for (document_id, version_id), notebook_id in authorized_scopes.items():
+                await authorization.authorize_document(
+                    principal,
+                    notebook_id,
+                    document_id,
+                    version_id,
+                    AuthorizationOperationV1.QUERY,
+                )
+            await scope_resolver.revalidate(principal, scopes)
 
         return QueryResponse(
             answer=answer_text,

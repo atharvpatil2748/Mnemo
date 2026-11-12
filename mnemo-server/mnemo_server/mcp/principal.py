@@ -7,11 +7,14 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any
 
+from starlette.datastructures import Headers
+
 from mnemo_server.config import ServerConfig
 from mnemo_server.services.authorization import (
     ServerPrincipalV1,
     principal_from_claims,
 )
+from mnemo_server.services.trusted_actor import TrustedJWTActorMapper
 
 MCPPrincipalProviderV1 = Callable[[], ServerPrincipalV1]
 
@@ -35,12 +38,27 @@ def stdio_principal(config: ServerConfig) -> ServerPrincipalV1:
     return require_authenticated_principal(principal_from_claims({"sub": subject.strip()}))
 
 
-def sse_principal_from_scope(scope: dict[str, Any]) -> ServerPrincipalV1:
+def sse_principal_from_scope(
+    scope: dict[str, Any], mapper: TrustedJWTActorMapper | None = None
+) -> ServerPrincipalV1:
     """Map claims already validated by AuthMiddleware into the common principal type."""
     state = scope.get("state")
     claims = state.get("auth") if isinstance(state, dict) else None
     if not isinstance(claims, dict):
         raise PermissionError("authenticated MCP SSE session claims are required")
+    if mapper is not None:
+        header = Headers(scope=scope).get("authorization", "").split()
+        if len(header) != 2 or header[0].lower() != "bearer":
+            raise PermissionError("trusted MCP SSE membership identity is unavailable")
+        principal = mapper.from_token(header[1])
+        if (
+            claims.get("iss") != mapper.issuer
+            or claims.get("aud") != mapper.audience
+            or not isinstance(claims.get("sub"), str)
+            or principal != mapper.from_server_subject(claims["sub"])
+        ):
+            raise PermissionError("MCP SSE membership identity is inconsistent")
+        return principal
     return require_authenticated_principal(principal_from_claims(claims))
 
 

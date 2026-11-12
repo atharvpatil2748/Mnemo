@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import UTC, datetime
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
@@ -139,6 +140,38 @@ async def test_source_identity_and_bounded_deduplicated_lookup() -> None:
     with pytest.raises(PermissionError):
         await resolver.resolve(PrincipalContextV1(uuid4(), False), reference)
     engine.storage.get_document.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_metadata_batch_rechecks_authority_after_assembly() -> None:
+    engine, reference = _fixture(title="Private title", optional={"filename": "private.csv"})
+    principal = PrincipalContextV1(uuid4(), True)
+    allowed = True
+
+    class Authority:
+        def permits(self, actor_id: UUID, notebook_id: UUID) -> bool:
+            return (
+                allowed and actor_id == principal.actor_id and notebook_id == reference.notebook_id
+            )
+
+    cast(MagicMock, engine).server_scope_authority = Authority()
+    document = _document(
+        reference.document_id,
+        reference.version_id or uuid4(),
+        title="Private title",
+        optional={"filename": "private.csv"},
+    )
+
+    async def revoke_during_metadata_read(_document_id: UUID) -> Document:
+        nonlocal allowed
+        allowed = False
+        return document
+
+    cast(MagicMock, engine.storage).get_document = AsyncMock(
+        side_effect=revoke_during_metadata_read
+    )
+    with pytest.raises(NotFoundError, match="authorized resource was not found"):
+        await AuthorizedSourceMetadataResolverV1(engine).resolve(principal, reference)
 
 
 @pytest.mark.anyio

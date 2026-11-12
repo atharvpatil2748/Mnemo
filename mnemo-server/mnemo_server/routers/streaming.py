@@ -5,24 +5,27 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import AsyncIterator
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import (
     APIRouter,
     Depends,
+    HTTPException,
     Request,
     WebSocket,
     WebSocketDisconnect,
 )
 from fastapi.responses import StreamingResponse
-from mnemo.engine import EngineState
+from mnemo.engine import EngineState, KnowledgeEngine
 from mnemo.interfaces import (
     ContractValidationError,
+    DependencyUnavailableError,
     NotFoundError,
     TokenCounterInterfaceV1,
 )
 from pydantic import ValidationError
 
+from mnemo_server.config import ServerConfig
 from mnemo_server.dependencies import get_streaming_query_service, get_token_counter
 from mnemo_server.schemas.query import QueryRequest
 from mnemo_server.schemas.streaming import (
@@ -30,6 +33,11 @@ from mnemo_server.schemas.streaming import (
     StreamEvent,
     StreamEventType,
 )
+from mnemo_server.services.membership_http import (
+    membership_http_principal,
+    membership_websocket_principal,
+)
+from mnemo_server.services.scope_authority import SQLiteNotebookScopeAuthority
 from mnemo_server.services.streaming import StreamingQueryService
 from mnemo_server.typed_errors import classify_public_error
 
@@ -54,10 +62,28 @@ def _safe_stream_error(error: Exception, legacy_code: str) -> StreamErrorData:
 
 async def _handle_websocket_connection(websocket: WebSocket) -> None:
     """Process incoming queries and heartbeat messages on an active WebSocket connection."""
+    engine = getattr(websocket.app.state, "engine", None)
+    authority = getattr(engine, "server_scope_authority", None)
+    if authority is not None and not isinstance(authority, SQLiteNotebookScopeAuthority):
+        raise DependencyUnavailableError(
+            "trusted membership authority is unavailable", retryable=False
+        )
+    config = getattr(websocket.app.state, "server_config", None)
+    if authority is None and (
+        (isinstance(config, ServerConfig) and config.auth_mode == "jwt")
+        or getattr(engine, "server_actor_mapper", None) is not None
+    ):
+        raise DependencyUnavailableError(
+            "trusted membership authority is unavailable", retryable=False
+        )
+    if authority is not None:
+        try:
+            membership_websocket_principal(websocket, cast(KnowledgeEngine, engine))
+        except PermissionError as error:
+            raise HTTPException(status_code=403, detail="Authentication required") from error
     await websocket.accept()
 
     # Validate KnowledgeEngine readiness
-    engine = getattr(websocket.app.state, "engine", None)
     if engine is None or engine.state is not EngineState.READY:
         await websocket.send_text(
             StreamEvent(
@@ -123,7 +149,12 @@ async def _handle_websocket_connection(websocket: WebSocket) -> None:
             continue
 
         try:
-            async for event in service.stream_query(query_request):
+            principal = (
+                membership_websocket_principal(websocket, cast(KnowledgeEngine, engine))
+                if authority is not None
+                else None
+            )
+            async for event in service.stream_query(query_request, principal):
                 await websocket.send_text(event.model_dump_json())
         except NotFoundError as err:
             await websocket.send_text(
@@ -139,6 +170,17 @@ async def _handle_websocket_connection(websocket: WebSocket) -> None:
                     data=_safe_stream_error(err, "contract_validation_error"),
                 ).model_dump_json()
             )
+        except PermissionError:
+            await websocket.send_text(
+                StreamEvent(
+                    event=StreamEventType.ERROR,
+                    data=StreamErrorData(
+                        code="authentication_required", message="Authentication required"
+                    ),
+                ).model_dump_json()
+            )
+            await websocket.close(code=1008)
+            return
         except Exception as err:
             _LOGGER.error("Streaming query execution failed: type=%s", type(err).__name__)
             await websocket.send_text(
@@ -166,14 +208,30 @@ async def websocket_query_v1(websocket: WebSocket) -> None:
     summary="Server-Sent Events (SSE) streaming query endpoint",
 )
 async def query_stream_sse(
-    request: QueryRequest,
+    payload: QueryRequest,
     service: Annotated[StreamingQueryService, Depends(get_streaming_query_service)],
+    request: Request,
 ) -> StreamingResponse:
     """Stream query results using Server-Sent Events (text/event-stream)."""
+    engine = getattr(request.app.state, "engine", None)
+    authority = getattr(engine, "server_scope_authority", None)
+    config = getattr(request.app.state, "server_config", None)
+    if authority is None and (
+        (isinstance(config, ServerConfig) and config.auth_mode == "jwt")
+        or getattr(engine, "server_actor_mapper", None) is not None
+    ):
+        raise DependencyUnavailableError(
+            "trusted membership authority is unavailable", retryable=False
+        )
+    principal = (
+        membership_http_principal(request, cast(KnowledgeEngine, engine))
+        if authority is not None
+        else None
+    )
 
     async def event_generator() -> AsyncIterator[str]:
         try:
-            async for event in service.stream_query(request):
+            async for event in service.stream_query(payload, principal):
                 yield f"event: {event.event.value}\ndata: {event.model_dump_json()}\n\n"
         except NotFoundError as err:
             err_event = StreamEvent(

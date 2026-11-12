@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol, runtime_checkable
@@ -182,6 +183,7 @@ class MultilingualEmbeddingGenerationBuilderV3:
         generation_id: UUID,
         inputs: tuple[MultilingualEmbeddingInputV3, ...],
         max_batch: int = 32,
+        progress: Callable[[int, int], None] | None = None,
     ) -> None:
         if not 1 <= max_batch <= 32:
             raise ValueError("V2 embedding batch exceeds governed bound")
@@ -190,6 +192,7 @@ class MultilingualEmbeddingGenerationBuilderV3:
         self._generation_id = generation_id
         self._inputs = inputs
         self._max_batch = max_batch
+        self._progress = progress
 
     async def build(self, generation_id: UUID) -> ProjectionBuildResult:
         if generation_id != self._generation_id:
@@ -205,6 +208,8 @@ class MultilingualEmbeddingGenerationBuilderV3:
                     raise RuntimeError("embedding provider returned incompatible provenance")
                 await self._store.put_multilingual_embedding_v3(value)
                 identities.append(str(value.embedding_id))
+            if self._progress is not None:
+                self._progress(len(identities), len(self._inputs))
         return _complete_result(len(self._inputs), identities)
 
 

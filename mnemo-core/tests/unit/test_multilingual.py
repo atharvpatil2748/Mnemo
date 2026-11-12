@@ -667,7 +667,7 @@ def test_sqlite_schema_13_round_trip_immutability_and_isolation(tmp_path: Path) 
     _run(scenario())
     connection = sqlite3.connect(tmp_path / "multilingual.db")
     try:
-        assert connection.execute("SELECT MAX(version) FROM schema_versions").fetchone()[0] == 16
+        assert connection.execute("SELECT MAX(version) FROM schema_versions").fetchone()[0] == 17
     finally:
         connection.close()
 

@@ -330,6 +330,11 @@ def test_complete_build_is_atomic_active_and_idempotent(tmp_path: Path) -> None:
         assert (
             await store.get_active_index_generation(spec.capability, spec.profile_id)
         ) is not None
+        assert tuple(
+            item.generation_id
+            for item in await store.list_active_index_generations(spec.capability)
+        ) == (spec.generation_id,)
+        assert await store.list_active_index_generations("unregistered_capability") == ()
         await store.close()
 
     _run(scenario())
@@ -896,7 +901,7 @@ def test_schema_v15_upgrade_repeat_and_rollback(
     _run(store.open())
     _run(store.close())
     with sqlite3.connect(path) as db:
-        assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (16,)
+        assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (17,)
         for table in (
             "index_generation_sources",
             "index_generation_coverage",

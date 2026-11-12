@@ -1,0 +1,510 @@
+{
+  "active_alias_digest": "83b0f6684ffbfc3d3fba3ab2634aedddfa3c3434dfd449c2eb7d1fe61b125c93",
+  "cases": [
+    {
+      "case_id": "MVEA-NEG-ABSENT-01",
+      "control": "exact_identifier_absence",
+      "document_language": "en",
+      "exact_identifier": "06f2ded6-01cf-58d2-b197-6e23e2a7fb3a",
+      "expected": "NO_EXACT_IDENTITY_MATCH",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the record containing exact identifier 06f2ded6-01cf-58d2-b197-6e23e2a7fb3a",
+      "query_language": "en",
+      "seed_case_id": "MVEA-LANG-EN01-EN",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "semantic_no_answer_adjudicated": false,
+      "target": {
+        "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+        "evidence_content_sha256": "720ba8c6ca6aa731214c018d85bbbcdb26a0e75aa8cfd2f32a839b211ffa4ce3",
+        "evidence_id": "3371a1b21e9d2c797a20456038b8dd5b0641ccea1827951896511238f0909194",
+        "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+        "source_id": "00eb6bc4-feee-4245-b391-e5dfcf8ca1c8",
+        "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-SCOPE-01",
+      "control": "wrong_notebook",
+      "document_language": "en",
+      "expected": "TARGET_IDENTITY_ABSENT",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "What does PEP 8 recommend about putting imports on separate lines?",
+      "query_language": "en",
+      "seed_case_id": "MVEA-LANG-EN01-EN",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "target": {
+        "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+        "evidence_content_sha256": "720ba8c6ca6aa731214c018d85bbbcdb26a0e75aa8cfd2f32a839b211ffa4ce3",
+        "evidence_id": "3371a1b21e9d2c797a20456038b8dd5b0641ccea1827951896511238f0909194",
+        "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+        "source_id": "00eb6bc4-feee-4245-b391-e5dfcf8ca1c8",
+        "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-PRINCIPAL-01",
+      "control": "ungranted_principal",
+      "document_language": "en",
+      "expected": "AUTHORIZATION_DENIED",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "principal_id": "a6f0a299-7c21-544e-8f58-a1d80ee5e046",
+      "query": "What does PEP 8 recommend about putting imports on separate lines?",
+      "query_language": "en",
+      "seed_case_id": "MVEA-LANG-EN01-EN",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "target": {
+        "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+        "evidence_content_sha256": "720ba8c6ca6aa731214c018d85bbbcdb26a0e75aa8cfd2f32a839b211ffa4ce3",
+        "evidence_id": "3371a1b21e9d2c797a20456038b8dd5b0641ccea1827951896511238f0909194",
+        "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+        "source_id": "00eb6bc4-feee-4245-b391-e5dfcf8ca1c8",
+        "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-REVOKE-01",
+      "control": "revoked_membership",
+      "document_language": "en",
+      "execution_environment": "ISOLATED_ACL_COPY_ONLY",
+      "expected": "AUTHORIZATION_DENIED_AFTER_REVOCATION",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "What does PEP 8 recommend about putting imports on separate lines?",
+      "query_language": "en",
+      "seed_case_id": "MVEA-LANG-EN01-EN",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "target": {
+        "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+        "evidence_content_sha256": "720ba8c6ca6aa731214c018d85bbbcdb26a0e75aa8cfd2f32a839b211ffa4ce3",
+        "evidence_id": "3371a1b21e9d2c797a20456038b8dd5b0641ccea1827951896511238f0909194",
+        "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+        "source_id": "00eb6bc4-feee-4245-b391-e5dfcf8ca1c8",
+        "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-ABSENT-02",
+      "control": "exact_identifier_absence",
+      "document_language": "en",
+      "exact_identifier": "bfff2cd4-dbc7-56bf-bb72-1b341d10e7dc",
+      "expected": "NO_EXACT_IDENTITY_MATCH",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the record containing exact identifier bfff2cd4-dbc7-56bf-bb72-1b341d10e7dc",
+      "query_language": "hi",
+      "seed_case_id": "MVEA-LANG-EN05-HI",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "semantic_no_answer_adjudicated": false,
+      "target": {
+        "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+        "evidence_content_sha256": "ca66286986b95d613fed0372fb0ea104b433522dc93359e5fb3d73cea234bf95",
+        "evidence_id": "e47ecc64ec02c4d14ea95974de8172ae6234ac49665261be7137be490729c417",
+        "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+        "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+        "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-SCOPE-02",
+      "control": "wrong_notebook",
+      "document_language": "en",
+      "expected": "TARGET_IDENTITY_ABSENT",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "निर्णय वृक्ष का उपयोग पर्यवेक्षित अधिगम की किन दो प्रकार की समस्याओं के लिए होता है?",
+      "query_language": "hi",
+      "seed_case_id": "MVEA-LANG-EN05-HI",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "target": {
+        "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+        "evidence_content_sha256": "ca66286986b95d613fed0372fb0ea104b433522dc93359e5fb3d73cea234bf95",
+        "evidence_id": "e47ecc64ec02c4d14ea95974de8172ae6234ac49665261be7137be490729c417",
+        "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+        "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+        "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-PRINCIPAL-02",
+      "control": "ungranted_principal",
+      "document_language": "en",
+      "expected": "AUTHORIZATION_DENIED",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "principal_id": "80a5b8ad-6678-5c6c-8abe-c82d02a9c04d",
+      "query": "निर्णय वृक्ष का उपयोग पर्यवेक्षित अधिगम की किन दो प्रकार की समस्याओं के लिए होता है?",
+      "query_language": "hi",
+      "seed_case_id": "MVEA-LANG-EN05-HI",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "target": {
+        "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+        "evidence_content_sha256": "ca66286986b95d613fed0372fb0ea104b433522dc93359e5fb3d73cea234bf95",
+        "evidence_id": "e47ecc64ec02c4d14ea95974de8172ae6234ac49665261be7137be490729c417",
+        "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+        "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+        "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-REVOKE-02",
+      "control": "revoked_membership",
+      "document_language": "en",
+      "execution_environment": "ISOLATED_ACL_COPY_ONLY",
+      "expected": "AUTHORIZATION_DENIED_AFTER_REVOCATION",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "निर्णय वृक्ष का उपयोग पर्यवेक्षित अधिगम की किन दो प्रकार की समस्याओं के लिए होता है?",
+      "query_language": "hi",
+      "seed_case_id": "MVEA-LANG-EN05-HI",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "target": {
+        "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+        "evidence_content_sha256": "ca66286986b95d613fed0372fb0ea104b433522dc93359e5fb3d73cea234bf95",
+        "evidence_id": "e47ecc64ec02c4d14ea95974de8172ae6234ac49665261be7137be490729c417",
+        "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+        "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+        "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-ABSENT-03",
+      "control": "exact_identifier_absence",
+      "document_language": "hi",
+      "exact_identifier": "0c642803-fdd5-5738-b3b9-9387af14860a",
+      "expected": "NO_EXACT_IDENTITY_MATCH",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the record containing exact identifier 0c642803-fdd5-5738-b3b9-9387af14860a",
+      "query_language": "hi",
+      "seed_case_id": "MVEA-LANG-HI01-HI",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "semantic_no_answer_adjudicated": false,
+      "target": {
+        "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+        "evidence_content_sha256": "90cd65931fd5f3764381837ba3cee979d427ad10b0be2f8d99605f0e10a98e71",
+        "evidence_id": "baf24de37633a653bde4b9d55a0d979d9e709b3819f8c8812cd69d2c0c498a53",
+        "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+        "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+        "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-SCOPE-03",
+      "control": "wrong_notebook",
+      "document_language": "hi",
+      "expected": "TARGET_IDENTITY_ABSENT",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "घर से निकलने से पहले होरी ने धनिया से गोबर को कौन-सा खेत का काम करने भेजने को कहा?",
+      "query_language": "hi",
+      "seed_case_id": "MVEA-LANG-HI01-HI",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "target": {
+        "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+        "evidence_content_sha256": "90cd65931fd5f3764381837ba3cee979d427ad10b0be2f8d99605f0e10a98e71",
+        "evidence_id": "baf24de37633a653bde4b9d55a0d979d9e709b3819f8c8812cd69d2c0c498a53",
+        "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+        "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+        "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-PRINCIPAL-03",
+      "control": "ungranted_principal",
+      "document_language": "hi",
+      "expected": "AUTHORIZATION_DENIED",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "principal_id": "833a74df-020b-56fd-b764-3ad9e85005ef",
+      "query": "घर से निकलने से पहले होरी ने धनिया से गोबर को कौन-सा खेत का काम करने भेजने को कहा?",
+      "query_language": "hi",
+      "seed_case_id": "MVEA-LANG-HI01-HI",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "target": {
+        "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+        "evidence_content_sha256": "90cd65931fd5f3764381837ba3cee979d427ad10b0be2f8d99605f0e10a98e71",
+        "evidence_id": "baf24de37633a653bde4b9d55a0d979d9e709b3819f8c8812cd69d2c0c498a53",
+        "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+        "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+        "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-REVOKE-03",
+      "control": "revoked_membership",
+      "document_language": "hi",
+      "execution_environment": "ISOLATED_ACL_COPY_ONLY",
+      "expected": "AUTHORIZATION_DENIED_AFTER_REVOCATION",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "घर से निकलने से पहले होरी ने धनिया से गोबर को कौन-सा खेत का काम करने भेजने को कहा?",
+      "query_language": "hi",
+      "seed_case_id": "MVEA-LANG-HI01-HI",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "target": {
+        "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+        "evidence_content_sha256": "90cd65931fd5f3764381837ba3cee979d427ad10b0be2f8d99605f0e10a98e71",
+        "evidence_id": "baf24de37633a653bde4b9d55a0d979d9e709b3819f8c8812cd69d2c0c498a53",
+        "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+        "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+        "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-ABSENT-04",
+      "control": "exact_identifier_absence",
+      "document_language": "hi",
+      "exact_identifier": "0d7a9582-8ce9-58d1-bb07-684fd67fcc94",
+      "expected": "NO_EXACT_IDENTITY_MATCH",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the record containing exact identifier 0d7a9582-8ce9-58d1-bb07-684fd67fcc94",
+      "query_language": "mr",
+      "seed_case_id": "MVEA-LANG-HI06-MR",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "semantic_no_answer_adjudicated": false,
+      "target": {
+        "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+        "evidence_content_sha256": "e6a85f5121b4f780011a350246a3ecf3e960761fbdaff2d36d7031f5be259789",
+        "evidence_id": "6d01736b4a85989b17dc1e2d99cce67152c70bd4474f6c681d11af7614054bed",
+        "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+        "source_id": "cf2e5a45-a570-426c-b511-30d8f6919cd6",
+        "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-SCOPE-04",
+      "control": "wrong_notebook",
+      "document_language": "hi",
+      "expected": "TARGET_IDENTITY_ABSENT",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "गोदानच्या दुसऱ्या अध्यायात रायसाहेबांच्या वाड्यावर होरीला कोणत्या उत्सवाची तयारी दिसते?",
+      "query_language": "mr",
+      "seed_case_id": "MVEA-LANG-HI06-MR",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "target": {
+        "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+        "evidence_content_sha256": "e6a85f5121b4f780011a350246a3ecf3e960761fbdaff2d36d7031f5be259789",
+        "evidence_id": "6d01736b4a85989b17dc1e2d99cce67152c70bd4474f6c681d11af7614054bed",
+        "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+        "source_id": "cf2e5a45-a570-426c-b511-30d8f6919cd6",
+        "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-PRINCIPAL-04",
+      "control": "ungranted_principal",
+      "document_language": "hi",
+      "expected": "AUTHORIZATION_DENIED",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "principal_id": "af1e26c3-c7d5-5ef5-a594-7e1a03032f31",
+      "query": "गोदानच्या दुसऱ्या अध्यायात रायसाहेबांच्या वाड्यावर होरीला कोणत्या उत्सवाची तयारी दिसते?",
+      "query_language": "mr",
+      "seed_case_id": "MVEA-LANG-HI06-MR",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "target": {
+        "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+        "evidence_content_sha256": "e6a85f5121b4f780011a350246a3ecf3e960761fbdaff2d36d7031f5be259789",
+        "evidence_id": "6d01736b4a85989b17dc1e2d99cce67152c70bd4474f6c681d11af7614054bed",
+        "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+        "source_id": "cf2e5a45-a570-426c-b511-30d8f6919cd6",
+        "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-REVOKE-04",
+      "control": "revoked_membership",
+      "document_language": "hi",
+      "execution_environment": "ISOLATED_ACL_COPY_ONLY",
+      "expected": "AUTHORIZATION_DENIED_AFTER_REVOCATION",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "गोदानच्या दुसऱ्या अध्यायात रायसाहेबांच्या वाड्यावर होरीला कोणत्या उत्सवाची तयारी दिसते?",
+      "query_language": "mr",
+      "seed_case_id": "MVEA-LANG-HI06-MR",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "target": {
+        "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+        "evidence_content_sha256": "e6a85f5121b4f780011a350246a3ecf3e960761fbdaff2d36d7031f5be259789",
+        "evidence_id": "6d01736b4a85989b17dc1e2d99cce67152c70bd4474f6c681d11af7614054bed",
+        "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+        "source_id": "cf2e5a45-a570-426c-b511-30d8f6919cd6",
+        "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-ABSENT-05",
+      "control": "exact_identifier_absence",
+      "document_language": "mr",
+      "exact_identifier": "c65ddf62-dd16-500b-b3dc-60d39b9480a1",
+      "expected": "NO_EXACT_IDENTITY_MATCH",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the record containing exact identifier c65ddf62-dd16-500b-b3dc-60d39b9480a1",
+      "query_language": "mr",
+      "seed_case_id": "MVEA-LANG-MR01-MR",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "semantic_no_answer_adjudicated": false,
+      "target": {
+        "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+        "evidence_content_sha256": "f63c5f19957ebe978ad410e99a8f5621652bb59e45b57762cc620d9513f6a762",
+        "evidence_id": "f53fa40706f0040a6b1693faca4716926d3205a3d8420c3fa86489fb3f4935bf",
+        "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+        "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+        "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-SCOPE-05",
+      "control": "wrong_notebook",
+      "document_language": "mr",
+      "expected": "TARGET_IDENTITY_ABSENT",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "शेतकऱ्याचा असूडनुसार शेतकऱ्यांना लहान मुलांना शाळेत पाठवण्यास कोणते अडथळे येतात?",
+      "query_language": "mr",
+      "seed_case_id": "MVEA-LANG-MR01-MR",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "target": {
+        "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+        "evidence_content_sha256": "f63c5f19957ebe978ad410e99a8f5621652bb59e45b57762cc620d9513f6a762",
+        "evidence_id": "f53fa40706f0040a6b1693faca4716926d3205a3d8420c3fa86489fb3f4935bf",
+        "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+        "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+        "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-PRINCIPAL-05",
+      "control": "ungranted_principal",
+      "document_language": "mr",
+      "expected": "AUTHORIZATION_DENIED",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "principal_id": "a801337d-e9b8-5555-953b-cea850cd17a1",
+      "query": "शेतकऱ्याचा असूडनुसार शेतकऱ्यांना लहान मुलांना शाळेत पाठवण्यास कोणते अडथळे येतात?",
+      "query_language": "mr",
+      "seed_case_id": "MVEA-LANG-MR01-MR",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "target": {
+        "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+        "evidence_content_sha256": "f63c5f19957ebe978ad410e99a8f5621652bb59e45b57762cc620d9513f6a762",
+        "evidence_id": "f53fa40706f0040a6b1693faca4716926d3205a3d8420c3fa86489fb3f4935bf",
+        "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+        "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+        "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+      }
+    },
+    {
+      "case_id": "MVEA-NEG-REVOKE-05",
+      "control": "revoked_membership",
+      "document_language": "mr",
+      "execution_environment": "ISOLATED_ACL_COPY_ONLY",
+      "expected": "AUTHORIZATION_DENIED_AFTER_REVOCATION",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "शेतकऱ्याचा असूडनुसार शेतकऱ्यांना लहान मुलांना शाळेत पाठवण्यास कोणते अडथळे येतात?",
+      "query_language": "mr",
+      "seed_case_id": "MVEA-LANG-MR01-MR",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "target": {
+        "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+        "evidence_content_sha256": "f63c5f19957ebe978ad410e99a8f5621652bb59e45b57762cc620d9513f6a762",
+        "evidence_id": "f53fa40706f0040a6b1693faca4716926d3205a3d8420c3fa86489fb3f4935bf",
+        "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+        "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+        "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+      }
+    }
+  ],
+  "judgment_method": "DETERMINISTIC_ENGINEERING",
+  "language_qrel_sha256": "9498ec0f4f873f92aa99ebed3ac3afa78854e3ce3966f82071b7db6bec5185c0",
+  "schema": "mnemo.module-894-mvea-security-controls/1",
+  "semantic_relevance_adjudicated": false
+}

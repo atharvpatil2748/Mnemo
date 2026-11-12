@@ -149,6 +149,7 @@ def _candidate(
             chunk_id=None,
             occurrence_id=record.occurrence_id,
             derivation_id=record.derivation_id,
+            membership_identity=(record.notebook_id, record.source_id),
         ),
         notebook_id=record.notebook_id,
         source_id=record.source_id,
@@ -168,6 +169,7 @@ def _candidate(
                 source_score=record.source_score,
             ),
         ),
+        membership_identity=(record.notebook_id, record.source_id),
     )
 
 
@@ -182,6 +184,7 @@ def _language_candidate(
             chunk_id=None,
             occurrence_id=None,
             derivation_id=record.derivation_id,
+            membership_identity=(record.notebook_id, record.source_id),
         ),
         notebook_id=record.notebook_id,
         source_id=record.source_id,
@@ -208,4 +211,5 @@ def _language_candidate(
                 source_score=record.source_score,
             ),
         ),
+        membership_identity=(record.notebook_id, record.source_id),
     )

@@ -1,0 +1,2717 @@
+{
+  "active_alias_digest": "83b0f6684ffbfc3d3fba3ab2634aedddfa3c3434dfd449c2eb7d1fe61b125c93",
+  "blueprint_sha256": "b68ffaaa5e52458d3d4a61497141fbc8170f106d01441ce13df9e8f968aa212f",
+  "cases": [
+    {
+      "anchor": "Imports should usually be on separate lines",
+      "case_id": "MVEA-LANG-EN01-EN",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What does PEP 8 recommend about putting imports on separate lines?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+          "evidence_content_sha256": "720ba8c6ca6aa731214c018d85bbbcdb26a0e75aa8cfd2f32a839b211ffa4ce3",
+          "evidence_id": "3371a1b21e9d2c797a20456038b8dd5b0641ccea1827951896511238f0909194",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+          "source_id": "00eb6bc4-feee-4245-b391-e5dfcf8ca1c8",
+          "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+        }
+      ]
+    },
+    {
+      "anchor": "Imports should usually be on separate lines",
+      "case_id": "MVEA-LANG-EN01-HI",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "PEP 8 आयात विवरणों को अलग-अलग पंक्तियों में रखने के बारे में क्या सलाह देता है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+          "evidence_content_sha256": "720ba8c6ca6aa731214c018d85bbbcdb26a0e75aa8cfd2f32a839b211ffa4ce3",
+          "evidence_id": "3371a1b21e9d2c797a20456038b8dd5b0641ccea1827951896511238f0909194",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+          "source_id": "00eb6bc4-feee-4245-b391-e5dfcf8ca1c8",
+          "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+        }
+      ]
+    },
+    {
+      "anchor": "Imports should usually be on separate lines",
+      "case_id": "MVEA-LANG-EN01-MR",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "PEP 8 नुसार आयात विधाने वेगवेगळ्या ओळींवर ठेवण्याबाबत काय शिफारस आहे?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+          "evidence_content_sha256": "720ba8c6ca6aa731214c018d85bbbcdb26a0e75aa8cfd2f32a839b211ffa4ce3",
+          "evidence_id": "3371a1b21e9d2c797a20456038b8dd5b0641ccea1827951896511238f0909194",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+          "source_id": "00eb6bc4-feee-4245-b391-e5dfcf8ca1c8",
+          "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+        }
+      ]
+    },
+    {
+      "anchor": "standard library",
+      "case_id": "MVEA-LANG-EN02-EN",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "Which Python codebase is the main subject of this style guide's coding conventions?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+          "evidence_content_sha256": "480eae29ef8fa9934bc6e7d68ff400fd98819284cf852016e041cac31fd952ed",
+          "evidence_id": "acc4a436d6fac953818e40a8bb7842b7ff9fc5bc728f1374e1da467422380f74",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+          "source_id": "f0311bb7-3931-4e12-bc03-51625921e8d0",
+          "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+        },
+        {
+          "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+          "evidence_content_sha256": "480eae29ef8fa9934bc6e7d68ff400fd98819284cf852016e041cac31fd952ed",
+          "evidence_id": "acc4a436d6fac953818e40a8bb7842b7ff9fc5bc728f1374e1da467422380f74",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+          "source_id": "00eb6bc4-feee-4245-b391-e5dfcf8ca1c8",
+          "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+        }
+      ]
+    },
+    {
+      "anchor": "standard library",
+      "case_id": "MVEA-LANG-EN02-HI",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "इस शैली मार्गदर्शिका के कोडिंग नियम मुख्य रूप से किस Python कोडबेस के लिए हैं?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+          "evidence_content_sha256": "480eae29ef8fa9934bc6e7d68ff400fd98819284cf852016e041cac31fd952ed",
+          "evidence_id": "acc4a436d6fac953818e40a8bb7842b7ff9fc5bc728f1374e1da467422380f74",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+          "source_id": "f0311bb7-3931-4e12-bc03-51625921e8d0",
+          "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+        },
+        {
+          "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+          "evidence_content_sha256": "480eae29ef8fa9934bc6e7d68ff400fd98819284cf852016e041cac31fd952ed",
+          "evidence_id": "acc4a436d6fac953818e40a8bb7842b7ff9fc5bc728f1374e1da467422380f74",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+          "source_id": "00eb6bc4-feee-4245-b391-e5dfcf8ca1c8",
+          "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+        }
+      ]
+    },
+    {
+      "anchor": "standard library",
+      "case_id": "MVEA-LANG-EN02-MR",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "या शैली मार्गदर्शकातील कोडिंग नियम मुख्यतः कोणत्या Python कोडसाठी आहेत?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+          "evidence_content_sha256": "480eae29ef8fa9934bc6e7d68ff400fd98819284cf852016e041cac31fd952ed",
+          "evidence_id": "acc4a436d6fac953818e40a8bb7842b7ff9fc5bc728f1374e1da467422380f74",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+          "source_id": "f0311bb7-3931-4e12-bc03-51625921e8d0",
+          "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+        },
+        {
+          "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+          "evidence_content_sha256": "480eae29ef8fa9934bc6e7d68ff400fd98819284cf852016e041cac31fd952ed",
+          "evidence_id": "acc4a436d6fac953818e40a8bb7842b7ff9fc5bc728f1374e1da467422380f74",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+          "source_id": "00eb6bc4-feee-4245-b391-e5dfcf8ca1c8",
+          "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0"
+        }
+      ]
+    },
+    {
+      "anchor": "Vibration transmissibility",
+      "case_id": "MVEA-LANG-EN03-EN",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What is the subject of Experiment 2 in the engineering laboratory report?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_content_sha256": "e8d534b3ccb202db965b9e3532545021525ad3d2fe582746d49069aac0f89674",
+          "evidence_id": "69e14ccf382f744346d617d85f9cfc6a66a17a4ae06614e4acfbd31a3ece53cb",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c"
+        }
+      ]
+    },
+    {
+      "anchor": "Vibration transmissibility",
+      "case_id": "MVEA-LANG-EN03-HI",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "इंजीनियरिंग प्रयोगशाला रिपोर्ट के प्रयोग 2 में किस विषय की जाँच है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_content_sha256": "e8d534b3ccb202db965b9e3532545021525ad3d2fe582746d49069aac0f89674",
+          "evidence_id": "69e14ccf382f744346d617d85f9cfc6a66a17a4ae06614e4acfbd31a3ece53cb",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c"
+        }
+      ]
+    },
+    {
+      "anchor": "Vibration transmissibility",
+      "case_id": "MVEA-LANG-EN03-MR",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "अभियांत्रिकी प्रयोगशाळा अहवालातील प्रयोग 2 चा विषय काय आहे?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_content_sha256": "e8d534b3ccb202db965b9e3532545021525ad3d2fe582746d49069aac0f89674",
+          "evidence_id": "69e14ccf382f744346d617d85f9cfc6a66a17a4ae06614e4acfbd31a3ece53cb",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c"
+        }
+      ]
+    },
+    {
+      "anchor": "sinusoidal displacement",
+      "case_id": "MVEA-LANG-EN04-EN",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "How is the base of the single-degree-of-freedom system excited in the vibration experiment?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_content_sha256": "533db12ca17c099211bfbc3eb4bca716ac511be423b3c5d358da3fd86e65a251",
+          "evidence_id": "8f6e35b90e9b744773e4dfd6078380f15e666d5597871232694d8441ead05496",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "9736c874-076c-42b9-ae72-83c1d2fbd848",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c"
+        },
+        {
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_content_sha256": "533db12ca17c099211bfbc3eb4bca716ac511be423b3c5d358da3fd86e65a251",
+          "evidence_id": "8f6e35b90e9b744773e4dfd6078380f15e666d5597871232694d8441ead05496",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c"
+        }
+      ]
+    },
+    {
+      "anchor": "sinusoidal displacement",
+      "case_id": "MVEA-LANG-EN04-HI",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "कंपन प्रयोग में एकल-स्वतंत्रता प्रणाली का आधार किस प्रकार उत्तेजित किया जाता है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_content_sha256": "533db12ca17c099211bfbc3eb4bca716ac511be423b3c5d358da3fd86e65a251",
+          "evidence_id": "8f6e35b90e9b744773e4dfd6078380f15e666d5597871232694d8441ead05496",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "9736c874-076c-42b9-ae72-83c1d2fbd848",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c"
+        },
+        {
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_content_sha256": "533db12ca17c099211bfbc3eb4bca716ac511be423b3c5d358da3fd86e65a251",
+          "evidence_id": "8f6e35b90e9b744773e4dfd6078380f15e666d5597871232694d8441ead05496",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c"
+        }
+      ]
+    },
+    {
+      "anchor": "sinusoidal displacement",
+      "case_id": "MVEA-LANG-EN04-MR",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "कंपन प्रयोगात एक-अंश-स्वातंत्र्य प्रणालीचा पाया कसा उद्दीपित केला जातो?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_content_sha256": "533db12ca17c099211bfbc3eb4bca716ac511be423b3c5d358da3fd86e65a251",
+          "evidence_id": "8f6e35b90e9b744773e4dfd6078380f15e666d5597871232694d8441ead05496",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "9736c874-076c-42b9-ae72-83c1d2fbd848",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c"
+        },
+        {
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_content_sha256": "533db12ca17c099211bfbc3eb4bca716ac511be423b3c5d358da3fd86e65a251",
+          "evidence_id": "8f6e35b90e9b744773e4dfd6078380f15e666d5597871232694d8441ead05496",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c"
+        }
+      ]
+    },
+    {
+      "anchor": "classification and regression",
+      "case_id": "MVEA-LANG-EN05-EN",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "For which two supervised-learning problem types can a decision tree be used?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_content_sha256": "ca66286986b95d613fed0372fb0ea104b433522dc93359e5fb3d73cea234bf95",
+          "evidence_id": "e47ecc64ec02c4d14ea95974de8172ae6234ac49665261be7137be490729c417",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+        }
+      ]
+    },
+    {
+      "anchor": "classification and regression",
+      "case_id": "MVEA-LANG-EN05-HI",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "निर्णय वृक्ष का उपयोग पर्यवेक्षित अधिगम की किन दो प्रकार की समस्याओं के लिए होता है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_content_sha256": "ca66286986b95d613fed0372fb0ea104b433522dc93359e5fb3d73cea234bf95",
+          "evidence_id": "e47ecc64ec02c4d14ea95974de8172ae6234ac49665261be7137be490729c417",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+        }
+      ]
+    },
+    {
+      "anchor": "classification and regression",
+      "case_id": "MVEA-LANG-EN05-MR",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "निर्णय वृक्ष पर्यवेक्षित शिक्षणातील कोणत्या दोन प्रकारच्या समस्यांसाठी वापरला जातो?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_content_sha256": "ca66286986b95d613fed0372fb0ea104b433522dc93359e5fb3d73cea234bf95",
+          "evidence_id": "e47ecc64ec02c4d14ea95974de8172ae6234ac49665261be7137be490729c417",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+        }
+      ]
+    },
+    {
+      "anchor": "root node",
+      "case_id": "MVEA-LANG-EN06-EN",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What does the root node contain before a decision-tree split?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_content_sha256": "f93011d7c42a4939d53b5fb8c321289d34ca0cc63d3eac53b41db4cc7c325771",
+          "evidence_id": "421434d84d58d0979cb1f60abded8b8274189f416b71ec96080477d59d2ccc8f",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "50d032d7-9908-4edc-b828-e15c15980d87",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+        },
+        {
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_content_sha256": "f93011d7c42a4939d53b5fb8c321289d34ca0cc63d3eac53b41db4cc7c325771",
+          "evidence_id": "421434d84d58d0979cb1f60abded8b8274189f416b71ec96080477d59d2ccc8f",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+        }
+      ]
+    },
+    {
+      "anchor": "root node",
+      "case_id": "MVEA-LANG-EN06-HI",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "निर्णय वृक्ष में विभाजन से पहले मूल नोड में क्या होता है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_content_sha256": "f93011d7c42a4939d53b5fb8c321289d34ca0cc63d3eac53b41db4cc7c325771",
+          "evidence_id": "421434d84d58d0979cb1f60abded8b8274189f416b71ec96080477d59d2ccc8f",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "50d032d7-9908-4edc-b828-e15c15980d87",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+        },
+        {
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_content_sha256": "f93011d7c42a4939d53b5fb8c321289d34ca0cc63d3eac53b41db4cc7c325771",
+          "evidence_id": "421434d84d58d0979cb1f60abded8b8274189f416b71ec96080477d59d2ccc8f",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+        }
+      ]
+    },
+    {
+      "anchor": "root node",
+      "case_id": "MVEA-LANG-EN06-MR",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "निर्णय वृक्षात विभाजनापूर्वी मूळ नोडमध्ये काय असते?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_content_sha256": "f93011d7c42a4939d53b5fb8c321289d34ca0cc63d3eac53b41db4cc7c325771",
+          "evidence_id": "421434d84d58d0979cb1f60abded8b8274189f416b71ec96080477d59d2ccc8f",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "50d032d7-9908-4edc-b828-e15c15980d87",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+        },
+        {
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_content_sha256": "f93011d7c42a4939d53b5fb8c321289d34ca0cc63d3eac53b41db4cc7c325771",
+          "evidence_id": "421434d84d58d0979cb1f60abded8b8274189f416b71ec96080477d59d2ccc8f",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3"
+        }
+      ]
+    },
+    {
+      "anchor": "Predict Continuous values",
+      "case_id": "MVEA-LANG-EN07-EN",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "In the machine-learning slides, which task predicts continuous rather than discrete values?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "def0198f-3fad-5952-a718-c9b1ca06b376",
+          "evidence_content_sha256": "6774e5d87b308eb0ed378298b95818a3157d6a8c9d23ab2ee223d2bb081d8d06",
+          "evidence_id": "484a44b092c4c38b32c27f18aa05022c0a9b932626da6714e2a78e817b1d1b11",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "003f90fd83a6d24b39245e5c7246b186b95004a3f22a4210d37ab72bbaf4e150",
+          "source_id": "33d5ff33-543a-4e54-a71b-0557cfa7a2ae",
+          "version_id": "3db9633b-3859-5fac-81cf-33d0612f64be"
+        }
+      ]
+    },
+    {
+      "anchor": "Predict Continuous values",
+      "case_id": "MVEA-LANG-EN07-HI",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "मशीन लर्निंग स्लाइडों में कौन-सा कार्य असतत के बजाय सतत मानों की भविष्यवाणी करता है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "def0198f-3fad-5952-a718-c9b1ca06b376",
+          "evidence_content_sha256": "6774e5d87b308eb0ed378298b95818a3157d6a8c9d23ab2ee223d2bb081d8d06",
+          "evidence_id": "484a44b092c4c38b32c27f18aa05022c0a9b932626da6714e2a78e817b1d1b11",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "003f90fd83a6d24b39245e5c7246b186b95004a3f22a4210d37ab72bbaf4e150",
+          "source_id": "33d5ff33-543a-4e54-a71b-0557cfa7a2ae",
+          "version_id": "3db9633b-3859-5fac-81cf-33d0612f64be"
+        }
+      ]
+    },
+    {
+      "anchor": "Predict Continuous values",
+      "case_id": "MVEA-LANG-EN07-MR",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "मशीन लर्निंग स्लाइड्समध्ये विविक्त मूल्यांऐवजी सतत मूल्यांचा अंदाज कोणते कार्य लावते?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "def0198f-3fad-5952-a718-c9b1ca06b376",
+          "evidence_content_sha256": "6774e5d87b308eb0ed378298b95818a3157d6a8c9d23ab2ee223d2bb081d8d06",
+          "evidence_id": "484a44b092c4c38b32c27f18aa05022c0a9b932626da6714e2a78e817b1d1b11",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "003f90fd83a6d24b39245e5c7246b186b95004a3f22a4210d37ab72bbaf4e150",
+          "source_id": "33d5ff33-543a-4e54-a71b-0557cfa7a2ae",
+          "version_id": "3db9633b-3859-5fac-81cf-33d0612f64be"
+        }
+      ]
+    },
+    {
+      "anchor": "Vehicle Excise Duty",
+      "case_id": "MVEA-LANG-EN08-EN",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "Which inflation component was affected by the discovered licensed-vehicles data error?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "40a7b1f2-c3ac-5b89-b5ab-76b28f89a326",
+          "evidence_content_sha256": "b40e4ec71914bb867d0d09443ed2148c7d39de8c56bce2a4b553def86d77ffec",
+          "evidence_id": "5ec09ac27cecdfc9c51f78980063201b330a99c2dbb7373a2e4a1b4b29481b23",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "a4da62c5e91e6ae728c06268bf408d11aa9e5d6a9b5d756e159b88836cee8843",
+          "source_id": "4261256d-d3f4-4769-97e4-5d6287eccf51",
+          "version_id": "26e56941-ae90-5268-8dd0-70c0b8cf557c"
+        },
+        {
+          "document_id": "40a7b1f2-c3ac-5b89-b5ab-76b28f89a326",
+          "evidence_content_sha256": "b40e4ec71914bb867d0d09443ed2148c7d39de8c56bce2a4b553def86d77ffec",
+          "evidence_id": "5ec09ac27cecdfc9c51f78980063201b330a99c2dbb7373a2e4a1b4b29481b23",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "a4da62c5e91e6ae728c06268bf408d11aa9e5d6a9b5d756e159b88836cee8843",
+          "source_id": "513ec5b9-ef5e-43ab-9cda-77853826d5a9",
+          "version_id": "26e56941-ae90-5268-8dd0-70c0b8cf557c"
+        }
+      ]
+    },
+    {
+      "anchor": "Vehicle Excise Duty",
+      "case_id": "MVEA-LANG-EN08-HI",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "लाइसेंस प्राप्त वाहनों के डेटा में मिली त्रुटि से मुद्रास्फीति का कौन-सा घटक प्रभावित हुआ?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "40a7b1f2-c3ac-5b89-b5ab-76b28f89a326",
+          "evidence_content_sha256": "b40e4ec71914bb867d0d09443ed2148c7d39de8c56bce2a4b553def86d77ffec",
+          "evidence_id": "5ec09ac27cecdfc9c51f78980063201b330a99c2dbb7373a2e4a1b4b29481b23",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "a4da62c5e91e6ae728c06268bf408d11aa9e5d6a9b5d756e159b88836cee8843",
+          "source_id": "4261256d-d3f4-4769-97e4-5d6287eccf51",
+          "version_id": "26e56941-ae90-5268-8dd0-70c0b8cf557c"
+        },
+        {
+          "document_id": "40a7b1f2-c3ac-5b89-b5ab-76b28f89a326",
+          "evidence_content_sha256": "b40e4ec71914bb867d0d09443ed2148c7d39de8c56bce2a4b553def86d77ffec",
+          "evidence_id": "5ec09ac27cecdfc9c51f78980063201b330a99c2dbb7373a2e4a1b4b29481b23",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "a4da62c5e91e6ae728c06268bf408d11aa9e5d6a9b5d756e159b88836cee8843",
+          "source_id": "513ec5b9-ef5e-43ab-9cda-77853826d5a9",
+          "version_id": "26e56941-ae90-5268-8dd0-70c0b8cf557c"
+        }
+      ]
+    },
+    {
+      "anchor": "Vehicle Excise Duty",
+      "case_id": "MVEA-LANG-EN08-MR",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "परवानाधारक वाहनांच्या आकडेवारीतील त्रुटीचा महागाईच्या कोणत्या घटकावर परिणाम झाला?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "40a7b1f2-c3ac-5b89-b5ab-76b28f89a326",
+          "evidence_content_sha256": "b40e4ec71914bb867d0d09443ed2148c7d39de8c56bce2a4b553def86d77ffec",
+          "evidence_id": "5ec09ac27cecdfc9c51f78980063201b330a99c2dbb7373a2e4a1b4b29481b23",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "a4da62c5e91e6ae728c06268bf408d11aa9e5d6a9b5d756e159b88836cee8843",
+          "source_id": "4261256d-d3f4-4769-97e4-5d6287eccf51",
+          "version_id": "26e56941-ae90-5268-8dd0-70c0b8cf557c"
+        },
+        {
+          "document_id": "40a7b1f2-c3ac-5b89-b5ab-76b28f89a326",
+          "evidence_content_sha256": "b40e4ec71914bb867d0d09443ed2148c7d39de8c56bce2a4b553def86d77ffec",
+          "evidence_id": "5ec09ac27cecdfc9c51f78980063201b330a99c2dbb7373a2e4a1b4b29481b23",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "a4da62c5e91e6ae728c06268bf408d11aa9e5d6a9b5d756e159b88836cee8843",
+          "source_id": "513ec5b9-ef5e-43ab-9cda-77853826d5a9",
+          "version_id": "26e56941-ae90-5268-8dd0-70c0b8cf557c"
+        }
+      ]
+    },
+    {
+      "anchor": "First Quarterly Estimate, Q2",
+      "case_id": "MVEA-LANG-EN09-EN",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "Which 2026 quarter is covered by the first quarterly GDP estimate in this workbook?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "aff81f3c-5d21-55d4-af6c-90d0a68e92ca",
+          "evidence_content_sha256": "dd3ef8783f6ef753d00236e97523b338a1db680ba13bbe1d785ff942499f6133",
+          "evidence_id": "9221433690faeb4bb9dec2a7ae5db1bd266114ddfe4b799478d58181f71917a8",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "f70f12a1773a39e714c3959a6c687911c86f7f2e1c4047cdbd47e8756d59f5b6",
+          "source_id": "1baf1250-31fe-403f-8220-32ac89884447",
+          "version_id": "aa522317-8dd5-541f-a60a-062b2d530f18"
+        }
+      ]
+    },
+    {
+      "anchor": "First Quarterly Estimate, Q2",
+      "case_id": "MVEA-LANG-EN09-HI",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "इस कार्यपुस्तिका में 2026 के किस तिमाही के लिए GDP का पहला तिमाही अनुमान है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "aff81f3c-5d21-55d4-af6c-90d0a68e92ca",
+          "evidence_content_sha256": "dd3ef8783f6ef753d00236e97523b338a1db680ba13bbe1d785ff942499f6133",
+          "evidence_id": "9221433690faeb4bb9dec2a7ae5db1bd266114ddfe4b799478d58181f71917a8",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "f70f12a1773a39e714c3959a6c687911c86f7f2e1c4047cdbd47e8756d59f5b6",
+          "source_id": "1baf1250-31fe-403f-8220-32ac89884447",
+          "version_id": "aa522317-8dd5-541f-a60a-062b2d530f18"
+        }
+      ]
+    },
+    {
+      "anchor": "First Quarterly Estimate, Q2",
+      "case_id": "MVEA-LANG-EN09-MR",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "या कार्यपुस्तिकेतील GDP चा पहिला तिमाही अंदाज 2026 च्या कोणत्या तिमाहीसाठी आहे?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "document_id": "aff81f3c-5d21-55d4-af6c-90d0a68e92ca",
+          "evidence_content_sha256": "dd3ef8783f6ef753d00236e97523b338a1db680ba13bbe1d785ff942499f6133",
+          "evidence_id": "9221433690faeb4bb9dec2a7ae5db1bd266114ddfe4b799478d58181f71917a8",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "f70f12a1773a39e714c3959a6c687911c86f7f2e1c4047cdbd47e8756d59f5b6",
+          "source_id": "1baf1250-31fe-403f-8220-32ac89884447",
+          "version_id": "aa522317-8dd5-541f-a60a-062b2d530f18"
+        }
+      ]
+    },
+    {
+      "anchor": "YBEU",
+      "case_id": "MVEA-LANG-EN10-EN",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "Which CDID identifies GDP at market prices as a current-price value index?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "aff81f3c-5d21-55d4-af6c-90d0a68e92ca",
+          "evidence_content_sha256": "21ed6a2d89488a82b11a5899a6add1b66e02c36a6efcd5e577e914902e3ba38e",
+          "evidence_id": "77926dcfeae6e4f4568a710ea3631755957be55c47f4e96a6184ca4f6aedac36",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "f70f12a1773a39e714c3959a6c687911c86f7f2e1c4047cdbd47e8756d59f5b6",
+          "source_id": "e639fa97-a55b-4991-b777-b354b42d0e77",
+          "version_id": "aa522317-8dd5-541f-a60a-062b2d530f18"
+        },
+        {
+          "document_id": "aff81f3c-5d21-55d4-af6c-90d0a68e92ca",
+          "evidence_content_sha256": "21ed6a2d89488a82b11a5899a6add1b66e02c36a6efcd5e577e914902e3ba38e",
+          "evidence_id": "77926dcfeae6e4f4568a710ea3631755957be55c47f4e96a6184ca4f6aedac36",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "f70f12a1773a39e714c3959a6c687911c86f7f2e1c4047cdbd47e8756d59f5b6",
+          "source_id": "1baf1250-31fe-403f-8220-32ac89884447",
+          "version_id": "aa522317-8dd5-541f-a60a-062b2d530f18"
+        }
+      ]
+    },
+    {
+      "anchor": "YBEU",
+      "case_id": "MVEA-LANG-EN10-HI",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "चालू कीमतों पर बाजार-मूल्य GDP के मूल्य सूचकांक की पहचान कौन-सा CDID करता है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "aff81f3c-5d21-55d4-af6c-90d0a68e92ca",
+          "evidence_content_sha256": "21ed6a2d89488a82b11a5899a6add1b66e02c36a6efcd5e577e914902e3ba38e",
+          "evidence_id": "77926dcfeae6e4f4568a710ea3631755957be55c47f4e96a6184ca4f6aedac36",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "f70f12a1773a39e714c3959a6c687911c86f7f2e1c4047cdbd47e8756d59f5b6",
+          "source_id": "e639fa97-a55b-4991-b777-b354b42d0e77",
+          "version_id": "aa522317-8dd5-541f-a60a-062b2d530f18"
+        },
+        {
+          "document_id": "aff81f3c-5d21-55d4-af6c-90d0a68e92ca",
+          "evidence_content_sha256": "21ed6a2d89488a82b11a5899a6add1b66e02c36a6efcd5e577e914902e3ba38e",
+          "evidence_id": "77926dcfeae6e4f4568a710ea3631755957be55c47f4e96a6184ca4f6aedac36",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "f70f12a1773a39e714c3959a6c687911c86f7f2e1c4047cdbd47e8756d59f5b6",
+          "source_id": "1baf1250-31fe-403f-8220-32ac89884447",
+          "version_id": "aa522317-8dd5-541f-a60a-062b2d530f18"
+        }
+      ]
+    },
+    {
+      "anchor": "YBEU",
+      "case_id": "MVEA-LANG-EN10-MR",
+      "document_language": "en",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "चालू किमतींवरील बाजारभाव GDP चा मूल्य निर्देशांक कोणता CDID दर्शवतो?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "aff81f3c-5d21-55d4-af6c-90d0a68e92ca",
+          "evidence_content_sha256": "21ed6a2d89488a82b11a5899a6add1b66e02c36a6efcd5e577e914902e3ba38e",
+          "evidence_id": "77926dcfeae6e4f4568a710ea3631755957be55c47f4e96a6184ca4f6aedac36",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "f70f12a1773a39e714c3959a6c687911c86f7f2e1c4047cdbd47e8756d59f5b6",
+          "source_id": "e639fa97-a55b-4991-b777-b354b42d0e77",
+          "version_id": "aa522317-8dd5-541f-a60a-062b2d530f18"
+        },
+        {
+          "document_id": "aff81f3c-5d21-55d4-af6c-90d0a68e92ca",
+          "evidence_content_sha256": "21ed6a2d89488a82b11a5899a6add1b66e02c36a6efcd5e577e914902e3ba38e",
+          "evidence_id": "77926dcfeae6e4f4568a710ea3631755957be55c47f4e96a6184ca4f6aedac36",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "source_file_sha256": "f70f12a1773a39e714c3959a6c687911c86f7f2e1c4047cdbd47e8756d59f5b6",
+          "source_id": "1baf1250-31fe-403f-8220-32ac89884447",
+          "version_id": "aa522317-8dd5-541f-a60a-062b2d530f18"
+        }
+      ]
+    },
+    {
+      "anchor": "ऊख गोड़ने",
+      "case_id": "MVEA-LANG-HI01-EN",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What farm work did Hori ask Dhaniya to send Gobar to do before he left?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "90cd65931fd5f3764381837ba3cee979d427ad10b0be2f8d99605f0e10a98e71",
+          "evidence_id": "baf24de37633a653bde4b9d55a0d979d9e709b3819f8c8812cd69d2c0c498a53",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "ऊख गोड़ने",
+      "case_id": "MVEA-LANG-HI01-HI",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "घर से निकलने से पहले होरी ने धनिया से गोबर को कौन-सा खेत का काम करने भेजने को कहा?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "90cd65931fd5f3764381837ba3cee979d427ad10b0be2f8d99605f0e10a98e71",
+          "evidence_id": "baf24de37633a653bde4b9d55a0d979d9e709b3819f8c8812cd69d2c0c498a53",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "ऊख गोड़ने",
+      "case_id": "MVEA-LANG-HI01-MR",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "घरातून निघण्यापूर्वी होरीने धनियाला गोबरला शेतात कोणते काम करायला पाठवण्यास सांगितले?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "90cd65931fd5f3764381837ba3cee979d427ad10b0be2f8d99605f0e10a98e71",
+          "evidence_id": "baf24de37633a653bde4b9d55a0d979d9e709b3819f8c8812cd69d2c0c498a53",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "उसकी खुशामद क्यों करें",
+      "case_id": "MVEA-LANG-HI02-EN",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "Why does Dhaniya question flattering the landlord after they have worked his fields?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "70beefb35f5f9ecd58a6fbeee74cd8b4b7723a279d2afb7f5f2735fddc2a3b9e",
+          "evidence_id": "11aec0e5ddedb360acc576005633ecb605aeeeb006981cf0fdb991e5c07fc9dc",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "df207a12-f60b-4026-8b42-5badb4890d46",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        },
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "70beefb35f5f9ecd58a6fbeee74cd8b4b7723a279d2afb7f5f2735fddc2a3b9e",
+          "evidence_id": "11aec0e5ddedb360acc576005633ecb605aeeeb006981cf0fdb991e5c07fc9dc",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "उसकी खुशामद क्यों करें",
+      "case_id": "MVEA-LANG-HI02-HI",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "धनिया ज़मींदार के खेत जोतने के बाद उसकी खुशामद करने पर सवाल क्यों उठाती है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "70beefb35f5f9ecd58a6fbeee74cd8b4b7723a279d2afb7f5f2735fddc2a3b9e",
+          "evidence_id": "11aec0e5ddedb360acc576005633ecb605aeeeb006981cf0fdb991e5c07fc9dc",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "df207a12-f60b-4026-8b42-5badb4890d46",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        },
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "70beefb35f5f9ecd58a6fbeee74cd8b4b7723a279d2afb7f5f2735fddc2a3b9e",
+          "evidence_id": "11aec0e5ddedb360acc576005633ecb605aeeeb006981cf0fdb991e5c07fc9dc",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "उसकी खुशामद क्यों करें",
+      "case_id": "MVEA-LANG-HI02-MR",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "जमीनदाराची शेते नांगरल्यानंतर त्याची खुशामत करण्यावर धनिया प्रश्न का उपस्थित करते?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "70beefb35f5f9ecd58a6fbeee74cd8b4b7723a279d2afb7f5f2735fddc2a3b9e",
+          "evidence_id": "11aec0e5ddedb360acc576005633ecb605aeeeb006981cf0fdb991e5c07fc9dc",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "df207a12-f60b-4026-8b42-5badb4890d46",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        },
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "70beefb35f5f9ecd58a6fbeee74cd8b4b7723a279d2afb7f5f2735fddc2a3b9e",
+          "evidence_id": "11aec0e5ddedb360acc576005633ecb605aeeeb006981cf0fdb991e5c07fc9dc",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "मै बूढ़ा हो गया",
+      "case_id": "MVEA-LANG-HI03-EN",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "How does Hori jokingly respond when Dhaniya suggests he has grown old?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "0f6b20c68752a6dc0b21d509177baaa26f21746832cd114cef6b2753ff478dbe",
+          "evidence_id": "022ebc19427ee9fc167f3ce3914f0cb07176cc764a7d47b4abb882ca26e88036",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "मै बूढ़ा हो गया",
+      "case_id": "MVEA-LANG-HI03-HI",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "धनिया के बूढ़ा समझने पर होरी मज़ाक में क्या जवाब देता है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "0f6b20c68752a6dc0b21d509177baaa26f21746832cd114cef6b2753ff478dbe",
+          "evidence_id": "022ebc19427ee9fc167f3ce3914f0cb07176cc764a7d47b4abb882ca26e88036",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "मै बूढ़ा हो गया",
+      "case_id": "MVEA-LANG-HI03-MR",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "धनियाला तो म्हातारा वाटतो असे समजल्यावर होरी विनोदाने काय उत्तर देतो?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "0f6b20c68752a6dc0b21d509177baaa26f21746832cd114cef6b2753ff478dbe",
+          "evidence_id": "022ebc19427ee9fc167f3ce3914f0cb07176cc764a7d47b4abb882ca26e88036",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "धनिया द्वार पर खड़ी",
+      "case_id": "MVEA-LANG-HI04-EN",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What does Dhaniya do at the doorway as Hori leaves with his stick?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "6171a32211ca9632b78e1b687f0382c7fc543fcce3ff9c2394e7c564dae9d81e",
+          "evidence_id": "142b4c49b71746a0d584efc6622d57557d61c6ea33d2554a366a98dc070a2e7e",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "df207a12-f60b-4026-8b42-5badb4890d46",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        },
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "6171a32211ca9632b78e1b687f0382c7fc543fcce3ff9c2394e7c564dae9d81e",
+          "evidence_id": "142b4c49b71746a0d584efc6622d57557d61c6ea33d2554a366a98dc070a2e7e",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "धनिया द्वार पर खड़ी",
+      "case_id": "MVEA-LANG-HI04-HI",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "होरी लाठी लेकर घर से निकलता है तो द्वार पर खड़ी धनिया क्या करती है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "6171a32211ca9632b78e1b687f0382c7fc543fcce3ff9c2394e7c564dae9d81e",
+          "evidence_id": "142b4c49b71746a0d584efc6622d57557d61c6ea33d2554a366a98dc070a2e7e",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "df207a12-f60b-4026-8b42-5badb4890d46",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        },
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "6171a32211ca9632b78e1b687f0382c7fc543fcce3ff9c2394e7c564dae9d81e",
+          "evidence_id": "142b4c49b71746a0d584efc6622d57557d61c6ea33d2554a366a98dc070a2e7e",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "धनिया द्वार पर खड़ी",
+      "case_id": "MVEA-LANG-HI04-MR",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "होरी काठी घेऊन बाहेर पडताना दारात उभी असलेली धनिया काय करते?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "6171a32211ca9632b78e1b687f0382c7fc543fcce3ff9c2394e7c564dae9d81e",
+          "evidence_id": "142b4c49b71746a0d584efc6622d57557d61c6ea33d2554a366a98dc070a2e7e",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "df207a12-f60b-4026-8b42-5badb4890d46",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        },
+        {
+          "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+          "evidence_content_sha256": "6171a32211ca9632b78e1b687f0382c7fc543fcce3ff9c2394e7c564dae9d81e",
+          "evidence_id": "142b4c49b71746a0d584efc6622d57557d61c6ea33d2554a366a98dc070a2e7e",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+          "source_id": "6dd19eb5-110f-40e5-8095-4eb9130fca8e",
+          "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39"
+        }
+      ]
+    },
+    {
+      "anchor": "पाँच मील",
+      "case_id": "MVEA-LANG-HI05-EN",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "How far apart are the villages Semri and Belari in the second Godan chapter?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+          "evidence_content_sha256": "29e742d5a9c0450cab9e5ed8bb66aac79781260e4ca05727e81ec0e351ef31a4",
+          "evidence_id": "d318bb565402b0e3d3f9c2c2e189a5172efc9e42f89a3037b9efdb42982e7a6a",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+          "source_id": "35ce2583-79d1-4b01-a9f1-435d21bd3910",
+          "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+        }
+      ]
+    },
+    {
+      "anchor": "पाँच मील",
+      "case_id": "MVEA-LANG-HI05-HI",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "गोदान के दूसरे अध्याय में सेमरी और बेलारी गाँवों के बीच कितनी दूरी है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+          "evidence_content_sha256": "29e742d5a9c0450cab9e5ed8bb66aac79781260e4ca05727e81ec0e351ef31a4",
+          "evidence_id": "d318bb565402b0e3d3f9c2c2e189a5172efc9e42f89a3037b9efdb42982e7a6a",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+          "source_id": "35ce2583-79d1-4b01-a9f1-435d21bd3910",
+          "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+        }
+      ]
+    },
+    {
+      "anchor": "पाँच मील",
+      "case_id": "MVEA-LANG-HI05-MR",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "गोदानच्या दुसऱ्या अध्यायात सेमरी आणि बेलारी गावांमध्ये किती अंतर आहे?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+          "evidence_content_sha256": "29e742d5a9c0450cab9e5ed8bb66aac79781260e4ca05727e81ec0e351ef31a4",
+          "evidence_id": "d318bb565402b0e3d3f9c2c2e189a5172efc9e42f89a3037b9efdb42982e7a6a",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+          "source_id": "35ce2583-79d1-4b01-a9f1-435d21bd3910",
+          "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+        }
+      ]
+    },
+    {
+      "anchor": "धनुषयज्ञ",
+      "case_id": "MVEA-LANG-HI06-EN",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What festival preparations does Hori find at Rai Sahib's estate in Godan's second chapter?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+          "evidence_content_sha256": "e6a85f5121b4f780011a350246a3ecf3e960761fbdaff2d36d7031f5be259789",
+          "evidence_id": "6d01736b4a85989b17dc1e2d99cce67152c70bd4474f6c681d11af7614054bed",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+          "source_id": "cf2e5a45-a570-426c-b511-30d8f6919cd6",
+          "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+        },
+        {
+          "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+          "evidence_content_sha256": "e6a85f5121b4f780011a350246a3ecf3e960761fbdaff2d36d7031f5be259789",
+          "evidence_id": "6d01736b4a85989b17dc1e2d99cce67152c70bd4474f6c681d11af7614054bed",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+          "source_id": "35ce2583-79d1-4b01-a9f1-435d21bd3910",
+          "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+        }
+      ]
+    },
+    {
+      "anchor": "धनुषयज्ञ",
+      "case_id": "MVEA-LANG-HI06-HI",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "गोदान के दूसरे अध्याय में राय साहब की कोठी पर होरी को किस उत्सव की तैयारी दिखाई देती है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+          "evidence_content_sha256": "e6a85f5121b4f780011a350246a3ecf3e960761fbdaff2d36d7031f5be259789",
+          "evidence_id": "6d01736b4a85989b17dc1e2d99cce67152c70bd4474f6c681d11af7614054bed",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+          "source_id": "cf2e5a45-a570-426c-b511-30d8f6919cd6",
+          "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+        },
+        {
+          "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+          "evidence_content_sha256": "e6a85f5121b4f780011a350246a3ecf3e960761fbdaff2d36d7031f5be259789",
+          "evidence_id": "6d01736b4a85989b17dc1e2d99cce67152c70bd4474f6c681d11af7614054bed",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+          "source_id": "35ce2583-79d1-4b01-a9f1-435d21bd3910",
+          "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+        }
+      ]
+    },
+    {
+      "anchor": "धनुषयज्ञ",
+      "case_id": "MVEA-LANG-HI06-MR",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "गोदानच्या दुसऱ्या अध्यायात रायसाहेबांच्या वाड्यावर होरीला कोणत्या उत्सवाची तयारी दिसते?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+          "evidence_content_sha256": "e6a85f5121b4f780011a350246a3ecf3e960761fbdaff2d36d7031f5be259789",
+          "evidence_id": "6d01736b4a85989b17dc1e2d99cce67152c70bd4474f6c681d11af7614054bed",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+          "source_id": "cf2e5a45-a570-426c-b511-30d8f6919cd6",
+          "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+        },
+        {
+          "document_id": "831ab90f-2b16-57b1-ba04-3e2dfa1d95bf",
+          "evidence_content_sha256": "e6a85f5121b4f780011a350246a3ecf3e960761fbdaff2d36d7031f5be259789",
+          "evidence_id": "6d01736b4a85989b17dc1e2d99cce67152c70bd4474f6c681d11af7614054bed",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "8af70f1353c9256936234f0678e435d9f5cc7c080578eb39cc7fe3372c9b8279",
+          "source_id": "35ce2583-79d1-4b01-a9f1-435d21bd3910",
+          "version_id": "2591d0b4-113b-5bf2-9c3d-f40ec4a87958"
+        }
+      ]
+    },
+    {
+      "anchor": "गोबर खेत में ऊख गोड़ रहा",
+      "case_id": "MVEA-LANG-HI07-EN",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What does Hori see Gobar and the girls doing in the hot field near their village?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "af7af513-78e2-5de1-9ddd-6098edb5c2f2",
+          "evidence_content_sha256": "f714af99350fd0b91e9b1cfa69021bb4615b5be507a20e7fc97bb793a1f1086a",
+          "evidence_id": "613e1b07b33e0ca009d98795ce9df23074c2f6cd1e252d9cbeb26dcfda12209d",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "7e144e26e1347e0717b81072ae95aa8946dff5a75c5d7a108148755a056302c7",
+          "source_id": "9bd0d632-d7a9-4538-8fae-7577996f5998",
+          "version_id": "2402748c-2eda-5e3c-b031-88bb9e6d7476"
+        }
+      ]
+    },
+    {
+      "anchor": "गोबर खेत में ऊख गोड़ रहा",
+      "case_id": "MVEA-LANG-HI07-HI",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "गाँव के पास गर्म खेत में होरी गोबर और लड़कियों को क्या करते देखता है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "af7af513-78e2-5de1-9ddd-6098edb5c2f2",
+          "evidence_content_sha256": "f714af99350fd0b91e9b1cfa69021bb4615b5be507a20e7fc97bb793a1f1086a",
+          "evidence_id": "613e1b07b33e0ca009d98795ce9df23074c2f6cd1e252d9cbeb26dcfda12209d",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "7e144e26e1347e0717b81072ae95aa8946dff5a75c5d7a108148755a056302c7",
+          "source_id": "9bd0d632-d7a9-4538-8fae-7577996f5998",
+          "version_id": "2402748c-2eda-5e3c-b031-88bb9e6d7476"
+        }
+      ]
+    },
+    {
+      "anchor": "गोबर खेत में ऊख गोड़ रहा",
+      "case_id": "MVEA-LANG-HI07-MR",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "गावाजवळच्या उष्ण शेतात होरीला गोबर आणि मुली काय करताना दिसतात?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "af7af513-78e2-5de1-9ddd-6098edb5c2f2",
+          "evidence_content_sha256": "f714af99350fd0b91e9b1cfa69021bb4615b5be507a20e7fc97bb793a1f1086a",
+          "evidence_id": "613e1b07b33e0ca009d98795ce9df23074c2f6cd1e252d9cbeb26dcfda12209d",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "7e144e26e1347e0717b81072ae95aa8946dff5a75c5d7a108148755a056302c7",
+          "source_id": "9bd0d632-d7a9-4538-8fae-7577996f5998",
+          "version_id": "2402748c-2eda-5e3c-b031-88bb9e6d7476"
+        }
+      ]
+    },
+    {
+      "anchor": "मालिकों की खुशामद",
+      "case_id": "MVEA-LANG-HI08-EN",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "Why does Gobar challenge his father about repeatedly flattering the landowners?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "af7af513-78e2-5de1-9ddd-6098edb5c2f2",
+          "evidence_content_sha256": "113c83e85010760e66660bf8f6433656554bf0913f4ae0c56bd82c91da9e67c7",
+          "evidence_id": "ca3ba1e9fee8bd10bd1aba664004da44eb0439dd65540b5f33101a5afbc7c9b8",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "7e144e26e1347e0717b81072ae95aa8946dff5a75c5d7a108148755a056302c7",
+          "source_id": "b9dac7ef-d7e9-47d7-b275-82cf657629fe",
+          "version_id": "2402748c-2eda-5e3c-b031-88bb9e6d7476"
+        },
+        {
+          "document_id": "af7af513-78e2-5de1-9ddd-6098edb5c2f2",
+          "evidence_content_sha256": "113c83e85010760e66660bf8f6433656554bf0913f4ae0c56bd82c91da9e67c7",
+          "evidence_id": "ca3ba1e9fee8bd10bd1aba664004da44eb0439dd65540b5f33101a5afbc7c9b8",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "7e144e26e1347e0717b81072ae95aa8946dff5a75c5d7a108148755a056302c7",
+          "source_id": "9bd0d632-d7a9-4538-8fae-7577996f5998",
+          "version_id": "2402748c-2eda-5e3c-b031-88bb9e6d7476"
+        }
+      ]
+    },
+    {
+      "anchor": "मालिकों की खुशामद",
+      "case_id": "MVEA-LANG-HI08-HI",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "गोबर अपने पिता से बार-बार मालिकों की खुशामद करने के बारे में क्या सवाल पूछता है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "af7af513-78e2-5de1-9ddd-6098edb5c2f2",
+          "evidence_content_sha256": "113c83e85010760e66660bf8f6433656554bf0913f4ae0c56bd82c91da9e67c7",
+          "evidence_id": "ca3ba1e9fee8bd10bd1aba664004da44eb0439dd65540b5f33101a5afbc7c9b8",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "7e144e26e1347e0717b81072ae95aa8946dff5a75c5d7a108148755a056302c7",
+          "source_id": "b9dac7ef-d7e9-47d7-b275-82cf657629fe",
+          "version_id": "2402748c-2eda-5e3c-b031-88bb9e6d7476"
+        },
+        {
+          "document_id": "af7af513-78e2-5de1-9ddd-6098edb5c2f2",
+          "evidence_content_sha256": "113c83e85010760e66660bf8f6433656554bf0913f4ae0c56bd82c91da9e67c7",
+          "evidence_id": "ca3ba1e9fee8bd10bd1aba664004da44eb0439dd65540b5f33101a5afbc7c9b8",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "7e144e26e1347e0717b81072ae95aa8946dff5a75c5d7a108148755a056302c7",
+          "source_id": "9bd0d632-d7a9-4538-8fae-7577996f5998",
+          "version_id": "2402748c-2eda-5e3c-b031-88bb9e6d7476"
+        }
+      ]
+    },
+    {
+      "anchor": "मालिकों की खुशामद",
+      "case_id": "MVEA-LANG-HI08-MR",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "मालकांची वारंवार खुशामत करण्याबद्दल गोबर वडिलांना कोणता प्रश्न विचारतो?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "af7af513-78e2-5de1-9ddd-6098edb5c2f2",
+          "evidence_content_sha256": "113c83e85010760e66660bf8f6433656554bf0913f4ae0c56bd82c91da9e67c7",
+          "evidence_id": "ca3ba1e9fee8bd10bd1aba664004da44eb0439dd65540b5f33101a5afbc7c9b8",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "7e144e26e1347e0717b81072ae95aa8946dff5a75c5d7a108148755a056302c7",
+          "source_id": "b9dac7ef-d7e9-47d7-b275-82cf657629fe",
+          "version_id": "2402748c-2eda-5e3c-b031-88bb9e6d7476"
+        },
+        {
+          "document_id": "af7af513-78e2-5de1-9ddd-6098edb5c2f2",
+          "evidence_content_sha256": "113c83e85010760e66660bf8f6433656554bf0913f4ae0c56bd82c91da9e67c7",
+          "evidence_id": "ca3ba1e9fee8bd10bd1aba664004da44eb0439dd65540b5f33101a5afbc7c9b8",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "7e144e26e1347e0717b81072ae95aa8946dff5a75c5d7a108148755a056302c7",
+          "source_id": "9bd0d632-d7a9-4538-8fae-7577996f5998",
+          "version_id": "2402748c-2eda-5e3c-b031-88bb9e6d7476"
+        }
+      ]
+    },
+    {
+      "anchor": "आरएमडी",
+      "case_id": "MVEA-LANG-HI09-EN",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "Which RBI unit reviewed incident reporting and strengthened governance for outsourcing and model risk?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "8cffa0d0-7d6b-5c0c-ad56-bf267216e0e2",
+          "evidence_content_sha256": "80408a0c70c8d904f3028100bbbc49a386b634438a06430b6175e78f4a867285",
+          "evidence_id": "61f17b29a0577b4f3733a574d591c2f49e80fdf7cf99b099cd70f18df5d530a7",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "15ad4104558638d4746c2f1a94e4736e72f92062cd0dfd7383259d8ed510e7cb",
+          "source_id": "19e73a0b-8489-4aed-9554-ac7c3e211669",
+          "version_id": "fceeae0b-a7cb-522b-aebc-8d5f824fcc28"
+        }
+      ]
+    },
+    {
+      "anchor": "आरएमडी",
+      "case_id": "MVEA-LANG-HI09-HI",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "घटना रिपोर्टिंग की समीक्षा और आउटसोर्सिंग तथा मॉडल जोखिम शासन को मजबूत करने का काम RBI की किस इकाई ने किया?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "8cffa0d0-7d6b-5c0c-ad56-bf267216e0e2",
+          "evidence_content_sha256": "80408a0c70c8d904f3028100bbbc49a386b634438a06430b6175e78f4a867285",
+          "evidence_id": "61f17b29a0577b4f3733a574d591c2f49e80fdf7cf99b099cd70f18df5d530a7",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "15ad4104558638d4746c2f1a94e4736e72f92062cd0dfd7383259d8ed510e7cb",
+          "source_id": "19e73a0b-8489-4aed-9554-ac7c3e211669",
+          "version_id": "fceeae0b-a7cb-522b-aebc-8d5f824fcc28"
+        }
+      ]
+    },
+    {
+      "anchor": "आरएमडी",
+      "case_id": "MVEA-LANG-HI09-MR",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "घटना अहवालांचा आढावा घेऊन आउटसोर्सिंग व मॉडेल जोखीम प्रशासन मजबूत करणारे RBI चे कोणते विभाग आहे?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "ec19813f-a11d-559d-bebc-560e90b65cbf"
+      ],
+      "targets": [
+        {
+          "document_id": "8cffa0d0-7d6b-5c0c-ad56-bf267216e0e2",
+          "evidence_content_sha256": "80408a0c70c8d904f3028100bbbc49a386b634438a06430b6175e78f4a867285",
+          "evidence_id": "61f17b29a0577b4f3733a574d591c2f49e80fdf7cf99b099cd70f18df5d530a7",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "15ad4104558638d4746c2f1a94e4736e72f92062cd0dfd7383259d8ed510e7cb",
+          "source_id": "19e73a0b-8489-4aed-9554-ac7c3e211669",
+          "version_id": "fceeae0b-a7cb-522b-aebc-8d5f824fcc28"
+        }
+      ]
+    },
+    {
+      "anchor": "44",
+      "case_id": "MVEA-LANG-HI10-EN",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What was the reported transaction-volume growth of payment and settlement systems in 2023–24?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "e7ab1cac-0cf1-58a9-b31c-16933333f8b1",
+          "evidence_content_sha256": "4091d9d76ceebdc247c4fe9f449b65411846cc626adb70db6e9852582ded8532",
+          "evidence_id": "453171806c65cd3d6c2156307040a25f7e6379a98b7635e40de999be3af34b78",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "4d480e13305506df7f74db96ebee0078576848963c650c74c94d1587bbff5f2b",
+          "source_id": "6921d204-3813-4a80-a05c-252504bedb80",
+          "version_id": "98644e61-fdad-5358-a95c-1dfe069adc36"
+        },
+        {
+          "document_id": "e7ab1cac-0cf1-58a9-b31c-16933333f8b1",
+          "evidence_content_sha256": "4091d9d76ceebdc247c4fe9f449b65411846cc626adb70db6e9852582ded8532",
+          "evidence_id": "453171806c65cd3d6c2156307040a25f7e6379a98b7635e40de999be3af34b78",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "4d480e13305506df7f74db96ebee0078576848963c650c74c94d1587bbff5f2b",
+          "source_id": "a8704bf1-c529-4f6a-85e2-564138575b53",
+          "version_id": "98644e61-fdad-5358-a95c-1dfe069adc36"
+        }
+      ]
+    },
+    {
+      "anchor": "44",
+      "case_id": "MVEA-LANG-HI10-HI",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "2023–24 में भुगतान और निपटान प्रणालियों की लेन-देन मात्रा कितने प्रतिशत बढ़ी?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "e7ab1cac-0cf1-58a9-b31c-16933333f8b1",
+          "evidence_content_sha256": "4091d9d76ceebdc247c4fe9f449b65411846cc626adb70db6e9852582ded8532",
+          "evidence_id": "453171806c65cd3d6c2156307040a25f7e6379a98b7635e40de999be3af34b78",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "4d480e13305506df7f74db96ebee0078576848963c650c74c94d1587bbff5f2b",
+          "source_id": "6921d204-3813-4a80-a05c-252504bedb80",
+          "version_id": "98644e61-fdad-5358-a95c-1dfe069adc36"
+        },
+        {
+          "document_id": "e7ab1cac-0cf1-58a9-b31c-16933333f8b1",
+          "evidence_content_sha256": "4091d9d76ceebdc247c4fe9f449b65411846cc626adb70db6e9852582ded8532",
+          "evidence_id": "453171806c65cd3d6c2156307040a25f7e6379a98b7635e40de999be3af34b78",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "4d480e13305506df7f74db96ebee0078576848963c650c74c94d1587bbff5f2b",
+          "source_id": "a8704bf1-c529-4f6a-85e2-564138575b53",
+          "version_id": "98644e61-fdad-5358-a95c-1dfe069adc36"
+        }
+      ]
+    },
+    {
+      "anchor": "44",
+      "case_id": "MVEA-LANG-HI10-MR",
+      "document_language": "hi",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "2023–24 मध्ये देयक आणि निपटारा प्रणालींच्या व्यवहारांच्या प्रमाणात किती टक्के वाढ झाली?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "e7ab1cac-0cf1-58a9-b31c-16933333f8b1",
+          "evidence_content_sha256": "4091d9d76ceebdc247c4fe9f449b65411846cc626adb70db6e9852582ded8532",
+          "evidence_id": "453171806c65cd3d6c2156307040a25f7e6379a98b7635e40de999be3af34b78",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "4d480e13305506df7f74db96ebee0078576848963c650c74c94d1587bbff5f2b",
+          "source_id": "6921d204-3813-4a80-a05c-252504bedb80",
+          "version_id": "98644e61-fdad-5358-a95c-1dfe069adc36"
+        },
+        {
+          "document_id": "e7ab1cac-0cf1-58a9-b31c-16933333f8b1",
+          "evidence_content_sha256": "4091d9d76ceebdc247c4fe9f449b65411846cc626adb70db6e9852582ded8532",
+          "evidence_id": "453171806c65cd3d6c2156307040a25f7e6379a98b7635e40de999be3af34b78",
+          "notebook_id": "ec19813f-a11d-559d-bebc-560e90b65cbf",
+          "source_file_sha256": "4d480e13305506df7f74db96ebee0078576848963c650c74c94d1587bbff5f2b",
+          "source_id": "a8704bf1-c529-4f6a-85e2-564138575b53",
+          "version_id": "98644e61-fdad-5358-a95c-1dfe069adc36"
+        }
+      ]
+    },
+    {
+      "anchor": "मुलें शाळेंत पाठविण्याचीं",
+      "case_id": "MVEA-LANG-MR01-EN",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "According to Shetkaryacha Asud, what prevents farmers from sending their young children to school?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "f63c5f19957ebe978ad410e99a8f5621652bb59e45b57762cc620d9513f6a762",
+          "evidence_id": "f53fa40706f0040a6b1693faca4716926d3205a3d8420c3fa86489fb3f4935bf",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        }
+      ]
+    },
+    {
+      "anchor": "मुलें शाळेंत पाठविण्याचीं",
+      "case_id": "MVEA-LANG-MR01-HI",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "शेतकऱ्याचा असूड के अनुसार किसानों के छोटे बच्चों को स्कूल भेजने में क्या बाधा है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "f63c5f19957ebe978ad410e99a8f5621652bb59e45b57762cc620d9513f6a762",
+          "evidence_id": "f53fa40706f0040a6b1693faca4716926d3205a3d8420c3fa86489fb3f4935bf",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        }
+      ]
+    },
+    {
+      "anchor": "मुलें शाळेंत पाठविण्याचीं",
+      "case_id": "MVEA-LANG-MR01-MR",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "शेतकऱ्याचा असूडनुसार शेतकऱ्यांना लहान मुलांना शाळेत पाठवण्यास कोणते अडथळे येतात?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "f63c5f19957ebe978ad410e99a8f5621652bb59e45b57762cc620d9513f6a762",
+          "evidence_id": "f53fa40706f0040a6b1693faca4716926d3205a3d8420c3fa86489fb3f4935bf",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        }
+      ]
+    },
+    {
+      "anchor": "शनिवार अथवा चतुर्थीचीं व्रतें",
+      "case_id": "MVEA-LANG-MR02-EN",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "Which weekly or lunar-day fasts are farmers' wives urged to observe in Shetkaryacha Asud?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "ea649fd446ed504c82da3ab47a249e82c309f7d8be8687eb31c83a8a35924296",
+          "evidence_id": "f3e7830cd4958a497cadc9b6df032fb2c85211976bac8079488e333f96168ecc",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "c877c306-7e34-4578-947f-b7ad3d701036",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        },
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "ea649fd446ed504c82da3ab47a249e82c309f7d8be8687eb31c83a8a35924296",
+          "evidence_id": "f3e7830cd4958a497cadc9b6df032fb2c85211976bac8079488e333f96168ecc",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        }
+      ]
+    },
+    {
+      "anchor": "शनिवार अथवा चतुर्थीचीं व्रतें",
+      "case_id": "MVEA-LANG-MR02-HI",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "शेतकऱ्याचा असूड में किसानों की पत्नियों को शनिवार या किस तिथि के व्रत रखने को कहा जाता है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "ea649fd446ed504c82da3ab47a249e82c309f7d8be8687eb31c83a8a35924296",
+          "evidence_id": "f3e7830cd4958a497cadc9b6df032fb2c85211976bac8079488e333f96168ecc",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "c877c306-7e34-4578-947f-b7ad3d701036",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        },
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "ea649fd446ed504c82da3ab47a249e82c309f7d8be8687eb31c83a8a35924296",
+          "evidence_id": "f3e7830cd4958a497cadc9b6df032fb2c85211976bac8079488e333f96168ecc",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        }
+      ]
+    },
+    {
+      "anchor": "शनिवार अथवा चतुर्थीचीं व्रतें",
+      "case_id": "MVEA-LANG-MR02-MR",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "शेतकऱ्याचा असूडमध्ये शेतकऱ्यांच्या स्त्रियांना शनिवार किंवा कोणत्या तिथीची व्रते करण्यास सांगितले जाते?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "ea649fd446ed504c82da3ab47a249e82c309f7d8be8687eb31c83a8a35924296",
+          "evidence_id": "f3e7830cd4958a497cadc9b6df032fb2c85211976bac8079488e333f96168ecc",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "c877c306-7e34-4578-947f-b7ad3d701036",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        },
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "ea649fd446ed504c82da3ab47a249e82c309f7d8be8687eb31c83a8a35924296",
+          "evidence_id": "f3e7830cd4958a497cadc9b6df032fb2c85211976bac8079488e333f96168ecc",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        }
+      ]
+    },
+    {
+      "anchor": "जन्मपत्निका",
+      "case_id": "MVEA-LANG-MR03-EN",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "How are infants' birth horoscopes prepared to exploit farmers in Shetkaryacha Asud?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "b0b4a45f39ecd6fd88ce81f0f816bb68e72a05b8ef06d75e6f33b14a01f6d2d8",
+          "evidence_id": "96bd5646eef1ba98679a447b498a40885ee49ba20006daa2068bf93437e58d99",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        }
+      ]
+    },
+    {
+      "anchor": "जन्मपत्निका",
+      "case_id": "MVEA-LANG-MR03-HI",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "शेतकऱ्याचा असूड में किसानों का शोषण करने के लिए शिशुओं की जन्मपत्रिकाएँ कैसे बनाई जाती हैं?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "b0b4a45f39ecd6fd88ce81f0f816bb68e72a05b8ef06d75e6f33b14a01f6d2d8",
+          "evidence_id": "96bd5646eef1ba98679a447b498a40885ee49ba20006daa2068bf93437e58d99",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        }
+      ]
+    },
+    {
+      "anchor": "जन्मपत्निका",
+      "case_id": "MVEA-LANG-MR03-MR",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "शेतकऱ्याचा असूडमध्ये शेतकऱ्यांची फसवणूक करण्यासाठी अर्भकांच्या जन्मपत्रिका कशा तयार केल्या जातात?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "2cfa9040-5189-51b5-9bdd-af1f79a0bc87",
+          "evidence_content_sha256": "b0b4a45f39ecd6fd88ce81f0f816bb68e72a05b8ef06d75e6f33b14a01f6d2d8",
+          "evidence_id": "96bd5646eef1ba98679a447b498a40885ee49ba20006daa2068bf93437e58d99",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "e0212854739433ca78b0fb12a855fb809476db2589af49f0509b3a56f9eff01d",
+          "source_id": "0288bd46-9a75-4389-9a69-9100f1e4d155",
+          "version_id": "a9969023-bff4-59dd-930e-008e562c3c17"
+        }
+      ]
+    },
+    {
+      "anchor": "वर्षफळ वाचून",
+      "case_id": "MVEA-LANG-MR04-EN",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What do priests read at farmers' homes on the Marathi New Year in the second Asud page?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "cb6e0d505989ea4a7bb6fa3f7d1da28b975c332396fd19a2b9bfda0fb63bd7cc",
+          "evidence_id": "8d96b8fe9cc52c1b848dfd615fede47735b7fbb6a30d5e15fd1df0f3d9545a50",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "bcf8e2eb-7f60-43c0-803e-199b786e3c35",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        },
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "cb6e0d505989ea4a7bb6fa3f7d1da28b975c332396fd19a2b9bfda0fb63bd7cc",
+          "evidence_id": "8d96b8fe9cc52c1b848dfd615fede47735b7fbb6a30d5e15fd1df0f3d9545a50",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "c87509eb-57cd-440e-a7b8-bda60397aedb",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        }
+      ]
+    },
+    {
+      "anchor": "वर्षफळ वाचून",
+      "case_id": "MVEA-LANG-MR04-HI",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूड के दूसरे पन्ने में मराठी नववर्ष पर पुरोहित किसानों के घर क्या पढ़ते हैं?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "cb6e0d505989ea4a7bb6fa3f7d1da28b975c332396fd19a2b9bfda0fb63bd7cc",
+          "evidence_id": "8d96b8fe9cc52c1b848dfd615fede47735b7fbb6a30d5e15fd1df0f3d9545a50",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "bcf8e2eb-7f60-43c0-803e-199b786e3c35",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        },
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "cb6e0d505989ea4a7bb6fa3f7d1da28b975c332396fd19a2b9bfda0fb63bd7cc",
+          "evidence_id": "8d96b8fe9cc52c1b848dfd615fede47735b7fbb6a30d5e15fd1df0f3d9545a50",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "c87509eb-57cd-440e-a7b8-bda60397aedb",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        }
+      ]
+    },
+    {
+      "anchor": "वर्षफळ वाचून",
+      "case_id": "MVEA-LANG-MR04-MR",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूडच्या दुसऱ्या पानावर वर्षप्रतिपदेला भट शेतकऱ्यांच्या घरी काय वाचतात?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "cb6e0d505989ea4a7bb6fa3f7d1da28b975c332396fd19a2b9bfda0fb63bd7cc",
+          "evidence_id": "8d96b8fe9cc52c1b848dfd615fede47735b7fbb6a30d5e15fd1df0f3d9545a50",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "bcf8e2eb-7f60-43c0-803e-199b786e3c35",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        },
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "cb6e0d505989ea4a7bb6fa3f7d1da28b975c332396fd19a2b9bfda0fb63bd7cc",
+          "evidence_id": "8d96b8fe9cc52c1b848dfd615fede47735b7fbb6a30d5e15fd1df0f3d9545a50",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "c87509eb-57cd-440e-a7b8-bda60397aedb",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        }
+      ]
+    },
+    {
+      "anchor": "एक पैसातरी दक्षिणा",
+      "case_id": "MVEA-LANG-MR05-EN",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What minimum donation is taken even from poor farmers at Ashadhi Ekadashi in the Asud account?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "a440dfbc8e98955ef972dbd76f3654a2a61dd70680eb8fccb9c5af9786977a18",
+          "evidence_id": "3312ca375843c02653863eab673ff04043b0d23b225d961cb057ec59d541b375",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "c87509eb-57cd-440e-a7b8-bda60397aedb",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        }
+      ]
+    },
+    {
+      "anchor": "एक पैसातरी दक्षिणा",
+      "case_id": "MVEA-LANG-MR05-HI",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूड के वर्णन में आषाढ़ी एकादशी पर निर्धन किसान से भी न्यूनतम कितनी दक्षिणा ली जाती है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "a440dfbc8e98955ef972dbd76f3654a2a61dd70680eb8fccb9c5af9786977a18",
+          "evidence_id": "3312ca375843c02653863eab673ff04043b0d23b225d961cb057ec59d541b375",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "c87509eb-57cd-440e-a7b8-bda60397aedb",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        }
+      ]
+    },
+    {
+      "anchor": "एक पैसातरी दक्षिणा",
+      "case_id": "MVEA-LANG-MR05-MR",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूडच्या वर्णनात आषाढी एकादशीला कंगाल शेतकऱ्याकडूनही किमान किती दक्षिणा घेतली जाते?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "a440dfbc8e98955ef972dbd76f3654a2a61dd70680eb8fccb9c5af9786977a18",
+          "evidence_id": "3312ca375843c02653863eab673ff04043b0d23b225d961cb057ec59d541b375",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "c87509eb-57cd-440e-a7b8-bda60397aedb",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        }
+      ]
+    },
+    {
+      "anchor": "नागपंचमीस",
+      "case_id": "MVEA-LANG-MR06-EN",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "Which festival does the Asud passage connect with collecting money while carrying snakes?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "9cbfb0e2ad9c37d71f8783244ab8788bc5ec2713152444e2f785b8472cd4bc89",
+          "evidence_id": "7e1c811ecc4591d7326d7be7561e41b1332cf42034d77eecd260c6e3e58c168a",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "bcf8e2eb-7f60-43c0-803e-199b786e3c35",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        },
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "9cbfb0e2ad9c37d71f8783244ab8788bc5ec2713152444e2f785b8472cd4bc89",
+          "evidence_id": "7e1c811ecc4591d7326d7be7561e41b1332cf42034d77eecd260c6e3e58c168a",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "c87509eb-57cd-440e-a7b8-bda60397aedb",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        }
+      ]
+    },
+    {
+      "anchor": "नागपंचमीस",
+      "case_id": "MVEA-LANG-MR06-HI",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूड के अंश में साँप लेकर धन इकट्ठा करने की प्रथा किस त्योहार से जुड़ी है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "9cbfb0e2ad9c37d71f8783244ab8788bc5ec2713152444e2f785b8472cd4bc89",
+          "evidence_id": "7e1c811ecc4591d7326d7be7561e41b1332cf42034d77eecd260c6e3e58c168a",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "bcf8e2eb-7f60-43c0-803e-199b786e3c35",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        },
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "9cbfb0e2ad9c37d71f8783244ab8788bc5ec2713152444e2f785b8472cd4bc89",
+          "evidence_id": "7e1c811ecc4591d7326d7be7561e41b1332cf42034d77eecd260c6e3e58c168a",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "c87509eb-57cd-440e-a7b8-bda60397aedb",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        }
+      ]
+    },
+    {
+      "anchor": "नागपंचमीस",
+      "case_id": "MVEA-LANG-MR06-MR",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूडच्या उताऱ्यात साप घेऊन पैसे गोळा करण्याची प्रथा कोणत्या सणाशी जोडली आहे?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "9cbfb0e2ad9c37d71f8783244ab8788bc5ec2713152444e2f785b8472cd4bc89",
+          "evidence_id": "7e1c811ecc4591d7326d7be7561e41b1332cf42034d77eecd260c6e3e58c168a",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "bcf8e2eb-7f60-43c0-803e-199b786e3c35",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        },
+        {
+          "document_id": "33f011ec-a550-5583-ae1a-cb947ac402ce",
+          "evidence_content_sha256": "9cbfb0e2ad9c37d71f8783244ab8788bc5ec2713152444e2f785b8472cd4bc89",
+          "evidence_id": "7e1c811ecc4591d7326d7be7561e41b1332cf42034d77eecd260c6e3e58c168a",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "f651a9366caffa9a17b582b665385dd046111c735868c362c5d3f0513b8ca764",
+          "source_id": "c87509eb-57cd-440e-a7b8-bda60397aedb",
+          "version_id": "6d5456b3-9ed4-57f5-9bc2-94ef647a427f"
+        }
+      ]
+    },
+    {
+      "anchor": "तीर्थयात्नेचे नादीं",
+      "case_id": "MVEA-LANG-MR07-EN",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "How does the third Asud page describe farmers being exploited through pilgrimages?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "b4ee5e912143b2a5c8590c1612de45d9169cd9a6bb6e42e11d18827b00e3ad67",
+          "evidence_id": "9c347f7f1aa6e8675e103eb6b94405ba8e0cd73eeedbcf03cf760fa33e7e58ad",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "6d67b232-f0b6-4eba-b895-868e4b550149",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        }
+      ]
+    },
+    {
+      "anchor": "तीर्थयात्नेचे नादीं",
+      "case_id": "MVEA-LANG-MR07-HI",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूड का तीसरा पन्ना तीर्थयात्राओं के माध्यम से किसानों के शोषण का वर्णन कैसे करता है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "b4ee5e912143b2a5c8590c1612de45d9169cd9a6bb6e42e11d18827b00e3ad67",
+          "evidence_id": "9c347f7f1aa6e8675e103eb6b94405ba8e0cd73eeedbcf03cf760fa33e7e58ad",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "6d67b232-f0b6-4eba-b895-868e4b550149",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        }
+      ]
+    },
+    {
+      "anchor": "तीर्थयात्नेचे नादीं",
+      "case_id": "MVEA-LANG-MR07-MR",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूडचे तिसरे पान तीर्थयात्रांच्या माध्यमातून शेतकऱ्यांची फसवणूक कशी होते असे सांगते?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "b4ee5e912143b2a5c8590c1612de45d9169cd9a6bb6e42e11d18827b00e3ad67",
+          "evidence_id": "9c347f7f1aa6e8675e103eb6b94405ba8e0cd73eeedbcf03cf760fa33e7e58ad",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "6d67b232-f0b6-4eba-b895-868e4b550149",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        }
+      ]
+    },
+    {
+      "anchor": "पोकळ पदव्या",
+      "case_id": "MVEA-LANG-MR08-EN",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "Which hollow titles are offered to farmers before taking their produce in the third Asud page?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "a8b645938f318e331d79cd0be682088d96163b79bc8b2056526171018172dd77",
+          "evidence_id": "13e7a1ae21d8aa12c3adca33d7a35b6cbfdff52fcac78646eb003923cc6f0ced",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "121bd230-a9f2-4446-8565-5552ab806ddd",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        },
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "a8b645938f318e331d79cd0be682088d96163b79bc8b2056526171018172dd77",
+          "evidence_id": "13e7a1ae21d8aa12c3adca33d7a35b6cbfdff52fcac78646eb003923cc6f0ced",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "6d67b232-f0b6-4eba-b895-868e4b550149",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        }
+      ]
+    },
+    {
+      "anchor": "पोकळ पदव्या",
+      "case_id": "MVEA-LANG-MR08-HI",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूड के तीसरे पन्ने में किसानों की उपज लेने से पहले उन्हें कौन-सी खोखली पदवियाँ दी जाती हैं?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "a8b645938f318e331d79cd0be682088d96163b79bc8b2056526171018172dd77",
+          "evidence_id": "13e7a1ae21d8aa12c3adca33d7a35b6cbfdff52fcac78646eb003923cc6f0ced",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "121bd230-a9f2-4446-8565-5552ab806ddd",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        },
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "a8b645938f318e331d79cd0be682088d96163b79bc8b2056526171018172dd77",
+          "evidence_id": "13e7a1ae21d8aa12c3adca33d7a35b6cbfdff52fcac78646eb003923cc6f0ced",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "6d67b232-f0b6-4eba-b895-868e4b550149",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        }
+      ]
+    },
+    {
+      "anchor": "पोकळ पदव्या",
+      "case_id": "MVEA-LANG-MR08-MR",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूडच्या तिसऱ्या पानावर शेतकऱ्यांकडून भाजीपाला घेण्यापूर्वी त्यांना कोणती पोकळ पदवी दिली जाते?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "a8b645938f318e331d79cd0be682088d96163b79bc8b2056526171018172dd77",
+          "evidence_id": "13e7a1ae21d8aa12c3adca33d7a35b6cbfdff52fcac78646eb003923cc6f0ced",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "121bd230-a9f2-4446-8565-5552ab806ddd",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        },
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "a8b645938f318e331d79cd0be682088d96163b79bc8b2056526171018172dd77",
+          "evidence_id": "13e7a1ae21d8aa12c3adca33d7a35b6cbfdff52fcac78646eb003923cc6f0ced",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "6d67b232-f0b6-4eba-b895-868e4b550149",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        }
+      ]
+    },
+    {
+      "anchor": "विद्या देण्याची अटोकाट बंदी",
+      "case_id": "MVEA-LANG-MR09-EN",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What restriction on farmers' education does the third Asud page blame for their continued ignorance?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "5c06c92eaad8c61995a37d3e8739b6ec9f41ea615fbb09fc4cfb7fe883c16269",
+          "evidence_id": "6df8c05b2e27b28bcd94c10940f22e66ffa51a661b9f5c93dd332bf6b92f7926",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "6d67b232-f0b6-4eba-b895-868e4b550149",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        }
+      ]
+    },
+    {
+      "anchor": "विद्या देण्याची अटोकाट बंदी",
+      "case_id": "MVEA-LANG-MR09-HI",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूड के तीसरे पन्ने में किसानों की अशिक्षा के लिए शिक्षा पर किस रोक को जिम्मेदार बताया गया है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "5c06c92eaad8c61995a37d3e8739b6ec9f41ea615fbb09fc4cfb7fe883c16269",
+          "evidence_id": "6df8c05b2e27b28bcd94c10940f22e66ffa51a661b9f5c93dd332bf6b92f7926",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "6d67b232-f0b6-4eba-b895-868e4b550149",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        }
+      ]
+    },
+    {
+      "anchor": "विद्या देण्याची अटोकाट बंदी",
+      "case_id": "MVEA-LANG-MR09-MR",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "असूडच्या तिसऱ्या पानावर शेतकऱ्यांच्या अज्ञानासाठी शिक्षणावर कोणती बंदी कारणीभूत मानली आहे?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "170e460a-b92a-53ca-94f0-87289593862c",
+          "evidence_content_sha256": "5c06c92eaad8c61995a37d3e8739b6ec9f41ea615fbb09fc4cfb7fe883c16269",
+          "evidence_id": "6df8c05b2e27b28bcd94c10940f22e66ffa51a661b9f5c93dd332bf6b92f7926",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "1d7fa4ea71970097139b898cbced77a88ef676cb70bb9e5ec80d8f9694c2d1a2",
+          "source_id": "6d67b232-f0b6-4eba-b895-868e4b550149",
+          "version_id": "10c3df88-7525-594a-91ff-2ac39723f16c"
+        }
+      ]
+    },
+    {
+      "anchor": "7.9",
+      "case_id": "MVEA-LANG-MR10-EN",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "What growth rate is expected for Maharashtra's economy in the current financial year according to chapter one?",
+      "query_language": "en",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "3bfd0512-39f7-5124-93db-81e9a00b2294",
+          "evidence_content_sha256": "b0a30b5fa2344bff4f52eb5e48f6fbff39aec6d5b30ffbe82ef8e837ad6ce5fb",
+          "evidence_id": "bbc4456ce616e23d3b0a2841963454144c3a67df4b80c2b8548e4b317c324071",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "fb8fe6e0185476875342de5140388ddfc0c467c412a10343e84011f2351914a0",
+          "source_id": "84a256e6-c323-4be5-bfe1-06eb991160b8",
+          "version_id": "570bfc0e-2e67-5bb1-bb93-bd0ab17ce237"
+        },
+        {
+          "document_id": "3bfd0512-39f7-5124-93db-81e9a00b2294",
+          "evidence_content_sha256": "b0a30b5fa2344bff4f52eb5e48f6fbff39aec6d5b30ffbe82ef8e837ad6ce5fb",
+          "evidence_id": "bbc4456ce616e23d3b0a2841963454144c3a67df4b80c2b8548e4b317c324071",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "fb8fe6e0185476875342de5140388ddfc0c467c412a10343e84011f2351914a0",
+          "source_id": "a8f4f964-45a6-46f5-8565-e9bc6851d220",
+          "version_id": "570bfc0e-2e67-5bb1-bb93-bd0ab17ce237"
+        }
+      ]
+    },
+    {
+      "anchor": "7.9",
+      "case_id": "MVEA-LANG-MR10-HI",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "पहले अध्याय के अनुसार चालू वित्त वर्ष में महाराष्ट्र की अर्थव्यवस्था की कितनी वृद्धि अपेक्षित है?",
+      "query_language": "hi",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "3bfd0512-39f7-5124-93db-81e9a00b2294",
+          "evidence_content_sha256": "b0a30b5fa2344bff4f52eb5e48f6fbff39aec6d5b30ffbe82ef8e837ad6ce5fb",
+          "evidence_id": "bbc4456ce616e23d3b0a2841963454144c3a67df4b80c2b8548e4b317c324071",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "fb8fe6e0185476875342de5140388ddfc0c467c412a10343e84011f2351914a0",
+          "source_id": "84a256e6-c323-4be5-bfe1-06eb991160b8",
+          "version_id": "570bfc0e-2e67-5bb1-bb93-bd0ab17ce237"
+        },
+        {
+          "document_id": "3bfd0512-39f7-5124-93db-81e9a00b2294",
+          "evidence_content_sha256": "b0a30b5fa2344bff4f52eb5e48f6fbff39aec6d5b30ffbe82ef8e837ad6ce5fb",
+          "evidence_id": "bbc4456ce616e23d3b0a2841963454144c3a67df4b80c2b8548e4b317c324071",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "fb8fe6e0185476875342de5140388ddfc0c467c412a10343e84011f2351914a0",
+          "source_id": "a8f4f964-45a6-46f5-8565-e9bc6851d220",
+          "version_id": "570bfc0e-2e67-5bb1-bb93-bd0ab17ce237"
+        }
+      ]
+    },
+    {
+      "anchor": "7.9",
+      "case_id": "MVEA-LANG-MR10-MR",
+      "document_language": "mr",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "judgment_provenance": "authored source-content question; hash-verified snapshot chunk",
+      "query": "पहिल्या अध्यायानुसार चालू आर्थिक वर्षात महाराष्ट्राच्या अर्थव्यवस्थेची किती वाढ अपेक्षित आहे?",
+      "query_language": "mr",
+      "representation": "canonical_text",
+      "selected_notebooks": [
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "document_id": "3bfd0512-39f7-5124-93db-81e9a00b2294",
+          "evidence_content_sha256": "b0a30b5fa2344bff4f52eb5e48f6fbff39aec6d5b30ffbe82ef8e837ad6ce5fb",
+          "evidence_id": "bbc4456ce616e23d3b0a2841963454144c3a67df4b80c2b8548e4b317c324071",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "source_file_sha256": "fb8fe6e0185476875342de5140388ddfc0c467c412a10343e84011f2351914a0",
+          "source_id": "84a256e6-c323-4be5-bfe1-06eb991160b8",
+          "version_id": "570bfc0e-2e67-5bb1-bb93-bd0ab17ce237"
+        },
+        {
+          "document_id": "3bfd0512-39f7-5124-93db-81e9a00b2294",
+          "evidence_content_sha256": "b0a30b5fa2344bff4f52eb5e48f6fbff39aec6d5b30ffbe82ef8e837ad6ce5fb",
+          "evidence_id": "bbc4456ce616e23d3b0a2841963454144c3a67df4b80c2b8548e4b317c324071",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "source_file_sha256": "fb8fe6e0185476875342de5140388ddfc0c467c412a10343e84011f2351914a0",
+          "source_id": "a8f4f964-45a6-46f5-8565-e9bc6851d220",
+          "version_id": "570bfc0e-2e67-5bb1-bb93-bd0ab17ce237"
+        }
+      ]
+    }
+  ],
+  "human_adjudication_claimed": false,
+  "human_relevance_reviewed": false,
+  "judgment_method": "DETERMINISTIC_ENGINEERING",
+  "protocol": "MVEA-DETERMINISTIC-IDENTITY/1",
+  "run_id": "phase86-three-languages-with-retained-original-v1-b153f2faa728599a",
+  "runtime_database": "scratch\\module_894_multimodal\\eval-20261109-01\\mnemo.db",
+  "schema": "mnemo.phase86-four-notebook-dere/1",
+  "semantic_relevance_adjudicated": false,
+  "snapshot_sha256": "1902c3a46b2c4cba3bab7efae237af178b0830df7298fc26073c49047ad91c93",
+  "source_manifest_sha256": "6236577213ea4a934086cb4f35e23939d3c0240dbb9a61695a1afeace12fb079",
+  "source_qrel_sha256": "9498ec0f4f873f92aa99ebed3ac3afa78854e3ce3966f82071b7db6bec5185c0"
+}

@@ -1,5 +1,6 @@
 """Async ingestion sequencing across the pure Phase 3 boundaries."""
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from types import MappingProxyType
 from uuid import UUID
@@ -35,12 +36,14 @@ class IngestionPipeline:
         cleaner: DocumentCleaner,
         classifier: DocumentClassifier,
         canonicalizer: DocumentCanonicalizer,
+        before_asset_write: Callable[[bytes, str], Awaitable[None]] | None = None,
     ) -> None:
         self._router = router
         self._storage = storage
         self._cleaner = cleaner
         self._classifier = classifier
         self._canonicalizer = canonicalizer
+        self._before_asset_write = before_asset_write
 
     async def ingest(self, data: bytes, filename: str, version_id: UUID) -> ParsedDocument:
         """Produce or retrieve the canonical ParsedDocument for one document version."""
@@ -126,6 +129,8 @@ class IngestionPipeline:
         return MappingProxyType(resolved)
 
     async def _persist_asset(self, transient: TransientAsset) -> Asset:
+        if self._before_asset_write is not None:
+            await self._before_asset_write(transient.raw_bytes, transient.mime_type)
         return await self._storage.put_asset(
             transient.raw_bytes,
             transient.mime_type,

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol, runtime_checkable
@@ -67,6 +67,7 @@ class AssetFoundationService:
         asset_records: AssetRecordStoreV1,
         max_asset_bytes: int,
         clock: Callable[[], datetime] | None = None,
+        before_asset_write: Callable[[bytes, str], Awaitable[None]] | None = None,
     ) -> None:
         if not isinstance(catalog, AssetCatalogStoreV1):
             raise TypeError("catalog must implement AssetCatalogStoreV1")
@@ -78,6 +79,7 @@ class AssetFoundationService:
         self._asset_records = asset_records
         self._max_asset_bytes = max_asset_bytes
         self._clock = clock or (lambda: datetime.now(UTC))
+        self._before_asset_write = before_asset_write
 
     async def retain_ingested_version(
         self,
@@ -114,6 +116,8 @@ class AssetFoundationService:
             raise IntegrityError("parsed document does not match exact document version")
 
         existing_blob = await self._storage.contains_hash(validation.content_hash)
+        if self._before_asset_write is not None:
+            await self._before_asset_write(data, validation.media_type)
         original = await self._storage.put_asset(
             data,
             validation.media_type,
@@ -180,6 +184,82 @@ class AssetFoundationService:
         if not isinstance(self._storage, _SafeAssetGarbageCollector):
             raise ContractValidationError("storage does not support reference-aware asset GC")
         return await self._storage.delete_unreferenced_asset(asset_id)
+
+    async def validate_retained_version(
+        self,
+        *,
+        data: bytes,
+        filename: str,
+        declared_media_type: str,
+        document: Document,
+        parsed_document: ParsedDocument,
+    ) -> None:
+        """Check an indexed version's retained assets without re-registering provenance.
+
+        Parser observations are immutable. Parsed image blocks do not retain all
+        original observation fields, so reconstructing them for a deduplication
+        hit would fabricate a different extraction identity.
+        """
+        validation = validate_asset_payload(
+            data,
+            declared_media_type,
+            max_bytes=self._max_asset_bytes,
+            filename=sanitize_asset_filename(filename),
+        )
+        version = next(
+            (item for item in document.versions if item.version_id == document.current_version_id),
+            None,
+        )
+        if (
+            version is None
+            or version.content_hash != validation.content_hash
+            or document.current_hash != validation.content_hash
+            or parsed_document.metadata.content_hash != validation.content_hash
+        ):
+            raise IntegrityError("reused document/version does not match original bytes")
+        reference = await self._catalog.get_document_binary_reference(version.version_id)
+        if (
+            reference is None
+            or reference.document_id != document.document_id
+            or reference.media_type != validation.media_type
+            or reference.byte_size != validation.byte_size
+        ):
+            raise IntegrityError("reused document original reference is missing or inconsistent")
+        original = await self._catalog.get_asset_record(reference.asset_id)
+        if (
+            original is None
+            or original.content_hash != validation.content_hash
+            or original.mime_type != validation.media_type
+            or not await self._storage.contains_hash(validation.content_hash)
+        ):
+            raise IntegrityError("reused document original asset is missing or inconsistent")
+        occurrences = await self._catalog.list_asset_occurrences(version.version_id)
+        if len({item.occurrence_id for item in occurrences}) != len(occurrences):
+            raise IntegrityError("reused document asset occurrences are duplicated")
+        container = _container_kind(validation.media_type)
+        occurrence_assets: set[UUID] = set()
+        for occurrence in occurrences:
+            asset = await self._catalog.get_asset_record(occurrence.asset_id)
+            expected_id = asset_occurrence_id(
+                document_id=document.document_id,
+                version_id=version.version_id,
+                asset_id=occurrence.asset_id,
+                locator=occurrence.locator,
+            )
+            if (
+                asset is None
+                or occurrence.occurrence_id != expected_id
+                or occurrence.document_id != document.document_id
+                or occurrence.version_id != version.version_id
+                or occurrence.container_kind != container
+            ):
+                raise IntegrityError("reused document asset occurrence ancestry is inconsistent")
+            occurrence_assets.add(occurrence.asset_id)
+        if any(
+            isinstance(block, ImageBlock) and block.asset_id not in occurrence_assets
+            for block in parsed_document.blocks
+        ):
+            raise IntegrityError("reused document image block has no retained occurrence")
 
     async def _occurrences(
         self,

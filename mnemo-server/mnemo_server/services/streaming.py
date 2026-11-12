@@ -14,6 +14,7 @@ from mnemo.interfaces import (
     Message,
     MessageRole,
     NotFoundError,
+    PrincipalContextV1,
     TokenCounterInterfaceV1,
     UnsupportedError,
 )
@@ -50,7 +51,16 @@ from mnemo_server.schemas.streaming import (
     StreamEventType,
     SynthesisTokenData,
 )
+from mnemo_server.services.authorization import (
+    AuthorizationOperationV1,
+    CentralAuthorizationServiceV1,
+)
+from mnemo_server.services.authorized_scope import (
+    AuthorizedNotebookScope,
+    AuthorizedNotebookScopeResolver,
+)
 from mnemo_server.services.query import _runtime_document_title
+from mnemo_server.services.scope_authority import SQLiteNotebookScopeAuthority
 
 _LOGGER = logging.getLogger(__name__)
 _MARKER = re.compile(r"\[source:([1-9][0-9]*)\]", flags=re.ASCII)
@@ -73,11 +83,43 @@ class StreamingQueryService:
         self._engine = engine
         self._token_counter = token_counter
 
-    async def stream_query(self, request: QueryRequest) -> AsyncIterator[StreamEvent]:
+    async def stream_query(
+        self, request: QueryRequest, principal: PrincipalContextV1 | None = None
+    ) -> AsyncIterator[StreamEvent]:
         """Stream the 5-event protocol (retrieval_start, chunk, token, citations, done)."""
         start_time = time.perf_counter()
+        authority = getattr(self._engine, "server_scope_authority", None)
+        scope_resolver = None
+        scopes: tuple[AuthorizedNotebookScope, ...] = ()
+        authorized_documents: dict[tuple[UUID, UUID], UUID] = {}
+        if authority is not None:
+            if not isinstance(authority, SQLiteNotebookScopeAuthority) or principal is None:
+                raise PermissionError("trusted membership authority is unavailable")
+            scope_resolver = AuthorizedNotebookScopeResolver(self._engine.storage, authority)
+            scopes = await scope_resolver.resolve(
+                principal, (request.notebook_id,) if request.notebook_id is not None else None
+            )
+            if not scopes:
+                raise NotFoundError("authorized resource was not found")
+
+        async def revalidate_delivery() -> None:
+            if scope_resolver is None:
+                return
+            if principal is None:
+                raise PermissionError("trusted membership identity is unavailable")
+            authorization = CentralAuthorizationServiceV1(self._engine)
+            for (document_id, version_id), notebook_id in authorized_documents.items():
+                await authorization.authorize_document(
+                    principal,
+                    notebook_id,
+                    document_id,
+                    version_id,
+                    AuthorizationOperationV1.QUERY,
+                )
+            await scope_resolver.revalidate(principal, scopes)
 
         # 1. Event: retrieval_start
+        await revalidate_delivery()
         yield StreamEvent(event=StreamEventType.RETRIEVAL_START)
 
         # 2. Notebook Scope Validation
@@ -116,9 +158,14 @@ class StreamingQueryService:
         # 5. Multi-Source Retrieval & RRF Fusion
         retriever = MultiSourceRetriever(self._engine.registry, self._engine.embedding_provider)
         fusion_result = await retriever.execute(plan, global_limit=request.retrieval_config.top_k)
+        if scope_resolver is not None and principal is not None:
+            fusion_result, authorized_documents = await CentralAuthorizationServiceV1(
+                self._engine
+            ).filter_fused_candidates(principal, fusion_result, request.notebook_id)
 
         # 6. Event: chunk_retrieved for each candidate
         for item in fusion_result.results:
+            await revalidate_delivery()
             yield StreamEvent(
                 event=StreamEventType.CHUNK_RETRIEVED,
                 data=ChunkRetrievedData(
@@ -161,6 +208,7 @@ class StreamingQueryService:
                     messages=messages,
                     max_tokens=request.synthesis.max_response_tokens,
                 ):
+                    await revalidate_delivery()
                     accumulated_tokens.append(token)
                     yield StreamEvent(
                         event=StreamEventType.SYNTHESIS_TOKEN,
@@ -175,6 +223,7 @@ class StreamingQueryService:
             elif not context_result.items:
                 no_context_msg = "The available context is insufficient to answer this question."
                 for token in no_context_msg.split(" "):
+                    await revalidate_delivery()
                     yield StreamEvent(
                         event=StreamEventType.SYNTHESIS_TOKEN,
                         data=SynthesisTokenData(token=token + " "),
@@ -185,6 +234,7 @@ class StreamingQueryService:
             citations_response = self._build_evidence_citations(context_result)
 
         # 10. Event: citations_ready
+        await revalidate_delivery()
         yield StreamEvent(
             event=StreamEventType.CITATIONS_READY,
             data=CitationsReadyData(citations=citations_response),
@@ -201,6 +251,7 @@ class StreamingQueryService:
             latency_ms=latency_ms,
         )
 
+        await revalidate_delivery()
         yield StreamEvent(
             event=StreamEventType.DONE,
             data=DoneData(

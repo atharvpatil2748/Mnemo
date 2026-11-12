@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
+from contextlib import AbstractContextManager, AsyncExitStack, nullcontext
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Protocol
 from uuid import UUID, uuid4
 
 from mnemo.interfaces import (
     ConflictError,
     ContractValidationError,
+    DependencyUnavailableError,
     FinalQAExecutionStoreV1,
     IntegrityError,
     Message,
@@ -30,6 +32,7 @@ from mnemo.models import (
     FinalQAStatus,
     GroundedAnswerStatus,
     MetadataFilter,
+    RetrievalFusionResult,
     RetrievalPlan,
     Session,
     SubQuery,
@@ -47,6 +50,18 @@ from .final_qa_snapshot import (
     encode_published_snapshot,
     encode_validated_snapshot,
 )
+
+
+class FinalQAExecutionPolicyV1(Protocol):
+    """Server-owned admission hooks; not part of the persisted V1 request IR."""
+
+    async def check(self) -> None: ...
+
+    async def check_replay(self) -> None: ...
+
+    async def filter_fusion(self, fusion: RetrievalFusionResult) -> RetrievalFusionResult: ...
+
+    def publication_lease(self) -> AbstractContextManager[int]: ...
 
 
 class FinalQAOrchestrator:
@@ -113,6 +128,19 @@ class FinalQAOrchestrator:
             return await self._execute_persisted(request, session, user_turn)
         return await self._execute_legacy(request, session, user_turn)
 
+    async def execute_authorized(
+        self, request: FinalQARequest, policy: FinalQAExecutionPolicyV1
+    ) -> FinalQAResult:
+        """Run the same V1 pipeline with explicit ACL gates on each boundary."""
+        if self._execution_store is None:
+            raise DependencyUnavailableError("persistent Final-QA execution is unavailable")
+        if not isinstance(request, FinalQARequest):
+            raise ContractValidationError("request must be FinalQARequest")
+        await policy.check()
+        session = await self._session(request.session_id)
+        user_turn = _initial_user_turn(session, request)
+        return await self._execute_persisted(request, session, user_turn, policy)
+
     async def _execute_legacy(
         self, request: FinalQARequest, session: Session, user_turn: Turn
     ) -> FinalQAResult:
@@ -170,7 +198,11 @@ class FinalQAOrchestrator:
             return _result(citation)
 
     async def _execute_persisted(
-        self, request: FinalQARequest, session: Session, user_turn: Turn
+        self,
+        request: FinalQARequest,
+        session: Session,
+        user_turn: Turn,
+        policy: FinalQAExecutionPolicyV1 | None = None,
     ) -> FinalQAResult:
         store = self._execution_store
         if store is None:  # pragma: no cover - selected by caller
@@ -192,7 +224,9 @@ class FinalQAOrchestrator:
         )
         execution = await store.get_final_qa_execution(request.assistant_turn_id)
         if execution is not None:
-            return await self._resume_execution(store, execution, fingerprint, request, user_turn)
+            return await self._resume_execution(
+                store, execution, fingerprint, request, user_turn, policy
+            )
         if any(turn.turn_id == request.assistant_turn_id for turn in session.turns):
             raise ConflictError("final_qa.replay_unavailable: legacy assistant publication")
         now = datetime.now(UTC)
@@ -218,8 +252,10 @@ class FinalQAOrchestrator:
             existing = await store.get_final_qa_execution(request.assistant_turn_id)
             if existing is None:
                 raise IntegrityError("final-QA execution claim was lost")
-            return await self._resume_execution(store, existing, fingerprint, request, user_turn)
-        return await self._run_new_execution(store, created, request, session, user_turn)
+            return await self._resume_execution(
+                store, existing, fingerprint, request, user_turn, policy
+            )
+        return await self._run_new_execution(store, created, request, session, user_turn, policy)
 
     async def _run_new_execution(
         self,
@@ -228,6 +264,7 @@ class FinalQAOrchestrator:
         request: FinalQARequest,
         session: Session,
         user_turn: Turn,
+        policy: FinalQAExecutionPolicyV1 | None = None,
     ) -> FinalQAResult:
         history = session.turns[: user_turn.sequence + 1]
         messages = tuple(
@@ -243,7 +280,12 @@ class FinalQAOrchestrator:
         if effective.requires_multi_hop:
             raise UnsupportedError("multi-hop final QA is unavailable in V1")
         fusion = await self._fusion.execute(effective, global_limit=request.global_limit)
+        if policy is not None:
+            fusion = await policy.filter_fusion(fusion)
+            await policy.check()
         reranked = await self._reranker.execute(request.query, fusion)
+        if policy is not None and reranked.fusion_result is not fusion:
+            raise IntegrityError("authorized final-QA fusion ancestry changed during reranking")
         context = await self._context.build(
             reranked,
             context_budget=request.context_budget,
@@ -251,28 +293,37 @@ class FinalQAOrchestrator:
             session_history=messages,
             document_labels=request.document_labels,
         )
+        if policy is not None and context.rerank_result is not reranked:
+            raise IntegrityError("authorized final-QA context ancestry changed during assembly")
         answer = await self._answer.generate(
             context, max_output_tokens=request.max_output_tokens, strict_final_qa=True
         )
+        if policy is not None and answer.context_result is not context:
+            raise IntegrityError("authorized final-QA answer ancestry changed during generation")
+        if policy is not None:
+            await policy.check()
         if answer.status is GroundedAnswerStatus.NO_CONTEXT:
-            citation = await self._citation.resolve_and_persist(
-                answer, assistant_turn=None, document_labels=()
-            )
-            result = _result(citation)
-            await store.put_final_qa_execution_snapshot(
-                FinalQAExecutionSnapshot(
-                    execution_id=execution.execution_id,
-                    phase=FinalQAExecutionSnapshotPhase.PUBLISHED,
-                    payload_schema_version=SNAPSHOT_SCHEMA_VERSION,
-                    payload=encode_published_snapshot(result),
-                    created_at=datetime.now(UTC),
+            if policy is not None:
+                await policy.check()
+            with policy.publication_lease() if policy is not None else nullcontext():
+                citation = await self._citation.resolve_and_persist(
+                    answer, assistant_turn=None, document_labels=()
                 )
-            )
-            await store.transition_final_qa_execution(
-                execution.execution_id,
-                FinalQAExecutionState.RUNNING,
-                FinalQAExecutionState.PUBLISHED,
-            )
+                result = _result(citation)
+                await store.put_final_qa_execution_snapshot(
+                    FinalQAExecutionSnapshot(
+                        execution_id=execution.execution_id,
+                        phase=FinalQAExecutionSnapshotPhase.PUBLISHED,
+                        payload_schema_version=SNAPSHOT_SCHEMA_VERSION,
+                        payload=encode_published_snapshot(result),
+                        created_at=datetime.now(UTC),
+                    )
+                )
+                await store.transition_final_qa_execution(
+                    execution.execution_id,
+                    FinalQAExecutionState.RUNNING,
+                    FinalQAExecutionState.PUBLISHED,
+                )
             return result
         try:
             validate_final_publication(answer)
@@ -295,6 +346,8 @@ class FinalQAOrchestrator:
                 raise IntegrityError(
                     "citation_compliance: final publication is non-compliant"
                 ) from error
+        if policy is not None:
+            await policy.check()
         await store.put_final_qa_execution_snapshot(
             FinalQAExecutionSnapshot(
                 execution_id=execution.execution_id,
@@ -311,7 +364,7 @@ class FinalQAOrchestrator:
             retry_count=retry_count,
         )
         return await self._publish_validated(
-            store, execution.execution_id, request, user_turn, answer
+            store, execution.execution_id, request, user_turn, answer, policy
         )
 
     async def _resume_execution(
@@ -321,7 +374,10 @@ class FinalQAOrchestrator:
         fingerprint: str,
         request: FinalQARequest,
         user_turn: Turn,
+        policy: FinalQAExecutionPolicyV1 | None = None,
     ) -> FinalQAResult:
+        if policy is not None:
+            await policy.check_replay()
         if execution.request_fingerprint != fingerprint:
             raise ConflictError("assistant turn identity conflicts with final-QA request")
         if execution.state is FinalQAExecutionState.PUBLISHED:
@@ -330,6 +386,8 @@ class FinalQAOrchestrator:
             )
             if snapshot is None:
                 raise IntegrityError("published final-QA execution has no immutable snapshot")
+            if policy is not None:
+                await policy.check()
             return decode_published_snapshot(snapshot.payload)
         if execution.state is FinalQAExecutionState.REJECTED_CITATION_COMPLIANCE:
             raise IntegrityError("citation_compliance: final publication is non-compliant")
@@ -343,6 +401,8 @@ class FinalQAOrchestrator:
                     FinalQAExecutionState.ASSISTANT_PUBLISHED,
                     FinalQAExecutionState.PUBLISHED,
                 )
+                if policy is not None:
+                    await policy.check()
                 return decode_published_snapshot(published.payload)
         if execution.state is FinalQAExecutionState.RUNNING:
             snapshot = await store.get_final_qa_execution_snapshot(
@@ -361,6 +421,7 @@ class FinalQAOrchestrator:
             request,
             user_turn,
             decode_validated_snapshot(snapshot.payload),
+            policy,
         )
 
     async def _publish_validated(
@@ -370,9 +431,14 @@ class FinalQAOrchestrator:
         request: FinalQARequest,
         user_turn: Turn,
         answer: Any,
+        policy: FinalQAExecutionPolicyV1 | None = None,
     ) -> FinalQAResult:
         lock = self._locks.setdefault(request.session_id, asyncio.Lock())
-        async with lock:
+        if policy is not None:
+            await policy.check()
+        async with AsyncExitStack() as stack:
+            await stack.enter_async_context(lock)
+            stack.enter_context(policy.publication_lease() if policy is not None else nullcontext())
             current = await self._session(request.session_id)
             assistant = await self._assistant_turn(current, user_turn, request, answer.answer)
             await store.transition_final_qa_execution(

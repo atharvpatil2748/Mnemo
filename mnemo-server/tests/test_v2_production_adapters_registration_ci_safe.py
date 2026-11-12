@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
@@ -25,6 +26,7 @@ from mnemo_server.services.full_multilingual_v2_registration import (
     ServerOwnedFullMultilingualV2RegistrationV1,
 )
 
+from scripts.evaluate_phase86_four_notebooks import ReadOnlyEvaluationStore
 from tests.v2_test_fixtures import create_synthetic_v2_db
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
@@ -175,6 +177,80 @@ async def test_ci_safe_server_owned_registration_composes_adapters(tmp_path: Pat
         assert len(runtime.generation_ids) == 4
     finally:
         await assembler.close()
+
+
+@pytest.mark.anyio
+async def test_isolated_evaluation_reader_sees_wal_alias_without_changing_default(
+    tmp_path: Path,
+) -> None:
+    manifest_path, db_path, identity = _prepare_isolated_environment(tmp_path)
+    alias = identity.alias_set_digest
+    with sqlite3.connect(db_path) as db:
+        db.execute("PRAGMA journal_mode=WAL")
+        db.execute("DELETE FROM active_multilingual_v2_alias_set")
+    with sqlite3.connect(db_path) as db:
+        db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    writer = sqlite3.connect(db_path)
+    writer.execute("PRAGMA wal_autocheckpoint=0")
+    writer.execute(
+        "INSERT INTO active_multilingual_v2_alias_set VALUES(1, ?, '2026-09-01T11:09:20+00:00')",
+        (alias,),
+    )
+    writer.commit()
+    verifier = GovernedV2DatabaseIdentityVerifier(
+        workspace_root=tmp_path, identity_manifest=manifest_path
+    )
+    support = V2ProductionRuntimeSupportV1(
+        query_embedder=cast(Any, _NoInferenceQueryEmbedder()),
+        candidate_builder_factory=_builder,
+        reranker=cast(Any, _NoInferenceReranker()),
+        admission=cast(Any, _Admission()),
+        query_language_resolver=cast(Any, _QueryLanguageResolver()),
+        exhaustive_fallback=cast(AdvancedRetrievalSourceV1, _Fallback()),
+    )
+    options = dict(
+        workspace_root=tmp_path,
+        identity_manifest=manifest_path,
+        identity=identity,
+        support=support,
+        isolated_verifier=cast(Any, verifier),
+        isolated_database=db_path,
+    )
+    default = ProductionFullMultilingualV2ServerDependencyAssemblerV1(**options)
+    evaluation = ProductionFullMultilingualV2ServerDependencyAssemblerV1(
+        **options, read_store_factory=ReadOnlyEvaluationStore
+    )
+    engine = cast(
+        KnowledgeEngine,
+        SimpleNamespace(
+            config=SimpleNamespace(storage=SimpleNamespace(sqlite=SimpleNamespace(path=db_path)))
+        ),
+    )
+    try:
+        with pytest.raises(RuntimeError, match="ACTIVE_ALIAS_MISSING"):
+            await default.assemble_v2_runtime_dependencies(
+                engine=engine, authorization=cast(Any, object())
+            )
+        dependencies = await evaluation.assemble_v2_runtime_dependencies(
+            engine=engine, authorization=cast(Any, object())
+        )
+        assert isinstance(dependencies.active_store, ReadOnlyEvaluationStore)
+        assert (
+            await dependencies.active_store.resolve_active_multilingual_v2_alias_digest() == alias
+        )
+        assert await dependencies.active_store.resolve_active_multilingual_v2_generation_set()
+        with pytest.raises(sqlite3.OperationalError, match="readonly"):
+            await dependencies.active_store._require_open().execute(
+                "DELETE FROM active_multilingual_v2_alias_set"
+            )
+        clone = evaluation.for_nonactivating_evaluation(reranker=cast(Any, _NoInferenceReranker()))
+        assert clone._read_store_factory is ReadOnlyEvaluationStore
+    finally:
+        await evaluation.close()
+        await default.close()
+        writer.close()
+    assert evaluation._store is None
+    assert default._store is None
 
 
 @pytest.mark.anyio

@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -62,6 +63,27 @@ class _Item:
     position: MultilingualEvidencePositionV1
     observation: RepresentationObservationV1
     representation: TextRepresentationReferenceV1
+
+
+def _source_version_ids(database: Path, notebook_id: UUID) -> tuple[UUID, ...]:
+    """Census every source-linked version, including versions with no V2 text."""
+    connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro&immutable=1", uri=True)
+    try:
+        return tuple(
+            sorted(
+                {
+                    UUID(str(row[0]))
+                    for row in connection.execute(
+                        "SELECT v.version_id FROM document_versions v "
+                        "JOIN sources s ON s.document_id=v.document_id WHERE s.notebook_id=?",
+                        (str(notebook_id),),
+                    )
+                },
+                key=str,
+            )
+        )
+    finally:
+        connection.close()
 
 
 def _items(
@@ -326,15 +348,24 @@ class _ObservationBuilder:
 async def build_isolated_multilingual(
     *,
     database: Path,
-    notebook_id: UUID,
+    notebook_id: UUID | tuple[UUID, ...],
     profile_file: Path,
     cache_folder: Path,
     device: str = "cpu",
     language_capability_file: Path | None = None,
+    embedding_progress: Callable[[int, int], None] | None = None,
+    attempt: int = 0,
 ) -> dict[str, object]:
     """Build complete READY-not-active BGE-M3 generations from actual new-notebook evidence."""
     language_fallbacks: list[dict[str, str]] = []
-    items = _items(database, notebook_id, language_fallbacks)
+    notebook_ids = (notebook_id,) if isinstance(notebook_id, UUID) else notebook_id
+    if not notebook_ids or len(set(notebook_ids)) != len(notebook_ids):
+        raise ValueError("isolated rebuild requires distinct notebook identities")
+    if attempt < 0:
+        raise ValueError("isolated rebuild attempt must be nonnegative")
+    items = tuple(
+        item for selected in notebook_ids for item in _items(database, selected, language_fallbacks)
+    )
     if not items:
         raise ValueError("no searchable evidence exists in the isolated notebook")
     component = (
@@ -352,13 +383,31 @@ async def build_isolated_multilingual(
     if device not in {"cpu", "cuda"}:
         raise ValueError("unsupported BGE-M3 rebuild device")
     capability_identity = capability.identity if capability is not None else "legacy-claims-only"
-    policy = _hash(f"mnemo.isolated-multilingual-rebuild/3:{device}:{capability_identity}")
-    profile_fingerprint = _hash(f"{component.model_dump_json()}:{device}:{capability_identity}")
-    versions = tuple(sorted({item.source.version_id for item in items}, key=str))
+    retry_suffix = f":retry-{attempt}" if attempt else ""
+    policy = _hash(
+        f"mnemo.isolated-multilingual-rebuild/3:{device}:{capability_identity}{retry_suffix}"
+    )
+    profile_fingerprint = _hash(
+        f"{component.model_dump_json()}:{device}:{capability_identity}{retry_suffix}"
+    )
+    versions = tuple(
+        sorted(
+            {
+                version
+                for selected in notebook_ids
+                for version in _source_version_ids(database, selected)
+            },
+            key=str,
+        )
+    )
+    embedded_versions = {item.source.version_id for item in items}
+    if not embedded_versions.issubset(versions):
+        raise ValueError("multilingual evidence escaped notebook source-version census")
+    without_evidence = tuple(str(item) for item in versions if item not in embedded_versions)
     probe = BGEM3EmbeddingProvider(component, generation_id=UUID(int=0), cache_folder=cache_folder)
     probe_profile = await probe.profile()
     plan = full_multilingual_v2_generation_plan(
-        profile_id=f"isolated-rebuild:{notebook_id}",
+        profile_id="isolated-rebuild:" + ":".join(str(selected) for selected in notebook_ids),
         profile_fingerprint=profile_fingerprint,
         source_version_ids=versions,
         representation_configuration_digest=policy,
@@ -413,7 +462,12 @@ async def build_isolated_multilingual(
             plan.representation_derivation,
             covered(plan.representation_derivation, _ObservationBuilder(store, items)),
             activate=False,
+            resume_building=True,
         )
+        if observed.state.value != "ready":
+            raise RuntimeError(
+                "representation generation is not READY; retry requires a new attempt"
+            )
         rows = tuple(
             MultilingualTextProjectionRowV2(
                 row_id=multilingual_text_projection_row_v2_id(
@@ -445,7 +499,12 @@ async def build_isolated_multilingual(
                 ),
             ),
             activate=False,
+            resume_building=True,
         )
+        if sparse.state.value != "ready":
+            raise RuntimeError(
+                "language-text generation is not READY; retry requires a new attempt"
+            )
         await provider.initialize()
         if (await provider.profile()).vector_space != probe_profile.vector_space:
             raise RuntimeError("BGE-M3 query/document semantic-space mismatch")
@@ -469,23 +528,31 @@ async def build_isolated_multilingual(
                     store=store,
                     generation_id=plan.multilingual_embedding.generation_id,
                     inputs=inputs,
+                    progress=embedding_progress,
                 ),
             ),
             activate=False,
+            resume_building=True,
         )
+        if dense.state.value != "ready":
+            raise RuntimeError("embedding generation is not READY; retry requires a new attempt")
         # The storage read contract intentionally bounds one authorized vector
         # enumeration.  A full isolated rebuild can exceed that bound; partition
         # the already-verified source identities without dropping evidence.
         embedding_pages: list[MultilingualEmbeddingV3] = []
-        for start in range(0, len(items), 10_000):
-            embedding_pages.extend(
-                await store.list_authorized_multilingual_embeddings_v3(
-                    notebook_id=notebook_id,
-                    generation_id=plan.multilingual_embedding.generation_id,
-                    vector_space=probe_profile.vector_space,
-                    authorized_sources=tuple(item.source for item in items[start : start + 10_000]),
-                )
+        for selected in notebook_ids:
+            selected_sources = tuple(
+                item.source for item in items if item.source.notebook_id == selected
             )
+            for start in range(0, len(selected_sources), 10_000):
+                embedding_pages.extend(
+                    await store.list_authorized_multilingual_embeddings_v3(
+                        notebook_id=selected,
+                        generation_id=plan.multilingual_embedding.generation_id,
+                        vector_space=probe_profile.vector_space,
+                        authorized_sources=selected_sources[start : start + 10_000],
+                    )
+                )
         embeddings = tuple(embedding_pages)
         if len(embeddings) != len(items):
             raise RuntimeError(
@@ -503,7 +570,10 @@ async def build_isolated_multilingual(
                 ),
             ),
             activate=False,
+            resume_building=True,
         )
+        if vector.state.value != "ready":
+            raise RuntimeError("vector generation is not READY; retry requires a new attempt")
         return {
             "invalid_language_annotation_count": len(language_fallbacks),
             "invalid_language_annotation_examples": language_fallbacks[:100],
@@ -513,6 +583,9 @@ async def build_isolated_multilingual(
             else "claimed_tags",
             "profile_fingerprint": profile_fingerprint,
             "items": len(items),
+            "source_version_count": len(versions),
+            "notebook_ids": [str(selected) for selected in notebook_ids],
+            "no_searchable_evidence_version_ids": without_evidence,
             "by_kind": {
                 kind.value: sum(item.source.kind is kind for item in items)
                 for kind in (
@@ -522,7 +595,13 @@ async def build_isolated_multilingual(
                 )
             },
             "vector_space": probe_profile.vector_space,
+            "model_revision": component.revision,
+            "model_identity": component.model,
+            "dimensions": probe_profile.dimension,
+            "distance_metric": probe_profile.distance_metric,
+            "normalized": probe_profile.normalized,
             "execution_device": device,
+            "attempt": attempt,
             "generations": {
                 "representation_derivation_v2": str(observed.generation_id),
                 "language_text_v2": str(sparse.generation_id),

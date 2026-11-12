@@ -15,16 +15,17 @@ from test_mcp_immutable_schema_matrix import _fixture, create_mcp_server
 
 
 async def _main(root: Path, legacy: bool) -> None:
+    ordered_only = "ordered" in sys.argv[3:]
     engine, reader, config, _ = await _fixture(
         root,
         legacy=legacy,
-        analysis=True,
-        capability_ready=True,
-        structured_ready=True,
-        final_qa_ready=True,
-        governed_multilingual=True,
+        analysis=not ordered_only,
+        capability_ready=not ordered_only,
+        structured_ready=not ordered_only,
+        final_qa_ready=not ordered_only,
+        governed_multilingual=not ordered_only,
     )
-    if "ordered" in sys.argv[3:]:
+    if ordered_only:
         from ordered_text_fixture import install_ordered_fixture
 
         await install_ordered_fixture(reader, root)

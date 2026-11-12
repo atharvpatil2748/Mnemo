@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import io
 import zipfile
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
 from mnemo.asset_foundation import AssetFoundationService
+from mnemo.interfaces.errors import IntegrityError
 from mnemo.interfaces.types import FileMetadata
 from mnemo.models import (
     DocType,
@@ -20,6 +23,7 @@ from mnemo.models import (
     DocumentVersion,
     DocumentVersionStatus,
     FrozenMetadata,
+    ImageBlock,
     ParsedDocument,
 )
 from mnemo.parsers.image import StandaloneImageParser
@@ -175,5 +179,91 @@ async def test_parser_v2_occurrence_publication_is_exact_and_idempotent(tmp_path
     assert second.occurrences[0].asset_id == resolved.asset_id
     assert second.occurrences[0].version_id == document.current_version_id
     assert await filesystem.get_asset(resolved.asset_id) == data
+    await sqlite.close()
+    await filesystem.close()
+
+
+@pytest.mark.anyio
+async def test_reused_version_validation_preserves_multiple_existing_occurrences(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data = b"%PDF-1.7\nretained original"
+    filesystem = FilesystemBlobStore(tmp_path / "blobs")
+    sqlite = SQLiteStore(tmp_path / "metadata.db")
+    await filesystem.open()
+    await sqlite.open()
+    document, parsed = _document(data)
+    await sqlite.upsert_document(document)
+    first = await filesystem.put_asset(b"image one", "image/png", FrozenMetadata())
+    second = await filesystem.put_asset(b"image two", "image/png", FrozenMetadata())
+    parsed = replace(
+        parsed,
+        blocks=(
+            ImageBlock(ordinal=0, page_number=1, asset_id=first.asset_id),
+            ImageBlock(ordinal=1, page_number=2, asset_id=second.asset_id),
+        ),
+    )
+    service = AssetFoundationService(
+        storage=filesystem,
+        catalog=sqlite,
+        asset_records=filesystem,
+        max_asset_bytes=1024 * 1024,
+    )
+    retained = await service.retain_ingested_version(
+        data=data,
+        filename="report.pdf",
+        declared_media_type="application/pdf",
+        document=document,
+        parsed_document=parsed,
+    )
+    assert len(retained.occurrences) == 2
+    await service.validate_retained_version(
+        data=data,
+        filename="report.pdf",
+        declared_media_type="application/pdf",
+        document=document,
+        parsed_document=parsed,
+    )
+    assert await sqlite.list_asset_occurrences(document.current_version_id) == retained.occurrences
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            sqlite, "list_asset_occurrences", AsyncMock(return_value=retained.occurrences[:1])
+        )
+        with pytest.raises(IntegrityError, match="no retained occurrence"):
+            await service.validate_retained_version(
+                data=data,
+                filename="report.pdf",
+                declared_media_type="application/pdf",
+                document=document,
+                parsed_document=parsed,
+            )
+    await sqlite.close()
+    await filesystem.close()
+
+
+@pytest.mark.anyio
+async def test_reused_version_validation_fails_closed_without_original(tmp_path: Path) -> None:
+    data = b"%PDF-1.7\nunretained original"
+    filesystem = FilesystemBlobStore(tmp_path / "blobs")
+    sqlite = SQLiteStore(tmp_path / "metadata.db")
+    await filesystem.open()
+    await sqlite.open()
+    document, parsed = _document(data)
+    await sqlite.upsert_document(document)
+    service = AssetFoundationService(
+        storage=filesystem,
+        catalog=sqlite,
+        asset_records=filesystem,
+        max_asset_bytes=1024 * 1024,
+    )
+    with pytest.raises(IntegrityError, match="original"):
+        await service.validate_retained_version(
+            data=data,
+            filename="report.pdf",
+            declared_media_type="application/pdf",
+            document=document,
+            parsed_document=parsed,
+        )
     await sqlite.close()
     await filesystem.close()

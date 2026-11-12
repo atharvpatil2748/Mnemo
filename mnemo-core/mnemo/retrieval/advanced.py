@@ -552,20 +552,39 @@ def _deduplicate(
 def _diversify_occurrences(
     candidates: tuple[AdvancedRetrievalCandidate, ...],
 ) -> tuple[AdvancedRetrievalCandidate, ...]:
-    """Present a first hit per occurrence before alternate derivation views."""
-    seen: set[tuple[object, object, object, EvidenceRepresentation]] = set()
+    """Expose distinct authorized evidence before alternate representation views.
+
+    A canonical chunk and its Full V2 text view share one underlying chunk,
+    while different OCR/Vision derivations of one occurrence remain distinct.
+    Keep every view in the ranked pool; only its presentation order changes.
+    """
+    seen: set[tuple[object, ...]] = set()
     first: list[AdvancedRetrievalCandidate] = []
     alternate: list[AdvancedRetrievalCandidate] = []
     for candidate in candidates:
-        if candidate.occurrence_id is None:
+        identity: tuple[object, ...]
+        if candidate.chunk is not None:
+            identity = (
+                candidate.notebook_id,
+                candidate.source_id,
+                candidate.document_id,
+                candidate.version_id,
+                "chunk",
+                candidate.chunk.id,
+            )
+        elif candidate.occurrence_id is not None:
+            identity = (
+                candidate.notebook_id,
+                candidate.source_id,
+                candidate.document_id,
+                candidate.version_id,
+                "occurrence",
+                candidate.occurrence_id,
+                candidate.representation,
+            )
+        else:
             first.append(candidate)
             continue
-        identity = (
-            candidate.document_id,
-            candidate.version_id,
-            candidate.occurrence_id,
-            candidate.representation,
-        )
         if identity in seen:
             alternate.append(candidate)
         else:

@@ -6,6 +6,7 @@ from fastapi import Request
 from mnemo.engine import EngineState, KnowledgeEngine
 from mnemo.interfaces import DependencyUnavailableError, TokenCounterInterfaceV1
 from mnemo.tokenizers import O200KBaseTokenCounter
+from starlette.requests import HTTPConnection
 
 from mnemo_server.config import ServerConfig
 from mnemo_server.services.streaming import StreamingQueryService
@@ -59,6 +60,15 @@ def require_mutable_workspace(request: Request) -> None:
         raise DependencyUnavailableError(
             "Mutable workspace is unavailable; production is read-only",
             retryable=False,
+        )
+
+
+def require_integrated_membership_route(connection: HTTPConnection) -> None:
+    """Do not expose unadapted routes when an explicit ACL is installed."""
+    engine = getattr(connection.app.state, "engine", None)
+    if engine is not None and getattr(engine, "server_scope_authority", None) is not None:
+        raise DependencyUnavailableError(
+            "Membership route integration is unavailable", retryable=False
         )
 
 

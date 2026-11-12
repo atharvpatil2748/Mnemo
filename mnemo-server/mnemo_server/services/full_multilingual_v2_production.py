@@ -47,7 +47,10 @@ from mnemo.retrieval.full_multilingual_advanced_v2 import (
     QueryLanguageResolverV2,
 )
 from mnemo.retrieval.full_multilingual_v2 import MultilingualOperationAdmissionV2
-from mnemo.retrieval.multilingual_dense_v2 import MultilingualQueryEmbedderV2
+from mnemo.retrieval.multilingual_dense_v2 import (
+    DenseRetrievalStageObserverV2,
+    MultilingualQueryEmbedderV2,
+)
 from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
 
 from .authorization import AuthorizationOperationV1, CentralAuthorizationServiceV1
@@ -159,6 +162,7 @@ class V2ProductionRuntimeSupportV1:
     admission: MultilingualOperationAdmissionV2
     query_language_resolver: QueryLanguageResolverV2
     exhaustive_fallback: object
+    dense_stage_observer: DenseRetrievalStageObserverV2 | None = None
 
 
 class ProductionFullMultilingualV2ServerDependencyAssemblerV1:
@@ -173,13 +177,19 @@ class ProductionFullMultilingualV2ServerDependencyAssemblerV1:
         support: V2ProductionRuntimeSupportV1,
         isolated_verifier: IsolatedV2DatabaseIdentityVerifier | None = None,
         isolated_database: Path | None = None,
+        read_store_factory: Callable[[Path], SQLiteV2ReadOnlyRuntimeStore] | None = None,
     ) -> None:
+        if read_store_factory is not None and (
+            isolated_verifier is None or isolated_database is None
+        ):
+            raise ValueError("read-store injection requires an isolated evaluation database")
         self._root = workspace_root
         self._manifest = identity_manifest
         self._identity = identity
         self._support = support
         self._isolated_verifier = isolated_verifier
         self._isolated_database = isolated_database
+        self._read_store_factory = read_store_factory
         self._store: SQLiteV2ReadOnlyRuntimeStore | None = None
 
     @property
@@ -203,6 +213,7 @@ class ProductionFullMultilingualV2ServerDependencyAssemblerV1:
             support=replace(self._support, reranker=reranker),
             isolated_verifier=self._isolated_verifier,
             isolated_database=self._isolated_database,
+            read_store_factory=self._read_store_factory,
         )
 
     async def assemble_v2_runtime_dependencies(
@@ -236,7 +247,15 @@ class ProductionFullMultilingualV2ServerDependencyAssemblerV1:
             or artifact.build_run_id != self._identity.build_run_id
         ):
             raise RuntimeError("DATABASE_BINDING_MISMATCH")
-        store = SQLiteV2ReadOnlyRuntimeStore(governed_database)
+        store = (
+            SQLiteV2ReadOnlyRuntimeStore(governed_database)
+            if self._read_store_factory is None
+            else self._read_store_factory(governed_database)
+        )
+        if not isinstance(store, SQLiteV2ReadOnlyRuntimeStore) or (
+            store._db_path.resolve() != governed_database
+        ):
+            raise RuntimeError("EVALUATION_STORE_PATH_MISMATCH")
         await store.open()
         self._store = store
         inspector = GovernedActiveV2GenerationInspector(
@@ -298,6 +317,7 @@ class ProductionFullMultilingualV2ServerDependencyAssemblerV1:
             query_language_resolver=self._support.query_language_resolver,
             projector=projector,
             exhaustive_fallback=self._support.exhaustive_fallback,
+            dense_stage_observer=self._support.dense_stage_observer,
         )
 
     async def close(self) -> None:

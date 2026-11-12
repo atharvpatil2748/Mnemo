@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import json
 import re
+import time
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -84,6 +85,12 @@ MULTILINGUAL_SCHEMA_STATEMENTS = (
     )""",
     """CREATE INDEX IF NOT EXISTS idx_multilingual_embeddings_generation
        ON multilingual_embeddings(notebook_id,generation_id,vector_space)""",
+)
+
+V2_SEMANTIC_PAGE_INDEX_SQL = (
+    "CREATE INDEX IF NOT EXISTS idx_language_text_projection_v2_page "
+    "ON language_text_projection_rows_v2("
+    "notebook_id,generation_id,evidence_reference_digest,representation_reference_id)"
 )
 
 MULTILINGUAL_V2_SCHEMA_STATEMENTS = (
@@ -221,6 +228,7 @@ MULTILINGUAL_V2_SCHEMA_STATEMENTS = (
     """CREATE INDEX IF NOT EXISTS idx_language_text_projection_v2_scope
        ON language_text_projection_rows_v2(notebook_id,source_id,document_id,version_id,
                                            occurrence_id,derivation_id,generation_id)""",
+    V2_SEMANTIC_PAGE_INDEX_SQL,
     """CREATE VIRTUAL TABLE IF NOT EXISTS language_text_fts_v2 USING fts5(
         row_id UNINDEXED,
         text,
@@ -894,6 +902,7 @@ class SQLiteMultilingualMixin:
         if len(by_digest) != len(authorized_sources):
             raise ValueError("authorized multilingual source identities must be unique")
         encoded = json.dumps(sorted(by_digest), separators=(",", ":"))
+        fetch_started = time.perf_counter()
         rows = tuple(
             await (
                 await self._require_open().execute(
@@ -908,8 +917,17 @@ class SQLiteMultilingualMixin:
                 )
             ).fetchall()
         )
+        observer = getattr(self, "_v2_stage_observer", None)
+        if observer is not None:
+            observer(
+                "vector_sql_fetch",
+                time.perf_counter() - fetch_started,
+                len(rows),
+                sum(len(str(row[0])) for row in rows),
+            )
         if len(rows) > 10_000:
             raise StorageError("authorized multilingual vector enumeration exceeds bound")
+        decode_started = time.perf_counter()
         values: list[MultilingualEmbeddingV3] = []
         for row in rows:
             value = _typed(
@@ -921,6 +939,8 @@ class SQLiteMultilingualMixin:
             if value.profile.vector_space != vector_space:
                 raise StorageError("multilingual V3 embedding vector-space mismatch")
             values.append(value)
+        if observer is not None:
+            observer("vector_decode_validate", time.perf_counter() - decode_started, len(values), 0)
         return tuple(values)
 
     async def _put_observation_v2(

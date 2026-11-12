@@ -1,0 +1,774 @@
+{
+  "active_alias_digest": "83b0f6684ffbfc3d3fba3ab2634aedddfa3c3434dfd449c2eb7d1fe61b125c93",
+  "blueprint_sha256": "21708caabadaf664c2cc7c8758f30b3c2635682d09c6b63fa73eb18677c7da92",
+  "cases": [
+    {
+      "case_id": "MVEA-VISION_TEXT-VIS-01",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the World Population Day poster showing children around a globe",
+      "query_language": "en",
+      "representation": "vision_text",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "asset_id": "e45e8169-2f79-5d2c-800f-e2be3de781f6",
+          "asset_sha256": "3036061322df0342d22e2245be759178dd55d5feb9a7c2237fe87a3f82a3a321",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "b8a9e616a72de6ebbe453b268f7e57c05078761b9c4ea1febbb0e9effe24d405",
+          "document_id": "1ba3e0b7-cc5b-5449-b553-06f06630e753",
+          "evidence_id": "3184a566-a6f5-5390-be4d-4b998adaa11a",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "occurrence_id": "24a42296-c170-5742-931e-9f775820f234",
+          "source_file_sha256": "38bb74635f120c6d34e48a838f83b488cfabdabdcbc506525b9b6169f6ad6a59",
+          "source_id": "9b415b9d-5466-4622-bf2e-61b509efa76e",
+          "version_id": "9257455f-ec63-56ef-9178-0a3ee419f613",
+          "vision_text_hash": "f7f535b946bfe4a66e16a42f01a2288ce10df7c8e53eb292e8860d536ac12e4c"
+        }
+      ],
+      "visual_feature": "World Population Day poster with children and globe"
+    },
+    {
+      "case_id": "MVEA-VISUAL_VECTOR-VIS-01",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the World Population Day poster showing children around a globe",
+      "query_language": "en",
+      "representation": "visual_vector",
+      "selected_notebooks": [
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f"
+      ],
+      "targets": [
+        {
+          "asset_id": "e45e8169-2f79-5d2c-800f-e2be3de781f6",
+          "asset_sha256": "3036061322df0342d22e2245be759178dd55d5feb9a7c2237fe87a3f82a3a321",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "b8a9e616a72de6ebbe453b268f7e57c05078761b9c4ea1febbb0e9effe24d405",
+          "document_id": "1ba3e0b7-cc5b-5449-b553-06f06630e753",
+          "evidence_id": "481c07f6-9bd2-5162-8b06-66fde159c40b",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "occurrence_id": "24a42296-c170-5742-931e-9f775820f234",
+          "source_file_sha256": "38bb74635f120c6d34e48a838f83b488cfabdabdcbc506525b9b6169f6ad6a59",
+          "source_id": "9b415b9d-5466-4622-bf2e-61b509efa76e",
+          "version_id": "9257455f-ec63-56ef-9178-0a3ee419f613",
+          "vision_text_hash": "f7f535b946bfe4a66e16a42f01a2288ce10df7c8e53eb292e8860d536ac12e4c"
+        }
+      ],
+      "visual_feature": "World Population Day poster with children and globe"
+    },
+    {
+      "case_id": "MVEA-VISION_TEXT-VIS-02",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the photograph of the mechanical test machine with lettered components",
+      "query_language": "en",
+      "representation": "vision_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d"
+      ],
+      "targets": [
+        {
+          "asset_id": "a013390b-7772-535e-96dc-a926fe51da9e",
+          "asset_sha256": "bdfa72eb438d7b235557941845097af91ca3fc5132c6505db77982dca07b28f5",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "df2497c40f9bffb4e87ae5808ee57b39ae01853299fce36e8f521a251dc204cc",
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_id": "0e4eb45a-d322-55a5-af82-7d5ff0956937",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "occurrence_id": "abc95246-3903-53fc-950c-9f5194098e4d",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "9736c874-076c-42b9-ae72-83c1d2fbd848",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+          "vision_text_hash": "1e9d57e98137ae9745dd464af8afa237af78bd4c606b059462304aad879742b6"
+        },
+        {
+          "asset_id": "a013390b-7772-535e-96dc-a926fe51da9e",
+          "asset_sha256": "bdfa72eb438d7b235557941845097af91ca3fc5132c6505db77982dca07b28f5",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "df2497c40f9bffb4e87ae5808ee57b39ae01853299fce36e8f521a251dc204cc",
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_id": "0e4eb45a-d322-55a5-af82-7d5ff0956937",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "abc95246-3903-53fc-950c-9f5194098e4d",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+          "vision_text_hash": "1e9d57e98137ae9745dd464af8afa237af78bd4c606b059462304aad879742b6"
+        }
+      ],
+      "visual_feature": "mechanical testing machine with labeled components A to F"
+    },
+    {
+      "case_id": "MVEA-VISUAL_VECTOR-VIS-02",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the photograph of the mechanical test machine with lettered components",
+      "query_language": "en",
+      "representation": "visual_vector",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d"
+      ],
+      "targets": [
+        {
+          "asset_id": "a013390b-7772-535e-96dc-a926fe51da9e",
+          "asset_sha256": "bdfa72eb438d7b235557941845097af91ca3fc5132c6505db77982dca07b28f5",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "df2497c40f9bffb4e87ae5808ee57b39ae01853299fce36e8f521a251dc204cc",
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_id": "bb3555c0-7fb7-5d3d-b232-99fef6fbc513",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "occurrence_id": "abc95246-3903-53fc-950c-9f5194098e4d",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "9736c874-076c-42b9-ae72-83c1d2fbd848",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+          "vision_text_hash": "1e9d57e98137ae9745dd464af8afa237af78bd4c606b059462304aad879742b6"
+        },
+        {
+          "asset_id": "a013390b-7772-535e-96dc-a926fe51da9e",
+          "asset_sha256": "bdfa72eb438d7b235557941845097af91ca3fc5132c6505db77982dca07b28f5",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "df2497c40f9bffb4e87ae5808ee57b39ae01853299fce36e8f521a251dc204cc",
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_id": "bb3555c0-7fb7-5d3d-b232-99fef6fbc513",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "abc95246-3903-53fc-950c-9f5194098e4d",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+          "vision_text_hash": "1e9d57e98137ae9745dd464af8afa237af78bd4c606b059462304aad879742b6"
+        }
+      ],
+      "visual_feature": "mechanical testing machine with labeled components A to F"
+    },
+    {
+      "case_id": "MVEA-VISION_TEXT-VIS-03",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the frequency versus amplitude curve that peaks near normalized frequency one",
+      "query_language": "en",
+      "representation": "vision_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "asset_id": "98c6996f-0c53-5bdf-bb44-89b0c8bc3969",
+          "asset_sha256": "34d1de62425b4dcebb5f57c91191fd6168f9e5facf07b0360e6ab62bd89e3a3f",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "61301935bbc984943fbe9c22ebe1d5b6a0c5053403db8c0de1187217197b0ad7",
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_id": "20fd346b-4756-5def-9cd5-7ae4539d5afc",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "63f9f50c-3f30-5f6a-91c5-b31ab41d4034",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+          "vision_text_hash": "1a2f487d9c3a29feef5d3968ddec782d69aab27d71e5b75619ce35ac63affddd"
+        }
+      ],
+      "visual_feature": "frequency amplitude curve with peak near normalized frequency one"
+    },
+    {
+      "case_id": "MVEA-VISUAL_VECTOR-VIS-03",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the frequency versus amplitude curve that peaks near normalized frequency one",
+      "query_language": "en",
+      "representation": "visual_vector",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "asset_id": "98c6996f-0c53-5bdf-bb44-89b0c8bc3969",
+          "asset_sha256": "34d1de62425b4dcebb5f57c91191fd6168f9e5facf07b0360e6ab62bd89e3a3f",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "61301935bbc984943fbe9c22ebe1d5b6a0c5053403db8c0de1187217197b0ad7",
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_id": "b6e61e92-99f0-5756-9ae3-8dcb0b175c14",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "63f9f50c-3f30-5f6a-91c5-b31ab41d4034",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+          "vision_text_hash": "1a2f487d9c3a29feef5d3968ddec782d69aab27d71e5b75619ce35ac63affddd"
+        }
+      ],
+      "visual_feature": "frequency amplitude curve with peak near normalized frequency one"
+    },
+    {
+      "case_id": "MVEA-VISION_TEXT-VIS-04",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the fitness decision flowchart branching on age, pizza consumption and exercise",
+      "query_language": "en",
+      "representation": "vision_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d"
+      ],
+      "targets": [
+        {
+          "asset_id": "ab8cd928-40d9-5084-95c6-9115219a3bab",
+          "asset_sha256": "d09b49cb99912e94effeb8d632e816a0ff8b48bc1a2e63c3fcf45a696d0cd60c",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "28cf763d9d6de6e3adcabc829b57f828382648dd06a72fcbc79805c5580ec971",
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_id": "1125c010-4ede-5b75-b878-650b6e95d9d9",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "occurrence_id": "23a1fe24-8f9f-5fa5-a816-e6925d19e601",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "50d032d7-9908-4edc-b828-e15c15980d87",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3",
+          "vision_text_hash": "30268b823f1e9d22be625af3804e88bf39725fa96e407f30892820987f9aacba"
+        },
+        {
+          "asset_id": "ab8cd928-40d9-5084-95c6-9115219a3bab",
+          "asset_sha256": "d09b49cb99912e94effeb8d632e816a0ff8b48bc1a2e63c3fcf45a696d0cd60c",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "28cf763d9d6de6e3adcabc829b57f828382648dd06a72fcbc79805c5580ec971",
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_id": "1125c010-4ede-5b75-b878-650b6e95d9d9",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "23a1fe24-8f9f-5fa5-a816-e6925d19e601",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3",
+          "vision_text_hash": "30268b823f1e9d22be625af3804e88bf39725fa96e407f30892820987f9aacba"
+        }
+      ],
+      "visual_feature": "fitness decision flowchart with age, pizza and exercise branches"
+    },
+    {
+      "case_id": "MVEA-VISUAL_VECTOR-VIS-04",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the fitness decision flowchart branching on age, pizza consumption and exercise",
+      "query_language": "en",
+      "representation": "visual_vector",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d"
+      ],
+      "targets": [
+        {
+          "asset_id": "ab8cd928-40d9-5084-95c6-9115219a3bab",
+          "asset_sha256": "d09b49cb99912e94effeb8d632e816a0ff8b48bc1a2e63c3fcf45a696d0cd60c",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "28cf763d9d6de6e3adcabc829b57f828382648dd06a72fcbc79805c5580ec971",
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_id": "307f2677-a0ec-5b2e-bafc-79c8b6460507",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "occurrence_id": "23a1fe24-8f9f-5fa5-a816-e6925d19e601",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "50d032d7-9908-4edc-b828-e15c15980d87",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3",
+          "vision_text_hash": "30268b823f1e9d22be625af3804e88bf39725fa96e407f30892820987f9aacba"
+        },
+        {
+          "asset_id": "ab8cd928-40d9-5084-95c6-9115219a3bab",
+          "asset_sha256": "d09b49cb99912e94effeb8d632e816a0ff8b48bc1a2e63c3fcf45a696d0cd60c",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "28cf763d9d6de6e3adcabc829b57f828382648dd06a72fcbc79805c5580ec971",
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_id": "307f2677-a0ec-5b2e-bafc-79c8b6460507",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "23a1fe24-8f9f-5fa5-a816-e6925d19e601",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3",
+          "vision_text_hash": "30268b823f1e9d22be625af3804e88bf39725fa96e407f30892820987f9aacba"
+        }
+      ],
+      "visual_feature": "fitness decision flowchart with age, pizza and exercise branches"
+    },
+    {
+      "case_id": "MVEA-VISION_TEXT-VIS-05",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the decision tree diagram showing a node hierarchy of depth three",
+      "query_language": "en",
+      "representation": "vision_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "asset_id": "fb91b9d7-8956-563d-b80a-a6cb52a19054",
+          "asset_sha256": "da94d3e6600e4e67eab8202e95c61dd10ce24d07318235c9752c81fb12e0e51d",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "b289b2d07db064bcdf9ae43059d70ce2a6202849371c08cc0886a0377a04131b",
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_id": "3c6db174-a987-5fe5-8d8f-37bb5c4797c2",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "6be27863-3ce8-58ce-8372-6bfa08643d10",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3",
+          "vision_text_hash": "769b71cba066e9a03b5d7f3d9dd24a9fdfe810b747e849aade4bada899bff669"
+        }
+      ],
+      "visual_feature": "decision tree node hierarchy of depth three"
+    },
+    {
+      "case_id": "MVEA-VISUAL_VECTOR-VIS-05",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the decision tree diagram showing a node hierarchy of depth three",
+      "query_language": "en",
+      "representation": "visual_vector",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "asset_id": "fb91b9d7-8956-563d-b80a-a6cb52a19054",
+          "asset_sha256": "da94d3e6600e4e67eab8202e95c61dd10ce24d07318235c9752c81fb12e0e51d",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "b289b2d07db064bcdf9ae43059d70ce2a6202849371c08cc0886a0377a04131b",
+          "document_id": "59b7cbe5-ca57-566d-a4f1-bf83b89b6f3e",
+          "evidence_id": "2f4bc41f-8594-5c6b-b915-75da3abd56a9",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "6be27863-3ce8-58ce-8372-6bfa08643d10",
+          "source_file_sha256": "5ba07e5df8a57f9c102df3b28796f8555f17f5cde6be1ef68d77b5572d0c6039",
+          "source_id": "5a23836f-056a-4338-a9a3-30fa85ccceaf",
+          "version_id": "4234f7d0-d239-50d6-a2e6-07deecf1a6f3",
+          "vision_text_hash": "769b71cba066e9a03b5d7f3d9dd24a9fdfe810b747e849aade4bada899bff669"
+        }
+      ],
+      "visual_feature": "decision tree node hierarchy of depth three"
+    },
+    {
+      "case_id": "MVEA-VISION_TEXT-VIS-06",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the house price against area scatter plot displayed in a notebook",
+      "query_language": "en",
+      "representation": "vision_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d"
+      ],
+      "targets": [
+        {
+          "asset_id": "c6ecdcdb-e6b0-5a2d-b887-c5903e01540f",
+          "asset_sha256": "f2397b8412ff442fcb6a98d2cf6d0d40f3a042d5dde6045a06e3eb252dd1a3c4",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "3d33c5a5dc9088aa8481a199718b84f8072593d6d08ed7589c8a5bec0e16adef",
+          "document_id": "def0198f-3fad-5952-a718-c9b1ca06b376",
+          "evidence_id": "060d7ab6-a624-5fc2-ada2-1d779803fafe",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "occurrence_id": "e5d34302-7aec-5924-b116-9f7d0cea01a5",
+          "source_file_sha256": "003f90fd83a6d24b39245e5c7246b186b95004a3f22a4210d37ab72bbaf4e150",
+          "source_id": "a8b89acf-085f-4005-9c22-7d66cdc74a95",
+          "version_id": "3db9633b-3859-5fac-81cf-33d0612f64be",
+          "vision_text_hash": "12c20783185f464df5747550437f634529aa3b26691805e01015497ecd784c42"
+        },
+        {
+          "asset_id": "c6ecdcdb-e6b0-5a2d-b887-c5903e01540f",
+          "asset_sha256": "f2397b8412ff442fcb6a98d2cf6d0d40f3a042d5dde6045a06e3eb252dd1a3c4",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "3d33c5a5dc9088aa8481a199718b84f8072593d6d08ed7589c8a5bec0e16adef",
+          "document_id": "def0198f-3fad-5952-a718-c9b1ca06b376",
+          "evidence_id": "060d7ab6-a624-5fc2-ada2-1d779803fafe",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "e5d34302-7aec-5924-b116-9f7d0cea01a5",
+          "source_file_sha256": "003f90fd83a6d24b39245e5c7246b186b95004a3f22a4210d37ab72bbaf4e150",
+          "source_id": "33d5ff33-543a-4e54-a71b-0557cfa7a2ae",
+          "version_id": "3db9633b-3859-5fac-81cf-33d0612f64be",
+          "vision_text_hash": "12c20783185f464df5747550437f634529aa3b26691805e01015497ecd784c42"
+        }
+      ],
+      "visual_feature": "house price versus area scatter plot in a notebook screenshot"
+    },
+    {
+      "case_id": "MVEA-VISUAL_VECTOR-VIS-06",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the house price against area scatter plot displayed in a notebook",
+      "query_language": "en",
+      "representation": "visual_vector",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d"
+      ],
+      "targets": [
+        {
+          "asset_id": "c6ecdcdb-e6b0-5a2d-b887-c5903e01540f",
+          "asset_sha256": "f2397b8412ff442fcb6a98d2cf6d0d40f3a042d5dde6045a06e3eb252dd1a3c4",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "3d33c5a5dc9088aa8481a199718b84f8072593d6d08ed7589c8a5bec0e16adef",
+          "document_id": "def0198f-3fad-5952-a718-c9b1ca06b376",
+          "evidence_id": "26a6a2ca-b4f8-5bff-8468-69b68b608845",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "occurrence_id": "e5d34302-7aec-5924-b116-9f7d0cea01a5",
+          "source_file_sha256": "003f90fd83a6d24b39245e5c7246b186b95004a3f22a4210d37ab72bbaf4e150",
+          "source_id": "a8b89acf-085f-4005-9c22-7d66cdc74a95",
+          "version_id": "3db9633b-3859-5fac-81cf-33d0612f64be",
+          "vision_text_hash": "12c20783185f464df5747550437f634529aa3b26691805e01015497ecd784c42"
+        },
+        {
+          "asset_id": "c6ecdcdb-e6b0-5a2d-b887-c5903e01540f",
+          "asset_sha256": "f2397b8412ff442fcb6a98d2cf6d0d40f3a042d5dde6045a06e3eb252dd1a3c4",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "3d33c5a5dc9088aa8481a199718b84f8072593d6d08ed7589c8a5bec0e16adef",
+          "document_id": "def0198f-3fad-5952-a718-c9b1ca06b376",
+          "evidence_id": "26a6a2ca-b4f8-5bff-8468-69b68b608845",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "e5d34302-7aec-5924-b116-9f7d0cea01a5",
+          "source_file_sha256": "003f90fd83a6d24b39245e5c7246b186b95004a3f22a4210d37ab72bbaf4e150",
+          "source_id": "33d5ff33-543a-4e54-a71b-0557cfa7a2ae",
+          "version_id": "3db9633b-3859-5fac-81cf-33d0612f64be",
+          "vision_text_hash": "12c20783185f464df5747550437f634529aa3b26691805e01015497ecd784c42"
+        }
+      ],
+      "visual_feature": "house price versus area scatter plot in a notebook screenshot"
+    },
+    {
+      "case_id": "MVEA-VISION_TEXT-VIS-07",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the blue illustration of a human head made partly from electronic circuits",
+      "query_language": "en",
+      "representation": "vision_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "asset_id": "2445e5bf-6e09-5868-8bd0-fea95811f79d",
+          "asset_sha256": "e57e9d3351e8c7d7c183ab1355d1fc6af204de1bba5d01cc5864fd9a32fc0b8d",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "62778f8794f0c1aaad7ce80ec71d28369996e3dc5908244c42dc7e5e3154145a",
+          "document_id": "def0198f-3fad-5952-a718-c9b1ca06b376",
+          "evidence_id": "36e6689c-0371-561d-b4cb-2db3ded826d8",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "f98c01e5-b6ca-5335-8167-9b0e3e4b8fef",
+          "source_file_sha256": "003f90fd83a6d24b39245e5c7246b186b95004a3f22a4210d37ab72bbaf4e150",
+          "source_id": "33d5ff33-543a-4e54-a71b-0557cfa7a2ae",
+          "version_id": "3db9633b-3859-5fac-81cf-33d0612f64be",
+          "vision_text_hash": "acd7be09be8dcc50253296c9e9710bdb82a81c8df46dcca9a4f70f82e5bce62e"
+        }
+      ],
+      "visual_feature": "glowing blue half-circuit human head illustration"
+    },
+    {
+      "case_id": "MVEA-VISUAL_VECTOR-VIS-07",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the blue illustration of a human head made partly from electronic circuits",
+      "query_language": "en",
+      "representation": "visual_vector",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "asset_id": "2445e5bf-6e09-5868-8bd0-fea95811f79d",
+          "asset_sha256": "e57e9d3351e8c7d7c183ab1355d1fc6af204de1bba5d01cc5864fd9a32fc0b8d",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "62778f8794f0c1aaad7ce80ec71d28369996e3dc5908244c42dc7e5e3154145a",
+          "document_id": "def0198f-3fad-5952-a718-c9b1ca06b376",
+          "evidence_id": "b22b90b7-996c-568a-b22c-b40fb8c8c3c2",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "f98c01e5-b6ca-5335-8167-9b0e3e4b8fef",
+          "source_file_sha256": "003f90fd83a6d24b39245e5c7246b186b95004a3f22a4210d37ab72bbaf4e150",
+          "source_id": "33d5ff33-543a-4e54-a71b-0557cfa7a2ae",
+          "version_id": "3db9633b-3859-5fac-81cf-33d0612f64be",
+          "vision_text_hash": "acd7be09be8dcc50253296c9e9710bdb82a81c8df46dcca9a4f70f82e5bce62e"
+        }
+      ],
+      "visual_feature": "glowing blue half-circuit human head illustration"
+    },
+    {
+      "case_id": "MVEA-VISION_TEXT-VIS-08",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the illustration with a gold rupee sign and blue rising arrows",
+      "query_language": "en",
+      "representation": "vision_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d"
+      ],
+      "targets": [
+        {
+          "asset_id": "d8027101-9120-50a8-bd45-a373a7d8bcdd",
+          "asset_sha256": "54694648683218e92109a4e3423cdf7476d58a358e11b7b34331fd05c875daa0",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "7d078bf3a37e1cd35b2d78ab3eb4a8ea59c736c3a9bdb6048bb30d613acb3727",
+          "document_id": "3bfd0512-39f7-5124-93db-81e9a00b2294",
+          "evidence_id": "8250ee35-2dab-5252-907f-d4fbda1817b8",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "occurrence_id": "a65bdf0f-fc46-58e5-a718-54fd14d7453d",
+          "source_file_sha256": "fb8fe6e0185476875342de5140388ddfc0c467c412a10343e84011f2351914a0",
+          "source_id": "84a256e6-c323-4be5-bfe1-06eb991160b8",
+          "version_id": "570bfc0e-2e67-5bb1-bb93-bd0ab17ce237",
+          "vision_text_hash": "986702969ca912fe52e971a6dc4cf72b068cd87504448e30c3680d26ce808dc4"
+        },
+        {
+          "asset_id": "d8027101-9120-50a8-bd45-a373a7d8bcdd",
+          "asset_sha256": "54694648683218e92109a4e3423cdf7476d58a358e11b7b34331fd05c875daa0",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "7d078bf3a37e1cd35b2d78ab3eb4a8ea59c736c3a9bdb6048bb30d613acb3727",
+          "document_id": "3bfd0512-39f7-5124-93db-81e9a00b2294",
+          "evidence_id": "8250ee35-2dab-5252-907f-d4fbda1817b8",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "occurrence_id": "a65bdf0f-fc46-58e5-a718-54fd14d7453d",
+          "source_file_sha256": "fb8fe6e0185476875342de5140388ddfc0c467c412a10343e84011f2351914a0",
+          "source_id": "a8f4f964-45a6-46f5-8565-e9bc6851d220",
+          "version_id": "570bfc0e-2e67-5bb1-bb93-bd0ab17ce237",
+          "vision_text_hash": "986702969ca912fe52e971a6dc4cf72b068cd87504448e30c3680d26ce808dc4"
+        }
+      ],
+      "visual_feature": "golden rupee symbol with blue upward arrows"
+    },
+    {
+      "case_id": "MVEA-VISUAL_VECTOR-VIS-08",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the illustration with a gold rupee sign and blue rising arrows",
+      "query_language": "en",
+      "representation": "visual_vector",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d"
+      ],
+      "targets": [
+        {
+          "asset_id": "d8027101-9120-50a8-bd45-a373a7d8bcdd",
+          "asset_sha256": "54694648683218e92109a4e3423cdf7476d58a358e11b7b34331fd05c875daa0",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "7d078bf3a37e1cd35b2d78ab3eb4a8ea59c736c3a9bdb6048bb30d613acb3727",
+          "document_id": "3bfd0512-39f7-5124-93db-81e9a00b2294",
+          "evidence_id": "26d2aabd-31cc-5f09-898a-15f6f53bf85d",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "occurrence_id": "a65bdf0f-fc46-58e5-a718-54fd14d7453d",
+          "source_file_sha256": "fb8fe6e0185476875342de5140388ddfc0c467c412a10343e84011f2351914a0",
+          "source_id": "84a256e6-c323-4be5-bfe1-06eb991160b8",
+          "version_id": "570bfc0e-2e67-5bb1-bb93-bd0ab17ce237",
+          "vision_text_hash": "986702969ca912fe52e971a6dc4cf72b068cd87504448e30c3680d26ce808dc4"
+        },
+        {
+          "asset_id": "d8027101-9120-50a8-bd45-a373a7d8bcdd",
+          "asset_sha256": "54694648683218e92109a4e3423cdf7476d58a358e11b7b34331fd05c875daa0",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "7d078bf3a37e1cd35b2d78ab3eb4a8ea59c736c3a9bdb6048bb30d613acb3727",
+          "document_id": "3bfd0512-39f7-5124-93db-81e9a00b2294",
+          "evidence_id": "26d2aabd-31cc-5f09-898a-15f6f53bf85d",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+          "occurrence_id": "a65bdf0f-fc46-58e5-a718-54fd14d7453d",
+          "source_file_sha256": "fb8fe6e0185476875342de5140388ddfc0c467c412a10343e84011f2351914a0",
+          "source_id": "a8f4f964-45a6-46f5-8565-e9bc6851d220",
+          "version_id": "570bfc0e-2e67-5bb1-bb93-bd0ab17ce237",
+          "vision_text_hash": "986702969ca912fe52e971a6dc4cf72b068cd87504448e30c3680d26ce808dc4"
+        }
+      ],
+      "visual_feature": "golden rupee symbol with blue upward arrows"
+    },
+    {
+      "case_id": "MVEA-VISION_TEXT-VIS-09",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the image containing the mean squared error formula",
+      "query_language": "en",
+      "representation": "vision_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "asset_id": "a3bb23d9-e918-5dd5-9df9-e20367e2ff1f",
+          "asset_sha256": "6ec3cd1a1e74e404caaeeaac798f2fd04a4e4c454297afee2ed217637c47c51c",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "66edbfef1f5b17c2462e65f2e4637a66138b2afc54fa48eb6881cbe60446079f",
+          "document_id": "def0198f-3fad-5952-a718-c9b1ca06b376",
+          "evidence_id": "6e8645f9-7539-5724-b9b2-304c015860f5",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "e921b72d-5e00-5a2e-8ccd-3bf1aa03a48f",
+          "source_file_sha256": "003f90fd83a6d24b39245e5c7246b186b95004a3f22a4210d37ab72bbaf4e150",
+          "source_id": "33d5ff33-543a-4e54-a71b-0557cfa7a2ae",
+          "version_id": "3db9633b-3859-5fac-81cf-33d0612f64be",
+          "vision_text_hash": "9469bfba57a3e6e091df4312491ff30a01bf8c734060da6a67af7588fb3bddd2"
+        }
+      ],
+      "visual_feature": "mean squared error mathematical formula"
+    },
+    {
+      "case_id": "MVEA-VISUAL_VECTOR-VIS-09",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the image containing the mean squared error formula",
+      "query_language": "en",
+      "representation": "visual_vector",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad"
+      ],
+      "targets": [
+        {
+          "asset_id": "a3bb23d9-e918-5dd5-9df9-e20367e2ff1f",
+          "asset_sha256": "6ec3cd1a1e74e404caaeeaac798f2fd04a4e4c454297afee2ed217637c47c51c",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "66edbfef1f5b17c2462e65f2e4637a66138b2afc54fa48eb6881cbe60446079f",
+          "document_id": "def0198f-3fad-5952-a718-c9b1ca06b376",
+          "evidence_id": "70004259-3754-54d6-bca7-506a9a076753",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "e921b72d-5e00-5a2e-8ccd-3bf1aa03a48f",
+          "source_file_sha256": "003f90fd83a6d24b39245e5c7246b186b95004a3f22a4210d37ab72bbaf4e150",
+          "source_id": "33d5ff33-543a-4e54-a71b-0557cfa7a2ae",
+          "version_id": "3db9633b-3859-5fac-81cf-33d0612f64be",
+          "vision_text_hash": "9469bfba57a3e6e091df4312491ff30a01bf8c734060da6a67af7588fb3bddd2"
+        }
+      ],
+      "visual_feature": "mean squared error mathematical formula"
+    },
+    {
+      "case_id": "MVEA-VISION_TEXT-VIS-10",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the handwritten frequency and amplitude table comparing measurements with extra mass",
+      "query_language": "en",
+      "representation": "vision_text",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d"
+      ],
+      "targets": [
+        {
+          "asset_id": "80ababb1-969c-53c2-a9ec-3ecd00e9d1e8",
+          "asset_sha256": "6ef06db0e45fa523d2b4bd8393a875072ef7d9ed782e43c9e7e8517aaa38c945",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "d808913263793958fb299e2041c9450613119bdf1bfe2041e057fbe4d5340c2a",
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_id": "fd2bf28d-085e-5c9b-a591-582fc89b7fd8",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "occurrence_id": "ca320263-276d-54ce-8f47-14721b846363",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "9736c874-076c-42b9-ae72-83c1d2fbd848",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+          "vision_text_hash": "adb369e81f0ee0580963110aeaefce2a98fe56d5173a471afcee00d55b036347"
+        },
+        {
+          "asset_id": "80ababb1-969c-53c2-a9ec-3ecd00e9d1e8",
+          "asset_sha256": "6ef06db0e45fa523d2b4bd8393a875072ef7d9ed782e43c9e7e8517aaa38c945",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "d808913263793958fb299e2041c9450613119bdf1bfe2041e057fbe4d5340c2a",
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_id": "fd2bf28d-085e-5c9b-a591-582fc89b7fd8",
+          "generation_id": "e9c282d4-352e-50f6-ab42-5edb755badb5",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "ca320263-276d-54ce-8f47-14721b846363",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+          "vision_text_hash": "adb369e81f0ee0580963110aeaefce2a98fe56d5173a471afcee00d55b036347"
+        }
+      ],
+      "visual_feature": "handwritten frequency amplitude measurements with and without added mass"
+    },
+    {
+      "case_id": "MVEA-VISUAL_VECTOR-VIS-10",
+      "human_relevance_reviewed": false,
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "query": "Find the handwritten frequency and amplitude table comparing measurements with extra mass",
+      "query_language": "en",
+      "representation": "visual_vector",
+      "selected_notebooks": [
+        "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+        "ec19813f-a11d-559d-bebc-560e90b65cbf",
+        "e6fdf998-b7a2-587b-ab2c-e45a2839917f",
+        "81a3bea2-8b15-5c6f-944d-24634fbf835d"
+      ],
+      "targets": [
+        {
+          "asset_id": "80ababb1-969c-53c2-a9ec-3ecd00e9d1e8",
+          "asset_sha256": "6ef06db0e45fa523d2b4bd8393a875072ef7d9ed782e43c9e7e8517aaa38c945",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "d808913263793958fb299e2041c9450613119bdf1bfe2041e057fbe4d5340c2a",
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_id": "50706b94-5bdb-562f-a12d-f8d6870cfe2c",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+          "occurrence_id": "ca320263-276d-54ce-8f47-14721b846363",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "9736c874-076c-42b9-ae72-83c1d2fbd848",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+          "vision_text_hash": "adb369e81f0ee0580963110aeaefce2a98fe56d5173a471afcee00d55b036347"
+        },
+        {
+          "asset_id": "80ababb1-969c-53c2-a9ec-3ecd00e9d1e8",
+          "asset_sha256": "6ef06db0e45fa523d2b4bd8393a875072ef7d9ed782e43c9e7e8517aaa38c945",
+          "clip_source_generation_id": "4b60451a-bb64-586a-9404-faa332175d10",
+          "clip_vector_hash": "d808913263793958fb299e2041c9450613119bdf1bfe2041e057fbe4d5340c2a",
+          "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+          "evidence_id": "50706b94-5bdb-562f-a12d-f8d6870cfe2c",
+          "generation_id": "560c8160-56cd-54e8-a066-8b6fe7270be1",
+          "notebook_id": "cbad96d6-a75a-5b6a-a872-ffbee64c58ad",
+          "occurrence_id": "ca320263-276d-54ce-8f47-14721b846363",
+          "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+          "source_id": "a712f3c7-a7c6-45b0-a8f8-5aaf17263d70",
+          "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+          "vision_text_hash": "adb369e81f0ee0580963110aeaefce2a98fe56d5173a471afcee00d55b036347"
+        }
+      ],
+      "visual_feature": "handwritten frequency amplitude measurements with and without added mass"
+    }
+  ],
+  "clip_shared_space": "openai/clip-vit-large-patch14@32bd64288804d66eefd0ccbe215aa642df71cc41",
+  "judgment_method": "DETERMINISTIC_ENGINEERING",
+  "language_qrel_sha256": "9498ec0f4f873f92aa99ebed3ac3afa78854e3ce3966f82071b7db6bec5185c0",
+  "run_id": "phase86-three-languages-with-retained-original-v1-b153f2faa728599a",
+  "runtime_database": "scratch\\module_894_multimodal\\eval-20261109-01\\mnemo.db",
+  "schema": "mnemo.module-894-mvea-visual-identity/1",
+  "semantic_relevance_adjudicated": false,
+  "snapshot_sha256": "1902c3a46b2c4cba3bab7efae237af178b0830df7298fc26073c49047ad91c93"
+}

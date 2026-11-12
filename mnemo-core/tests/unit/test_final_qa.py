@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import FrozenInstanceError
+from contextlib import AbstractContextManager, nullcontext
+from dataclasses import FrozenInstanceError, replace
 from datetime import UTC, date, datetime, timedelta
 from unittest.mock import AsyncMock, Mock
 from uuid import UUID
@@ -26,6 +27,7 @@ from mnemo.models import (
     FinalQARequest,
     FinalQAStatus,
     MetadataFilter,
+    RetrievalFusionResult,
     RetrievalPlan,
     Session,
     Turn,
@@ -346,6 +348,79 @@ def _persisted_orchestrator(
         execution_store=store,
     )
     return orchestrator, calls, active_storage, store, citation
+
+
+class _AuthorizedPolicy:
+    def __init__(self, calls: list[str]) -> None:
+        self.calls = calls
+        self.revoked = False
+        self.allow_replay = True
+
+    async def check(self) -> None:
+        self.calls.append("acl_check")
+        if self.revoked:
+            raise PermissionError("revoked")
+
+    async def check_replay(self) -> None:
+        self.calls.append("acl_replay")
+        if not self.allow_replay or self.revoked:
+            raise PermissionError("replay denied")
+
+    async def filter_fusion(self, fusion: RetrievalFusionResult) -> RetrievalFusionResult:
+        self.calls.append("acl_filter")
+        return fusion
+
+    def publication_lease(self) -> AbstractContextManager[int]:
+        self.calls.append("acl_lease")
+        return nullcontext(1)
+
+
+async def test_authorized_final_qa_checks_fusion_publication_and_replay() -> None:
+    orchestrator, calls, _, store, _ = _persisted_orchestrator()
+    policy = _AuthorizedPolicy(calls)
+    result = await orchestrator.execute_authorized(_request(), policy)
+    assert result.answer is not None
+    assert calls.index("acl_filter") < calls.index("reranker")
+    assert calls.index("acl_lease") < calls.index("citation")
+    calls.clear()
+    replay = await orchestrator.execute_authorized(_request(), policy)
+    assert replay == result and "acl_replay" in calls
+    policy.allow_replay = False
+    with pytest.raises(PermissionError, match="replay denied"):
+        await orchestrator.execute_authorized(_request(), policy)
+    assert store.executions[_ASSISTANT].state is FinalQAExecutionState.PUBLISHED
+
+
+async def test_authorized_final_qa_revocation_stops_persisted_publication() -> None:
+    orchestrator, calls, _, store, citation = _persisted_orchestrator()
+    policy = _AuthorizedPolicy(calls)
+    answer_stage = orchestrator._answer
+    original_generate = answer_stage.generate
+
+    async def generate_then_revoke(*args: object, **kwargs: object) -> object:
+        answer = await original_generate(*args, **kwargs)
+        policy.revoked = True
+        return answer
+
+    answer_stage.generate = generate_then_revoke
+    with pytest.raises(PermissionError, match="revoked"):
+        await orchestrator.execute_authorized(_request(), policy)
+    assert citation.result is None
+    assert store.executions[_ASSISTANT].state is FinalQAExecutionState.RUNNING
+
+
+async def test_authorized_final_qa_rejects_reranker_restoring_filtered_evidence() -> None:
+    orchestrator, calls, _, store, citation = _persisted_orchestrator()
+
+    class FilteringPolicy(_AuthorizedPolicy):
+        async def filter_fusion(self, fusion: RetrievalFusionResult) -> RetrievalFusionResult:
+            self.calls.append("acl_filter")
+            return replace(fusion, results=())
+
+    with pytest.raises(IntegrityError, match="fusion ancestry"):
+        await orchestrator.execute_authorized(_request(), FilteringPolicy(calls))
+    assert citation.result is None
+    assert store.executions[_ASSISTANT].state is FinalQAExecutionState.RUNNING
 
 
 def test_request_is_normalized_validated_and_immutable() -> None:

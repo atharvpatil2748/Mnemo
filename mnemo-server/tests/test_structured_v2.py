@@ -5,11 +5,15 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import replace
+from datetime import UTC, datetime
+from pathlib import Path
 from types import SimpleNamespace
-from uuid import UUID
+from unittest.mock import AsyncMock
+from uuid import UUID, uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from mcp.types import TextContent
 from mnemo.engine import EngineState
 from mnemo.interfaces import (
     ConflictError,
@@ -29,6 +33,7 @@ from mnemo.models import (
     EvidenceRepresentation,
     ExtractedStructuredRecord,
     FrozenMetadata,
+    Notebook,
     RetrievalPathEvidenceV2,
     RetrievalScopeV2,
     StructuredDatasetCatalog,
@@ -47,7 +52,10 @@ from mnemo_server.config import ServerConfig
 from mnemo_server.mcp.tools import execute_mcp_tool, get_mcp_tools, structured_content_for
 from mnemo_server.schemas.structured_v2 import StructuredRetrievalRequest
 from mnemo_server.services import structured_v2 as structured_module
+from mnemo_server.services.scope_authority import SQLiteNotebookScopeAuthority
 from mnemo_server.services.structured_v2 import StructuredRetrievalApplicationService
+from mnemo_server.services.trusted_actor import TrustedJWTActorMapper
+from test_module_892_v1_acl_routes import _SECRET, _headers
 
 NOTEBOOK = UUID(int=800)
 VERSION = UUID(int=801)
@@ -63,6 +71,17 @@ class _Store:
 
     async def active_structured_generation_identity(self) -> str | None:
         return "1" * 64
+
+    async def resolve_structured_version_associations(
+        self, notebook_id: UUID, version_ids: tuple[UUID, ...]
+    ) -> tuple[tuple[UUID, UUID, UUID], ...]:
+        if notebook_id != self.catalog.scope.notebook_id:
+            return ()
+        return tuple(
+            (item.version_id, item.document_id, item.source_id)
+            for item in self.catalog.datasets
+            if item.version_id in version_ids
+        )
 
     async def list_structured_datasets(self, *, scope, schema_scan_limit):  # type: ignore[no-untyped-def]
         del schema_scan_limit
@@ -235,6 +254,132 @@ def test_http_and_mcp_contracts_are_strict_and_discoverable() -> None:
     description = (tools["query_structured"].description or "").lower()
     assert "cpi > 8.9" in description and "arbitrary sql" in description
     assert "next_cursor" in description and tools["query_structured"].outputSchema is not None
+
+
+@pytest.mark.anyio
+async def test_acl_structured_route_binds_reader_cursor_to_revision_and_actor(
+    tmp_path: Path,
+) -> None:
+    engine, catalog = _engine()
+    now = datetime.now(UTC)
+    engine.storage = SimpleNamespace(
+        get_notebook=AsyncMock(
+            return_value=Notebook(
+                notebook_id=NOTEBOOK, title="private", created_at=now, updated_at=now
+            )
+        ),
+        get_source=AsyncMock(return_value=SimpleNamespace(notebook_id=NOTEBOOK)),
+    )
+
+    async def resolve_document(
+        principal: object, document_id: UUID, version_id: UUID, notebook_id: UUID
+    ) -> SimpleNamespace:
+        matching = next(
+            (
+                item
+                for item in catalog.datasets
+                if item.document_id == document_id and item.version_id == version_id
+            ),
+            None,
+        )
+        if matching is None or notebook_id != NOTEBOOK:
+            raise NotFoundError("authorized resource was not found")
+        return SimpleNamespace(
+            notebook_id=NOTEBOOK,
+            document_id=document_id,
+            version_id=version_id,
+            source_id=matching.source_id,
+        )
+
+    engine.document_scope_resolver = SimpleNamespace(
+        resolve_document_scope=AsyncMock(side_effect=resolve_document)
+    )
+    authority = SQLiteNotebookScopeAuthority((tmp_path / "structured-acl.db").resolve())
+    authority.initialize()
+    mapper = TrustedJWTActorMapper("fixture-issuer", "fixture-audience", _SECRET)
+    owner = mapper.from_token(_headers("alice")["Authorization"].split()[1]).actor_id
+    reader = mapper.from_token(_headers("bob")["Authorization"].split()[1]).actor_id
+    authority.grant(actor_id=owner, notebook_id=NOTEBOOK, role="owner", operator_id=owner)
+    authority.grant(actor_id=reader, notebook_id=NOTEBOOK, role="reader", operator_id=owner)
+    engine.server_scope_authority = authority
+    engine.server_actor_mapper = mapper
+    config = ServerConfig(
+        auth_mode="jwt",
+        jwt_secret=_SECRET,
+        delivery_cursor_secret="fixture-structured-cursor-secret-32-bytes",
+    )
+    app = create_app(server_config=config, provision_tokenizer_on_startup=False)
+    app.state.engine = engine
+    app.state.server_config = config
+    request = _request(catalog, page_size=1)
+    url = "/v2/retrieval/structured"
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        denied = await client.post(
+            url, headers=_headers("charlie"), json=request.model_dump(mode="json")
+        )
+        missing = await client.post(
+            url,
+            headers=_headers("charlie"),
+            json=request.model_copy(
+                update={"scope": request.scope.model_copy(update={"notebook_id": uuid4()})}
+            ).model_dump(mode="json"),
+        )
+        assert denied.status_code == missing.status_code == 404
+        assert "Atharv" not in denied.text
+        owner_result = await client.post(
+            url, headers=_headers("alice"), json=request.model_dump(mode="json")
+        )
+        assert owner_result.status_code == 200
+        assert "Atharv" in owner_result.text
+        first = await client.post(
+            url, headers=_headers("bob"), json=request.model_dump(mode="json")
+        )
+        assert first.status_code == 200, first.text
+        cursor = first.json()["next_cursor"]
+        assert cursor
+        direct = await execute_mcp_tool(
+            engine,
+            "query_structured",
+            request.model_dump(mode="json"),
+            server_config=config,
+            principal=mapper.from_token(_headers("bob")["Authorization"].split()[1]),
+        )
+        assert direct and isinstance(direct[0], TextContent)
+        assert "Atharv" in direct[0].text
+        continuation = request.model_copy(update={"cursor": cursor}).model_dump(mode="json")
+        second = await client.post(url, headers=_headers("bob"), json=continuation)
+        assert second.status_code == 200, second.text
+        replay = await client.post(url, headers=_headers("alice"), json=continuation)
+        assert replay.status_code != 200
+        extra = mapper.from_token(_headers("dana")["Authorization"].split()[1]).actor_id
+        authority.grant(actor_id=extra, notebook_id=NOTEBOOK, role="reader", operator_id=owner)
+        stale = await client.post(url, headers=_headers("bob"), json=continuation)
+        assert stale.status_code != 200
+        assert "Atharv" not in stale.text
+        authority.revoke(actor_id=reader, notebook_id=NOTEBOOK)
+        revoked = await client.post(
+            url, headers=_headers("bob"), json=request.model_dump(mode="json")
+        )
+        assert revoked.status_code == 404
+        assert "Atharv" not in revoked.text
+        original_execute = engine.structured_retrieval.execute
+
+        async def revoke_during_execution(**kwargs: object) -> object:
+            result = await original_execute(**kwargs)
+            authority.revoke(actor_id=owner, notebook_id=NOTEBOOK)
+            return result
+
+        engine.structured_retrieval.execute = revoke_during_execution
+        interrupted = await client.post(
+            url, headers=_headers("alice"), json=request.model_dump(mode="json")
+        )
+        assert interrupted.status_code == 404
+        assert "Atharv" not in interrupted.text
+        engine.server_scope_authority = None
+        missing_authority = await client.post(
+            url, headers=_headers("alice"), json=request.model_dump(mode="json")
+        )
+        assert missing_authority.status_code == 503
 
 
 @pytest.mark.anyio

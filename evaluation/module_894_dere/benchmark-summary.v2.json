@@ -1,0 +1,770 @@
+{
+  "alias": "7e43fa2879c1ce1eab714adb082f94a1bad1466d19b37f14220f6ffb9e40b4d9",
+  "cases": [
+    {
+      "acl_revision": 7,
+      "budgets": {
+        "expansion_limit": 0,
+        "fusion_limit": 500,
+        "max_content_characters": 200000,
+        "max_serialized_bytes": 1000000,
+        "recall_limit": 1000,
+        "rerank_limit": 50,
+        "result_limit": 10
+      },
+      "case_id": "DERE-894-ENMR-CANONICAL-001",
+      "cut_reason": "result_limit",
+      "deadline_ms": 30000,
+      "direction": "en->mr",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "metrics_at_10": {
+        "advanced_selected": {
+          "ndcg": 0,
+          "precision": 0,
+          "recall": 0,
+          "rr": 0,
+          "target_positions": []
+        },
+        "canonical_source_page": {
+          "ndcg": 0,
+          "precision": 0,
+          "recall": 0,
+          "rr": 0,
+          "target_positions": []
+        },
+        "combined_before_fusion_limit": {
+          "ndcg": 0,
+          "precision": 0,
+          "recall": 0,
+          "rr": 0,
+          "target_positions": [
+            13
+          ]
+        },
+        "dense": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1
+          ]
+        },
+        "final": {
+          "ndcg": 0,
+          "precision": 0,
+          "recall": 0,
+          "rr": 0,
+          "target_positions": []
+        },
+        "full_v2_rrf_before_limits": {
+          "ndcg": 0.3333333333333333,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.14285714285714285,
+          "target_positions": [
+            7
+          ]
+        },
+        "full_v2_selected": {
+          "ndcg": 0.3333333333333333,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.14285714285714285,
+          "target_positions": [
+            7
+          ]
+        },
+        "sparse": {
+          "ndcg": 0,
+          "precision": 0,
+          "recall": 0,
+          "rr": 0,
+          "target_positions": []
+        }
+      },
+      "observed_ms": 7886.976,
+      "representation_exposure": {
+        "canonical_text": 5,
+        "multilingual_text": 5
+      },
+      "requested_k": 10,
+      "stable_output_equal": true,
+      "stage_counts": {
+        "advanced_after_dedup": 510,
+        "advanced_before_dedup": 510,
+        "advanced_before_output_bounds": 50,
+        "advanced_selected": 10,
+        "combined_before_fusion_limit": 510,
+        "dense": 1000,
+        "final": 10,
+        "full_v2_rrf_before_limits": 1688,
+        "full_v2_selected": 10,
+        "partitions": 1,
+        "rerank_before_result_limit": 50,
+        "sparse": 1000
+      },
+      "target_count": 1,
+      "trace": "case-01.json.gz",
+      "trace_sha256": "2435155aeb865d4b7c0ed023985bcd47b7b9142c8174cd37fae0da25849e481b",
+      "type": "single_target"
+    },
+    {
+      "acl_revision": 7,
+      "budgets": {
+        "expansion_limit": 0,
+        "fusion_limit": 500,
+        "max_content_characters": 200000,
+        "max_serialized_bytes": 1000000,
+        "recall_limit": 1000,
+        "rerank_limit": 50,
+        "result_limit": 10
+      },
+      "case_id": "DERE-894-V2-MRMR-002",
+      "cut_reason": "result_limit",
+      "deadline_ms": 30000,
+      "direction": "mr->mr",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "metrics_at_10": {
+        "advanced_selected": {
+          "ndcg": 0.5,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.3333333333333333,
+          "target_positions": [
+            3,
+            4
+          ]
+        },
+        "canonical_source_page": {
+          "ndcg": 0.6309297535714575,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.5,
+          "target_positions": [
+            2
+          ]
+        },
+        "combined_before_fusion_limit": {
+          "ndcg": 0.5,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.3333333333333333,
+          "target_positions": [
+            3,
+            4
+          ]
+        },
+        "dense": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1
+          ]
+        },
+        "final": {
+          "ndcg": 0.5,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.3333333333333333,
+          "target_positions": [
+            3,
+            4
+          ]
+        },
+        "full_v2_rrf_before_limits": {
+          "ndcg": 0.6309297535714575,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.5,
+          "target_positions": [
+            2
+          ]
+        },
+        "full_v2_selected": {
+          "ndcg": 0.6309297535714575,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.5,
+          "target_positions": [
+            2
+          ]
+        },
+        "sparse": {
+          "ndcg": 0.5,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.3333333333333333,
+          "target_positions": [
+            3
+          ]
+        }
+      },
+      "observed_ms": 6945.264,
+      "representation_exposure": {
+        "canonical_text": 5,
+        "multilingual_text": 5
+      },
+      "requested_k": 10,
+      "stable_output_equal": true,
+      "stage_counts": {
+        "advanced_after_dedup": 20,
+        "advanced_before_dedup": 20,
+        "advanced_before_output_bounds": 20,
+        "advanced_selected": 10,
+        "combined_before_fusion_limit": 20,
+        "dense": 1000,
+        "final": 10,
+        "full_v2_rrf_before_limits": 1010,
+        "full_v2_selected": 10,
+        "partitions": 1,
+        "rerank_before_result_limit": 50,
+        "sparse": 21
+      },
+      "target_count": 1,
+      "trace": "case-02.json.gz",
+      "trace_sha256": "4dd47e2b59985dfd29a653b8523492d6392747adbffe1d7a9d73199c390fa646",
+      "type": "single_target"
+    },
+    {
+      "acl_revision": 7,
+      "budgets": {
+        "expansion_limit": 0,
+        "fusion_limit": 500,
+        "max_content_characters": 200000,
+        "max_serialized_bytes": 1000000,
+        "recall_limit": 1000,
+        "rerank_limit": 50,
+        "result_limit": 10
+      },
+      "case_id": "DERE-894-V2-ENEN-001",
+      "cut_reason": "result_limit",
+      "deadline_ms": 30000,
+      "direction": "en->en",
+      "document_id": "be251335-3f19-5399-83d3-ef3e9096a846",
+      "metrics_at_10": {
+        "advanced_selected": {
+          "ndcg": 0.31546487678572877,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.125,
+          "target_positions": [
+            8
+          ]
+        },
+        "canonical_source_page": {
+          "ndcg": 0.43067655807339306,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.25,
+          "target_positions": [
+            4
+          ]
+        },
+        "combined_before_fusion_limit": {
+          "ndcg": 0.31546487678572877,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.125,
+          "target_positions": [
+            8
+          ]
+        },
+        "dense": {
+          "ndcg": 0.6309297535714575,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.5,
+          "target_positions": [
+            2
+          ]
+        },
+        "final": {
+          "ndcg": 0.31546487678572877,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.125,
+          "target_positions": [
+            8
+          ]
+        },
+        "full_v2_rrf_before_limits": {
+          "ndcg": 0,
+          "precision": 0,
+          "recall": 0,
+          "rr": 0,
+          "target_positions": [
+            33
+          ]
+        },
+        "full_v2_selected": {
+          "ndcg": 0,
+          "precision": 0,
+          "recall": 0,
+          "rr": 0,
+          "target_positions": []
+        },
+        "sparse": {
+          "ndcg": 0,
+          "precision": 0,
+          "recall": 0,
+          "rr": 0,
+          "target_positions": [
+            301
+          ]
+        }
+      },
+      "observed_ms": 8184.543,
+      "representation_exposure": {
+        "canonical_text": 5,
+        "multilingual_text": 5
+      },
+      "requested_k": 10,
+      "stable_output_equal": true,
+      "stage_counts": {
+        "advanced_after_dedup": 510,
+        "advanced_before_dedup": 510,
+        "advanced_before_output_bounds": 50,
+        "advanced_selected": 10,
+        "combined_before_fusion_limit": 510,
+        "dense": 1000,
+        "final": 10,
+        "full_v2_rrf_before_limits": 1673,
+        "full_v2_selected": 10,
+        "partitions": 1,
+        "rerank_before_result_limit": 50,
+        "sparse": 1000
+      },
+      "target_count": 1,
+      "trace": "case-03.json.gz",
+      "trace_sha256": "8735813e5e7b53eada453c02f0f5c49c38370fa8b50c11d7417eaf02ca6c2659",
+      "type": "single_target"
+    },
+    {
+      "acl_revision": 7,
+      "budgets": {
+        "expansion_limit": 0,
+        "fusion_limit": 500,
+        "max_content_characters": 200000,
+        "max_serialized_bytes": 1000000,
+        "recall_limit": 1000,
+        "rerank_limit": 50,
+        "result_limit": 10
+      },
+      "case_id": "DERE-894-V2-ENEN-004",
+      "cut_reason": "result_limit",
+      "deadline_ms": 30000,
+      "direction": "en->en",
+      "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+      "metrics_at_10": {
+        "advanced_selected": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1,
+            2
+          ]
+        },
+        "canonical_source_page": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1
+          ]
+        },
+        "combined_before_fusion_limit": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1,
+            2
+          ]
+        },
+        "dense": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1
+          ]
+        },
+        "final": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1,
+            2
+          ]
+        },
+        "full_v2_rrf_before_limits": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1
+          ]
+        },
+        "full_v2_selected": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1
+          ]
+        },
+        "sparse": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1
+          ]
+        }
+      },
+      "observed_ms": 8136.94,
+      "representation_exposure": {
+        "canonical_text": 5,
+        "multilingual_text": 5
+      },
+      "requested_k": 10,
+      "stable_output_equal": true,
+      "stage_counts": {
+        "advanced_after_dedup": 510,
+        "advanced_before_dedup": 510,
+        "advanced_before_output_bounds": 50,
+        "advanced_selected": 10,
+        "combined_before_fusion_limit": 510,
+        "dense": 1000,
+        "final": 10,
+        "full_v2_rrf_before_limits": 1787,
+        "full_v2_selected": 10,
+        "partitions": 1,
+        "rerank_before_result_limit": 50,
+        "sparse": 1000
+      },
+      "target_count": 1,
+      "trace": "case-04.json.gz",
+      "trace_sha256": "948298b52a6ec7d86365a872478740e732447c09116b45ef585d7a4947ccf69c",
+      "type": "single_target"
+    },
+    {
+      "acl_revision": 7,
+      "budgets": {
+        "expansion_limit": 0,
+        "fusion_limit": 500,
+        "max_content_characters": 200000,
+        "max_serialized_bytes": 1000000,
+        "recall_limit": 1000,
+        "rerank_limit": 50,
+        "result_limit": 10
+      },
+      "case_id": "DERE-894-V2-ENEN-008",
+      "cut_reason": "result_limit",
+      "deadline_ms": 30000,
+      "direction": "en->en",
+      "document_id": "55fcf630-8323-5ae4-9524-aef1afb6578a",
+      "metrics_at_10": {
+        "advanced_selected": {
+          "ndcg": 0.6309297535714575,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.5,
+          "target_positions": [
+            2,
+            5
+          ]
+        },
+        "canonical_source_page": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1
+          ]
+        },
+        "combined_before_fusion_limit": {
+          "ndcg": 0.6309297535714575,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.5,
+          "target_positions": [
+            2,
+            5
+          ]
+        },
+        "dense": {
+          "ndcg": 0,
+          "precision": 0,
+          "recall": 0,
+          "rr": 0,
+          "target_positions": [
+            40
+          ]
+        },
+        "final": {
+          "ndcg": 0.6309297535714575,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.5,
+          "target_positions": [
+            2,
+            5
+          ]
+        },
+        "full_v2_rrf_before_limits": {
+          "ndcg": 0.5,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.3333333333333333,
+          "target_positions": [
+            3
+          ]
+        },
+        "full_v2_selected": {
+          "ndcg": 0.5,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 0.3333333333333333,
+          "target_positions": [
+            3
+          ]
+        },
+        "sparse": {
+          "ndcg": 1,
+          "precision": 0.1,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1
+          ]
+        }
+      },
+      "observed_ms": 8256.119,
+      "representation_exposure": {
+        "canonical_text": 5,
+        "multilingual_text": 5
+      },
+      "requested_k": 10,
+      "stable_output_equal": true,
+      "stage_counts": {
+        "advanced_after_dedup": 510,
+        "advanced_before_dedup": 510,
+        "advanced_before_output_bounds": 50,
+        "advanced_selected": 10,
+        "combined_before_fusion_limit": 510,
+        "dense": 1000,
+        "final": 10,
+        "full_v2_rrf_before_limits": 1826,
+        "full_v2_selected": 10,
+        "partitions": 1,
+        "rerank_before_result_limit": 50,
+        "sparse": 1000
+      },
+      "target_count": 1,
+      "trace": "case-05.json.gz",
+      "trace_sha256": "6dbb82ae6f33092ec59154960ae4a78a8f78867113cee55a59652531cb426195",
+      "type": "single_target"
+    },
+    {
+      "acl_revision": 7,
+      "budgets": {
+        "expansion_limit": 0,
+        "fusion_limit": 500,
+        "max_content_characters": 200000,
+        "max_serialized_bytes": 1000000,
+        "recall_limit": 1000,
+        "rerank_limit": 50,
+        "result_limit": 10
+      },
+      "case_id": "DERE-894-V2-ENEN-005+ENEN-006",
+      "cut_reason": "result_limit",
+      "deadline_ms": 30000,
+      "direction": "en->en",
+      "document_id": "31d56f7b-8848-561b-adcc-78780ab914de",
+      "metrics_at_10": {
+        "advanced_selected": {
+          "ndcg": 0.6131471927654584,
+          "precision": 0.1,
+          "recall": 0.5,
+          "rr": 1,
+          "target_positions": [
+            1,
+            10
+          ]
+        },
+        "canonical_source_page": {
+          "ndcg": 0.23719771276929622,
+          "precision": 0.1,
+          "recall": 0.5,
+          "rr": 0.2,
+          "target_positions": [
+            5,
+            115
+          ]
+        },
+        "combined_before_fusion_limit": {
+          "ndcg": 0.6131471927654584,
+          "precision": 0.1,
+          "recall": 0.5,
+          "rr": 1,
+          "target_positions": [
+            1,
+            10,
+            11,
+            125
+          ]
+        },
+        "dense": {
+          "ndcg": 0.3065735963827292,
+          "precision": 0.1,
+          "recall": 0.5,
+          "rr": 0.3333333333333333,
+          "target_positions": [
+            3,
+            34
+          ]
+        },
+        "final": {
+          "ndcg": 0.6131471927654584,
+          "precision": 0.1,
+          "recall": 0.5,
+          "rr": 1,
+          "target_positions": [
+            1,
+            10
+          ]
+        },
+        "full_v2_rrf_before_limits": {
+          "ndcg": 0.8315546295836225,
+          "precision": 0.2,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1,
+            6
+          ]
+        },
+        "full_v2_selected": {
+          "ndcg": 0.8315546295836225,
+          "precision": 0.2,
+          "recall": 1,
+          "rr": 1,
+          "target_positions": [
+            1,
+            6
+          ]
+        },
+        "sparse": {
+          "ndcg": 0,
+          "precision": 0,
+          "recall": 0,
+          "rr": 0,
+          "target_positions": [
+            12,
+            32
+          ]
+        }
+      },
+      "observed_ms": 7615.769,
+      "representation_exposure": {
+        "canonical_text": 5,
+        "multilingual_text": 5
+      },
+      "requested_k": 10,
+      "stable_output_equal": true,
+      "stage_counts": {
+        "advanced_after_dedup": 510,
+        "advanced_before_dedup": 510,
+        "advanced_before_output_bounds": 50,
+        "advanced_selected": 10,
+        "combined_before_fusion_limit": 510,
+        "dense": 1000,
+        "final": 10,
+        "full_v2_rrf_before_limits": 1837,
+        "full_v2_selected": 10,
+        "partitions": 1,
+        "rerank_before_result_limit": 50,
+        "sparse": 1000
+      },
+      "target_count": 2,
+      "trace": "case-06.json.gz",
+      "trace_sha256": "647f7eec10f915d45131d8148709e471958b0f94a03489ca22b8d62cbbad5c74",
+      "type": "compound_control"
+    }
+  ],
+  "human_adjudicated": false,
+  "judgment": "DETERMINISTIC_ENGINEERING",
+  "macro_interpretation": "Descriptive per-query macro for these five fixtures, not independent document samples or population estimates.",
+  "macro_single_target_only": {
+    "advanced_selected": {
+      "ndcg": 0.48927892607143725,
+      "precision": 0.08,
+      "recall": 0.8,
+      "rr": 0.39166666666666666
+    },
+    "canonical_source_page": {
+      "ndcg": 0.6123212623289701,
+      "precision": 0.08,
+      "recall": 0.8,
+      "rr": 0.55
+    },
+    "combined_before_fusion_limit": {
+      "ndcg": 0.48927892607143725,
+      "precision": 0.08,
+      "recall": 0.8,
+      "rr": 0.39166666666666666
+    },
+    "dense": {
+      "ndcg": 0.7261859507142915,
+      "precision": 0.08,
+      "recall": 0.8,
+      "rr": 0.7
+    },
+    "final": {
+      "ndcg": 0.48927892607143725,
+      "precision": 0.08,
+      "recall": 0.8,
+      "rr": 0.39166666666666666
+    },
+    "full_v2_rrf_before_limits": {
+      "ndcg": 0.49285261738095815,
+      "precision": 0.08,
+      "recall": 0.8,
+      "rr": 0.3952380952380952
+    },
+    "full_v2_selected": {
+      "ndcg": 0.49285261738095815,
+      "precision": 0.08,
+      "recall": 0.8,
+      "rr": 0.3952380952380952
+    },
+    "sparse": {
+      "ndcg": 0.5,
+      "precision": 0.060000000000000005,
+      "recall": 0.6,
+      "rr": 0.4666666666666667
+    }
+  },
+  "manifest_sha256": "d875da7196db92603264c1cf08ae0b4ad240a639e871387faa9775190e5ca8c0",
+  "negative_controls": "all three denied with and without diagnostics",
+  "offline_policy_comparison": "INSUFFICIENT independent document/language and notebook coverage",
+  "run": "dere-trace-20261107-02",
+  "schema": "mnemo.dere-ranking-observation/2",
+  "single_target_count": 5,
+  "verified_notebook_identities": 2698
+}

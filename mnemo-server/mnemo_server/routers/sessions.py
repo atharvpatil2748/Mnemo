@@ -5,10 +5,13 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, Query, Response, status
+from fastapi import APIRouter, Depends, Path, Query, Request, Response, status
 from mnemo.engine import KnowledgeEngine
 
-from ..dependencies import get_engine, require_mutable_workspace
+from ..dependencies import (
+    get_engine,
+    require_mutable_workspace,
+)
 from ..schemas.common import PageResponse
 from ..schemas.sessions import (
     CreateSessionRequest,
@@ -17,6 +20,8 @@ from ..schemas.sessions import (
     SessionSummaryResponse,
     TurnResponse,
 )
+from ..services.authorized_scope import AuthorizedNotebookPageCursor
+from ..services.membership_http import membership_http_principal
 from ..services.sessions import SessionService
 
 router = APIRouter(prefix="/notebooks", tags=["sessions"])
@@ -33,13 +38,26 @@ SessionIdPath = Annotated[UUID, Path(description="The unique session ID")]
     summary="List sessions for a notebook",
 )
 async def list_sessions(
+    request: Request,
     notebook_id: NotebookIdPath,
     engine: EngineDep,
     limit: Annotated[int, Query(ge=1, le=100, description="Page size")] = 50,
     cursor: Annotated[str | None, Query(description="Keyset pagination cursor UUID")] = None,
 ) -> PageResponse[SessionSummaryResponse]:
     """Return a keyset-paginated list of sessions attached to a notebook."""
-    service = SessionService(engine)
+    principal = (
+        membership_http_principal(request, engine)
+        if getattr(engine, "server_scope_authority", None) is not None
+        else None
+    )
+    page_cursor = (
+        AuthorizedNotebookPageCursor(
+            request.app.state.server_config.delivery_cursor_secret.encode()
+        )
+        if principal is not None
+        else None
+    )
+    service = SessionService(engine, principal=principal, page_cursor=page_cursor)
     return await service.list_sessions(notebook_id, limit=limit, cursor=cursor)
 
 
@@ -54,9 +72,15 @@ async def create_session(
     notebook_id: NotebookIdPath,
     request: CreateSessionRequest,
     engine: EngineDep,
+    connection: Request,
 ) -> SessionSummaryResponse:
     """Create a new conversational session attached to a notebook."""
-    service = SessionService(engine)
+    principal = (
+        membership_http_principal(connection, engine)
+        if getattr(engine, "server_scope_authority", None) is not None
+        else None
+    )
+    service = SessionService(engine, principal=principal)
     return await service.create_session(notebook_id, request)
 
 
@@ -67,12 +91,18 @@ async def create_session(
     summary="Get conversation session history",
 )
 async def get_session(
+    request: Request,
     notebook_id: NotebookIdPath,
     session_id: SessionIdPath,
     engine: EngineDep,
 ) -> SessionDetailResponse:
     """Get full session history with ordered turns and citations."""
-    service = SessionService(engine)
+    principal = (
+        membership_http_principal(request, engine)
+        if getattr(engine, "server_scope_authority", None) is not None
+        else None
+    )
+    service = SessionService(engine, principal=principal)
     return await service.get_session(notebook_id, session_id)
 
 
@@ -88,9 +118,15 @@ async def append_turn(
     session_id: SessionIdPath,
     request: CreateTurnRequest,
     engine: EngineDep,
+    connection: Request,
 ) -> TurnResponse:
     """Append one user or assistant message turn to a session."""
-    service = SessionService(engine)
+    principal = (
+        membership_http_principal(connection, engine)
+        if getattr(engine, "server_scope_authority", None) is not None
+        else None
+    )
+    service = SessionService(engine, principal=principal)
     return await service.append_turn(notebook_id, session_id, request)
 
 
@@ -105,8 +141,14 @@ async def delete_session(
     notebook_id: NotebookIdPath,
     session_id: SessionIdPath,
     engine: EngineDep,
+    request: Request,
 ) -> Response:
     """Delete a conversation session and all associated turns and citations."""
-    service = SessionService(engine)
+    principal = (
+        membership_http_principal(request, engine)
+        if getattr(engine, "server_scope_authority", None) is not None
+        else None
+    )
+    service = SessionService(engine, principal=principal)
     await service.delete_session(notebook_id, session_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

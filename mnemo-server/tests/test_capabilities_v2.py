@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
 import json
+import time
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 from typing import cast
@@ -34,6 +39,8 @@ from mnemo import (
 )
 from mnemo.engine import KnowledgeEngine
 from mnemo.interfaces import NotFoundError, PrincipalContextV1
+from mnemo.models import Notebook
+from mnemo.storage.sqlite import SQLiteStore
 from mnemo_server.auth import AuthMiddleware
 from mnemo_server.config import ServerConfig
 from mnemo_server.dependencies import get_engine, get_server_config
@@ -48,6 +55,8 @@ from mnemo_server.services.mutable_workspace import (
     WorkspaceMode,
 )
 from mnemo_server.services.production_runtime_binding import CertifiedProductionBinding
+from mnemo_server.services.scope_authority import SQLiteNotebookScopeAuthority
+from mnemo_server.services.trusted_actor import TrustedJWTActorMapper
 
 
 @dataclass(slots=True)
@@ -351,6 +360,129 @@ async def test_http_capability_metadata_obeys_server_authentication(tmp_path: Pa
     assert denied.status_code == 401
     assert allowed.status_code == 200
     assert "server-owned-key" not in allowed.text
+
+
+@pytest.mark.anyio
+async def test_scoped_capabilities_use_acl_and_hide_foreign_notebooks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    secret = "disposable-capability-jwt-secret-32-bytes"
+    mapper = TrustedJWTActorMapper("fixture-issuer", "fixture-audience", secret)
+
+    def token(subject: str) -> str:
+        def encode(value: dict[str, object]) -> str:
+            return base64.urlsafe_b64encode(json.dumps(value).encode()).rstrip(b"=").decode()
+
+        claims: dict[str, object] = {
+            "iss": "fixture-issuer",
+            "aud": "fixture-audience",
+            "sub": subject,
+            "exp": int(time.time()) + 60,
+        }
+        signed = f"{encode({'alg': 'HS256'})}.{encode(claims)}"
+        digest = hmac.new(secret.encode(), signed.encode(), hashlib.sha256).digest()
+        return f"{signed}.{base64.urlsafe_b64encode(digest).rstrip(b'=').decode()}"
+
+    store = SQLiteStore(tmp_path / "notebooks.db")
+    await store.open()
+    authority = SQLiteNotebookScopeAuthority((tmp_path / "acl.db").resolve())
+    authority.initialize()
+    notebook_id = uuid4()
+    now = datetime.now(UTC)
+    await store.upsert_notebook(
+        Notebook(notebook_id=notebook_id, title="private", created_at=now, updated_at=now)
+    )
+    alice = mapper.from_token(token("alice"))
+    bob = mapper.from_token(token("bob"))
+    authority.grant(
+        actor_id=alice.actor_id,
+        notebook_id=notebook_id,
+        role="owner",
+        operator_id=alice.actor_id,
+    )
+    engine = await _engine(tmp_path)
+    engine.storage = store
+    engine.server_scope_authority = authority
+    engine.server_actor_mapper = mapper
+    config = ServerConfig(
+        auth_mode="jwt",
+        jwt_secret=secret,
+        delivery_cursor_secret="disposable-capability-cursor-32-bytes",
+    )
+    app = FastAPI()
+    app.state.server_config = config
+    app.add_middleware(AuthMiddleware, config=config)
+    app.include_router(router, prefix="/v2")
+    app.dependency_overrides[get_engine] = lambda: engine
+    app.dependency_overrides[get_server_config] = lambda: config
+    register_error_handlers(app)
+    try:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            allowed = await client.get(
+                "/v2/capabilities",
+                params={"notebook_id": str(notebook_id)},
+                headers={"Authorization": f"Bearer {token('alice')}"},
+            )
+            denied = await client.get(
+                "/v2/capabilities",
+                params={"notebook_id": str(notebook_id)},
+                headers={"Authorization": f"Bearer {token('bob')}"},
+            )
+            absent = await client.get(
+                "/v2/capabilities",
+                params={"notebook_id": str(uuid4())},
+                headers={"Authorization": f"Bearer {token('bob')}"},
+            )
+            unscoped = await client.get(
+                "/v2/capabilities", headers={"Authorization": f"Bearer {token('alice')}"}
+            )
+        assert allowed.status_code == 200, allowed.text
+        assert denied.status_code == absent.status_code == unscoped.status_code == 404
+        assert denied.json()["error"]["code"] == absent.json()["error"]["code"]
+        mcp_allowed = await execute_mcp_tool(
+            engine,
+            "get_capabilities",
+            {"notebook_id": str(notebook_id)},
+            config,
+            principal=alice,
+        )
+        assert isinstance(mcp_allowed[0], TextContent)
+        assert json.loads(mcp_allowed[0].text)["scope_notebook_id"] == str(notebook_id)
+        with pytest.raises(NotFoundError):
+            await execute_mcp_tool(
+                engine,
+                "get_capabilities",
+                {"notebook_id": str(notebook_id)},
+                config,
+                principal=bob,
+            )
+        original_document = CapabilityDiscoveryService.document_for_principal
+
+        async def revoke_before_return(
+            service: CapabilityDiscoveryService,
+            request: CapabilityDiscoveryRequest,
+            principal: PrincipalContextV1,
+        ) -> CapabilityDocument:
+            document = await original_document(service, request, principal)
+            authority.revoke(actor_id=alice.actor_id, notebook_id=notebook_id)
+            return document
+
+        monkeypatch.setattr(
+            CapabilityDiscoveryService, "document_for_principal", revoke_before_return
+        )
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            revoked_before_delivery = await client.get(
+                "/v2/capabilities",
+                params={"notebook_id": str(notebook_id)},
+                headers={"Authorization": f"Bearer {token('alice')}"},
+            )
+        assert revoked_before_delivery.status_code == 404
+    finally:
+        await store.close()
 
 
 @pytest.mark.anyio

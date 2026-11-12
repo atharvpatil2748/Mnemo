@@ -20,7 +20,12 @@ from mnemo_server.services.authorization import (
     CentralAuthorizationServiceV1,
     ServerPrincipalV1,
 )
+from mnemo_server.services.authorized_scope import (
+    AuthorizedNotebookScope,
+    AuthorizedNotebookScopeResolver,
+)
 from mnemo_server.services.retrieval_v2 import EvidenceRetrievalApplicationService
+from mnemo_server.services.scope_authority import SQLiteNotebookScopeAuthority
 
 _ORDER = (
     EvidenceRepresentation.CANONICAL_TEXT,
@@ -40,19 +45,38 @@ class AutomaticEvidencePlanner:
     async def plan(
         self, principal: ServerPrincipalV1
     ) -> tuple[
-        EvidenceScopeRequest, tuple[EvidenceRepresentation, ...], list[RepresentationDecisionV2]
+        EvidenceScopeRequest,
+        tuple[EvidenceRepresentation, ...],
+        list[RepresentationDecisionV2],
+        AuthorizedNotebookScope | None,
     ]:
         if not principal.authenticated:
             raise PermissionError("authenticated principal is required")
-        # No persisted actor-to-notebook membership authority exists yet. Do not
-        # guess a scope or leak per-notebook generation state in a multi-notebook store.
-        page = await self._engine.storage.list_notebooks(limit=2, cursor=None)
-        if len(page.items) != 1 or page.next_cursor is not None:
-            raise DependencyUnavailableError(
-                "automatic query requires one unambiguous authorized notebook scope",
-                retryable=False,
+        authority = getattr(self._engine, "server_scope_authority", None)
+        membership: AuthorizedNotebookScope | None = None
+        if authority is not None:
+            if not isinstance(authority, SQLiteNotebookScopeAuthority):
+                raise PermissionError("trusted membership authority is unavailable")
+            scopes = await AuthorizedNotebookScopeResolver(self._engine.storage, authority).resolve(
+                principal, None
             )
-        notebook_id = page.items[0].notebook_id
+            if len(scopes) != 1:
+                raise DependencyUnavailableError(
+                    "automatic query requires one unambiguous authorized notebook scope",
+                    retryable=False,
+                )
+            membership = scopes[0]
+            notebook_id = membership.notebook_id
+        else:
+            # Retain the pre-ACL single-notebook contract; never select a scope
+            # from global storage once a membership authority is attached.
+            page = await self._engine.storage.list_notebooks(limit=2, cursor=None)
+            if len(page.items) != 1 or page.next_cursor is not None:
+                raise DependencyUnavailableError(
+                    "automatic query requires one unambiguous authorized notebook scope",
+                    retryable=False,
+                )
+            notebook_id = page.items[0].notebook_id
         await CentralAuthorizationServiceV1(self._engine).authorize_notebook(
             principal, notebook_id, AuthorizationOperationV1.QUERY
         )
@@ -77,7 +101,7 @@ class AutomaticEvidencePlanner:
             )
             for item in _ORDER
         ]
-        return EvidenceScopeRequest(notebook_id=notebook_id), selected, decisions
+        return EvidenceScopeRequest(notebook_id=notebook_id), selected, decisions, membership
 
 
 class AutomaticQueryV2ApplicationService:
@@ -90,9 +114,9 @@ class AutomaticQueryV2ApplicationService:
     ) -> AutomaticQueryV2Response:
         if request.cursor is not None and request.mode.value != "exhaustive":
             raise ContractValidationError("continuation requires exhaustive mode")
-        scope, representations, decisions = await AutomaticEvidencePlanner(self._engine).plan(
-            principal
-        )
+        scope, representations, decisions, membership = await AutomaticEvidencePlanner(
+            self._engine
+        ).plan(principal)
         if request.candidate_budget < len(representations):
             raise ContractValidationError(
                 "candidate_budget is too small for the active representation set"
@@ -148,9 +172,17 @@ class AutomaticQueryV2ApplicationService:
             else decision
             for decision in decisions
         ]
-        return AutomaticQueryV2Response(
+        response = AutomaticQueryV2Response(
             request_id=evidence.request_id,
             notebook_id=scope.notebook_id,
             representation_decisions=decisions,
             evidence=evidence,
         )
+        if membership is not None:
+            authority = getattr(self._engine, "server_scope_authority", None)
+            if not isinstance(authority, SQLiteNotebookScopeAuthority):
+                raise PermissionError("trusted membership authority is unavailable")
+            await AuthorizedNotebookScopeResolver(self._engine.storage, authority).revalidate(
+                principal, (membership,)
+            )
+        return response

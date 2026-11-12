@@ -62,6 +62,11 @@ from mnemo_server.services.authorization import (
     ServerPrincipalV1,
     principal_from_claims,
 )
+from mnemo_server.services.authorized_scope import (
+    AuthorizedNotebookScope,
+    AuthorizedNotebookScopeResolver,
+)
+from mnemo_server.services.scope_authority import SQLiteNotebookScopeAuthority
 from mnemo_server.services.source_metadata import (
     AuthorizedSourceMetadataResolverV1,
     SourceMetadataReferenceV1,
@@ -90,16 +95,40 @@ class StructuredRetrievalApplicationService:
     async def execute(
         self, request: StructuredRetrievalRequest, principal: ServerPrincipalV1 | None = None
     ) -> StructuredRetrievalResponse:
+        response, _ = await self.execute_with_catalog(request, principal)
+        return response
+
+    async def execute_with_catalog(
+        self, request: StructuredRetrievalRequest, principal: ServerPrincipalV1 | None = None
+    ) -> tuple[StructuredRetrievalResponse, StructuredDatasetCatalog]:
+        """Return the authorized catalog for internal typed-evidence composition.
+
+        Public callers continue to receive the unchanged V2 response from execute().
+        """
         scope = RetrievalScopeV2(**request.scope.model_dump())
         principal = principal or principal_from_claims(None)
+        authority = getattr(self._engine, "server_scope_authority", None)
+        scope_resolver = None
+        scopes: tuple[AuthorizedNotebookScope, ...] = ()
+        acl_revision: int | None = None
+        if authority is not None:
+            if not isinstance(authority, SQLiteNotebookScopeAuthority):
+                raise DependencyUnavailableError("trusted membership authority is unavailable")
+            scope_resolver = AuthorizedNotebookScopeResolver(self._engine.storage, authority)
+            scopes = await scope_resolver.resolve(principal, (scope.notebook_id,))
+            acl_revision = scopes[0].membership_revision
+        elif self._config.auth_mode == "jwt":
+            raise DependencyUnavailableError("trusted membership authority is unavailable")
         try:
             async with asyncio.timeout(self._config.max_structured_elapsed_milliseconds / 1000):
-                if type(self._engine) is KnowledgeEngine:
+                if authority is not None or type(self._engine) is KnowledgeEngine:
                     await self._authorize_scope(scope, principal)
                 catalog = await self._engine.structured_retrieval.discover(
                     scope=scope,
                     schema_scan_limit=self._config.max_structured_rows_scanned,
                 )
+                if authority is not None:
+                    await self._authorize_catalog(scope, catalog, principal)
                 if not any(
                     item.readiness is StructuredDatasetReadiness.READY for item in catalog.datasets
                 ):
@@ -109,9 +138,9 @@ class StructuredRetrievalApplicationService:
                 if request.operation is StructuredOperation.DESCRIBE:
                     response = self._describe(request, catalog)
                 elif request.operation is StructuredOperation.JOIN:
-                    response = await self._join(request, catalog, principal)
+                    response = await self._join(request, catalog, principal, acl_revision)
                 else:
-                    response = await self._query(request, catalog, principal)
+                    response = await self._query(request, catalog, principal, acl_revision)
                 if type(self._engine) is KnowledgeEngine and principal.authenticated:
                     response = await self._with_source_metadata(response, principal)
                 if (
@@ -121,9 +150,48 @@ class StructuredRetrievalApplicationService:
                     raise ContractValidationError(
                         "structured response exceeds the server byte ceiling; lower page_size"
                     )
+                if scope_resolver is not None:
+                    await self._authorize_scope(scope, principal)
+                    await self._authorize_catalog(scope, catalog, principal)
+                    await scope_resolver.revalidate(principal, scopes)
         except TimeoutError as error:
             raise OperationTimeoutError("structured retrieval deadline expired") from error
-        return response
+        return response, catalog
+
+    async def _authorize_catalog(
+        self,
+        scope: RetrievalScopeV2,
+        catalog: StructuredDatasetCatalog,
+        principal: ServerPrincipalV1,
+    ) -> None:
+        """Treat discovered dataset ancestry as untrusted until each item is proven."""
+        if catalog.scope != scope or set(catalog.requested_version_ids) != set(scope.version_ids):
+            raise NotFoundError("authorized resource was not found")
+        authorization = CentralAuthorizationServiceV1(self._engine)
+        for item in catalog.datasets:
+            if (
+                item.notebook_id != scope.notebook_id
+                or item.version_id not in scope.version_ids
+                or (scope.document_ids and item.document_id not in scope.document_ids)
+                or (scope.source_ids and item.source_id not in scope.source_ids)
+            ):
+                raise NotFoundError("authorized resource was not found")
+            if (
+                await authorization.authorize_source(
+                    principal, item.source_id, AuthorizationOperationV1.QUERY
+                )
+                != scope.notebook_id
+            ):
+                raise NotFoundError("authorized resource was not found")
+            resolved = await authorization.authorize_document(
+                principal,
+                scope.notebook_id,
+                item.document_id,
+                item.version_id,
+                AuthorizationOperationV1.QUERY,
+            )
+            if resolved.source_id != item.source_id:
+                raise NotFoundError("authorized resource was not found")
 
     async def _authorize_scope(self, scope: RetrievalScopeV2, principal: ServerPrincipalV1) -> None:
         if not principal.authenticated:
@@ -237,13 +305,14 @@ class StructuredRetrievalApplicationService:
         request: StructuredRetrievalRequest,
         catalog: StructuredDatasetCatalog,
         principal: ServerPrincipalV1,
+        acl_revision: int | None = None,
     ) -> StructuredRetrievalResponse:
         selected = _selected(catalog, request.dataset_ids)
         query = _compile_query(request, selected, self._config)
         result = await self._engine.structured_retrieval.execute(
             query=query, catalog=catalog, dataset_ids=request.dataset_ids
         )
-        request_fingerprint = _request_fingerprint(request, principal)
+        request_fingerprint = _request_fingerprint(request, principal, acl_revision)
         offset = self._decode_offset(request, catalog, request_fingerprint)
         page_size = min(request.page_size, self._config.max_structured_page_size)
         aggregate_mode = bool(request.group_by or request.aggregations)
@@ -309,6 +378,7 @@ class StructuredRetrievalApplicationService:
         request: StructuredRetrievalRequest,
         catalog: StructuredDatasetCatalog,
         principal: ServerPrincipalV1,
+        acl_revision: int | None = None,
     ) -> StructuredRetrievalResponse:
         assert request.join is not None
         selected = _selected(catalog, (request.join.left_dataset_id, request.join.right_dataset_id))
@@ -354,13 +424,18 @@ class StructuredRetrievalApplicationService:
             and result.completeness is not RetrievalCompleteness.EMPTY
             for result in (left_result, right_result)
         )
-        offset = self._decode_offset(request, catalog, _request_fingerprint(request, principal))
+        offset = self._decode_offset(
+            request, catalog, _request_fingerprint(request, principal, acl_revision)
+        )
         page_size = min(request.page_size, self._config.max_structured_page_size)
         page = pairs[offset : offset + page_size]
         more = offset + len(page) < len(pairs)
         next_cursor = (
             self._encode_cursor(
-                request, catalog, _request_fingerprint(request, principal), offset + len(page)
+                request,
+                catalog,
+                _request_fingerprint(request, principal, acl_revision),
+                offset + len(page),
             )
             if more and not scan_incomplete
             else None
@@ -786,12 +861,16 @@ def _request_dataset_ids(request: StructuredRetrievalRequest) -> tuple[UUID, ...
 
 
 def _request_fingerprint(
-    request: StructuredRetrievalRequest, principal: ServerPrincipalV1 | None = None
+    request: StructuredRetrievalRequest,
+    principal: ServerPrincipalV1 | None = None,
+    acl_revision: int | None = None,
 ) -> str:
     material = request.model_dump(mode="json", exclude={"cursor"})
     material["security_scope_identity"] = (
         "anonymous" if principal is None else str(principal.actor_id)
     )
+    if acl_revision is not None:
+        material["acl_revision"] = acl_revision
     return hashlib.sha256(
         json.dumps(material, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()

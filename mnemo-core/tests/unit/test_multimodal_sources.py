@@ -1,3 +1,4 @@
+from dataclasses import replace
 from uuid import uuid4
 
 import pytest
@@ -20,6 +21,7 @@ from mnemo.models.advanced_retrieval import (
 from mnemo.retrieval.multimodal_sources import (
     ProjectedMultilingualAdvancedSource,
     ProjectedMultimodalAdvancedSource,
+    _candidate,
 )
 
 
@@ -84,6 +86,31 @@ class _LanguageStore:
             next_offset=None,
             exhausted=True,
         )
+
+
+def test_typed_candidate_identity_binds_each_source_membership() -> None:
+    record = MultimodalEvidenceRecord(
+        notebook_id=uuid4(),
+        source_id=uuid4(),
+        document_id=uuid4(),
+        version_id=uuid4(),
+        occurrence_id=uuid4(),
+        asset_id=uuid4(),
+        derivation_id=uuid4(),
+        generation_id=uuid4(),
+        document_title=None,
+        content="recognized",
+        locator={},
+        language="en",
+        source_rank=1,
+        source_score=1.0,
+    )
+    first = _candidate(EvidenceRepresentation.OCR_TEXT, record)
+    second = _candidate(EvidenceRepresentation.OCR_TEXT, replace(record, source_id=uuid4()))
+    other_notebook = _candidate(
+        EvidenceRepresentation.OCR_TEXT, replace(record, notebook_id=uuid4())
+    )
+    assert len({first.candidate_id, second.candidate_id, other_notebook.candidate_id}) == 3
 
 
 @pytest.mark.anyio

@@ -11,7 +11,7 @@ from functools import partial
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from mnemo import __version__
@@ -21,6 +21,7 @@ from mnemo.tokenizers import O200KBaseTokenCounter
 
 from .auth import AuthMiddleware
 from .config import ServerConfig
+from .dependencies import require_integrated_membership_route
 from .errors import register_error_handlers
 from .routers import (
     capabilities_v2_router,
@@ -393,7 +394,8 @@ def create_app(
         return app
 
     # Register API routers
-    app.include_router(system_router)
+    unintegrated = [Depends(require_integrated_membership_route)]
+    app.include_router(system_router, dependencies=unintegrated)
     app.include_router(streaming_router)
     app.include_router(notebooks_router, prefix="/v1")
     app.include_router(sources_router, prefix="/v1")

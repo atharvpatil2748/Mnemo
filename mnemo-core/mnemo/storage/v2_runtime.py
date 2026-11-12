@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from typing import cast
 from uuid import UUID
 
@@ -175,6 +176,8 @@ class SQLiteV2ReadOnlyRuntimeStore(SQLiteStore):
         clauses, params = _scope_clauses(decision.retrieval_scope)
         clauses.extend(_position_clauses(decision, params))
         params.extend((str(generation_id), limit, offset))
+        observer = getattr(self, "_v2_stage_observer", None)
+        fetch_started = time.perf_counter()
         rows = tuple(
             await (
                 await self._require_open().execute(
@@ -186,14 +189,121 @@ class SQLiteV2ReadOnlyRuntimeStore(SQLiteStore):
                 )
             ).fetchall()
         )
+        if observer is not None:
+            observer(
+                "semantic_sql_fetch",
+                time.perf_counter() - fetch_started,
+                len(rows),
+                sum(len(str(row[0])) for row in rows),
+            )
+        validate_started = time.perf_counter()
         values = tuple(
             _checked_payload(row, MultilingualTextProjectionRowV2, "V2 semantic row")
             for row in rows
         )
         for value in values:
             _validate_projection_row(value, decision, generation_id)
-            await self._validate_observations(value)
+        if observer is not None:
+            observer(
+                "semantic_decode_validate",
+                time.perf_counter() - validate_started,
+                len(values),
+                0,
+            )
+        observations_started = time.perf_counter()
+        representations = await self._load_observation_payloads(
+            "representation_observations_v1",
+            tuple(value.representation.representation_observation_id for value in values),
+            RepresentationObservationV1,
+            "representation observation",
+        )
+        languages = await self._load_observation_payloads(
+            "language_observations_v2",
+            tuple(
+                reference.observation_id
+                for value in values
+                for reference in value.language_observation_references
+            ),
+            LanguageObservationV2,
+            "language observation",
+        )
+        scripts = await self._load_observation_payloads(
+            "script_observations_v1",
+            tuple(
+                reference.observation_id
+                for value in values
+                for reference in value.script_observation_references
+            ),
+            ScriptObservationV1,
+            "script observation",
+        )
+        for value in values:
+            representation = cast(
+                RepresentationObservationV1,
+                representations[str(value.representation.representation_observation_id)],
+            )
+            if (
+                representation.source_reference != value.source
+                or representation.language_observation_references
+                != value.language_observation_references
+                or representation.script_observation_references
+                != value.script_observation_references
+            ):
+                raise StorageError("EVIDENCE_LINEAGE_INVALID")
+            for reference in value.language_observation_references:
+                _validate_observation_reference(
+                    reference,
+                    cast(LanguageObservationV2, languages[str(reference.observation_id)]),
+                )
+            for reference in value.script_observation_references:
+                _validate_observation_reference(
+                    reference,
+                    cast(ScriptObservationV1, scripts[str(reference.observation_id)]),
+                )
+        if observer is not None:
+            observer(
+                "semantic_observation_validation",
+                time.perf_counter() - observations_started,
+                len(values),
+                0,
+            )
         return values
+
+    async def _load_observation_payloads(
+        self,
+        table: str,
+        identities: tuple[UUID, ...],
+        expected: type[object],
+        label: str,
+    ) -> dict[str, object]:
+        if table not in {
+            "representation_observations_v1",
+            "language_observations_v2",
+            "script_observations_v1",
+        }:
+            raise ValueError("unsupported governed V2 evidence table")
+        wanted = {str(identity) for identity in identities}
+        if not wanted:
+            return {}
+        rows = tuple(
+            await (
+                await self._require_open().execute(
+                    f"SELECT observation_id,payload,payload_hash FROM {table} "
+                    "JOIN json_each(?) requested ON observation_id=requested.value "
+                    "ORDER BY observation_id",
+                    (json.dumps(sorted(wanted), separators=(",", ":")),),
+                )
+            ).fetchall()
+        )
+        loaded: dict[str, object] = {}
+        for row in rows:
+            identity = str(row[0])
+            if identity not in wanted or identity in loaded:
+                raise StorageError(f"invalid persisted {label}")
+            loaded[identity] = _checked_payload(row[1:], expected, label)
+        if loaded.keys() != wanted:
+            raise StorageError(f"missing {label}")
+        return loaded
 
     async def get_authorized_v2_semantic_row(
         self,

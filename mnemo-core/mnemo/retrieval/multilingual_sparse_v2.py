@@ -16,6 +16,7 @@ from mnemo.retrieval.multilingual_dense_v2 import (
     MULTILINGUAL_V2_PAGE_SIZE,
     AuthorizedMultilingualSourceEnumeratorV2,
     PagedAuthorizedMultilingualSourceEnumeratorV2,
+    RequestScopedAuthorizedSourcePagesV2,
 )
 
 
@@ -54,15 +55,22 @@ class AuthorizedMultilingualSparseRetrievalV2:
         self._store = store
         self._generation_id = generation_id
 
+    @property
+    def source_enumerator(self) -> AuthorizedMultilingualSourceEnumeratorV2:
+        return self._source_enumerator
+
     async def retrieve_authorized_multilingual_sparse(
         self,
         *,
         decision: V2RetrievalAuthorizationDecisionV1,
         plan: RetrievalPlanV2,
         limit: int,
+        source_pages: RequestScopedAuthorizedSourcePagesV2 | None = None,
     ) -> tuple[MultilingualSparseMatchV2, ...]:
         if not 1 <= limit <= 1000:
             raise ValueError("multilingual sparse result limit is outside governed bounds")
+        if source_pages is not None and source_pages.enumerator is not self._source_enumerator:
+            raise PermissionError("authorized source census belongs to another enumerator")
         ranked_rows: list[tuple[MultilingualTextProjectionRowV2, float]] = []
         seen_sources: set[str] = set()
         paged_enumerator = (
@@ -77,12 +85,24 @@ class AuthorizedMultilingualSparseRetrievalV2:
         )
         for offset in offsets:
             authorized = (
-                await paged_enumerator.enumerate_authorized_multilingual_sources_page(
-                    decision=decision, offset=offset, limit=MULTILINGUAL_V2_PAGE_SIZE
+                await (
+                    source_pages.page(
+                        decision=decision, offset=offset, limit=MULTILINGUAL_V2_PAGE_SIZE
+                    )
+                    if source_pages is not None
+                    else paged_enumerator.enumerate_authorized_multilingual_sources_page(
+                        decision=decision, offset=offset, limit=MULTILINGUAL_V2_PAGE_SIZE
+                    )
                 )
                 if paged_enumerator is not None
-                else await self._source_enumerator.enumerate_authorized_multilingual_sources(
-                    decision=decision, limit=MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS + 1
+                else await (
+                    source_pages.all(
+                        decision=decision, limit=MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS + 1
+                    )
+                    if source_pages is not None
+                    else self._source_enumerator.enumerate_authorized_multilingual_sources(
+                        decision=decision, limit=MAX_ELIGIBLE_MULTILINGUAL_V2_VECTORS + 1
+                    )
                 )
             )
             if (

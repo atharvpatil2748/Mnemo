@@ -1,0 +1,174 @@
+{
+  "schema": "mnemo.phase86-four-notebook-identity-blueprint/1",
+  "judgment_method": "DETERMINISTIC_ENGINEERING",
+  "judgment_subtype": "HISTORICAL_QUERY_KEYWORD_ANCHOR_AND_SNAPSHOT_IDENTITY",
+  "human_adjudication_claimed": false,
+  "semantic_relevance_adjudicated": false,
+  "historical_queries": "scratch/execute_phase8_6_eval.py",
+  "historical_queries_sha256": "2a2ccbe04db010665c9cb9830c02c3de537cfff1296938a60e6fa39efd99634b",
+  "snapshot_sha256": "1902c3a46b2c4cba3bab7efae237af178b0830df7298fc26073c49047ad91c93",
+  "cases": [
+    {
+      "case_id": "PH86-DERE3-Q01-EN",
+      "historical_qid": "Q01",
+      "query": "What are the rules for imports at the top of a Python file according to style guides?",
+      "query_language": "en",
+      "target_language": "en",
+      "selected_partitions": ["en"],
+      "target_memberships": ["en"],
+      "target_file": "pep8_python_style_guide.md",
+      "anchor_phrases": ["Imports should usually be on separate lines"],
+      "target": {
+        "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+        "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0",
+        "evidence_id": "3371a1b21e9d2c797a20456038b8dd5b0641ccea1827951896511238f0909194",
+        "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+        "evidence_content_sha256": "720ba8c6ca6aa731214c018d85bbbcdb26a0e75aa8cfd2f32a839b211ffa4ce3"
+      }
+    },
+    {
+      "case_id": "PH86-DERE3-Q04-EN",
+      "historical_qid": "Q04",
+      "query": "What is the vibration transmissibility and amplitude response of a single degree of freedom system under varying excitation frequency?",
+      "query_language": "en",
+      "target_language": "en",
+      "selected_partitions": ["en"],
+      "target_memberships": ["en"],
+      "target_file": "engineering_lab_report_heat_transfer.docx",
+      "anchor_phrases": ["Vibration transmissibility"],
+      "target": {
+        "document_id": "fb42c33b-d2a5-5ccc-b4fe-80571534a617",
+        "version_id": "06e47750-85ee-5fed-afb6-84ea93eaf06c",
+        "evidence_id": "69e14ccf382f744346d617d85f9cfc6a66a17a4ae06614e4acfbd31a3ece53cb",
+        "source_file_sha256": "3948068a479ef85b2a5202a9ad29425aff7416f85988b9c65c5515d4163b23be",
+        "evidence_content_sha256": "e8d534b3ccb202db965b9e3532545021525ad3d2fe582746d49069aac0f89674"
+      }
+    },
+    {
+      "case_id": "PH86-DERE3-Q11-HI",
+      "historical_qid": "Q11",
+      "query": "होरी महतो और धनिया के बीच गाय की लालसा और घर की गरीबी को लेकर क्या बातचीत होती है?",
+      "query_language": "hi",
+      "target_language": "hi",
+      "selected_partitions": ["hi"],
+      "target_memberships": ["hi"],
+      "target_file": "CAND-FD-HI-HTML-01-godan.html",
+      "anchor_phrases": ["होरी", "धनिया", "गाय"],
+      "target": {
+        "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+        "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39",
+        "evidence_id": "142b4c49b71746a0d584efc6622d57557d61c6ea33d2554a366a98dc070a2e7e",
+        "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+        "evidence_content_sha256": "6171a32211ca9632b78e1b687f0382c7fc543fcce3ff9c2394e7c564dae9d81e"
+      }
+    },
+    {
+      "case_id": "PH86-DERE3-Q14-MR",
+      "historical_qid": "Q14",
+      "query": "महाराष्ट्राच्या आर्थिक पाहणी अहवालानुसार राज्याचा विकास दर आणि कृषी क्षेत्राची प्रमुख वैशिष्ट्ये काय आहेत?",
+      "query_language": "mr",
+      "target_language": "mr",
+      "selected_partitions": ["mr"],
+      "target_memberships": ["mr"],
+      "target_file": "mahades_economic_survey_highlights_marathi.pdf",
+      "anchor_phrases": ["कृषी"],
+      "target": {
+        "document_id": "6b7e6df9-9500-5ad0-ac56-ec79cbc05e32",
+        "version_id": "c500439f-ddbb-5e9e-a7cf-7225b5f56313",
+        "evidence_id": "323244103a9addd45566d66ea7d0ca4e4ee6afad3e2c0cc9cb4364ed72a69ccf",
+        "source_file_sha256": "53f94cdb7acb9caa2066aca6061d3ddff83407a20da5cabfd990df3815ab1e9e",
+        "evidence_content_sha256": "f1475c70b51c13b838211a2b72e8ec3cc04db64f8f34cab8a40f06711ef10f81"
+      }
+    },
+    {
+      "case_id": "PH86-DERE3-Q21-ALL4",
+      "historical_qid": "Q21",
+      "query": "How does farmer Hori struggle with poverty and debt regarding owning a cow in Munshi Premchand's Godan?",
+      "query_language": "en",
+      "target_language": "hi",
+      "selected_partitions": ["existing", "hi", "mr", "en"],
+      "target_memberships": ["existing", "hi"],
+      "target_file": "CAND-FD-HI-HTML-01-godan.html",
+      "anchor_phrases": ["होरी", "धनिया", "गाय"],
+      "target": {
+        "document_id": "18b68c01-6da4-5cff-b206-bb8bbc963f46",
+        "version_id": "42ebe9b1-5603-5869-bb68-e66e5c07bd39",
+        "evidence_id": "142b4c49b71746a0d584efc6622d57557d61c6ea33d2554a366a98dc070a2e7e",
+        "source_file_sha256": "9ec8a82b8795c1c09261a0f862e76f7319b1adde64ac5d02079bf9b3fa397a0f",
+        "evidence_content_sha256": "6171a32211ca9632b78e1b687f0382c7fc543fcce3ff9c2394e7c564dae9d81e"
+      }
+    },
+    {
+      "case_id": "PH86-DERE3-Q22-ALL4",
+      "historical_qid": "Q22",
+      "query": "What is the state of agriculture and economic growth in Maharashtra according to the economic survey highlights?",
+      "query_language": "en",
+      "target_language": "mr",
+      "selected_partitions": ["existing", "hi", "mr", "en"],
+      "target_memberships": ["existing", "mr"],
+      "target_file": "mahades_economic_survey_highlights_marathi.pdf",
+      "anchor_phrases": ["कृषी"],
+      "target": {
+        "document_id": "6b7e6df9-9500-5ad0-ac56-ec79cbc05e32",
+        "version_id": "c500439f-ddbb-5e9e-a7cf-7225b5f56313",
+        "evidence_id": "323244103a9addd45566d66ea7d0ca4e4ee6afad3e2c0cc9cb4364ed72a69ccf",
+        "source_file_sha256": "53f94cdb7acb9caa2066aca6061d3ddff83407a20da5cabfd990df3815ab1e9e",
+        "evidence_content_sha256": "f1475c70b51c13b838211a2b72e8ec3cc04db64f8f34cab8a40f06711ef10f81"
+      }
+    },
+    {
+      "case_id": "PH86-DERE3-Q25-SUBSET",
+      "historical_qid": "Q25",
+      "query": "पायथन भाषा में कोड लिखते समय वैरिएबल और फ़ंक्शन के नामकरण तथा स्टाइल के क्या मानक नियम हैं?",
+      "query_language": "hi",
+      "target_language": "en",
+      "selected_partitions": ["hi", "en"],
+      "target_memberships": ["en"],
+      "target_file": "pep8_python_style_guide.md",
+      "anchor_phrases": ["Function Names", "Variable Names"],
+      "target": {
+        "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+        "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0",
+        "evidence_id": "7fbb45c552da343da78b7221e45ee99e610716eefaa6734fdcfd1b99486d6de4",
+        "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+        "evidence_content_sha256": "aed572fe97b176db5d6de106879349ca6726b805246c2a7c1c55556466e74186"
+      }
+    },
+    {
+      "case_id": "PH86-DERE3-Q29-SUBSET",
+      "historical_qid": "Q29",
+      "query": "ब्रिटनमधील ग्राहक महागाई दर आणि किंमत निर्देशांकातील त्रैमासिक बदल काय आहेत?",
+      "query_language": "mr",
+      "target_language": "en",
+      "selected_partitions": ["mr", "en"],
+      "target_memberships": ["en"],
+      "target_file": "ons_uk_consumer_price_inflation.xlsx",
+      "anchor_phrases": ["Consumer price inflation", "CPIH", "percentage change"],
+      "target": {
+        "document_id": "40a7b1f2-c3ac-5b89-b5ab-76b28f89a326",
+        "version_id": "26e56941-ae90-5268-8dd0-70c0b8cf557c",
+        "evidence_id": "b813a097b7935cd249e2723778cfd6de49c73611bcd82bf32c635ba65c424d4d",
+        "source_file_sha256": "a4da62c5e91e6ae728c06268bf408d11aa9e5d6a9b5d756e159b88836cee8843",
+        "evidence_content_sha256": "3c06b1255f2a20440448489c76fa5f189df6362d1c574f2b582beff0502c6f4c"
+      }
+    },
+    {
+      "case_id": "PH86-DERE3-Q01-ALL4",
+      "historical_qid": "Q01",
+      "query": "What are the rules for imports at the top of a Python file according to style guides?",
+      "query_language": "en",
+      "target_language": "en",
+      "selected_partitions": ["existing", "hi", "mr", "en"],
+      "target_memberships": ["existing", "en"],
+      "target_file": "pep8_python_style_guide.md",
+      "anchor_phrases": ["Imports should usually be on separate lines"],
+      "target": {
+        "document_id": "95f81bdf-e436-57a4-b058-87e5862aceda",
+        "version_id": "293e4b68-f9a9-5092-b4c2-c205859894a0",
+        "evidence_id": "3371a1b21e9d2c797a20456038b8dd5b0641ccea1827951896511238f0909194",
+        "source_file_sha256": "6028935c6cb2c674d5f4d512c7ba6ce2923713b1c47ce1a78adc690db817fc5d",
+        "evidence_content_sha256": "720ba8c6ca6aa731214c018d85bbbcdb26a0e75aa8cfd2f32a839b211ffa4ce3"
+      }
+    }
+  ]
+}

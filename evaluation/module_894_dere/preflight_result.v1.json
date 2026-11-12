@@ -1,0 +1,16 @@
+{
+  "protocol": "DERE-1",
+  "run_kind": "READ_ONLY_PROVENANCE_PREFLIGHT",
+  "command": ".venv/Scripts/python.exe scripts/verify_module_894_dere.py --manifest evaluation/module_894_dere/manifest.v1.json --snapshot scratch/phase8_5_11/eval-20260825-02",
+  "exit_code": 0,
+  "cases": [
+    {"case_id": "DERE-894-ENMR-CANONICAL-001", "ancestry": "PASS"}
+  ],
+  "source_receipt": "PASS",
+  "source_bytes": "NOT_VERIFIED",
+  "active_generation_count": 0,
+  "admission": "BLOCKED_NO_ACTIVE_GENERATION_OR_ATTACHED_ACL",
+  "authorized_scoped_search": "NOT_RUN",
+  "ranking_metrics": "NOT_RUN",
+  "human_semantic_relevance": "NOT_ADJUDICATED"
+}

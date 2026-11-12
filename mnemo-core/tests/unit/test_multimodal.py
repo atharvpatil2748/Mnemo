@@ -876,7 +876,7 @@ def test_schema_12_migration_is_idempotent_and_rollback_safe(tmp_path: Path, mon
     _run(store.open())
     _run(store.close())
     with sqlite3.connect(path) as db:
-        assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (16,)
+        assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (17,)
         assert db.execute(
             "SELECT name FROM sqlite_master WHERE name='final_qa_v2_executions'"
         ).fetchone() == ("final_qa_v2_executions",)

@@ -137,6 +137,18 @@ class AuthorizedSourceMetadataResolverV1:
                 ),
                 content_hash=version.content_hash,
             )
+        # This resolver is also used by response adapters after retrieval.
+        # A grant can change while a bounded batch is assembled; do not hand
+        # back cached presentation fields without a final authority check.
+        authorization = CentralAuthorizationServiceV1(self._engine)
+        for reference in resolved:
+            await authorization.authorize_document(
+                principal,
+                reference.notebook_id,
+                reference.document_id,
+                resolved[reference].version_id,
+                AuthorizationOperationV1.RETRIEVE,
+            )
         return resolved
 
     async def resolve(

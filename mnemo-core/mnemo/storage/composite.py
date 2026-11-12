@@ -391,6 +391,29 @@ class CompositeStorage:
                 return False
             return await self._fs.delete_asset(asset_id)
 
+    async def reconcile_orphan_asset_candidate(
+        self, content_hash: str, mime_types: tuple[str, ...]
+    ) -> bool:
+        """Clean a journaled new asset only when no catalog ancestry survives.
+
+        The caller must hold the source writer process lock. No filesystem
+        candidate is removed if SQL still references its content identity.
+        """
+        asset_id = self._fs.asset_id_for_hash(content_hash)
+        async with self._asset_gc_lock:
+            if await self._sql.is_asset_referenced(asset_id):
+                return False
+            catalogued = await self._sql.get_asset_record(asset_id)
+            if catalogued is not None:
+                if (
+                    catalogued.content_hash != content_hash
+                    or catalogued.mime_type not in mime_types
+                ):
+                    raise IntegrityError("orphan asset catalog identity is inconsistent")
+                if not await self._sql.delete_asset_catalog_record(asset_id):
+                    raise IntegrityError("orphan asset catalog remained after reconciliation")
+            return await self._fs.reconcile_orphan_asset_candidate(content_hash, mime_types)
+
     # -------------------------------------------------------------------------
     # SQLite operations
     # -------------------------------------------------------------------------
@@ -502,6 +525,9 @@ class CompositeStorage:
         self, capability: str, profile: str
     ) -> IndexGeneration | None:
         return await self._sql.get_active_index_generation(capability, profile)
+
+    async def list_active_index_generations(self, capability: str) -> tuple[IndexGeneration, ...]:
+        return await self._sql.list_active_index_generations(capability)
 
     async def put_index_generation_coverage(self, coverage: ProjectionCoverage) -> bool:
         return await self._sql.put_index_generation_coverage(coverage)
@@ -679,6 +705,15 @@ class CompositeStorage:
 
     async def list_sources_for_document(self, document_id: UUID) -> tuple[Source, ...]:
         return await self._sql._list_sources_for_document(document_id)
+
+    async def reconcile_document_membership(self, document_id: UUID) -> None:
+        """Reproject canonical source membership after an interrupted source write.
+
+        This is idempotent, but not a transaction across SQLite and Qdrant.
+        Callers must keep the affected notebook quarantined until it returns.
+        """
+        async with self._projection_lock:
+            await self._refresh_memberships((document_id,))
 
     async def upsert_note(self, note: Note) -> None:
         return await self._sql.upsert_note(note)
@@ -1294,3 +1329,29 @@ class CompositeStorage:
             if isinstance(e, StorageError):
                 raise
             raise StorageError(f"cascade delete failed: {e}") from e
+
+    async def reconcile_unpublished_document(
+        self, *, document_id: UUID, version_id: UUID, content_hash: str
+    ) -> None:
+        """Remove an unassociated failed ingest before a same-content retry.
+
+        The caller must hold its durable ingestion quarantine and writer lock.
+        Never remove a document associated with any notebook. An indexed
+        document with no source association can be left by a crash after
+        indexing but before publication. The version-scoped IR delete is
+        repeated even when SQL is already absent.
+        """
+        document = await self._sql.get_document(document_id)
+        if document is not None:
+            if (
+                document.current_version_id != version_id
+                or document.current_hash != content_hash
+                or await self._sql._list_sources_for_document(document_id)
+            ):
+                raise IntegrityError("unpublished document cannot be reconciled safely")
+            await self.delete_document_cascade(document_id)
+        else:
+            # An earlier attempt may have committed SQL deletion before exit.
+            await self._qdr.delete_chunks_for_document(document_id, None)
+            await self._sur.delete_graph_for_document(document_id)
+        await self._fs.reconcile_parsed_document_candidate(version_id)

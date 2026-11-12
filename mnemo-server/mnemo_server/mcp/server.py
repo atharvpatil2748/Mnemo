@@ -33,8 +33,10 @@ from mnemo_server.auth import AuthMiddleware
 from mnemo_server.config import ServerConfig
 from mnemo_server.runtime_config import resolve_mnemo_runtime_config
 from mnemo_server.schemas.capabilities_v2 import CapabilityDiscoveryRequest
+from mnemo_server.services.authorization import ServerPrincipalV1
 from mnemo_server.services.delivery import build_delivery_service_for_storage
 from mnemo_server.services.retrieval_v2 import build_retrieval_cursor_codec
+from mnemo_server.services.trusted_actor import TrustedJWTActorMapper
 from mnemo_server.tokenizer_provisioning import provision_tokenizer
 from mnemo_server.typed_errors import classify_public_error
 
@@ -257,6 +259,11 @@ def create_mcp_server(
     async def list_resources() -> list[types.Resource]:
         """List resources exposed by Mnemo."""
         require_current_production_selection()
+        if (
+            server._engine is not None
+            and getattr(server._engine, "server_scope_authority", None) is not None
+        ):
+            return []  # No ACL-aware capability resource is registered yet.
         if server._config.full_multilingual_v2_enabled:
             require_authenticated_principal(
                 resolved_principal_provider() if resolved_principal_provider else None
@@ -276,6 +283,11 @@ def create_mcp_server(
     @server.read_resource()  # type: ignore[no-untyped-call]
     async def read_resource(uri):  # type: ignore[no-untyped-def]
         require_current_production_selection()
+        if (
+            server._engine is not None
+            and getattr(server._engine, "server_scope_authority", None) is not None
+        ):
+            raise PermissionError("membership capability resource is unavailable")
         if server._config.full_multilingual_v2_enabled:
             require_authenticated_principal(
                 resolved_principal_provider() if resolved_principal_provider else None
@@ -535,9 +547,24 @@ async def run_stdio_server(
             pre_certification_observation,
             production_binding is not None,
         )
-    principal = (
-        stdio_principal(resolved_config) if resolved_config.full_multilingual_v2_enabled else None
-    )
+    membership_mapper = getattr(active_engine, "server_actor_mapper", None)
+    principal: ServerPrincipalV1 | None
+    if (
+        active_engine is not None
+        and getattr(active_engine, "server_scope_authority", None) is not None
+    ):
+        if not isinstance(membership_mapper, TrustedJWTActorMapper):
+            raise PermissionError("trusted MCP membership actor mapper is unavailable")
+        subject = resolved_config.mcp_stdio_principal_subject
+        if subject is None:
+            raise PermissionError("trusted MCP stdio subject is unavailable")
+        principal = membership_mapper.from_server_subject(subject)
+    else:
+        principal = (
+            stdio_principal(resolved_config)
+            if resolved_config.full_multilingual_v2_enabled
+            else None
+        )
     if pre_certification_observation:
         if principal is None:
             raise RuntimeError("PRE_CERTIFICATION_PRINCIPAL_UNAVAILABLE")
@@ -630,7 +657,13 @@ def create_sse_app(
             engine=active_engine,
             config=server_config,
             principal_provider=(
-                session_principal if server_config.full_multilingual_v2_enabled else None
+                session_principal
+                if server_config.full_multilingual_v2_enabled
+                or (
+                    active_engine is not None
+                    and getattr(active_engine, "server_scope_authority", None) is not None
+                )
+                else None
             ),
         )
     )
@@ -824,8 +857,24 @@ def create_sse_app(
 
         async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
             init_options = active_server.create_initialization_options()
-            if server_config.full_multilingual_v2_enabled:
-                principal = sse_principal_from_scope(scope)
+            if server_config.full_multilingual_v2_enabled or (
+                active_engine is not None
+                and getattr(active_engine, "server_scope_authority", None) is not None
+            ):
+                mapper = None
+                if (
+                    active_engine is not None
+                    and getattr(active_engine, "server_scope_authority", None) is not None
+                ):
+                    mapper = getattr(active_engine, "server_actor_mapper", None)
+                    if (
+                        not isinstance(mapper, TrustedJWTActorMapper)
+                        or server_config.auth_mode != "jwt"
+                        or server_config.jwt_secret != mapper.signing_secret
+                        or tuple(server_config.jwt_algorithms) != mapper.allowed_algorithms
+                    ):
+                        raise PermissionError("trusted MCP SSE actor mapping is unavailable")
+                principal = sse_principal_from_scope(scope, mapper)
                 with bind_session_principal(principal):
                     async with sse_transport.connect_sse(scope, receive, send) as (
                         read_stream,

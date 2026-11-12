@@ -1,0 +1,40 @@
+{
+  "schema_version": "mnemo.dere/1",
+  "protocol_version": "DERE-1",
+  "judgment_method": "DETERMINISTIC_ENGINEERING",
+  "human_adjudication_claimed": false,
+  "status": "PROVENANCE_PREFLIGHT_ONLY",
+  "snapshot": {
+    "identity": "phase8_5_11/eval-20260825-02",
+    "source_manifest_sha256": "50264ae4d080a6607467399ee65e00e74af6f782d161969e06f1d81abc9318c9",
+    "source_file_bytes_verified": false
+  },
+  "case_id_conflict": {
+    "historical_id": "P85-EVAL-ENMR-001",
+    "disposition": "DISTINCT_DERE_ID_NO_GRADE_TRANSFER",
+    "note": "The proposed inventory and earlier readiness report assign different query/version/chunk tuples to this ID. Both originals remain untouched."
+  },
+  "cases": [
+    {
+      "case_id": "DERE-894-ENMR-CANONICAL-001",
+      "evaluation_protocol_version": "DERE-1",
+      "judgment_method": "DETERMINISTIC_ENGINEERING",
+      "snapshot_identity": "phase8_5_11/eval-20260825-02",
+      "query": "How did the author spend their sixth grade year according to the personal reflection?",
+      "query_language": "en",
+      "target_language": "mr",
+      "representation": "canonical_text",
+      "notebook_id": "df9c20cf-85fe-529c-902e-2e9e68193fbe",
+      "source_id": "9cfa0b9f-3e36-406a-8e33-27fed891a54b",
+      "document_id": "cb86bb2f-8af6-5a0e-8bde-ae70fb22aac3",
+      "version_id": "64488aa1-2d45-5320-8cbf-318fb1dc98d8",
+      "source_file_sha256": "31addf387d13de26e3b155e1fc6ee65d5f554cfdfb4281951c56e9482b6f8085",
+      "evidence_id": "523c5c88b522ce818212ffc42241706b731a767bb4dc5045ffa1a99e3392a0ca",
+      "evidence_content_sha256": "79d8b0a7f0dd89bfffef100682b2c8cef6221c968fce181b796739fe0180af9d",
+      "positive_evidence_ids": ["523c5c88b522ce818212ffc42241706b731a767bb4dc5045ffa1a99e3392a0ca"],
+      "negative_evidence_ids": ["6ca72226f39552c65fa3f09fe06c59d792f7d16d06143b228e4863f805cd9545"],
+      "negative_basis": "DIFFERENT_DOCUMENT_OUTSIDE_EXACT_SELECTED_TUPLE_NOT_SEMANTIC_NONRELEVANCE",
+      "judgment_provenance": "Proposed V2 governed case inventory plus read-only exact ancestry join in isolated snapshot; no human grade transferred."
+    }
+  ]
+}

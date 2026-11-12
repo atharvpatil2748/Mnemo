@@ -35,6 +35,7 @@ from mnemo.retrieval.full_multilingual_v2 import (
 from mnemo.retrieval.multilingual_dense_v2 import (
     AuthorizedMultilingualDenseRetrievalV2,
     AuthorizedMultilingualSourceEnumeratorV2,
+    DenseRetrievalStageObserverV2,
     MultilingualEmbeddingStoreV2,
     MultilingualQueryEmbedderV2,
 )
@@ -135,6 +136,7 @@ class V2RuntimeCompositionDependencies:
     query_language_resolver: QueryLanguageResolverV2
     projector: V2AdvancedCandidateProjector
     exhaustive_fallback: object
+    dense_stage_observer: DenseRetrievalStageObserverV2 | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -211,6 +213,7 @@ class FullMultilingualV2EvaluationRuntimeFactory:
             query_embedder=self._dependencies.query_embedder,
             generation_id=vector_binding.embedding_generation_id,
             vector_space=self._identity.vector_space_identity,
+            stage_observer=self._dependencies.dense_stage_observer,
         )
         sparse = AuthorizedMultilingualSparseRetrievalV2(
             source_enumerator=self._dependencies.source_enumerator,

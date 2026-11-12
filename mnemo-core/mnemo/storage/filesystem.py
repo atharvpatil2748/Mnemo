@@ -134,7 +134,9 @@ def _atomic_write(path: Path, data: bytes) -> None:
     On Windows, os.replace() handles overwrite safely since Python 3.3.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_path = tempfile.mkstemp(dir=path.parent, prefix=".tmp_")
+    # The target-qualified prefix permits exact crash recovery without
+    # sweeping unrelated temporary files from the shard directory.
+    fd, tmp_path = tempfile.mkstemp(dir=path.parent, prefix=f".tmp_{path.name}_")
     try:
         try:
             os.write(fd, data)
@@ -157,6 +159,15 @@ def _atomic_write(path: Path, data: bytes) -> None:
         with contextlib.suppress(OSError):
             os.unlink(tmp_path)
         raise
+
+
+def _remove_target_temps(path: Path) -> None:
+    """Remove only temporary siblings created for this exact target."""
+    if not path.parent.is_dir():
+        return
+    for candidate in path.parent.glob(f".tmp_{path.name}_*"):
+        if candidate.is_file():
+            candidate.unlink()
 
 
 # ------------------------------------------------------------------
@@ -390,6 +401,13 @@ class FilesystemBlobStore:
         """Return the side-car index path for *asset_id*."""
         return self._root / "_index" / "assets" / f"{asset_id}.json"
 
+    @staticmethod
+    def asset_id_for_hash(content_hash: str) -> UUID:
+        """Resolve the store's stable asset identity without writing bytes."""
+        if len(content_hash) != 64 or any(char not in "0123456789abcdef" for char in content_hash):
+            raise ValueError("content_hash must be lowercase SHA-256")
+        return _asset_id_for_hash(content_hash)
+
     def _ir_path(self, version_id: UUID) -> Path:
         """Return the parsed IR path for *version_id*."""
         prefix = str(version_id)[:8]
@@ -601,6 +619,54 @@ class FilesystemBlobStore:
 
         return True
 
+    async def reconcile_orphan_asset_candidate(
+        self, content_hash: str, mime_types: tuple[str, ...]
+    ) -> bool:
+        """Remove one exact unreferenced crash candidate and its qualified temp files.
+
+        The caller must establish exclusive writer quiescence and prove that
+        no SQL reference or pre-existing blob can be affected.
+        """
+        self._require_open()
+        if not mime_types or any(not item for item in mime_types):
+            raise ValueError("candidate media types are required")
+        asset_id = self.asset_id_for_hash(content_hash)
+        index_path = self._asset_index_path(asset_id)
+        blob_paths = tuple(self._blob_path(content_hash, item) for item in mime_types)
+        if index_path.exists():
+            try:
+                index = json.loads(index_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                raise StorageError("orphan asset index could not be read") from exc
+            if (
+                index.get("asset_id") != str(asset_id)
+                or index.get("content_hash") != content_hash
+                or index.get("mime_type") not in mime_types
+            ):
+                raise IntegrityError("orphan asset candidate identity is inconsistent")
+        for blob_path in blob_paths:
+            if blob_path.exists():
+                try:
+                    data = blob_path.read_bytes()
+                except OSError as exc:
+                    raise StorageError("orphan asset candidate could not be read") from exc
+                if _compute_sha256(data) != content_hash:
+                    raise IntegrityError("orphan asset candidate bytes are inconsistent")
+        existed = index_path.exists() or any(item.exists() for item in blob_paths)
+        try:
+            index_path.unlink(missing_ok=True)
+            _remove_target_temps(index_path)
+            for blob_path in blob_paths:
+                blob_path.unlink(missing_ok=True)
+                _remove_target_temps(blob_path)
+            blob_dir = self._blob_dir(content_hash)
+            if blob_dir.is_dir():
+                with contextlib.suppress(OSError):
+                    blob_dir.rmdir()
+        except OSError as exc:
+            raise StorageError("orphan asset candidate cleanup failed") from exc
+        return existed
+
     async def contains_hash(self, content_hash: str) -> bool:
         """Return True if any blob with *content_hash* exists on disk."""
         self._require_open()
@@ -669,13 +735,25 @@ class FilesystemBlobStore:
         if not isinstance(version_id, UUID):
             raise TypeError("version_id must be a UUID")
         ir_path = self._ir_path(version_id)
+        existed = ir_path.exists()
         try:
-            ir_path.unlink()
-        except FileNotFoundError:
-            return False
+            ir_path.unlink(missing_ok=True)
         except OSError as exc:
             raise StorageError(f"could not delete parsed IR {ir_path}: {exc}") from exc
-        return True
+        return existed
+
+    async def reconcile_parsed_document_candidate(self, version_id: UUID) -> None:
+        """Remove an unpublished IR and its exact interrupted-write siblings.
+
+        The ingestion recovery caller must hold the writer lock; ordinary
+        cascades must not remove a concurrent writer's temporary file.
+        """
+        await self.delete_parsed_document(version_id)
+        ir_path = self._ir_path(version_id)
+        try:
+            _remove_target_temps(ir_path)
+        except OSError as exc:
+            raise StorageError(f"could not reconcile parsed IR {ir_path}: {exc}") from exc
 
     # ------------------------------------------------------------------
     # Lifecycle inspection

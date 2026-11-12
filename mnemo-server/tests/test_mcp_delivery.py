@@ -394,7 +394,7 @@ async def test_mcp_delivery_uses_server_configured_bounds() -> None:
             },
             config,
         )
-    service_factory.assert_called_once_with(engine, config, principal_from_claims(None))
+    service_factory.assert_called_once_with(engine, config, principal_from_claims(None), None)
 
 
 @pytest.mark.anyio

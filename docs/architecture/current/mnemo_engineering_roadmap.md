@@ -1571,9 +1571,61 @@ keep existing adapters and feature-gate new contract.
 
 | Task ID | Task | Implementation notes / acceptance criteria | Complexity | Dependencies | Required evidence |
 |---|---|---|---|---|---|
-| 8.9.1a | Inventory current clients/routes/tools | Enumerate live MCP registry, FastAPI routes, defaults, external consumers and exact frozen V1 semantics; identify in-process vs external evidence | Medium | 8.8.8 | Versioned inventory and contract snapshots |
+| 8.9.1a | Inventory current clients/routes/tools | Enumerate live MCP registry, FastAPI routes, defaults, repository-evidenced consumers and exact frozen V1 semantics; identify in-process versus external evidence and record unknown private external consumers explicitly, never inferring absence | Medium | 8.8.8 | Versioned inventory and contract snapshots |
 | 8.9.1b | Freeze V2 scope/evidence contract | Explicit all-authorized or selected notebooks and document/version tuples; bounded ranked/traversal modes; typed representation/partial/error report; no client actor/store/generation | High | 8.9.1a, ADR-0080 acceptance | Schema review, compatibility matrix, invalid-input fixtures |
-| 8.9.1c | Govern migration/deprecation | Preserve current names until consumers migrate; proposal `search` and `/v2/search` is not registered; direct image search optional only by later decision | Medium | 8.9.1b | Consumer sign-off and reversible migration plan |
+| 8.9.1c | Govern migration/deprecation | Preserve current names; design-approved `search` and `/v2/search` remain unregistered until their later implementation; direct image search remains optional only by later decision. Inventory repository-evidenced consumers and explicitly unknown external consumers; define compatibility, rollback, deprecation and consumer sign-off process. | Medium | 8.9.1b | Versioned consumer inventory, reviewed reversible migration/deprecation plan and sign-off protocol, plus internal contract/compatibility verification. Actual per-consumer migration sign-offs gate later public cutover/deprecation, not this design-stage exit. |
+
+**Module 8.9.1 evidence update (2026-10-20):** repository surface inventory and
+compatibility snapshots are implemented; the unregistered scope/evidence
+review vocabulary and reversible migration record are available in the
+[Module 8.9.1 record](../../reports/architecture/module-8-9-1-contract-authority.md).
+8.9.1a is repository-inventory PASS with external consumers explicitly unknown;
+8.9.1b and 8.9.1c remain PARTIAL pending ADR-0080/schema approval and actual
+consumer sign-off. The module is **not complete**. No new public names,
+multi-notebook serving, production activation or Module 8.9.2 is implemented
+by that update.
+
+**Contract-review remediation (2026-10-21):** the unregistered review schema
+now declares nonblank query/cursor shape and unique notebook/representation
+selections; review validators and fixtures cover result-set continuation and
+completeness rules. The Module 8.9.1 record includes a field-by-field
+canonical/transport comparison, structured-row ancestry limits, cursor
+security boundary, and actionable reviews for ADR-0080's four unresolved
+decisions. These are review evidence only. ADR-0080 remains proposed;
+8.9.1b/8.9.1c and the module remain PARTIAL pending approval, public contract
+freeze, external/consumer evidence, and sign-offs. Module 8.9.2 is not started.
+
+**Owner design-acceptance update (2026-10-21):** ADR-0080 is now accepted
+for design, with the public-name, exact typed structured-grammar,
+provider-readiness and conservative cross-notebook identity decisions in
+its dated addendum. The versioned Module 8.9.1b scope/evidence review
+schema and field matrix are accepted as design, not as registered MCP/HTTP
+operations or runtime parity. 8.9.1a is PASS for repository inventory and
+8.9.1b is PASS for design freeze. 8.9.1c remains PARTIAL: no external-client
+sign-offs exist, unknown consumers remain unknown, and deprecation cannot
+begin. The module remains PARTIAL. Full-suite transport-timeout stability
+is also under investigation; a green focused run is not a green full suite.
+No Module 8.9.2a work or production activation is included.
+
+**Accepted-design verification (2026-10-21):** The post-review coverage-enabled
+full suite passed with 3,164 tests, 18 skips, no failures and 90.21% combined
+coverage. The four formerly failing ordered-text real-transport cases passed
+in that run after their child harness stopped provisioning unrelated optional
+fixtures before transport startup. This verifies the current checkout, not
+deployed transport parity or external consumer migration. Module 8.9.1
+remains PARTIAL because 8.9.1c sign-off evidence is absent.
+
+**Owner-approved exit-gate amendment (2026-10-21):** Actual per-consumer
+migration sign-offs move from 8.9.1c's design-stage exit to the applicable
+public cutover/deprecation gate below; they are not waived. The versioned
+surface and bounded consumer inventory (including explicitly unknown private
+consumers), approved contract/schema review, reversible migration plan,
+sign-off protocol and internal compatibility checks satisfy the amended
+8.9.1a–c criteria. Module 8.9.1 is **COMPLETE for design and governance**
+under this amendment, not for indexed serving, consumer integration or Phase
+8.9 certification. The [criterion-by-criterion evidence record](../../reports/architecture/module-8-9-1-contract-authority.md)
+separates local PASS results from deferred external checks. No new operation
+is registered and no Module 8.9.2a work follows from this status update.
 
 **Module 8.9.2 — Membership and authorized scope.** Entry: 8.9.1b; exit:
 real actor-to-notebook authority, not merely notebook existence. Risk:
@@ -1585,6 +1637,337 @@ cross-user leakage; rollback: fail closed to existing one-notebook behavior.
 | 8.9.2b | Resolve authorized scope | Principal-first notebook discovery; reject unauthorized/nonexistent IDs without existence leakage; bind document/version membership | High | 8.9.2a | Cross-user, shared-source and denial tests |
 | 8.9.2c | Bind continuation and disclosure | Actor/scope/alias/policy changes invalidate signed cursors; metadata/capability disclosure uses same scope | High | 8.9.2b | Tampering, revocation and capability non-disclosure tests |
 
+**8.9.2 pre-approval assessment (2026-10-21):** The
+[membership authority dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+selects a proposed extension of the existing server-owned explicit-grant
+authority over an unconfigured external resolver. It records the threat model,
+legacy-unassigned treatment, revision/revocation and two-store recovery
+design for separate owner approval. No new membership schema, grant, migration
+or production authority installation is approved or executed by this note.
+8.9.2a remains PARTIAL; dependent 8.9.2b/2c are BLOCKED before implementation
+beyond isolated seam tests and analysis. Module 8.9.2 is not complete.
+
+**Owner-approved development implementation (2026-10-21):** The owner approved
+the dossier's server-owned owner/reader design and additive migration for
+disposable development stores only. The ACL now supports explicit legacy-grant
+quarantine, per-notebook revisions, individual revoke, tombstones, and a
+durable create intent. An isolated two-store lifecycle and trusted JWT actor
+mapper have fixture evidence. An isolated principal-first resolver begins
+8.9.2b, and the existing signed codec rejects an actual changed ACL revision
+in a fixture. These are not installed in production routes, cursor issuers or
+metadata/capability paths. 8.9.2a, 8.9.2b and 8.9.2c are **PARTIAL** at their
+respective integration boundaries; Module 8.9.2 remains **PARTIAL**. No
+production membership migration or indexed activation is approved. The
+[dated dossier addendum](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+records test results and remaining safety gates.
+
+**8.9.2 continuation (2026-10-21):** Disposable-store implementation now
+includes signed operator identity for owner-only reader grants/revocation,
+insert-if-absent notebook creation with exact-token retry, and principal-first
+authorization for HTTP notebook routes and MCP notebook list/summary. When an
+ACL authority is attached, other existing HTTP/MCP serving paths are
+explicitly unavailable rather than implicitly trusting legacy notebook IDs.
+This is a security hold, not route parity: exact document/version retrieval,
+metadata/capability disclosure on those routes, and application-level
+ACL-revision-bound cursor issue/continuation remain unimplemented. Cross-store
+atomicity is not claimed. 8.9.2a and 8.9.2b remain PARTIAL, 8.9.2c is BLOCKED,
+and Module 8.9.2 remains PARTIAL. See the
+[membership dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+for the route matrix and validation limits. No production ACL migration or
+indexed activation is authorized by this continuation. The final disposable
+full-suite gate passed 3,198 tests with 6 skips and 90.17% combined coverage;
+this test result does not satisfy the missing 8.9.2b/2c enforcement evidence.
+
+**Further 8.9.2 continuation (2026-10-21):** The membership dossier now
+maps every registered HTTP/MCP entry point and both WebSocket aliases.
+System status/configuration routes are also unavailable when an ACL is
+attached. Authorized notebook HTTP responses and MCP notebook inventory/summary
+revalidate permission and ACL revision after assembling data, narrowing the
+pre-return revocation interval; this does not guarantee instantaneous
+revocation during serialization or network delivery. Disposable lifecycle
+tests cover an interrupted create followed by concurrent recovery retries and
+an unavailable notebook store after ACL tombstoning. Indexed retrieval,
+exact delivery, capabilities and streaming remain disabled under ACL, so no
+application continuation cursor is yet bound end-to-end to the authoritative
+revision. 8.9.2a/8.9.2b remain PARTIAL and 8.9.2c remains BLOCKED; no later
+module or production migration is implied. The current disposable full-suite
+run passed **3,200 tests, 6 skips and 90.17% combined coverage** (90% gate);
+the 3,198-test result above is historical to the earlier snapshot. See the
+dated dossier inventory and verification addendum for commands, warnings,
+route limits and protected-state checks.
+
+**Disposable indexed-serving continuation (2026-10-22):** The preceding
+disabled-route statement is superseded for HTTP V2 evidence and exact-delivery
+routes and direct MCP `search_evidence`. Those routes now use trusted actor
+mapping, ACL notebook and document/version checks, post-assembly revision
+revalidation, and signed ACL-revision-bound evidence/delivery cursors in
+disposable indexed fixtures. This is internal test evidence only; it does not
+alter production `UNINDEXED` or establish external transport acceptance.
+Other retrieval, capability, MCP delivery, and WebSocket paths remain guarded
+when an ACL is attached. Multi-process lifecycle recovery, complete route
+coverage and universal continuation/disclosure binding remain unsatisfied;
+8.9.2a, 8.9.2b and 8.9.2c are PARTIAL and Module 8.9.2 is NOT COMPLETE. The
+[membership dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+records the route evidence and limits. The final current full-suite run passed
+3,202 tests with 6 skips and 90.09% combined coverage (90% gate); passing
+tests do not substitute for the remaining route and recovery acceptance evidence.
+
+**8.9.2 gap-driven continuation (2026-10-22):** Scoped HTTP and direct-MCP
+capability discovery now authorize before provider disclosure and recheck the
+ACL revision before return. Direct MCP exact document/chunk/asset delivery
+uses the same explicit membership and exact ancestry checks as HTTP. A
+disposable SQLite asset fixture exercises HTTP byte pagination and MCP asset
+allow/deny, including a stale revision-bound asset cursor. Separate-process
+fixtures cover concurrent ACL grant/revoke revision serialization and
+simultaneous create/delete recovery after one-store crash windows. See the
+[membership dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+for the updated route delta and evidence limits. V1 and structured retrieval,
+FinalQA execution, other delivery variants, SSE/WebSocket active sessions, and
+exhaustive cross-store crash recovery remain unproved or guarded under ACL.
+Thus 8.9.2a, 8.9.2b, 8.9.2c and Module 8.9.2 remain **PARTIAL**. The exact-final
+full configured run passed **3,206 tests, 6 skipped, 90.08% coverage** against
+the 90% minimum; a preceding full run had two intermittent ordered-text stdio
+failures that remain an investigation risk. The tests do not authorize
+production migration or indexed serving.
+
+**8.9.2 V1 ACL continuation (2026-10-23):** HTTP `/v1/query` and `/v1/search`
+and direct MCP `query_notebook` and `search_all_notebooks` now use the attached
+membership authority and verified principal, with membership before retrieval
+and document/version plus ACL-revision revalidation before delivery. The
+legacy no-ACL V1 contract remains unchanged. Disposable HTTP/MCP owner,
+reader, cross-user, revoke-during-retrieval and source-scope-loss tests passed;
+the reviewed public-surface snapshot records removal of the two generic HTTP
+guards. The corrected full configured run met 90% coverage (90.08%) but
+**failed one ordered-text stdio initialization case** (3,207 passed, 1 failed,
+6 skipped); the 15-second client initialization deadline can be consumed by
+the coverage-instrumented fixture import. See the
+[membership dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+for tracebacks, checks and remaining guards. Structured, FinalQA, adjacent
+notebook data and active SSE/WebSocket ACL paths, exhaustive crash recovery,
+and stable full-suite verification remained incomplete at that checkpoint. **8.9.2a, 8.9.2b,
+8.9.2c and Module 8.9.2 remain PARTIAL.** This does not authorize production
+membership migration, indexing, or Module 8.9.3.
+
+**8.9.2 verification follow-up (2026-10-23):** Lazy application import in the
+package export and transport fixture addressed the reproduced stdio startup
+bottleneck without raising the 15-second deadline. The subsequent configured
+full-run JUnit records 3,209 passed, 0 failed, 6 skipped; combined statement
+and branch coverage is 90.086% against the 90% minimum. Ruff lint/format,
+established strict mypy, source compilation, and diff whitespace checks pass.
+The terminal exit code was not retained across the runner session boundary;
+the completed JUnit and coverage XML are preserved in `scratch/` (see the
+membership dossier). Guarded ACL serving surfaces and exhaustive lifecycle
+and active-stream revocation evidence still keep **Module 8.9.2 PARTIAL**.
+
+**8.9.2 ACL streaming/structured continuation (2026-10-23):** Development
+fixtures now exercise authorized owner/reader SSE and WebSocket query streams
+through the actual service. ACL scope is resolved before retrieval and
+revalidated before protected messages; a paused WebSocket test revokes a
+reader between tokens and observes no second protected token. Structured
+HTTP and direct MCP now authorize discovered dataset ancestry and bind the
+existing signed cursor to the current ACL revision and principal. Cross-user,
+stale-revision, in-flight revocation and missing-authority cases have focused
+tests. The current-surface snapshot records only removal of these routes'
+former blanket membership dependencies. This is development-fixture evidence,
+not production or external-consumer certification. FinalQA, automatic V2,
+source/session/note/insight operations, and all alternate cursor/cache paths
+are not yet positively integrated under the ACL; see the
+[route matrix](../../reports/architecture/module-8-9-2-membership-authority-design.md).
+The first post-edit configured full run exited 1 with a 15-second stdio MCP
+initialization timeout (3,211 passed, 1 failed, 6 skipped; 90.06% coverage).
+The unchanged repeat exited 0 (3,212 passed, 6 skipped; 90.06% coverage).
+The isolated failing case passed, but its intermittent full-run startup cause
+is not established; the [membership dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+retains both receipts. **Module 8.9.2 remains PARTIAL** until the outstanding
+serving, lifecycle and continuation requirements are demonstrated. Module
+8.9.3 has not started.
+
+**8.9.2 autonomous continuation (2026-10-26):** Development-only work now
+serializes owner authorization with reader grant/revoke in the same ACL
+transaction, persists exact create intent payload for restart recovery (with
+incomplete legacy intents quarantined), and positively exercises automatic V2
+retrieval, MCP timeline/source insights and owner-only FinalQA V2 through a
+disposable indexed `KnowledgeEngine`. The HTTP FinalQA V2 route and direct MCP
+tool revalidate the ACL revision before answer disclosure; a revocation during
+generation is denied, without claiming recall of persisted state or sent
+bytes. The reviewed public-surface snapshot records only the two newly
+integrated HTTP guard removals. The configured full suite exited 0:
+**3,223 passed, 6 skipped, 90.05% combined coverage** against 90%; lint,
+format, established strict mypy, compilation and diff checks passed. The
+[dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+records exact commands and limitations. **8.9.2a, 8.9.2b, 8.9.2c and the
+module remain PARTIAL**: concurrent first-open SQLite migration, V1 FinalQA,
+guarded source/session/note/insight/system HTTP families, broader alternate
+MCP/cursor/cache equivalence and full cross-store recovery/disclosure evidence
+remain unresolved. No production ACL migration, index activation or Module
+8.9.3 work is authorized or implied by this test result.
+
+**8.9.2 guarded-path continuation (2026-10-27):** HTTP source
+list/detail/status now use the trusted membership principal and revalidate
+scope before disclosing real disposable-store data; an in-flight reader
+revocation is denied. Source ingestion/deletion still require a governed
+cross-store mutation protocol and remain blocked under ACL. The V1 FinalQA
+service now rejects direct ACL-attached calls as well as the existing HTTP
+guard, closing an internal bypass without claiming positive V1 execution.
+The accepted surface snapshot records only the three source-read dependency
+changes. The subsequent 2026-10-27 configured full suite exited **0** with
+**3,225 passed, 6 skipped, 90.05% combined coverage** against the unchanged
+90% gate. Ruff lint/format, established strict mypy, compilation and diff
+checks also exited 0. The [dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+records the exact command and protected-state receipt. This verifies the
+current development checkout, not production or external consumers. Module
+8.9.2 remains **PARTIAL**, and Module 8.9.3 has not started.
+
+**8.9.2 first-open lifecycle follow-up (2026-10-27):** A separate-process
+disposable-store test reproduced a fresh SQLite initialization race. The
+WAL transition now handles its specific transient `SQLITE_BUSY` contention,
+and first-open schema plus version marker are committed in one SQLite
+transaction. Ten repeated concurrent first-open trials and an injected
+schema-failure rollback test passed. This closes the observed first-open
+race, not cross-store atomicity or the remaining lifecycle/recovery gates.
+The full coverage result immediately above predates this fix; current
+post-fix acceptance requires a new complete gate. Module 8.9.2 remains
+**PARTIAL**.
+
+**8.9.2 session-read continuation (2026-10-27):** The post-SQLite configured
+gate exited 0 (**3,227 passed, 6 skipped, 90.05% coverage**). Subsequently,
+HTTP session list/detail gained trusted principal-first ACL scope resolution,
+citation ancestry checks and revision revalidation. Disposable-store route
+tests prove owner/reader success and cross-user, legacy-unassigned,
+foreign-citation and in-flight revocation denial; the affected group passed
+15 tests. Session writes remain guarded pending a governed ACL mutation
+protocol. The public-surface snapshot records only two GET dependency
+changes. The 3,227-test result predates this session change; a new full gate
+is required. **Module 8.9.2 remains PARTIAL.**
+
+**8.9.2 note/insight read continuation (2026-10-27):** The post-session
+configured gate exited 0 (**3,228 passed, 6 skipped, 90.04% coverage**).
+Subsequently, HTTP note list/detail and insight list gained trusted
+principal-first ACL checks and pre-disclosure revision revalidation. Insight
+delivery additionally verifies its persisted source belongs to the same
+notebook; disposable route tests include owner/reader success, cross-user,
+legacy-unassigned, revocation and foreign-source denial. The affected groups
+passed (16 note, 13 insight); the accepted surface snapshot records only
+three GET dependency changes. Note mutations and insight generation remain
+guarded under ACL. The full result above predates these changes and must not
+be cited as their acceptance gate. **Module 8.9.2 remains PARTIAL.**
+
+**8.9.2 metadata-continuation follow-up (2026-10-27):** The ACL-authorized
+source, session, note, and insight HTTP list routes now use the existing
+signed cursor codec, bound to trusted actor, notebook, authoritative ACL
+revision, list domain, page limit, and applicable type selector. Disposable
+route tests prove positive pagination and stale/cross-actor rejection; the
+focused group exited 0 (**126 passed**) and the public-surface snapshot
+records the source cursor's opaque-string schema. This is an ACL-revision
+binding, not an immutable database result-set snapshot. Cross-store recovery,
+guarded mutations and V1 FinalQA, plus remaining streaming and alternate
+cursor/capability equivalence still prevent acceptance. HTTP and MCP notebook
+inventory subsequently gained a distinct signed cursor bound to the full
+authorized notebook/revision set, with a passing disposable two-page and
+revocation test; that follow-up postdates the full gate below. **Module 8.9.2
+remains PARTIAL**; this work does not start Module 8.9.3.
+
+The post-cursor configured full gate exited **0** with **3,230 passed,
+6 skipped, 9 warnings, and 90.02% combined coverage** against the 90%
+minimum. This aggregate result does not close the specific lifecycle,
+serving, streaming, or notebook-inventory continuation gaps above.
+
+The subsequent post-inventory configured full gate also exited **0** with
+**3,230 passed, 6 skipped, 9 warnings, and 90.02% coverage**. The focused
+HTTP/MCP notebook-inventory and compatibility group passed **131/131**;
+Ruff lint/format, strict mypy (324 files), compilation, and diff checks
+passed. The notebook-inventory continuation gap is now closed for the
+exercised routes, but guarded serving/mutation, lifecycle recovery, and
+streaming/alternate-path acceptance remain open. **Module 8.9.2 is PARTIAL.**
+
+**8.9.2 governed-write and recovery continuation (2026-10-27):** In
+disposable SQLite fixtures, attached-ACL note and session mutations,
+source-association deletion, and notebook metadata updates now use an
+owner-validated ACL writer lease. Session turn append is transactional in
+SQLite. First-time notebook retirement rechecks the trusted live owner
+inside the ACL transaction; actor-less retry is permitted only after a
+durable tombstone. Route tests prove authorized owner writes, reader and
+cross-user denial, in-flight revocation serialization, and denial of a
+delete after ownership is revoked between route admission and retirement.
+Separate-process tests prove the exercised revoke/write and crash/retry
+boundaries. The final configured full run exited **0** with **3,232 passed,
+6 skipped, 90.02% combined coverage** against the unchanged 90% minimum;
+Ruff lint/format, established strict mypy, compilation and diff checks
+passed. The [dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+records the exact route matrix, commands and limits. Cross-store atomicity
+is not claimed. V1 FinalQA replay, multi-artifact source ingestion,
+the explicitly Phase-10-deferred insight-generation route, guarded
+system/config/job disclosures, and
+unreviewed alternate cache/continuation paths remain incomplete under an
+attached ACL. **8.9.2a, 8.9.2b, 8.9.2c and Module 8.9.2 remain PARTIAL**;
+no production migration or Module 8.9.3 work follows from this evidence.
+
+**8.9.2 V1 FinalQA continuation (2026-10-28):** The disposable ACL-backed
+HTTP V1 FinalQA path now authorizes before fusion, binds persisted executions
+and exact document/version ancestry to the owner and ACL revision, and
+revalidates replay, publication and final disclosure. Route and core tests
+cover authorized owner delivery, unbound/cross-user/stale replay denial,
+source-association loss and revocation during generation; the
+[dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+gives the exact scope and limitations. This does not enable a V1 MCP FinalQA
+operation or certify external transports. Multi-artifact source ingestion
+under an ACL is still guarded because no durable cross-store intent and
+idempotent reconciliation protocol exists. Alternate cache/streaming paths
+still require complete per-path acceptance evidence. **Module 8.9.2 remains
+PARTIAL; Module 8.9.3 is not started.**
+The configured post-replay-integrity full gate exited **0** with **3,244
+passed, 6 skipped and 90.01% combined coverage** against the unchanged
+90% minimum; Ruff lint/format, strict mypy on 321 source/test files,
+compilation and diff checks also passed. This verifies the implemented V1
+FinalQA continuation, not the remaining source-ingestion/recovery and
+alternate-disclosure acceptance criteria, so the module status is unchanged.
+
+**8.9.2 ingestion and metadata-disclosure follow-up (2026-10-29):**
+Disposable ACL-backed service tests now cover durable pre-write source intents,
+publication after composite-store writes, owner/reader denial, failure
+quarantine, rollback of observed failed source associations with canonical
+vector-membership reprojection, and safe repeated reconciliation. The source
+metadata presentation resolver rechecks authority after bounded batch
+assembly. These are not HTTP source-ingestion acceptance: the attached-ACL
+POST remains guarded, as does composite source DELETE. Hard-crash
+`incomplete` intents, exact orphan-artifact cleanup/retry, and alternate
+cache/stream/continuation acceptance remain open. The
+[membership dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+records the implementation boundary and focused evidence. **Module 8.9.2
+remains PARTIAL; Module 8.9.3 has not started.**
+The final follow-up configured full gate exited 0 with **3,256 passed, 6
+skipped, 0 failures, and 90.00332% combined line/branch coverage** against
+the unchanged 90% minimum. Ruff lint/format, strict mypy on 321 established
+source/focused-test files, source compilation and diff checks also passed.
+This is verification of the incremental journal and metadata changes, not
+closure of the guarded HTTP ingestion, hard-crash recovery, or remaining
+alternate-disclosure acceptance criteria.
+
+**Module 8.9.2 internal exit closure (2026-11-04):** The owner-approved
+server-owned owner/reader authority, trusted actor mapping, additive ACL
+revision/tombstones, and quarantined legacy ownership now have disposable
+multi-process lifecycle and recovery tests (8.9.2a). Principal-first
+notebook/document/version authorization has positive owner/reader and negative
+cross-user/revoked/nonexistent route evidence across the applicable V1/V2
+HTTP, MCP, source mutation, FinalQA, exact-delivery and metadata/capability
+surfaces (8.9.2b). Real cursor issuers/consumers, persisted replay, and
+SSE/WebSocket messages reauthorize against the current ACL revision before
+further disclosure (8.9.2c). The governed source journal and process lock
+reconcile exact orphan artifacts after hard crashes and permit same-content
+retry; inconsistent state remains quarantined. This is not cross-store
+atomicity or recall of already-delivered bytes. The full configured gate
+exited **0** with **3,295 passed, 6 skipped**, and **90.0170102244252%**
+combined line/branch coverage against the unchanged 90% threshold; Ruff,
+strict mypy, compilation, contract snapshots and diff checks passed. The
+[criterion-by-criterion dossier](../../reports/architecture/module-8-9-2-membership-authority-design.md)
+contains routes, tests, limitations and retained artifacts. **Module 8.9.2
+is COMPLETE for its approved internal development/test exit criteria.**
+Production remains `UNINDEXED`; no production membership migration, indexed
+activation, external consumer certification or Module 8.9.3 work is
+authorized by this status. The guarded system-admin surface requires a
+separate operator policy, and Phase 10 insight generation remains deferred;
+neither is counted as positive authorized notebook serving.
+
 **Module 8.9.3 — One shared search application contract.** Entry: 8.9.1b;
 exit: MCP/HTTP/UI-ready service boundary; no duplicate routing logic. Risk:
 transport drift; rollback: retain old adapters until parity passes.
@@ -1594,6 +1977,18 @@ transport drift; rollback: retain old adapters until parity passes.
 | 8.9.3a | Define shared request and response | Server-owned plan, typed evidence including chunk/occurrence/dataset row, coverage and safe errors | High | 8.9.1b | DTO/serialization and schema fixtures |
 | 8.9.3b | Compose existing V2 services | Reuse `AutomaticQueryV2Service`, `AdvancedRetrievalService`, structured service and generation authority; HTTP/MCP become thin adapters | High | 8.9.3a | Service integration tests and no-parallel-stack review |
 | 8.9.3c | Define answer boundary | Supply evidence snapshot to existing FinalQA path, preserving deadlines, replay/idempotency and citation policy; no invented answer from unavailable evidence | High | 8.9.3b | Grounding and publication-policy tests |
+
+**2026-11-04 internal implementation update:** 8.9.3a–c are **COMPLETE
+for the approved internal development/test exit criteria**. The retained V2
+HTTP and MCP operations now pass through one `mnemo-server` application
+boundary; their public names, defaults and response contracts are unchanged.
+FinalQA receives an authorization- and ACL-revision-checked evidence snapshot
+while its owner-only durable publication rule remains separate. The
+[criterion-by-criterion acceptance record](../../reports/architecture/module-8-9-3-shared-search-acceptance.md)
+documents the real call paths, tests, first failed full run, passing rerun,
+coverage and limits. This does not register `search` or `/v2/search`, implement
+8.9.4 fan-out, or certify deployed HTTP/MCP/UI parity. Production remains
+`UNINDEXED`.
 
 **Module 8.9.4 — Scoped automatic hybrid retrieval.** Entry: 8.9.2b and
 8.9.3b; exit: bounded, authorized multi-notebook/document search. Risk:
@@ -1605,6 +2000,63 @@ starvation or unauthorized fan-out; rollback: single-notebook V2 remains.
 | 8.9.4b | Fan out over selected notebooks/versions | Bounded parallel/cancellable search, exact scope and partial-notebook reporting; canonical zero never terminates derived search | High | 8.9.4a | Multi-notebook, selected-document, canonical-zero fixtures |
 | 8.9.4c | Fuse and traverse | Preserve notebook membership through dedup, source-rank diversity, dynamic requested-k and signed snapshot pagination; never call top-k exhaustive | High | 8.9.4b, 8.9.2c | Stable traversal, no-starvation, shared-source and replay tests |
 | 8.9.4d | Validate modalities/languages | No-hint canonical, OCR, Vision, compatible CLIP and provider-admitted multilingual candidates; no fake chunks or raw cross-space score comparison | High | 8.9.4a–c | Real evaluation pair relevance/provenance and negative cases |
+
+**2026-11-05 internal implementation checkpoint:** 8.9.4b and 8.9.4c
+have passing development-fixture evidence for bounded ACL-authorized fan-out,
+membership-preserving fair fusion, and a separate signed aggregate traversal
+cursor with per-partition ACL/source-snapshot revalidation. 8.9.4a has a tested
+active/incomplete/incompatible admission matrix but lacks complete real
+provider/language/vector-space certification. 8.9.4d remains open: the available
+engineering identity qrels do not constitute the required genuinely judged
+relevance/provenance evaluation pair. The configured full gate passed with
+**3,347 passed, 6 skipped, 90.014378% combined coverage** against 90%; this
+does not close the evaluation criterion. See the
+[criterion matrix](../../reports/architecture/module-8-9-4-scoped-search-acceptance.md).
+**Module 8.9.4 remains PARTIAL.** The orchestration is internal; retained
+single-notebook V2 public adapters and V1 contracts are unchanged. No 8.9.5+
+implementation or production activation follows from this checkpoint.
+
+**2026-11-06 deterministic engineering evaluation follow-up:** the owner
+authorized a separate non-human DERE protocol. One read-only isolated-snapshot
+case passed source-receipt and exact chunk-ancestry preflight, but that snapshot
+has no active generations or attached ACL; no authorized scoped-search ranking
+or modality/language certification was run. The 18-query production-bound
+engineering QRELs were not transferred, and human semantic relevance remains
+unadjudicated. The final-tree configured gate passed with **3,354 passed,
+6 skipped, 90.017973% combined coverage**; it does not close the evidence gap.
+See the [DERE evidence record](../../reports/architecture/module-8-9-4-dere-evidence-2026-11-06.md).
+**8.9.4a, 8.9.4d and Module 8.9.4 remain PARTIAL.** This does not authorize
+8.9.5 or production activation.
+
+**Later 2026-11-06 disposable retrieval checkpoint:** the [real-provider and
+canonical-run record](../../reports/architecture/module-8-9-4-disposable-retrieval-2026-11-06.md)
+documents a disposable ACL-authorized no-hint canonical query and actual local
+BGE-M3/CLIP query probes. The canonical target missed top ten; no active
+Full V2/visual generation, notebook-bound provider compatibility, or certified
+cross-language result was established. **8.9.4a, 8.9.4d and the module remain
+PARTIAL.** This does not begin 8.9.5 or change production selection.
+
+**Further 2026-11-06 disposable Full V2 BGE checkpoint:** a separate
+[isolated experiment](../../reports/architecture/module-8-9-4-bge-disposable-experiment-2026-11-06.md)
+built 2,698 real BGE-M3 embeddings across 44 source-linked versions and
+activated a four-generation Full V2 alias only in the new disposable copy.
+Atomic-alias admission and negative coverage/revocation cases have focused
+tests. The frozen en→mr target was dense rank 1 and Full V2 fused rank 7 but
+missed the final top 10 after the advanced automatic representation source-rank
+strata (not cross-notebook interleaving in this one-notebook case); the one-case
+sparse-only and sparse+BGE Recall@10/Precision@10/MRR both remain 0/0/0.
+This improves the
+real notebook-bound BGE admission evidence for 8.9.4a but does not establish
+CLIP shared-space, broader provider/language certification, or satisfactory
+8.9.4d modality/evaluation evidence. **8.9.4a, 8.9.4d and Module 8.9.4 remain
+PARTIAL; 8.9.4b/c retain their prior internal PASS status.** Production stays
+`UNINDEXED`; no 8.9.5 work is authorized by this checkpoint.
+
+**2026-11-07 ranking evidence:** the [DERE-2 offline baseline](../../reports/architecture/module-8-9-4-dere-multicase-2026-11-07.md)
+measures six predeclared cases through the unchanged policy, including the frozen
+target at combined position 13 before the child top-ten cut. One real notebook,
+one Marathi source document, and no verified Hindi target are insufficient for
+a multilingual or cross-notebook ranking-policy choice. Task statuses are unchanged.
 
 **Module 8.9.5 — Structured knowledge access.** Entry: 8.9.3b and active
 structured projections; exit: typed exact operations plus governed ordinary
@@ -1623,9 +2075,21 @@ versioned V2 operations. Risk: client breakage; rollback: retain old routes.
 
 | Task ID | Task | Implementation notes / acceptance criteria | Complexity | Dependencies | Required evidence |
 |---|---|---|---|---|---|
-| 8.9.6a | Expose canonical search | Proposed MCP `search` / HTTP `POST /v2/search` only after schema and auth review; retain `query_notebook_v2` and `search_evidence` during migration | High | 8.9.4b, 8.9.1c | MCP/ASGI parity, V1 regression and client migration tests |
+| 8.9.6a | Expose canonical search | Design-approved MCP `search` / HTTP `POST /v2/search` remain unregistered until shared scope authorization, service and adapter parity are implemented; retain `query_notebook_v2` and `search_evidence` during migration | High | 8.9.4b, 8.9.1c | MCP/ASGI parity, V1 regression and client migration tests |
 | 8.9.6b | Unify typed structured/discovery adapters | Proposed `search_structured`/`describe_datasets` and HTTP route split only if needed; retain `query_structured` until parity and consumers are verified | Medium | 8.9.5a, 8.9.1c | Route inventory, typed contract/error parity |
 | 8.9.6c | Preserve exact delivery/capability | Keep document/chunk/asset/image-analysis and authorized capability routes; UI calls shared service, not private planners | Medium | 8.9.3b, 8.9.2c | Tool/route regression and UI-boundary test |
+
+**Mandatory public cutover/deprecation gate (owner-approved 2026-10-21):**
+Before any relevant public cutover or removal of an existing operation,
+identify affected consumers to the approved scope; test the migration against
+each actual consumer integration; record required consumer-owner sign-offs or
+a specific formally approved governance exception; satisfy compatibility and
+rollback requirements; and obtain deployment-specific transport/authorization
+evidence. Local contract, HTTP test-client and MCP protocol tests are not
+consumer acceptance. Unknown consumers receive no blanket exception: retain
+existing operation compatibility until the applicable discovery, exception
+and deprecation requirements are satisfied. Module 8.9.8 still requires
+external transport evidence, and 8.9.9 alone can issue Phase 8.9 GO.
 
 **Module 8.9.7 — Provenance, errors and answer correctness.** Carries
 unfinished 8.8.13 work; entry: 8.9.4/5 evidence model; exit: source-resolvable
@@ -3200,7 +3664,9 @@ local-acceptance item does not certify that module or the phase in production.
 
 ### Phase 8.9 — Unified Authorized Retrieval
 
-- □ Accept ADR-0080 and 8.9.1 contract/consumer inventory
+- ☑ Accept ADR-0080 and complete 8.9.1 design contract/consumer inventory
+  under the owner-approved sign-off milestone amendment; later consumer
+  acceptance, indexed implementation and Phase 8.9 certification remain open.
 - □ Approve and verify 8.9.2 membership authority before multi-notebook fan-out
 - □ Complete 8.9.3–5 shared service, hybrid scope and typed structured path
 - □ Complete 8.9.6–7 adapters, provenance, errors and grounded answer boundary

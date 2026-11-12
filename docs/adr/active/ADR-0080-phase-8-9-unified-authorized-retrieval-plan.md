@@ -1,6 +1,6 @@
 # ADR-0080: Phase 8.9 unified authorized retrieval plan
 
-- **Status:** Proposed for design approval; no Phase 8.9 implementation or certification implied
+- **Status:** Accepted for design (owner authorization 2026-10-21); implementation and certification remain separate gates
 - **Date:** 2026-10-09
 - **Phase:** 8.9
 - **Extends:** ADR-0058, ADR-0061–0064, ADR-0067–0069, ADR-0073–0079
@@ -62,7 +62,7 @@ Existing V1 query/search contracts and the persisted V1 IR are frozen.
 `query_notebook_v2`, `search_evidence`, `query_structured`, exact delivery and
 FinalQA remain available while Phase 8.9 inventories consumers and proposes
 canonical `search`/HTTP search plus optional structured discovery operations.
-Those proposed public names are **not** registered by this ADR. No old route is
+Those approved future public names are **not** registered by this ADR. No old route is
 removed before versioned parity, migration guidance and client evidence.
 FinalQA may later consume the shared authorized evidence snapshot, retaining
 deadline, replay/idempotency and citation-publication controls.
@@ -86,7 +86,9 @@ deadline, replay/idempotency and citation-publication controls.
 Follow the [Phase 8.9 roadmap](../../architecture/current/mnemo_engineering_roadmap.md)
 tasks 8.9.1–8.9.9. Membership-state design/migration requires separate approval.
 The canonical public operation names, structured intent grammar, provider
-readiness policy and dedup identity require contract review before code changes.
+readiness policy and dedup identity were resolved for design in the
+2026-10-21 approval addendum below. Registration and shared-service code
+remain gated by their roadmap modules and their own validation evidence.
 The exact validation pair is evaluation-only; the certified Phase 8.5 corpus,
 Phase 8.6 sources, mutable-workspace boundary and signed operational state
 remain protected. No Phase 8.6 promotion, Qdrant/SurrealDB activation, rebuild,
@@ -96,3 +98,81 @@ Phase 9 may start only after an exact-identity, machine-verifiable Phase 8.9
 GO based on integrated scope, representation, structured, provenance, V1
 compatibility, external MCP/deployed HTTP transport, FinalQA and protected-state
 evidence. Local tests, route registration or rebuild completion are not GO.
+
+## Owner-approved contract decisions (2026-10-21)
+
+The project owner explicitly authorized resolution of the four design gates
+for Module 8.9.1. This acceptance is not external-client sign-off,
+production admission, provider certification, an indexed runtime, or permission
+to implement later modules out of sequence. The versioned review schema and
+field-by-field mapping are in the
+[Module 8.9.1 contract record](../../reports/architecture/module-8-9-1-contract-authority.md).
+
+1. **Public operation names.** Approve additive MCP search and HTTP
+   POST /v2/search as the intended unified-search pair for roadmap 8.9.6a.
+   Exact typed query_structured, query_notebook_v2, search_evidence,
+   delivery and FinalQA remain available. search_structured and
+   describe_datasets remain optional names requiring separate exact-operation
+   parity and consumer review under 8.9.6b; search_images remains optional
+   only by a separate use-case decision. No new name is registered in 8.9.1.
+   Rationale: additive names permit a distinct multi-notebook contract without
+   changing frozen V1 or retained V2 semantics. Rejected: in-place rename,
+   silently expanding V1, and registration before shared authorization,
+   schema and adapter parity. Client-supplied names or IDs confer no authority.
+
+2. **Structured intent grammar.** The approved initial grammar is the existing
+   strict, typed StructuredRetrievalRequest AST: operations describe,
+   query (one explicit dataset), union (two or more explicit datasets),
+   and join (explicit, distinct left/right datasets). Existing typed
+   filters, selections, grouping, aggregates and sort fields are validated
+   against their operation and authorized exact-version scope. Field and
+   dataset identifiers retain exact identity; query text normalization does
+   not rewrite them. Unknown fields, duplicate/ambiguous selections,
+   incompatible operation combinations, malformed predicates and unauthorized
+   actor/store/generation/provider override fields fail with safe typed
+   invalid-input or authorization outcomes. Natural-language translation
+   into structured predicates is not in this approved grammar. A later
+   grammar requires its own design review under 8.9.5b and must refuse
+   ambiguity rather than guess. Rejected: free-form SQL, inferred joins and
+   approximate arithmetic on semantic chunks. Existing exact typed callers
+   remain compatible.
+
+3. **Provider readiness.** Authenticate and authorize before capability or
+   source disclosure. A source is searched only after an applicable,
+   compatible, active and ready provider actually searched its authorized
+   scope; matched=0 then means searched-zero, not corpus-wide absence.
+   Not-applicable is distinct and does not alone imply a partial result.
+   Applicable unavailable, incomplete, failed or omitted-by-budget sources
+   must be reported with reason/omission and partial coverage; they cannot
+   be relabeled complete or empty. Automatic ranked search may return other
+   authorized evidence with honest PARTIAL coverage, consistent with
+   ADR-0079, but never claim exhaustive recall. With no applicable searched
+   source, return a typed capability-unavailable or retrieval-failure outcome,
+   not an empty successful search. Exact structured/exhaustive requests whose
+   required projection is unavailable fail closed rather than fabricate exact
+   results. Unknown generation, missing authority, incompatible identity or
+   revoked serving state fail closed before planning. This is a policy, not
+   evidence any production provider is ready; profile-specific mandatory/
+   optional matrices and certification remain later-module gates. Rejected:
+   installed code or stored derivations as readiness, searched-zero
+   substitution, and false completeness.
+
+4. **Cross-notebook deduplication identity.** There is no global text/content
+   key. A conservative type-specific equivalence key includes notebook
+   membership, source, document, version, generation and alias, typed chunk
+   or occurrence/asset/derivation or dataset/row identity, locator and
+   citation. Retrieval path is excluded from identity so identical evidence
+   within one authorized membership can retain every path. Different notebook
+   memberships never collapse to one bearer item; same-text/different-source,
+   version, derivation or row remain distinct. Before any later runtime merge,
+   payload and ancestry equality must be checked; a collision fails integrity
+   validation. This preserves authorization, citation and deterministic cursor
+   partitions without inventing a universal ID. Rejected: candidate UUID
+   alone across notebooks, text similarity and source-agnostic fusion. The
+   review-only equivalence key and fixtures freeze design, not a live
+   cross-notebook deduplicator.
+
+Design approval unblocks contract freeze review, not Module 8.9.2a membership
+writes, 8.9.3 shared-service integration, 8.9.5b NL grammar, 8.9.6 adapter
+registration or Phase 8.9 certification. No historical certification or
+unknown external consumer is deemed to have accepted these decisions.

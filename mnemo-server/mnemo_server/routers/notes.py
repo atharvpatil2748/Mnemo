@@ -5,12 +5,17 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, Query, Response, status
+from fastapi import APIRouter, Depends, Path, Query, Request, Response, status
 from mnemo.engine import KnowledgeEngine
 
-from ..dependencies import get_engine, require_mutable_workspace
+from ..dependencies import (
+    get_engine,
+    require_mutable_workspace,
+)
 from ..schemas.common import PageResponse
 from ..schemas.notes import CreateNoteRequest, NoteResponse, UpdateNoteRequest
+from ..services.authorized_scope import AuthorizedNotebookPageCursor
+from ..services.membership_http import membership_http_principal
 from ..services.notes import NoteService
 
 router = APIRouter(prefix="/notebooks", tags=["notes"])
@@ -27,13 +32,26 @@ NoteIdPath = Annotated[UUID, Path(description="The unique note ID")]
     summary="List notes for a notebook",
 )
 async def list_notes(
+    request: Request,
     notebook_id: NotebookIdPath,
     engine: EngineDep,
     limit: Annotated[int, Query(ge=1, le=100, description="Page size")] = 50,
     cursor: Annotated[str | None, Query(description="Keyset pagination cursor UUID")] = None,
 ) -> PageResponse[NoteResponse]:
     """Return a keyset-paginated list of notes in a notebook."""
-    service = NoteService(engine)
+    principal = (
+        membership_http_principal(request, engine)
+        if getattr(engine, "server_scope_authority", None) is not None
+        else None
+    )
+    page_cursor = (
+        AuthorizedNotebookPageCursor(
+            request.app.state.server_config.delivery_cursor_secret.encode()
+        )
+        if principal is not None
+        else None
+    )
+    service = NoteService(engine, principal=principal, page_cursor=page_cursor)
     return await service.list_notes(notebook_id, limit=limit, cursor=cursor)
 
 
@@ -48,9 +66,15 @@ async def create_note(
     notebook_id: NotebookIdPath,
     request: CreateNoteRequest,
     engine: EngineDep,
+    connection: Request,
 ) -> NoteResponse:
     """Create a new note in a notebook."""
-    service = NoteService(engine)
+    principal = (
+        membership_http_principal(connection, engine)
+        if getattr(engine, "server_scope_authority", None) is not None
+        else None
+    )
+    service = NoteService(engine, principal=principal)
     return await service.create_note(notebook_id, request)
 
 
@@ -61,12 +85,18 @@ async def create_note(
     summary="Get a note",
 )
 async def get_note(
+    request: Request,
     notebook_id: NotebookIdPath,
     note_id: NoteIdPath,
     engine: EngineDep,
 ) -> NoteResponse:
     """Get a specific note by ID."""
-    service = NoteService(engine)
+    principal = (
+        membership_http_principal(request, engine)
+        if getattr(engine, "server_scope_authority", None) is not None
+        else None
+    )
+    service = NoteService(engine, principal=principal)
     return await service.get_note(notebook_id, note_id)
 
 
@@ -82,9 +112,15 @@ async def update_note(
     note_id: NoteIdPath,
     request: UpdateNoteRequest,
     engine: EngineDep,
+    connection: Request,
 ) -> NoteResponse:
     """Update note fields via PATCH with Last-Write-Wins semantics."""
-    service = NoteService(engine)
+    principal = (
+        membership_http_principal(connection, engine)
+        if getattr(engine, "server_scope_authority", None) is not None
+        else None
+    )
+    service = NoteService(engine, principal=principal)
     return await service.update_note(notebook_id, note_id, request)
 
 
@@ -99,8 +135,14 @@ async def delete_note(
     notebook_id: NotebookIdPath,
     note_id: NoteIdPath,
     engine: EngineDep,
+    request: Request,
 ) -> Response:
     """Delete a note."""
-    service = NoteService(engine)
+    principal = (
+        membership_http_principal(request, engine)
+        if getattr(engine, "server_scope_authority", None) is not None
+        else None
+    )
+    service = NoteService(engine, principal=principal)
     await service.delete_note(notebook_id, note_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -1,0 +1,18 @@
+{
+  "schema": "mnemo.module-894-mvea-visual-blueprint/1",
+  "judgment_method": "DETERMINISTIC_ENGINEERING",
+  "semantic_relevance_adjudicated": false,
+  "grounding": "Image content was inspected from retained original asset blobs before retrieval; target derivations and hashes are bound separately.",
+  "targets": [
+    {"id": "VIS-01", "vision_derivation_id": "3184a566-a6f5-5390-be4d-4b998adaa11a", "visual_feature": "World Population Day poster with children and globe", "query": "Find the World Population Day poster showing children around a globe"},
+    {"id": "VIS-02", "vision_derivation_id": "0e4eb45a-d322-55a5-af82-7d5ff0956937", "visual_feature": "mechanical testing machine with labeled components A to F", "query": "Find the photograph of the mechanical test machine with lettered components"},
+    {"id": "VIS-03", "vision_derivation_id": "20fd346b-4756-5def-9cd5-7ae4539d5afc", "visual_feature": "frequency amplitude curve with peak near normalized frequency one", "query": "Find the frequency versus amplitude curve that peaks near normalized frequency one"},
+    {"id": "VIS-04", "vision_derivation_id": "1125c010-4ede-5b75-b878-650b6e95d9d9", "visual_feature": "fitness decision flowchart with age, pizza and exercise branches", "query": "Find the fitness decision flowchart branching on age, pizza consumption and exercise"},
+    {"id": "VIS-05", "vision_derivation_id": "3c6db174-a987-5fe5-8d8f-37bb5c4797c2", "visual_feature": "decision tree node hierarchy of depth three", "query": "Find the decision tree diagram showing a node hierarchy of depth three"},
+    {"id": "VIS-06", "vision_derivation_id": "060d7ab6-a624-5fc2-ada2-1d779803fafe", "visual_feature": "house price versus area scatter plot in a notebook screenshot", "query": "Find the house price against area scatter plot displayed in a notebook"},
+    {"id": "VIS-07", "vision_derivation_id": "36e6689c-0371-561d-b4cb-2db3ded826d8", "visual_feature": "glowing blue half-circuit human head illustration", "query": "Find the blue illustration of a human head made partly from electronic circuits"},
+    {"id": "VIS-08", "vision_derivation_id": "8250ee35-2dab-5252-907f-d4fbda1817b8", "visual_feature": "golden rupee symbol with blue upward arrows", "query": "Find the illustration with a gold rupee sign and blue rising arrows"},
+    {"id": "VIS-09", "vision_derivation_id": "6e8645f9-7539-5724-b9b2-304c015860f5", "visual_feature": "mean squared error mathematical formula", "query": "Find the image containing the mean squared error formula"},
+    {"id": "VIS-10", "vision_derivation_id": "fd2bf28d-085e-5c9b-a591-582fc89b7fd8", "visual_feature": "handwritten frequency amplitude measurements with and without added mass", "query": "Find the handwritten frequency and amplitude table comparing measurements with extra mass"}
+  ]
+}

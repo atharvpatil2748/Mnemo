@@ -20,6 +20,33 @@ from mnemo.phase85 import isolated_multilingual
 from mnemo.phase85.isolated_multilingual import _items, _ObservationBuilder
 
 
+def test_isolated_generation_census_includes_versions_without_text(tmp_path: Path) -> None:
+    database = tmp_path / "mnemo.db"
+    notebook, other, document, foreign, with_text, without_text, foreign_version = (
+        uuid4() for _ in range(7)
+    )
+    with sqlite3.connect(database) as connection:
+        connection.executescript(
+            "CREATE TABLE sources(notebook_id TEXT,document_id TEXT);"
+            "CREATE TABLE document_versions(version_id TEXT,document_id TEXT);"
+        )
+        connection.executemany(
+            "INSERT INTO sources VALUES(?,?)",
+            [(str(notebook), str(document)), (str(other), str(foreign))],
+        )
+        connection.executemany(
+            "INSERT INTO document_versions VALUES(?,?)",
+            [
+                (str(with_text), str(document)),
+                (str(without_text), str(document)),
+                (str(foreign_version), str(foreign)),
+            ],
+        )
+    assert isolated_multilingual._source_version_ids(database, notebook) == tuple(
+        sorted((with_text, without_text), key=str)
+    )
+
+
 def test_isolated_builder_reads_real_canonical_ocr_and_vision_lineage(tmp_path: Path) -> None:
     database = tmp_path / "mnemo.db"
     notebook, source, document, version, occurrence, ocr, vision, generation = (
@@ -266,15 +293,19 @@ def test_observation_builder_reuses_matching_immutable_record_and_rejects_confli
         asyncio.run(_ObservationBuilder(Store(), (conflicting,)).build(uuid4()))  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("multiple_notebooks", [False, True])
 def test_builder_keeps_new_notebook_generations_ready_not_active(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, multiple_notebooks: bool
 ) -> None:
     notebook = uuid4()
+    other_notebook = uuid4()
     source = SimpleNamespace(
+        notebook_id=notebook,
         version_id=uuid4(),
         identity_digest="a" * 64,
         kind=LanguageEvidenceKindV3.CANONICAL_CHUNK,
     )
+    without_text = uuid4()
     text = "Canonical multilingual text"
     representation = SimpleNamespace(
         evidence_reference=source,
@@ -291,7 +322,40 @@ def test_builder_keeps_new_notebook_generations_ready_not_active(
         observation=SimpleNamespace(observation_id=uuid4()),
         representation=representation,
     )
-    monkeypatch.setattr(isolated_multilingual, "_items", lambda *_: (item,))
+    other_source = SimpleNamespace(
+        notebook_id=other_notebook,
+        version_id=uuid4(),
+        identity_digest="d" * 64,
+        kind=LanguageEvidenceKindV3.CANONICAL_CHUNK,
+    )
+    other_item = SimpleNamespace(
+        source=other_source,
+        text="Other notebook evidence",
+        language=LanguageCode("mr"),
+        position=MultilingualEvidencePositionV1(page_number=2),
+        observation=SimpleNamespace(observation_id=uuid4()),
+        representation=SimpleNamespace(
+            evidence_reference=other_source,
+            content_hash=hashlib.sha256(b"Other notebook evidence").hexdigest(),
+            source_generation_ids=(),
+            reference_id=uuid4(),
+            representation_type=SimpleNamespace(value="unicode_semantic_text"),
+        ),
+    )
+    monkeypatch.setattr(
+        isolated_multilingual,
+        "_items",
+        lambda _db, selected, *_: (item,) if selected == notebook else (other_item,),
+    )
+    monkeypatch.setattr(
+        isolated_multilingual,
+        "_source_version_ids",
+        lambda _db, selected: (
+            tuple(sorted((source.version_id, without_text), key=str))
+            if selected == notebook
+            else (other_source.version_id,)
+        ),
+    )
     stages: list[str] = []
 
     class Provider:
@@ -303,6 +367,8 @@ def test_builder_keeps_new_notebook_generations_ready_not_active(
                 vector_space="b" * 64,
                 preprocessing_digest="c" * 64,
                 dimension=1024,
+                distance_metric="cosine",
+                normalized=True,
             )
 
         async def initialize(self) -> None:
@@ -324,20 +390,28 @@ def test_builder_keeps_new_notebook_generations_ready_not_active(
         async def list_authorized_multilingual_embeddings_v3(
             self, **kwargs: object
         ) -> tuple[object, ...]:
-            assert kwargs["notebook_id"] == notebook
-            assert kwargs["authorized_sources"] == (source,)
-            return (SimpleNamespace(embedding_id=uuid4(), source=source),)
+            selected = kwargs["notebook_id"]
+            expected = source if selected == notebook else other_source
+            assert kwargs["authorized_sources"] == (expected,)
+            return (SimpleNamespace(embedding_id=uuid4(), source=expected),)
 
     class Coordinator:
         def __init__(self, store: Store) -> None:
             assert isinstance(store, Store)
 
         async def build_and_activate(
-            self, spec: object, builder: object, *, activate: bool
+            self, spec: object, builder: object, *, activate: bool, resume_building: bool
         ) -> object:
             assert not activate
+            assert resume_building
+            expected_versions = {source.version_id, without_text}
+            if multiple_notebooks:
+                expected_versions.add(other_source.version_id)
+            assert set(spec.source_version_ids) == expected_versions
             stages.append(type(builder).__name__)
-            return SimpleNamespace(generation_id=spec.generation_id)
+            return SimpleNamespace(
+                generation_id=spec.generation_id, state=SimpleNamespace(value="ready")
+            )
 
     monkeypatch.setattr(isolated_multilingual, "BGEM3EmbeddingProvider", Provider)
     monkeypatch.setattr(isolated_multilingual, "SQLiteStore", Store)
@@ -345,7 +419,7 @@ def test_builder_keeps_new_notebook_generations_ready_not_active(
     report = asyncio.run(
         isolated_multilingual.build_isolated_multilingual(
             database=tmp_path / "new.db",
-            notebook_id=notebook,
+            notebook_id=(notebook, other_notebook) if multiple_notebooks else notebook,
             profile_file=(
                 Path(__file__).resolve().parents[3]
                 / "config/model_profiles/full_multilingual_v2_profiles.toml"
@@ -353,8 +427,13 @@ def test_builder_keeps_new_notebook_generations_ready_not_active(
             cache_folder=tmp_path,
         )
     )
-    assert report["items"] == 1
-    assert report["embedding_count"] == 1
+    assert report["items"] == (2 if multiple_notebooks else 1)
+    assert report["source_version_count"] == (3 if multiple_notebooks else 2)
+    assert report["no_searchable_evidence_version_ids"] == (str(without_text),)
+    assert report["embedding_count"] == (2 if multiple_notebooks else 1)
+    assert report["notebook_ids"] == (
+        [str(notebook), str(other_notebook)] if multiple_notebooks else [str(notebook)]
+    )
     assert report["invalid_language_annotation_count"] == 0
     assert report["invalid_language_annotation_examples"] == []
     assert report["active"] is False
@@ -366,3 +445,17 @@ def test_builder_keeps_new_notebook_generations_ready_not_active(
     }
     assert stages[0] == "open"
     assert stages[-2:] == ["close", "store_close"]
+    retry = asyncio.run(
+        isolated_multilingual.build_isolated_multilingual(
+            database=tmp_path / "new.db",
+            notebook_id=(notebook, other_notebook) if multiple_notebooks else notebook,
+            profile_file=(
+                Path(__file__).resolve().parents[3]
+                / "config/model_profiles/full_multilingual_v2_profiles.toml"
+            ),
+            cache_folder=tmp_path,
+            attempt=1,
+        )
+    )
+    assert retry["attempt"] == 1
+    assert retry["generations"] != report["generations"]

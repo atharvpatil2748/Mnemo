@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from uuid import UUID, uuid5
 
 from mnemo.models._shared import FrozenMetadata
@@ -14,6 +17,7 @@ from mnemo.models.advanced_retrieval import (
     advanced_candidate_id,
 )
 from mnemo.models.multilingual import LanguageEvidenceReferenceV3
+from mnemo.models.multilingual_index import MultilingualTextProjectionRowV2
 from mnemo.models.multilingual_reranking import (
     AuthorizedRerankerEvidenceV1,
     CandidateProvenanceV1,
@@ -104,6 +108,32 @@ class AuthorizedV2SourceStorageEnumerator:
         self._identity = identity
         self._model_identity = model_identity
         self._handles: dict[tuple[str, str], V2AuthorizedEvidenceHandleV1] = {}
+        self._request_rows: ContextVar[
+            tuple[str, dict[str, MultilingualTextProjectionRowV2]] | None
+        ] = ContextVar("authorized_v2_semantic_rows", default=None)
+
+    @contextmanager
+    def request_semantic_rows(self, decision: V2RetrievalAuthorizationDecisionV1) -> Iterator[None]:
+        """Share only already validated rows inside one authorization decision/task."""
+        token = self._request_rows.set((decision.decision_fingerprint, {}))
+        try:
+            yield
+        finally:
+            self._request_rows.reset(token)
+
+    def prefetched_semantic_row(
+        self,
+        *,
+        decision: V2RetrievalAuthorizationDecisionV1,
+        source: LanguageEvidenceReferenceV3,
+    ) -> MultilingualTextProjectionRowV2 | None:
+        current = self._request_rows.get()
+        if current is None or current[0] != decision.decision_fingerprint:
+            return None
+        row = current[1].get(source.identity_digest)
+        if row is not None and row.source != source:
+            raise PermissionError("EVIDENCE_UNAUTHORIZED")
+        return row
 
     def runtime_security(
         self, decision: V2RetrievalAuthorizationDecisionV1
@@ -160,9 +190,12 @@ class AuthorizedV2SourceStorageEnumerator:
             )
             for row in rows
         )
-        for handle in handles:
+        current = self._request_rows.get()
+        for handle, row in zip(handles, rows, strict=True):
             key = decision.decision_fingerprint, handle.source_reference.identity_digest
             self._handles[key] = handle
+            if current is not None and current[0] == decision.decision_fingerprint:
+                current[1][row.source.identity_digest] = row
         return handles
 
     async def enumerate_authorized_multilingual_sources(
@@ -206,6 +239,9 @@ class AuthorizedV2SourceStorageEnumerator:
             if row.source.identity_digest in values:
                 raise ValueError("authorized V2 source page contains duplicate identities")
             self._handles[key] = handle
+            current = self._request_rows.get()
+            if current is not None and current[0] == decision.decision_fingerprint:
+                current[1][row.source.identity_digest] = row
             values[row.source.identity_digest] = row.source
         return tuple(values[key] for key in sorted(values))
 
@@ -239,19 +275,23 @@ class AuthorizedV2EvidenceResolver:
         *,
         decision: V2RetrievalAuthorizationDecisionV1,
         handle: V2AuthorizedEvidenceHandleV1,
+        prefetched_row: MultilingualTextProjectionRowV2 | None = None,
     ) -> AuthorizedV2EvidenceResolutionV1:
         if handle.runtime_security.authorization_decision_fingerprint != (
             decision.decision_fingerprint
         ):
             raise PermissionError("AUTHORIZATION_SCOPE_MISMATCH")
-        row = await self._store.get_authorized_v2_semantic_row(
-            decision=decision,
-            generation_id=handle.semantic_generation_id,
-            evidence_reference_digest=handle.source_reference.identity_digest,
-            representation_reference_id=handle.representation_reference.reference_id,
-        )
+        row = prefetched_row
+        if row is None:
+            row = await self._store.get_authorized_v2_semantic_row(
+                decision=decision,
+                generation_id=handle.semantic_generation_id,
+                evidence_reference_digest=handle.source_reference.identity_digest,
+                representation_reference_id=handle.representation_reference.reference_id,
+            )
         if (
             row is None
+            or row.generation_id != handle.semantic_generation_id
             or row.source != handle.source_reference
             or row.representation != (handle.representation_reference)
         ):
@@ -326,7 +366,13 @@ class GovernedV2CandidateProjector:
         fusion_rank: int,
     ) -> AuthorizedRerankerEvidenceV1:
         handle = await self._enumerator.resolve_handle(decision=decision, source=source)
-        resolution = await self._resolver.resolve_v2_evidence(decision=decision, handle=handle)
+        resolution = await self._resolver.resolve_v2_evidence(
+            decision=decision,
+            handle=handle,
+            prefetched_row=self._enumerator.prefetched_semantic_row(
+                decision=decision, source=source
+            ),
+        )
         return await self.project_authorized_v2_evidence(
             resolution=resolution,
             retrieval_paths=retrieval_paths,

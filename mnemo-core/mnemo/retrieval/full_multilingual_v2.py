@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 from uuid import UUID
@@ -20,11 +21,24 @@ from mnemo.models.multilingual import (
     MultilingualRerankScoreV2,
 )
 from mnemo.models.multilingual_reranking import MultilingualRerankCandidateV3
+from mnemo.models.v2_evidence_resolution import TitleOnlyV2SemanticEvidenceError
 from mnemo.models.v2_retrieval_authorization import V2RetrievalAuthorizationDecisionV1
-from mnemo.retrieval.multilingual_dense_v2 import MultilingualDenseMatchV2
+from mnemo.retrieval.multilingual_dense_v2 import (
+    AuthorizedMultilingualDenseRetrievalV2,
+    AuthorizedMultilingualSourceEnumeratorV2,
+    MultilingualDenseMatchV2,
+    RequestScopedAuthorizedSourcePagesV2,
+)
 
 RRF_K_V2 = 60
 PASS_THROUGH_RERANKER_ID = "v2-pass-through-reranker-v1"
+
+
+@runtime_checkable
+class _RequestSemanticRowsV2(Protocol):
+    def request_semantic_rows(
+        self, decision: V2RetrievalAuthorizationDecisionV1
+    ) -> AbstractContextManager[None]: ...
 
 
 class PassThroughV2RerankerV1:
@@ -85,6 +99,21 @@ class AuthorizedMultilingualSparseSourceV2(Protocol):  # pragma: no cover
         decision: V2RetrievalAuthorizationDecisionV1,
         plan: RetrievalPlanV2,
         limit: int,
+    ) -> tuple[MultilingualSparseMatchV2, ...]: ...
+
+
+@runtime_checkable
+class _CensusAwareSparseSourceV2(Protocol):  # pragma: no cover
+    @property
+    def source_enumerator(self) -> AuthorizedMultilingualSourceEnumeratorV2: ...
+
+    async def retrieve_authorized_multilingual_sparse(
+        self,
+        *,
+        decision: V2RetrievalAuthorizationDecisionV1,
+        plan: RetrievalPlanV2,
+        limit: int,
+        source_pages: RequestScopedAuthorizedSourcePagesV2 | None = None,
     ) -> tuple[MultilingualSparseMatchV2, ...]: ...
 
 
@@ -194,24 +223,74 @@ class FullMultilingualRetrievalApplicationV2:
         for operation in ("dense_retrieval", "sparse_retrieval", "reranking"):
             if not self._admission.permits(language=query_language, operation=operation):
                 raise LookupError(f"query language is not operationally admitted for {operation}")
+        enumerator = (
+            self._dense.source_enumerator
+            if isinstance(self._dense, AuthorizedMultilingualDenseRetrievalV2)
+            else None
+        )
+        cache_scope = (
+            enumerator.request_semantic_rows(decision)
+            if isinstance(enumerator, _RequestSemanticRowsV2)
+            else nullcontext()
+        )
+        with cache_scope:
+            return await self._retrieve_admitted(
+                plan=plan, decision=decision, query_language=query_language
+            )
+
+    async def _retrieve_admitted(
+        self,
+        *,
+        plan: RetrievalPlanV2,
+        decision: V2RetrievalAuthorizationDecisionV1,
+        query_language: LanguageCode,
+    ) -> MultilingualV2ApplicationResult:
+        source_pages = (
+            RequestScopedAuthorizedSourcePagesV2(
+                enumerator=self._dense.source_enumerator, decision=decision
+            )
+            if isinstance(self._dense, AuthorizedMultilingualDenseRetrievalV2)
+            and isinstance(self._sparse, _CensusAwareSparseSourceV2)
+            and self._dense.source_enumerator is self._sparse.source_enumerator
+            else None
+        )
         omissions: list[str] = []
         dense_matches: tuple[MultilingualDenseMatchV2, ...] = ()
         sparse_matches: tuple[MultilingualSparseMatchV2, ...] = ()
         try:
-            dense_matches = await self._dense.retrieve(
-                decision=decision,
-                query=plan.query,
-                query_language=query_language,
-                limit=plan.budgets.recall_limit,
-            )
+            if source_pages is not None:
+                assert isinstance(self._dense, AuthorizedMultilingualDenseRetrievalV2)
+                dense_matches = await self._dense.retrieve(
+                    decision=decision,
+                    query=plan.query,
+                    query_language=query_language,
+                    limit=plan.budgets.recall_limit,
+                    source_pages=source_pages,
+                )
+            else:
+                dense_matches = await self._dense.retrieve(
+                    decision=decision,
+                    query=plan.query,
+                    query_language=query_language,
+                    limit=plan.budgets.recall_limit,
+                )
         except (LookupError, RuntimeError, ValueError) as error:
             omissions.append(f"dense_unavailable:{type(error).__name__}")
         try:
-            sparse_matches = await self._sparse.retrieve_authorized_multilingual_sparse(
-                decision=decision,
-                plan=plan,
-                limit=plan.budgets.recall_limit,
-            )
+            if source_pages is not None:
+                assert isinstance(self._sparse, _CensusAwareSparseSourceV2)
+                sparse_matches = await self._sparse.retrieve_authorized_multilingual_sparse(
+                    decision=decision,
+                    plan=plan,
+                    limit=plan.budgets.recall_limit,
+                    source_pages=source_pages,
+                )
+            else:
+                sparse_matches = await self._sparse.retrieve_authorized_multilingual_sparse(
+                    decision=decision,
+                    plan=plan,
+                    limit=plan.budgets.recall_limit,
+                )
         except (LookupError, RuntimeError, ValueError) as error:
             omissions.append(f"sparse_unavailable:{type(error).__name__}")
         if not dense_matches and not sparse_matches and omissions:
@@ -239,13 +318,17 @@ class FullMultilingualRetrievalApplicationV2:
         for ordinal, (source, fused_score, paths) in enumerate(
             ordered[: plan.budgets.rerank_limit]
         ):
-            candidate = await self._candidate_builder.build(
-                query=plan.query,
-                source=source,
-                decision=decision,
-                input_ordinal=ordinal,
-                retrieval_paths=tuple(sorted(paths)),
-            )
+            try:
+                candidate = await self._candidate_builder.build(
+                    query=plan.query,
+                    source=source,
+                    decision=decision,
+                    input_ordinal=ordinal,
+                    retrieval_paths=tuple(sorted(paths)),
+                )
+            except TitleOnlyV2SemanticEvidenceError:
+                omissions.append("candidate_rejected:title_only_semantic_evidence")
+                continue
             built.append((candidate, fused_score, tuple(sorted(paths))))
         scores_by_id: dict[UUID, float] = {}
         if built:
@@ -289,7 +372,9 @@ class FullMultilingualRetrievalApplicationV2:
         )
         return MultilingualV2ApplicationResult(
             candidates=results,
-            completeness=("partial" if omissions else "complete") if results else "empty",
+            completeness=("partial" if omissions else "complete")
+            if results
+            else ("partial" if omissions else "empty"),
             omissions=tuple(sorted(omissions)),
             dense_examined=len(dense_matches),
             sparse_examined=len(sparse_matches),

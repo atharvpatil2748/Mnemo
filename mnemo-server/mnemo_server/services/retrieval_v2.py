@@ -13,6 +13,7 @@ from mnemo.interfaces import ContractValidationError, NotFoundError, OperationTi
 from mnemo.interfaces.advanced_retrieval import PrincipalAwareAdvancedRetrievalInterfaceV2
 from mnemo.models import RetrievalResultSetV1, RetrievalScopeV2, thaw_metadata
 from mnemo.retrieval import RetrievalCursorCodec
+from mnemo.retrieval.scope import StorageDocumentScopeResolverV1, StorageSourceAssociationReaderV1
 
 from mnemo_server.config import ServerConfig
 from mnemo_server.schemas.retrieval_v2 import EvidenceSearchRequest, EvidenceSearchResponse
@@ -22,6 +23,11 @@ from mnemo_server.services.authorization import (
     ServerPrincipalV1,
     principal_from_claims,
 )
+from mnemo_server.services.authorized_scope import (
+    AuthorizedNotebookScope,
+    AuthorizedNotebookScopeResolver,
+)
+from mnemo_server.services.scope_authority import SQLiteNotebookScopeAuthority
 from mnemo_server.services.source_metadata import (
     AuthorizedSourceMetadataResolverV1,
     SourceMetadataReferenceV1,
@@ -73,6 +79,19 @@ class EvidenceRetrievalApplicationService:
             automatic_policy_version=automatic_policy_version,
             security_scope_identity=str(principal.actor_id) if force_authorized else None,
         )
+        authority = getattr(self._engine, "server_scope_authority", None)
+        membership: AuthorizedNotebookScope | None = None
+        if authority is not None:
+            if not isinstance(authority, SQLiteNotebookScopeAuthority):
+                raise PermissionError("trusted membership authority is unavailable")
+            membership = (
+                await AuthorizedNotebookScopeResolver(self._engine.storage, authority).resolve(
+                    principal, (plan.scope.notebook_id,)
+                )
+            )[0]
+            await self.validate_acl_request(request, principal)
+            plan = plan.model_copy(update={"membership_revision": membership.membership_revision})
+            force_authorized = True
         try:
             if type(self._engine) is KnowledgeEngine:
                 await CentralAuthorizationServiceV1(self._engine).authorize_notebook(
@@ -130,7 +149,10 @@ class EvidenceRetrievalApplicationService:
                         requested_k=request.evidence_budget,
                         internal_candidate_pool_k=plan.budgets.rerank_limit,
                     )
-                    return await self._with_authorized_metadata(response, principal)
+                    response = await self._with_authorized_metadata(response, principal)
+                    if membership is not None:
+                        await self._validate_acl_response(response, principal, membership)
+                    return response
                 retrieval = self._engine.advanced_retrieval
                 if self._config.production_mode or force_authorized:
                     if not principal.authenticated:
@@ -158,6 +180,8 @@ class EvidenceRetrievalApplicationService:
             internal_candidate_pool_k=plan.budgets.rerank_limit,
         )
         response = await self._with_authorized_metadata(response, principal)
+        if membership is not None:
+            await self._validate_acl_response(response, principal, membership)
         if (
             len(response.model_dump_json().encode("utf-8"))
             > self._config.max_advanced_response_bytes
@@ -167,6 +191,75 @@ class EvidenceRetrievalApplicationService:
                 "lower evidence_budget or max_serialized_bytes"
             )
         return response
+
+    async def validate_acl_request(
+        self, request: EvidenceSearchRequest, principal: ServerPrincipalV1
+    ) -> None:
+        """Reject unbound selectors before retrieval can inspect their content."""
+        scope = request.scope
+        for source_id in scope.source_ids:
+            source = await self._engine.storage.get_source(source_id)
+            if source is None or source.notebook_id != scope.notebook_id:
+                raise NotFoundError("authorized resource was not found")
+        resolver = StorageDocumentScopeResolverV1(
+            self._engine.storage, StorageSourceAssociationReaderV1(self._engine.storage)
+        )
+        document_ids = (*scope.document_ids, *request.partition_document_ids)
+        matched_versions: set[UUID] = set()
+        for document_id in document_ids:
+            document = await self._engine.storage.get_document(document_id)
+            if document is None:
+                raise NotFoundError("authorized resource was not found")
+            versions = (
+                tuple(v.version_id for v in document.versions if v.version_id in scope.version_ids)
+                if scope.version_ids
+                else (document.current_version_id,)
+            )
+            for version_id in versions:
+                await resolver.resolve_document_scope(
+                    principal, document_id, version_id, scope.notebook_id
+                )
+                matched_versions.add(version_id)
+            if not versions:
+                raise NotFoundError("authorized resource was not found")
+        if document_ids and scope.version_ids and matched_versions != set(scope.version_ids):
+            raise NotFoundError("authorized resource was not found")
+
+    async def _validate_acl_response(
+        self,
+        response: EvidenceSearchResponse,
+        principal: ServerPrincipalV1,
+        membership: AuthorizedNotebookScope,
+    ) -> None:
+        """Check exact ancestry and revocation after work, before publishing bytes."""
+        for partition in response.partitions:
+            partition_document_id = partition.get("document_id")
+            if any(item.get("document_id") != partition_document_id for item in partition["items"]):
+                raise NotFoundError("authorized resource was not found")
+        resolver = StorageDocumentScopeResolverV1(
+            self._engine.storage, StorageSourceAssociationReaderV1(self._engine.storage)
+        )
+        for item in response.items:
+            try:
+                notebook_id = UUID(item["notebook_id"])
+                source_id = UUID(item["source_id"])
+                document_id = UUID(item["document_id"])
+                version_id = UUID(item["version_id"])
+            except (KeyError, TypeError, ValueError) as error:
+                raise NotFoundError("authorized resource was not found") from error
+            if notebook_id != membership.notebook_id:
+                raise NotFoundError("authorized resource was not found")
+            resolved = await resolver.resolve_document_scope(
+                principal, document_id, version_id, notebook_id
+            )
+            if resolved.source_id != source_id:
+                raise NotFoundError("authorized resource was not found")
+        authority = getattr(self._engine, "server_scope_authority", None)
+        if not isinstance(authority, SQLiteNotebookScopeAuthority):
+            raise PermissionError("trusted membership authority is unavailable")
+        await AuthorizedNotebookScopeResolver(self._engine.storage, authority).revalidate(
+            principal, (membership,)
+        )
 
     async def _with_authorized_metadata(
         self, response: EvidenceSearchResponse, principal: ServerPrincipalV1

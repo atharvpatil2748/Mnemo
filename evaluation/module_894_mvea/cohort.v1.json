@@ -1,0 +1,33 @@
+{
+  "grounded_case_count": 130,
+  "human_relevance_reviewed": false,
+  "judgment_method": "DETERMINISTIC_ENGINEERING",
+  "planned_case_count": 140,
+  "schema": "mnemo.module-894-mvea-cohort/1",
+  "sections": {
+    "language": {
+      "count": 90,
+      "path": "evaluation/module_894_mvea/language-identity.v1.json",
+      "sha256": "9498ec0f4f873f92aa99ebed3ac3afa78854e3ce3966f82071b7db6bec5185c0"
+    },
+    "security": {
+      "count": 20,
+      "path": "evaluation/module_894_mvea/security-controls.v1.json",
+      "sha256": "389d2cf156d9775b9cd8c518225d202c17df03cb5f25d3d073a73609fcbfa942"
+    },
+    "visual": {
+      "count": 20,
+      "path": "evaluation/module_894_mvea/visual-identity.v1.json",
+      "sha256": "621cc19d102c3ec79942659755bcfa9347071dcba82ea48df3b25ed408ec3e63"
+    }
+  },
+  "semantic_relevance_adjudicated": false,
+  "status": "PARTIAL_GROUNDED_COHORT",
+  "unfilled_slices": {
+    "ocr_only": {
+      "grounded": 0,
+      "reason": "Retained OCR projection text is mainly duplicated UI chrome, isolated glyphs, and corrupted extraction; no ten independently supportable OCR-only target identities were established.",
+      "required": 10
+    }
+  }
+}

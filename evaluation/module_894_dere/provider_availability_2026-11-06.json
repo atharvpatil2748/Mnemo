@@ -1,0 +1,80 @@
+{
+  "schema_version": "mnemo.dere-provider-availability/1",
+  "date": "2026-11-06",
+  "scope": "local query readiness and isolated evaluation admission, not production certification",
+  "providers": [
+    {
+      "name": "SQLite FTS5 canonical sparse retrieval",
+      "revision": "repository implementation at current working tree",
+      "representation": "canonical_text",
+      "query_side": "EXECUTED_REAL_NO_HINT_QUERY",
+      "asset_side": "NOT_APPLICABLE",
+      "languages": "token-based; no cross-language semantic guarantee",
+      "dimensions": null,
+      "metric": "FTS5 sparse ranking, then RRF fusion",
+      "normalization": "NOT_APPLICABLE",
+      "shared_space_id": null,
+      "readiness": "ACTIVE_IN_DISPOSABLE_COPY",
+      "authorized_disposable_use": "PASS_OWNER_READER_AND_DENIAL_PROBES",
+      "result": "target absent from top 10; Recall@10=0"
+    },
+    {
+      "name": "BAAI/bge-m3",
+      "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+      "representation": "multilingual_text",
+      "query_side": "REAL_LOCAL_QUERY_ENCODED",
+      "asset_side": "NOT_APPLICABLE",
+      "languages": ["en", "hi", "mr"],
+      "dimensions": 1024,
+      "metric": "cosine",
+      "normalization": "l2",
+      "shared_space_id": "7dcba654e1c947145253ff65ef93e2b4ef1105cdf680b79218a446c79cc1a0d7",
+      "readiness": "INITIALIZED_AND_QUERYABLE_OFFLINE",
+      "authorized_disposable_use": "BLOCKED_NO_ACTIVE_LANGUAGE_TEXT_V2_GENERATION_OR_ALIAS_IN_FROZEN_SNAPSHOT",
+      "result": "query norm 1.0000000423014852; no notebook-bound retrieval executed"
+    },
+    {
+      "name": "openai/clip-vit-large-patch14",
+      "revision": "32bd64288804d66eefd0ccbe215aa642df71cc41",
+      "representation": "visual_vector",
+      "query_side": "REAL_LOCAL_TEXT_TOWER_QUERY_ENCODED",
+      "asset_side": "NOT_LOADED_IN_THIS_PROBE",
+      "languages": ["en"],
+      "dimensions": 768,
+      "metric": "cosine (configured; no notebook-bound comparison)",
+      "normalization": "l2 query observed",
+      "shared_space_id": null,
+      "readiness": "QUERY_SIDE_READY_ONLY",
+      "authorized_disposable_use": "BLOCKED_NO_ACTIVE_MATCHING_VISUAL_ALIAS_OR_VERIFIED_ASSET_SPACE",
+      "result": "query norm 0.9999999403953552"
+    },
+    {
+      "name": "PaddleOCR",
+      "revision": "package 3.4.1; exact model-tree revisions not verified",
+      "representation": "ocr_text",
+      "query_side": "CANONICAL_TEXT_RETRIEVAL_AFTER_OCR_PROJECTION_NOT_PROBED",
+      "asset_side": "DETECTION_AND_DEVANAGARI_RECOGNITION_DIRECTORIES_PRESENT_NOT_LOADED",
+      "languages": "NOT_VERIFIED",
+      "dimensions": null,
+      "metric": null,
+      "normalization": null,
+      "shared_space_id": null,
+      "readiness": "NOT_VERIFIED_BY_REAL_INFERENCE",
+      "authorized_disposable_use": "BLOCKED_NO_VERIFIED_OCR_CASE_OR_ACTIVE_COVERED_GENERATION"
+    },
+    {
+      "name": "qwen2.5vl:latest via existing local Ollama process",
+      "revision": "local model ID 616d67811505; governed revision binding not verified",
+      "representation": "vision_analysis",
+      "query_side": "NOT_PROBED",
+      "asset_side": "MODEL_LISTED_NO_INFERENCE_IN_THIS_TASK",
+      "languages": "NOT_VERIFIED",
+      "dimensions": null,
+      "metric": null,
+      "normalization": null,
+      "shared_space_id": null,
+      "readiness": "MODEL_PRESENT_NOT_OPERATIONALLY_PROVEN",
+      "authorized_disposable_use": "BLOCKED_NO_VERIFIED_VISION_CASE_OR_ACTIVE_COVERED_GENERATION"
+    }
+  ]
+}

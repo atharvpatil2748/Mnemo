@@ -20,6 +20,7 @@ from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import aiosqlite
+import mnemo.storage.sqlite as sqlite_storage
 import pytest
 from mnemo.interfaces.errors import ConflictError, StorageError
 from mnemo.models import (
@@ -57,6 +58,28 @@ from mnemo.storage.sqlite import SQLiteStore
 from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
 
 T = TypeVar("T")
+
+
+@pytest.mark.anyio
+async def test_interrupted_first_open_rolls_back_entire_schema(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db_path = tmp_path / "interrupted-first-open.db"
+    original = sqlite_storage._SCHEMA_SQL
+    monkeypatch.setattr(sqlite_storage, "_SCHEMA_SQL", original + "\nINVALID SCHEMA STATEMENT;")
+    store = SQLiteStore(db_path)
+    with pytest.raises(sqlite3.OperationalError):
+        await store.open()
+    monkeypatch.setattr(sqlite_storage, "_SCHEMA_SQL", original)
+    with sqlite3.connect(db_path) as db:
+        assert db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall() == []
+    await store.open()
+    try:
+        with sqlite3.connect(db_path) as db:
+            assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (17,)
+    finally:
+        await store.close()
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -499,7 +522,7 @@ def test_schema_migration_15_upgrades_v3_idempotently(tmp_path: Path) -> None:
         execution_table = db.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='final_qa_executions'"
         ).fetchone()
-    assert version == (16,)
+    assert version == (17,)
     assert table == ("retrieval_version_metadata",)
     assert execution_table == ("final_qa_executions",)
 
@@ -536,7 +559,7 @@ def test_schema_migration_7_rolls_back_completely_on_failure(
     _run(store.open())
     _run(store.close())
     with sqlite3.connect(path) as db:
-        assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (16,)
+        assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (17,)
 
 
 def test_multiple_open_close(store: SQLiteStore) -> None:

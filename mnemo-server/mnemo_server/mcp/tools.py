@@ -13,6 +13,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import mcp.types as types
+from mnemo.delivery import BoundedDocumentExpansionService
 from mnemo.engine import EngineState, KnowledgeEngine
 from mnemo.interfaces import (
     ContractValidationError,
@@ -30,8 +31,10 @@ from mnemo.models import (
     AssetAnalysisModality,
     AssetAnalysisSelection,
     AssetAnalysisSelector,
+    BinaryDelivery,
     DeliveryCompleteness,
     DeliveryRequest,
+    DeliveryResponse,
     DeliveryView,
     FrozenMetadata,
     InsightType,
@@ -55,7 +58,11 @@ from mnemo_server.services.authorization import (
     ServerPrincipalV1,
     principal_from_claims,
 )
-from mnemo_server.services.automatic_query_v2 import AutomaticQueryV2ApplicationService
+from mnemo_server.services.authorized_scope import (
+    AuthorizedNotebookInventoryCursor,
+    AuthorizedNotebookScope,
+    AuthorizedNotebookScopeResolver,
+)
 from mnemo_server.services.capabilities_v2 import CapabilityDiscoveryService
 from mnemo_server.services.delivery import (
     authorized_delivery_response_body,
@@ -68,13 +75,17 @@ from mnemo_server.services.final_qa_v2 import (
 from mnemo_server.services.mutable_workspace import MutableWorkspaceDecision
 from mnemo_server.services.production_runtime_binding import CertifiedProductionBinding
 from mnemo_server.services.query import QueryService
-from mnemo_server.services.retrieval_v2 import EvidenceRetrievalApplicationService
+from mnemo_server.services.scope_authority import SQLiteNotebookScopeAuthority
 from mnemo_server.services.search import SearchService
+from mnemo_server.services.shared_search import (
+    SharedSearchApplicationService,
+    SharedSearchKind,
+    SharedSearchRequest,
+)
 from mnemo_server.services.source_metadata import (
     AuthorizedSourceMetadataResolverV1,
     SourceMetadataReferenceV1,
 )
-from mnemo_server.services.structured_v2 import StructuredRetrievalApplicationService
 from mnemo_server.tokenizer_provisioning import provision_tokenizer
 
 from .contracts import (
@@ -546,7 +557,7 @@ def _validate_tool_routes() -> None:
         arity = (
             7
             if route.backend is ToolBackendRoute.V2_CAPABILITIES
-            else 2
+            else 4
             if name == "list_notebooks"
             else 5
             if route.backend is ToolBackendRoute.SHARED_V2_DELIVERY
@@ -852,8 +863,29 @@ async def execute_mcp_tool(
         )
 
     args = arguments or {}
+    membership_authority = getattr(engine, "server_scope_authority", None)
+    if membership_authority is not None and name not in {
+        "query_notebook_v2",
+        "run_final_qa_v2",
+        "get_timeline",
+        "get_source_insights",
+        "list_notebooks",
+        "get_notebook_summary",
+        "query_notebook",
+        "search_all_notebooks",
+        "search_evidence",
+        "query_structured",
+        "get_document",
+        "get_document_chunk",
+        "get_asset",
+        "get_image_analysis",
+        "get_capabilities",
+    }:
+        raise DependencyUnavailableError("Membership tool integration is unavailable")
     server_principal = _principal_for_call(principal, config)
-    if config.full_multilingual_v2_enabled:
+    if membership_authority is not None and not server_principal.authenticated:
+        raise PermissionError("authenticated MCP server principal is required")
+    if config.full_multilingual_v2_enabled or membership_authority is not None:
         _reject_client_policy_overrides(name, args)
         await _authorize_mcp_call(engine, name, args, server_principal)
     if route.backend is ToolBackendRoute.V2_CAPABILITIES:
@@ -867,7 +899,7 @@ async def execute_mcp_tool(
             transport,
         )
     if name == "list_notebooks":
-        return await route.handler(engine, args)
+        return await route.handler(engine, args, config, server_principal)
     if route.backend is ToolBackendRoute.SHARED_V2_DELIVERY:
         return await route.handler(
             engine,
@@ -898,7 +930,10 @@ async def _handle_search_evidence(
 ) -> list[MCPContent]:
     """Execute the shared strict ranked/exhaustive evidence contract."""
     request = EvidenceSearchRequest.model_validate(args)
-    response = await EvidenceRetrievalApplicationService(engine, config).execute(request, principal)
+    result = await SharedSearchApplicationService(engine, config).execute(
+        SharedSearchRequest(SharedSearchKind.EVIDENCE, request), principal
+    )
+    response = result.response
     return [
         types.TextContent(
             type="text",
@@ -914,7 +949,10 @@ async def _handle_automatic_query_v2(
     principal: ServerPrincipalV1,
 ) -> list[MCPContent]:
     request = AutomaticQueryV2Request.model_validate(args)
-    response = await AutomaticQueryV2ApplicationService(engine, config).execute(request, principal)
+    result = await SharedSearchApplicationService(engine, config).execute(
+        SharedSearchRequest(SharedSearchKind.AUTOMATIC, request), principal
+    )
+    response = result.response
     return [types.TextContent(type="text", text=response.model_dump_json(indent=2))]
 
 
@@ -926,9 +964,10 @@ async def _handle_query_structured(
 ) -> list[MCPContent]:
     """Execute the same strict structured application contract used by HTTP."""
     request = StructuredRetrievalRequest.model_validate(args)
-    response = await StructuredRetrievalApplicationService(engine, config).execute(
-        request, principal
+    result = await SharedSearchApplicationService(engine, config).execute(
+        SharedSearchRequest(SharedSearchKind.STRUCTURED, request), principal
     )
+    response = result.response
     return [types.TextContent(type="text", text=response.model_dump_json(indent=2))]
 
 
@@ -955,19 +994,108 @@ async def _handle_get_capabilities(
     transport: str | None,
 ) -> list[MCPContent]:
     request = CapabilityDiscoveryRequest.model_validate(args)
+    authority = getattr(engine, "server_scope_authority", None)
+    membership: AuthorizedNotebookScope | None = None
+    if authority is not None:
+        if not isinstance(authority, SQLiteNotebookScopeAuthority):
+            raise PermissionError("trusted membership authority is unavailable")
+        if request.notebook_id is None:
+            raise NotFoundError("authorized resource was not found")
+        membership = (
+            await AuthorizedNotebookScopeResolver(engine.storage, authority).resolve(
+                principal, (request.notebook_id,)
+            )
+        )[0]
     service = CapabilityDiscoveryService(
         engine, config, workspace_decision, certified_binding, transport
     )
     response = (
         await service.document_for_principal(request, principal)
-        if config.full_multilingual_v2_enabled
+        if config.full_multilingual_v2_enabled or membership is not None
         else service.document(request)
     )
+    if membership is not None:
+        if not isinstance(authority, SQLiteNotebookScopeAuthority):
+            raise PermissionError("trusted membership authority is unavailable")
+        await AuthorizedNotebookScopeResolver(engine.storage, authority).revalidate(
+            principal, (membership,)
+        )
     return [types.TextContent(type="text", text=response.model_dump_json(indent=2))]
 
 
-def _delivery_service(engine: KnowledgeEngine, config: ServerConfig, principal=None):  # type: ignore[no-untyped-def]
-    return build_delivery_service(engine, config, principal)
+def _delivery_service(
+    engine: KnowledgeEngine,
+    config: ServerConfig,
+    principal: ServerPrincipalV1,
+    membership: AuthorizedNotebookScope | None = None,
+) -> BoundedDocumentExpansionService:
+    service = build_delivery_service(engine, config, principal)
+    return (
+        service.for_membership(
+            principal.actor_id, membership.notebook_id, membership.membership_revision
+        )
+        if membership is not None
+        else service
+    )
+
+
+async def _mcp_delivery_membership(
+    engine: KnowledgeEngine,
+    name: str,
+    args: dict[str, Any],
+    principal: ServerPrincipalV1,
+) -> AuthorizedNotebookScope | None:
+    authority = getattr(engine, "server_scope_authority", None)
+    if authority is None:
+        return None
+    if not isinstance(authority, SQLiteNotebookScopeAuthority):
+        raise PermissionError("trusted membership authority is unavailable")
+    # Under an ACL the document's notebook must be explicit. Resolving an
+    # unqualified document would enumerate another actor's associations.
+    notebook_id = _parse_uuid(args.get("notebook_id"), "notebook_id")
+    membership = (
+        await AuthorizedNotebookScopeResolver(engine.storage, authority).resolve(
+            principal, (notebook_id,)
+        )
+    )[0]
+    if name in {"get_document", "get_document_chunk"} or (
+        name == "get_asset" and args.get("occurrence_id") is None
+    ):
+        document_id = _parse_uuid(args.get("document_id"), "document_id")
+        version_id = _parse_uuid(args.get("version_id"), "version_id")
+        await StorageDocumentScopeResolverV1(
+            engine.storage, StorageSourceAssociationReaderV1(engine.storage)
+        ).resolve_document_scope(principal, document_id, version_id, notebook_id)
+    return membership
+
+
+async def _revalidate_mcp_delivery(
+    engine: KnowledgeEngine,
+    principal: ServerPrincipalV1,
+    membership: AuthorizedNotebookScope | None,
+    result: DeliveryResponse | BinaryDelivery,
+) -> None:
+    if membership is None:
+        return
+    authority = getattr(engine, "server_scope_authority", None)
+    if not isinstance(authority, SQLiteNotebookScopeAuthority):
+        raise PermissionError("trusted membership authority is unavailable")
+    resolver = StorageDocumentScopeResolverV1(
+        engine.storage, StorageSourceAssociationReaderV1(engine.storage)
+    )
+    items = result.items if isinstance(result, DeliveryResponse) else (result,)
+    for item in items:
+        ancestry = item.attribution
+        if ancestry.notebook_id != membership.notebook_id:
+            raise NotFoundError("authorized resource was not found")
+        resolved = await resolver.resolve_document_scope(
+            principal, ancestry.document_id, ancestry.version_id, membership.notebook_id
+        )
+        if resolved.source_id != ancestry.source_id:
+            raise NotFoundError("authorized resource was not found")
+    await AuthorizedNotebookScopeResolver(engine.storage, authority).revalidate(
+        principal, (membership,)
+    )
 
 
 async def _execute_delivery_tool(
@@ -978,18 +1106,19 @@ async def _execute_delivery_tool(
     principal: ServerPrincipalV1,
 ) -> list[MCPContent]:
     try:
+        membership = await _mcp_delivery_membership(engine, name, args, principal)
         if name == "get_document":
-            return await _handle_get_document(engine, args, config, principal)
+            return await _handle_get_document(engine, args, config, principal, membership)
         if name == "get_document_chunk":
-            return await _handle_get_document_chunk(engine, args, config, principal)
+            return await _handle_get_document_chunk(engine, args, config, principal, membership)
         if type(engine) is KnowledgeEngine:
             notebook_id = _parse_uuid(args.get("notebook_id"), "notebook_id")
             await CentralAuthorizationServiceV1(engine).authorize_notebook(
                 principal, notebook_id, AuthorizationOperationV1.DELIVER
             )
         if name == "get_asset":
-            return await _handle_get_asset(engine, args, config, principal)
-        return await _handle_get_image_analysis(engine, args, config, principal)
+            return await _handle_get_asset(engine, args, config, principal, membership)
+        return await _handle_get_image_analysis(engine, args, config, principal, membership)
     except (DeliveryAuthorizationError, NotFoundError) as error:
         if config.full_multilingual_v2_enabled:
             raise NotFoundError("authorized resource was not found") from None
@@ -1031,13 +1160,16 @@ async def _delivery_payload(
     result: Any,
     config: ServerConfig,
     principal: ServerPrincipalV1,
+    membership: AuthorizedNotebookScope | None = None,
 ) -> dict[str, Any]:
+    await _revalidate_mcp_delivery(engine, principal, membership, result)
     if config.full_multilingual_v2_enabled and type(engine) is KnowledgeEngine:
         body = await authorized_delivery_response_body(
             result, engine, principal, max_response_bytes=config.max_delivery_response_bytes
         )
     else:
         body = delivery_response_body(result)
+    await _revalidate_mcp_delivery(engine, principal, membership, result)
     return body.model_dump(mode="json")
 
 
@@ -1064,6 +1196,7 @@ async def _handle_get_document(
     args: dict[str, Any],
     config: ServerConfig,
     principal: ServerPrincipalV1,
+    membership: AuthorizedNotebookScope | None = None,
 ) -> list[MCPContent]:
     document_id = _parse_uuid(args.get("document_id"), "document_id")
     version_id = _parse_uuid(args.get("version_id"), "version_id")
@@ -1102,10 +1235,12 @@ async def _handle_get_document(
         max_bytes=_optional_positive_int(args, "max_bytes"),
         max_items=_optional_positive_int(args, "max_items"),
     )
-    service = _delivery_service(engine, config, principal)
+    service = _delivery_service(engine, config, principal, membership)
     if mode == "original":
         result = await service.get_original_document(request)
+        await _revalidate_mcp_delivery(engine, principal, membership, result)
         source_metadata = await _binary_source_metadata(engine, result, config, principal)
+        await _revalidate_mcp_delivery(engine, principal, membership, result)
         return [
             types.EmbeddedResource(
                 type="resource",
@@ -1156,7 +1291,7 @@ async def _handle_get_document(
             )
         except ValueError as error:
             raise ContractValidationError("Parameter 'selector' is invalid") from error
-    result = (
+    expanded = (
         await service.expand_document_v2(
             selector_body.to_core(
                 notebook_id=notebook_id,
@@ -1167,11 +1302,11 @@ async def _handle_get_document(
         if selector_body is not None
         else await service.expand_document(request)
     )
-    data = await _delivery_payload(engine, result, config, principal)
+    data = await _delivery_payload(engine, expanded, config, principal, membership)
     data.update(
         _contract_fields(
             "get_document",
-            completeness=result.completeness.value,
+            completeness=expanded.completeness.value,
             coverage={
                 "document_version": "ordered_text" if mode == "text" else "ordered_blocks",
                 "selector": selector_raw,
@@ -1182,8 +1317,8 @@ async def _handle_get_document(
                 "max_items": request.max_items,
                 "usage": data["usage"],
             },
-            next_cursor=result.next_cursor,
-            omissions=list(result.omissions),
+            next_cursor=expanded.next_cursor,
+            omissions=list(expanded.omissions),
             recommended_next_actions=(
                 [
                     _next_action(
@@ -1198,7 +1333,7 @@ async def _handle_get_document(
                         stop_condition="next_cursor is null or requested selector is complete",
                     )
                 ]
-                if result.next_cursor is not None
+                if expanded.next_cursor is not None
                 else []
             ),
         )
@@ -1211,6 +1346,7 @@ async def _handle_get_document_chunk(
     args: dict[str, Any],
     config: ServerConfig,
     principal: ServerPrincipalV1,
+    membership: AuthorizedNotebookScope | None = None,
 ) -> list[MCPContent]:
     chunk_id = args.get("chunk_id")
     if not isinstance(chunk_id, str) or len(chunk_id) != 64:
@@ -1237,13 +1373,13 @@ async def _handle_get_document_chunk(
             raise
         notebook_id = resolved_scope.notebook_id
 
-    result = await _delivery_service(engine, config, principal).get_document_chunk(
+    result = await _delivery_service(engine, config, principal, membership).get_document_chunk(
         notebook_id=notebook_id,
         document_id=document_id,
         version_id=version_id,
         chunk_id=chunk_id,
     )
-    data = await _delivery_payload(engine, result, config, principal)
+    data = await _delivery_payload(engine, result, config, principal, membership)
     data.update(
         _contract_fields(
             "get_document_chunk",
@@ -1283,6 +1419,7 @@ async def _handle_get_asset(
     args: dict[str, Any],
     config: ServerConfig,
     principal: ServerPrincipalV1,
+    membership: AuthorizedNotebookScope | None = None,
 ) -> list[MCPContent]:
     notebook_id = _parse_uuid(args.get("notebook_id"), "notebook_id")
     binary_format = args.get("binary_format", "auto")
@@ -1292,7 +1429,7 @@ async def _handle_get_asset(
     cursor = args.get("cursor")
     if cursor is not None and not isinstance(cursor, str):
         raise ContractValidationError("Parameter 'cursor' must be a string")
-    service = _delivery_service(engine, config, principal)
+    service = _delivery_service(engine, config, principal, membership)
     if occurrence_id is not None:
         result = await service.get_asset(
             notebook_id=notebook_id,
@@ -1300,7 +1437,9 @@ async def _handle_get_asset(
             cursor=cursor,
             max_bytes=_optional_positive_int(args, "max_bytes"),
         )
+        await _revalidate_mcp_delivery(engine, principal, membership, result)
         source_metadata = await _binary_source_metadata(engine, result, config, principal)
+        await _revalidate_mcp_delivery(engine, principal, membership, result)
         encoded = base64.b64encode(result.content).decode("ascii")
         resource_metadata = {
             "originalMediaType": result.media_type,
@@ -1354,22 +1493,22 @@ async def _handle_get_asset(
         ]
     document_id = _parse_uuid(args.get("document_id"), "document_id")
     version_id = _parse_uuid(args.get("version_id"), "version_id")
-    result = await service.list_assets(
+    inventory = await service.list_assets(
         notebook_id=notebook_id,
         document_id=document_id,
         version_id=version_id,
         cursor=cursor,
         limit=_optional_positive_int(args, "limit"),
     )
-    data = await _delivery_payload(engine, result, config, principal)
+    data = await _delivery_payload(engine, inventory, config, principal, membership)
     data.update(
         _contract_fields(
             "get_asset",
-            completeness=result.completeness.value,
+            completeness=inventory.completeness.value,
             coverage={"asset_occurrences": "known_document_version"},
             limits={"limit": args.get("limit"), "usage": data["usage"]},
-            next_cursor=result.next_cursor,
-            omissions=list(result.omissions),
+            next_cursor=inventory.next_cursor,
+            omissions=list(inventory.omissions),
             recommended_next_actions=(
                 [
                     _next_action(
@@ -1383,7 +1522,7 @@ async def _handle_get_asset(
                         stop_condition="next_cursor is null",
                     )
                 ]
-                if result.next_cursor is not None
+                if inventory.next_cursor is not None
                 else [
                     _next_action(
                         "get_image_analysis",
@@ -1403,13 +1542,14 @@ async def _handle_get_image_analysis(
     args: dict[str, Any],
     config: ServerConfig,
     principal: ServerPrincipalV1,
+    membership: AuthorizedNotebookScope | None = None,
 ) -> list[MCPContent]:
     notebook_id = _parse_uuid(args.get("notebook_id"), "notebook_id")
     occurrence_id = _parse_uuid(args.get("occurrence_id"), "occurrence_id")
     ocr_id = _optional_uuid(args, "ocr_derivation_id")
     vision_id = _optional_uuid(args, "vision_derivation_id")
     if "selection" not in args and "modalities" not in args and "profile" not in args:
-        result = await _delivery_service(engine, config, principal).get_image_analysis(
+        result = await _delivery_service(engine, config, principal, membership).get_image_analysis(
             notebook_id=notebook_id,
             occurrence_id=occurrence_id,
             ocr_derivation_id=ocr_id,
@@ -1429,10 +1569,12 @@ async def _handle_get_image_analysis(
             )
         except (TypeError, ValueError) as error:
             raise ContractValidationError("analysis selection is invalid") from error
-        result = await _delivery_service(engine, config, principal).get_image_analysis_v2(
+        result = await _delivery_service(
+            engine, config, principal, membership
+        ).get_image_analysis_v2(
             notebook_id=notebook_id, occurrence_id=occurrence_id, selector=selector
         )
-    data = await _delivery_payload(engine, result, config, principal)
+    data = await _delivery_payload(engine, result, config, principal, membership)
     data.update(
         _contract_fields(
             "get_image_analysis",
@@ -1489,6 +1631,7 @@ async def _handle_query_notebook(
     resp = (
         await service.execute_query(req, principal=principal)
         if config.full_multilingual_v2_enabled
+        or getattr(engine, "server_scope_authority", None) is not None
         else await service.execute_query(req)
     )
 
@@ -1567,6 +1710,7 @@ async def _handle_search_all_notebooks(
     resp = (
         await service.execute_search(req, principal=principal)
         if config.full_multilingual_v2_enabled
+        or getattr(engine, "server_scope_authority", None) is not None
         else await service.execute_search(req)
     )
 
@@ -1624,6 +1768,8 @@ async def _handle_search_all_notebooks(
 async def _handle_list_notebooks(
     engine: KnowledgeEngine,
     args: dict[str, Any],
+    config: ServerConfig,
+    principal: ServerPrincipalV1,
 ) -> list[MCPContent]:
     """Handle list_notebooks tool invocation."""
     limit = args.get("limit", 50)
@@ -1632,11 +1778,40 @@ async def _handle_list_notebooks(
     if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1 or limit > 100:
         raise ContractValidationError("Parameter 'limit' must be an integer between 1 and 100")
 
-    cursor_str = str(cursor) if cursor is not None else None
-    page = await engine.storage.list_notebooks(limit=limit, cursor=cursor_str)
+    authority = getattr(engine, "server_scope_authority", None)
+    if authority is not None:
+        if not isinstance(authority, SQLiteNotebookScopeAuthority) or not principal.authenticated:
+            raise PermissionError("trusted membership authority is unavailable")
+        scopes = await AuthorizedNotebookScopeResolver(engine.storage, authority).resolve(
+            principal, None
+        )
+        page_cursor = AuthorizedNotebookInventoryCursor(config.delivery_cursor_secret.encode())
+        identifiers = [scope.notebook_id for scope in scopes]
+        if cursor is not None:
+            if not isinstance(cursor, str):
+                raise ContractValidationError("Parameter 'cursor' must be an opaque string")
+            parsed_cursor = page_cursor.decode(
+                cursor, principal=principal, scopes=scopes, limit=limit
+            )
+            identifiers = [item for item in identifiers if item > parsed_cursor]
+        selected = identifiers[:limit]
+        items = [await engine.storage.get_notebook(item) for item in selected]
+        if any(item is None for item in items):
+            raise NotFoundError("authorized resource was not found")
+        page_items = [item for item in items if item is not None]
+        next_cursor = (
+            page_cursor.encode(str(selected[-1]), principal=principal, scopes=scopes, limit=limit)
+            if len(identifiers) > limit
+            else None
+        )
+    else:
+        cursor_str = str(cursor) if cursor is not None else None
+        page = await engine.storage.list_notebooks(limit=limit, cursor=cursor_str)
+        page_items = list(page.items)
+        next_cursor = page.next_cursor
 
     notebooks_list: list[dict[str, Any]] = []
-    for nb in page.items:
+    for nb in page_items:
         # Aggregated source count for each notebook
         sources_page = await engine.storage.list_sources(
             notebook_id=nb.notebook_id, limit=1000, cursor=None
@@ -1653,16 +1828,21 @@ async def _handle_list_notebooks(
             }
         )
 
+    if authority is not None:
+        await AuthorizedNotebookScopeResolver(engine.storage, authority).revalidate(
+            principal, scopes
+        )
+
     data = {
         "notebooks": notebooks_list,
-        "next_cursor": page.next_cursor,
+        "next_cursor": next_cursor,
         "total": len(notebooks_list),
         **_contract_fields(
             "list_notebooks",
-            completeness="truncated" if page.next_cursor is not None else "complete",
+            completeness="truncated" if next_cursor is not None else "complete",
             coverage={"authorized_notebooks": "inventory_page"},
             limits={"limit": limit, "returned": len(notebooks_list)},
-            next_cursor=page.next_cursor,
+            next_cursor=next_cursor,
             recommended_next_actions=(
                 [
                     _next_action(
@@ -1673,7 +1853,7 @@ async def _handle_list_notebooks(
                         stop_condition="next_cursor is null",
                     )
                 ]
-                if page.next_cursor is not None
+                if next_cursor is not None
                 else []
             ),
         ),
@@ -1691,6 +1871,13 @@ async def _handle_get_notebook_summary(
     """Handle get_notebook_summary tool invocation."""
     notebook_id_raw = args.get("notebook_id")
     notebook_id = _parse_uuid(notebook_id_raw, "notebook_id")
+
+    authority = getattr(engine, "server_scope_authority", None)
+    if authority is not None:
+        if not isinstance(authority, SQLiteNotebookScopeAuthority) or not principal.authenticated:
+            raise PermissionError("trusted membership authority is unavailable")
+        resolver = AuthorizedNotebookScopeResolver(engine.storage, authority)
+        scopes = await resolver.resolve(principal, (notebook_id,))
 
     existing = await engine.storage.get_notebook(notebook_id)
     if existing is None:
@@ -1778,6 +1965,9 @@ async def _handle_get_notebook_summary(
         ),
     }
 
+    if authority is not None:
+        await resolver.revalidate(principal, scopes)
+
     return [types.TextContent(type="text", text=json.dumps(data, indent=2))]
 
 
@@ -1813,6 +2003,16 @@ async def _handle_get_source_insights(
     source = await engine.storage.get_source(source_id)
     if source is None:
         raise NotFoundError("authorized resource was not found")
+    scope_authority = getattr(engine, "server_scope_authority", None)
+    membership: AuthorizedNotebookScope | None = None
+    if scope_authority is not None:
+        if not isinstance(scope_authority, SQLiteNotebookScopeAuthority):
+            raise PermissionError("trusted membership authority is unavailable")
+        membership = (
+            await AuthorizedNotebookScopeResolver(engine.storage, scope_authority).resolve(
+                principal, (source.notebook_id,)
+            )
+        )[0]
 
     source_metadata = None
     if config.full_multilingual_v2_enabled and type(engine) is KnowledgeEngine:
@@ -1832,7 +2032,9 @@ async def _handle_get_source_insights(
     matching_insights = [
         ins
         for ins in insights_page.items
-        if ins.source_id == source_id and (target_type is None or ins.type is target_type)
+        if ins.source_id == source_id
+        and ins.notebook_id == source.notebook_id
+        and (target_type is None or ins.type is target_type)
     ][:limit]
 
     data = {
@@ -1862,6 +2064,15 @@ async def _handle_get_source_insights(
         ),
     }
 
+    if membership is not None:
+        if not isinstance(scope_authority, SQLiteNotebookScopeAuthority):
+            raise PermissionError("trusted membership authority is unavailable")
+        current = await engine.storage.get_source(source_id)
+        if current is None or current.notebook_id != membership.notebook_id:
+            raise NotFoundError("authorized resource was not found")
+        await AuthorizedNotebookScopeResolver(engine.storage, scope_authority).revalidate(
+            principal, (membership,)
+        )
     return [types.TextContent(type="text", text=json.dumps(data, indent=2))]
 
 
@@ -1880,6 +2091,17 @@ async def _handle_get_timeline(
 
     if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1 or limit > 100:
         raise ContractValidationError("Parameter 'limit' must be an integer between 1 and 100")
+
+    scope_authority = getattr(engine, "server_scope_authority", None)
+    membership: AuthorizedNotebookScope | None = None
+    if scope_authority is not None:
+        if not isinstance(scope_authority, SQLiteNotebookScopeAuthority):
+            raise PermissionError("trusted membership authority is unavailable")
+        membership = (
+            await AuthorizedNotebookScopeResolver(engine.storage, scope_authority).resolve(
+                principal, (notebook_id,)
+            )
+        )[0]
 
     existing = await engine.storage.get_notebook(notebook_id)
     if existing is None:
@@ -1901,6 +2123,8 @@ async def _handle_get_timeline(
 
     events: list[dict[str, Any]] = []
     for s in sources_page.items:
+        if membership is not None and s.notebook_id != notebook_id:
+            raise NotFoundError("authorized resource was not found")
         if source_id is not None and s.source_id != source_id:
             continue
         events.append(
@@ -1913,6 +2137,8 @@ async def _handle_get_timeline(
             }
         )
     for n in notes_page.items if notes_page is not None else ():
+        if membership is not None and n.notebook_id != notebook_id:
+            raise NotFoundError("authorized resource was not found")
         events.append(
             {
                 "event_type": "note_created",
@@ -1925,6 +2151,8 @@ async def _handle_get_timeline(
             }
         )
     for sess in sessions_page.items if sessions_page is not None else ():
+        if membership is not None and sess.notebook_id != notebook_id:
+            raise NotFoundError("authorized resource was not found")
         events.append(
             {
                 "event_type": "session_started",
@@ -1966,6 +2194,13 @@ async def _handle_get_timeline(
             omissions=["source text is not exhaustively interpreted"],
         ),
     }
+
+    if membership is not None:
+        if not isinstance(scope_authority, SQLiteNotebookScopeAuthority):
+            raise PermissionError("trusted membership authority is unavailable")
+        await AuthorizedNotebookScopeResolver(engine.storage, scope_authority).revalidate(
+            principal, (membership,)
+        )
 
     return [types.TextContent(type="text", text=json.dumps(data, indent=2))]
 

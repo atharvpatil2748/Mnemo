@@ -119,7 +119,6 @@ from mnemo.retrieval import (
 from mnemo.storage import SQLiteFinalQAOperationalStore
 from mnemo.storage.sqlite import SQLiteStore
 from mnemo.storage.v2_runtime import SQLiteV2ReadOnlyRuntimeStore
-from mnemo_server.app import create_app as _create_app
 from mnemo_server.config import ServerConfig
 from mnemo_server.mcp import server as mcp_server_module
 from mnemo_server.mcp import tools as mcp_tools
@@ -896,6 +895,11 @@ def create_app(
     provision_tokenizer_on_startup: bool = True,
 ) -> FastAPI:
     """Use real ASGI routes with the same engine-bound fixture admission."""
+    # The stdio fixture imports this module for _fixture and create_mcp_server;
+    # importing the HTTP application there would consume the protocol client's
+    # initialization deadline before the child starts reading stdin.
+    from mnemo_server.app import create_app as _create_app
+
     check = getattr(engine, "_disposable_index_readiness_check", None)
     if check is None:
         raise ValueError("disposable indexed engine admission is missing")
@@ -907,10 +911,19 @@ def create_app(
     )
 
 
+def test_public_app_factory_export_remains_compatible() -> None:
+    from mnemo_server import create_app as public_create_app
+    from mnemo_server.app import create_app as direct_create_app
+
+    assert public_create_app is direct_create_app
+
+
 @pytest.mark.anyio
 async def test_disposable_admission_does_not_change_production_unindexed_guard(
     tmp_path: Path,
 ) -> None:
+    from mnemo_server.app import create_app as _create_app
+
     engine, reader, config, identities = await _fixture(tmp_path, legacy=False)
     try:
         assert len(identities) == 2

@@ -1153,7 +1153,7 @@ def test_schema_9_migration_is_idempotent_and_rolls_back(tmp_path: Path, monkeyp
     _run(store.open())
     _run(store.close())
     with sqlite3.connect(path) as db:
-        assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (16,)
+        assert db.execute("SELECT MAX(version) FROM schema_versions").fetchone() == (17,)
         assert db.execute("SELECT name FROM sqlite_master WHERE name='ocr_results'").fetchone() == (
             "ocr_results",
         )

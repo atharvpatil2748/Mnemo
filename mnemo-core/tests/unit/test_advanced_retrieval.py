@@ -51,6 +51,7 @@ from mnemo.models import (
     advanced_candidate_id,
 )
 from mnemo.retrieval import AdvancedRetrievalService, RetrievalCursorCodec
+from mnemo.retrieval.advanced import _diversify_occurrences
 from mnemo.retrieval.advanced_sources import CanonicalAdvancedReranker, CanonicalTextAdvancedSource
 from mnemo.storage.composite import CompositeStorage
 from mnemo.storage.sqlite import SQLiteStore
@@ -515,6 +516,102 @@ def test_automatic_occurrence_diversity_preserves_ocr_and_vision_views() -> None
         EvidenceRepresentation.OCR_TEXT,
         EvidenceRepresentation.VISION_ANALYSIS,
     }
+
+
+def test_automatic_text_views_do_not_consume_two_slots_for_one_chunk() -> None:
+    notebook = uuid4()
+    first = _candidate(
+        notebook_id=notebook,
+        representation=EvidenceRepresentation.CANONICAL_TEXT,
+        index=1,
+        rank=1,
+    )
+    second = _candidate(
+        notebook_id=notebook,
+        representation=EvidenceRepresentation.CANONICAL_TEXT,
+        index=2,
+        rank=2,
+    )
+
+    def multilingual(value: AdvancedRetrievalCandidate) -> AdvancedRetrievalCandidate:
+        assert value.chunk is not None
+        return replace(
+            value,
+            candidate_id=advanced_candidate_id(
+                representation=EvidenceRepresentation.MULTILINGUAL_TEXT,
+                document_id=value.document_id,
+                version_id=value.version_id,
+                chunk_id=value.chunk.id,
+                occurrence_id=None,
+                derivation_id=None,
+            ),
+            representation=EvidenceRepresentation.MULTILINGUAL_TEXT,
+            paths=(
+                RetrievalPathEvidenceV2(
+                    path="multilingual",
+                    source_rank=value.paths[0].source_rank,
+                    source_score=value.paths[0].source_score,
+                ),
+            ),
+        )
+
+    plan = _plan(
+        notebook,
+        representations=(
+            EvidenceRepresentation.CANONICAL_TEXT,
+            EvidenceRepresentation.MULTILINGUAL_TEXT,
+        ),
+        budgets=_budgets(recall_limit=4, fusion_limit=4, rerank_limit=4, result_limit=2),
+    ).model_copy(update={"automatic_policy_version": "automatic-evidence-plan/v1:test"})
+    result = asyncio.run(
+        _service(
+            FakeSource(EvidenceRepresentation.CANONICAL_TEXT, (first, second)),
+            FakeSource(
+                EvidenceRepresentation.MULTILINGUAL_TEXT,
+                (
+                    multilingual(first),
+                    multilingual(second),
+                ),
+            ),
+        ).execute(plan)
+    )
+    assert [item.chunk.id for item in result.results if item.chunk is not None] == [
+        first.chunk.id,
+        second.chunk.id,
+    ]
+
+
+def test_text_view_diversity_preserves_notebook_and_source_memberships() -> None:
+    first = _candidate(
+        notebook_id=uuid4(),
+        representation=EvidenceRepresentation.CANONICAL_TEXT,
+        index=1,
+    )
+    assert first.chunk is not None
+    alternate = replace(
+        first,
+        candidate_id=advanced_candidate_id(
+            representation=EvidenceRepresentation.MULTILINGUAL_TEXT,
+            document_id=first.document_id,
+            version_id=first.version_id,
+            chunk_id=first.chunk.id,
+            occurrence_id=None,
+            derivation_id=None,
+        ),
+        representation=EvidenceRepresentation.MULTILINGUAL_TEXT,
+    )
+    other_notebook = replace(alternate, notebook_id=uuid4())
+    other_source = replace(alternate, source_id=uuid4())
+    ordered = _diversify_occurrences(
+        (
+            first,
+            alternate,
+            other_notebook,
+            other_source,
+        )
+    )
+    assert ordered == (first, other_notebook, other_source, alternate)
+    assert len(ordered) == 4
 
 
 @pytest.mark.parametrize(

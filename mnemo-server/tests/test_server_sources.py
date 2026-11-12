@@ -37,6 +37,8 @@ from mnemo.models import (
     Asset,
     DocType,
     Document,
+    DocumentBinaryReference,
+    DocumentBinaryRole,
     DocumentMetadata,
     DocumentStatus,
     DocumentVersion,
@@ -454,6 +456,25 @@ async def test_deduplication_cross_notebook_success(
     )
     mock_engine.storage.get_parsed_document.return_value = parsed_doc
     mock_engine.storage.upsert_source = AsyncMock()
+    original = Asset(
+        asset_id=uuid4(),
+        mime_type="text/plain",
+        content_hash=content_hash,
+        storage_uri=f"blob://{content_hash}",
+    )
+    mock_engine.asset_catalog.reference = DocumentBinaryReference(
+        document_id=doc_id,
+        version_id=version_id,
+        asset_id=original.asset_id,
+        role=DocumentBinaryRole.ORIGINAL,
+        media_type="text/plain",
+        byte_size=len(content),
+        created_at=datetime.now(UTC),
+    )
+    mock_engine.asset_records.get_asset_record.return_value = original
+    mock_engine.asset_catalog.get_asset_record = AsyncMock(return_value=original)
+    mock_engine.asset_catalog.occurrences = ()
+    mock_engine.storage.contains_hash.return_value = True
 
     files = {"file": ("shared.txt", content, "text/plain")}
     resp = await client.post(f"/v1/notebooks/{test_notebook.notebook_id}/sources", files=files)
@@ -467,6 +488,32 @@ async def test_deduplication_cross_notebook_success(
     # Chunking and embedding must NOT be called on deduplication hit
     assert mock_engine.storage.upsert_chunks.await_count == 0
     assert mock_engine.storage.upsert_source.await_count == 1
+    mock_engine.asset_catalog.register_asset_ingestion.assert_not_awaited()
+    mock_engine.storage.put_asset.assert_not_awaited()
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("status", [DocumentStatus.INDEXING, DocumentStatus.FAILED])
+async def test_deduplication_quarantines_incomplete_document(
+    client: AsyncClient,
+    mock_engine: MagicMock,
+    test_notebook: Notebook,
+    status: DocumentStatus,
+) -> None:
+    """A retry cannot publish a half-written document into another notebook."""
+    content = b"partially persisted source"
+    mock_engine.storage.get_notebook.return_value = test_notebook
+    mock_engine.storage.get_document_by_content_hash.return_value = _make_test_document(
+        content_hash=hashlib.sha256(content).hexdigest(), status=status
+    )
+    response = await client.post(
+        f"/v1/notebooks/{test_notebook.notebook_id}/sources",
+        files={"file": ("partial.txt", content, "text/plain")},
+    )
+    assert response.status_code == 503
+    mock_engine.storage.get_parsed_document.assert_not_awaited()
+    mock_engine.storage.upsert_source.assert_not_awaited()
+    mock_engine.storage.put_asset.assert_not_awaited()
 
 
 @pytest.mark.anyio

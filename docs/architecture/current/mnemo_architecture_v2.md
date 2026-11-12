@@ -15,6 +15,20 @@
 > The [reset execution record](../../reports/architecture/phase-8-9-runtime-cutover-execution.md)
 > distinguishes completed decoupling from future indexed serving.
 
+> **Module 8.9.1 update (2026-10-20):** the
+> [versioned surface inventory and contract-review record](../../reports/architecture/module-8-9-1-contract-authority.md)
+> adds compatibility safeguards and unregistered review schemas only.
+> ADR-0080 remains proposed; the module is partial pending schema approval and
+> consumer sign-offs. Unified retrieval and production activation are not
+> established by these artifacts.
+
+> **Owner design acceptance (2026-10-21):** ADR-0080 now accepts the
+> Module 8.9.1 design choices and its versioned scope/evidence review
+> contract. The earlier proposed-status note above is historical.
+> No new public operation is registered and no indexed production serving,
+> cross-notebook runtime or external transport certification follows from
+> design acceptance. Production remains explicitly UNINDEXED.
+
 **Document Type:** Design Specification  
 **Status:** Living Design Document  
 **Project Type:** Standalone proprietary software (current project-owned tree)
@@ -189,7 +203,7 @@ automatic search. The Phase 8.9 target refines that branch as follows:
 
 ```text
 MCP adapter ────────┐
-HTTP adapter ───────┼─→ shared search application service (planned)
+HTTP adapter ───────┼─→ shared search application service (internal V2 boundary)
 future native UI ──┘       │
                            ├─ principal + membership-backed scope authority
                            ├─ active generation / provider capability resolver
@@ -200,9 +214,16 @@ future native UI ──┘       │
                                       └─→ evidence snapshot → governed FinalQA
 ```
 
-Current `query_notebook_v2`/HTTP automatic retrieval shares an application
-service for one notebook and excludes automatic structured planning. The
-membership resolver and unified cross-notebook boundary above are planned.
+The retained V2 HTTP and MCP automatic, evidence, and typed structured
+operations now enter one `mnemo-server` application boundary, which composes
+their existing services and 8.9.2 membership authority. FinalQA consumes a
+revision-checked evidence snapshot without granting readers publication
+authority. This is the internal 8.9.3 result, not a new public operation or
+deployed transport certification. Automatic retrieval still requires one
+unambiguous notebook and does not plan structured natural-language intent;
+the diagram's multi-notebook fan-out, automatic structured planning, fusion
+and new public adapters remain later Phase 8.9 work. See the
+[Module 8.9.3 acceptance record](../../reports/architecture/module-8-9-3-shared-search-acceptance.md).
 
 ```
 ═══════════════════════════════════════════════════════════════════════
@@ -716,10 +737,10 @@ The server is built on **FastAPI** (Python). It uses **Uvicorn** as the ASGI ser
 Current V2 `/v2/retrieval/automatic`, `/v2/retrieval/evidence`, and
 `/v2/retrieval/structured` routes use their respective application services;
 the first shares its service with MCP `query_notebook_v2`. They do not yet form
-one automatic multi-notebook, structured-aware API. Phase 8.9 proposes
-`POST /v2/search` and possibly separate typed structured discovery/query
-routes **after** schema, consumer and authorization review. These proposed
-names are not registered routes. V1 routes retain frozen semantics. Exact V2
+one automatic multi-notebook, structured-aware API. ADR-0080 accepts
+`POST /v2/search` as an additive future name; separate typed structured
+discovery/query routes still require their own review. No new route is
+registered. V1 routes retain frozen semantics. Exact V2
 document/chunk/asset/image-analysis routes remain delivery, not search.
 
 The API is versioned at `/v1`. All requests and responses are JSON unless otherwise specified.
@@ -864,8 +885,8 @@ GET    /v1/jobs/{id}                    → get job status
 
 ### 5.2 MCP Server
 
-Phase 8.9 proposes canonical `search` backed by the same service as proposed
-HTTP search, retaining existing registrations during migration.
+ADR-0080 accepts future canonical `search` backed by the same shared service
+as future HTTP POST /v2/search, retaining existing registrations during migration.
 `search_structured`, `describe_datasets`, and `answer` are design candidates,
 not registered tools. Consumer inventory and parity evidence precede any
 deprecation. Transport envelopes may differ, but scope, evidence, continuation,
@@ -2888,9 +2909,16 @@ later. Retained V1 query/search remain canonical-only. Derived candidates retain
 actual occurrence, derivation and generation ancestry and have no fake canonical
 chunk. Per-source outcomes distinguish searched (including zero), not applicable,
 unavailable, incomplete, failed and budget omission. Ranked top-k does not prove
-absence. The initial automatic scope is one unambiguous notebook; a real
-actor-to-notebook membership authority is still needed for private
-multi-notebook fan-out. Implementation and certification are tracked separately.
+absence. The retained public automatic scope remains one unambiguous notebook.
+The server now has an internal multi-notebook orchestration layer over the
+shared V2 application service: it resolves explicit ACL membership and exact
+document/version ancestry before inspecting per-scope generations, applies
+global fan-out budgets, preserves notebook membership during fusion, and uses a
+separate signed aggregate continuation with ACL-revision and source-snapshot
+revalidation. It is not registered as a public HTTP/MCP operation. Its
+development-fixture evidence and the still-open real evaluation criterion are
+recorded in the [Module 8.9.4 acceptance record](../../reports/architecture/module-8-9-4-scoped-search-acceptance.md);
+this is not deployed multi-user or mixed-modality certification.
 
 The working-tree PaddleOCR 3 adapter is an opt-in `OCRProviderV1` implementation
 behind the existing worker, not a second retrieval path. It requires separately
@@ -3040,7 +3068,8 @@ without stack traces or unauthorized existence leakage.
 
 ### 21.9 Automatic image-derived search (Phase 8.9 target)
 
-The public search contract is proposed, not registered. Existing single-notebook
+The unified public search design is accepted by ADR-0080 but not registered.
+Existing single-notebook
 `query_notebook_v2` already plans ready OCR/Vision/compatible visual evidence;
 Phase 8.9 must extend authorized scope and integrate structured access without
 requiring modality hints. Exact asset delivery remains distinct.

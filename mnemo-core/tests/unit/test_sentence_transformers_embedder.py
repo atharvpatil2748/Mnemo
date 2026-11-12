@@ -29,7 +29,6 @@ async def test_sentence_transformers_embedder_lifecycle_batch_and_health(
         "sentence_transformers",
         SimpleNamespace(SentenceTransformer=Model),
     )
-    monkeypatch.setattr(subject, "_LOCAL_BGE_M3_SNAPSHOT", tmp_path / "absent")
     embedder = subject.SentenceTransformersEmbedder(
         EmbeddingConfig(provider="sentence-transformers", model="test-model", dimensions=3)
     )
@@ -66,7 +65,6 @@ async def test_sentence_transformers_embedder_initialization_error_is_typed(
         "sentence_transformers",
         SimpleNamespace(SentenceTransformer=BrokenModel),
     )
-    monkeypatch.setattr(subject, "_LOCAL_BGE_M3_SNAPSHOT", tmp_path / "absent")
     embedder = subject.SentenceTransformersEmbedder(
         EmbeddingConfig(provider="sentence-transformers", model="broken", dimensions=3)
     )
@@ -88,7 +86,6 @@ async def test_sentence_transformers_cuda_selection_fails_closed(monkeypatch, tm
     monkeypatch.setitem(
         sys.modules, "sentence_transformers", SimpleNamespace(SentenceTransformer=Model)
     )
-    monkeypatch.setattr(subject, "_LOCAL_BGE_M3_SNAPSHOT", tmp_path / "absent")
     config = EmbeddingConfig(
         provider="sentence-transformers", model="test-model", dimensions=3, device="cuda"
     )
@@ -112,3 +109,52 @@ async def test_sentence_transformers_cuda_selection_fails_closed(monkeypatch, tm
         await rejected.initialize()
     assert rejected._executor is not None
     rejected._executor.shutdown(wait=True)
+
+
+@pytest.mark.anyio
+async def test_sentence_transformers_configures_local_revision_prompts_and_batch(
+    monkeypatch, tmp_path
+) -> None:  # type: ignore[no-untyped-def]
+    model_dir = tmp_path / "qwen-model"
+    model_dir.mkdir()
+    calls: list[tuple[object, ...]] = []
+
+    class Model:
+        max_seq_length = 0
+        device = "cpu"
+
+        def __init__(self, target: str, **kwargs: object) -> None:
+            calls.append(("load", target, kwargs))
+
+        def encode(self, texts, **kwargs):  # type: ignore[no-untyped-def]
+            calls.append(("encode", tuple(texts), kwargs))
+            return ((1.0, 0.0, 0.0),) * len(texts)
+
+    monkeypatch.setitem(
+        sys.modules, "sentence_transformers", SimpleNamespace(SentenceTransformer=Model)
+    )
+    embedder = subject.SentenceTransformersEmbedder(
+        EmbeddingConfig(
+            provider="sentence-transformers",
+            model="Qwen/Qwen3-Embedding-0.6B",
+            model_path=model_dir,
+            revision="pinned-revision",
+            dimensions=3,
+            max_tokens=4096,
+            max_batch=4,
+            query_prompt="query: ",
+            document_prompt="passage: ",
+        )
+    )
+    assert await embedder.embed("query") == (1.0, 0.0, 0.0)
+    await embedder.embed_batch(("document 1", "document 2"))
+    load = next(call for call in calls if call[0] == "load")
+    assert load[1] == str(model_dir)
+    assert load[2]["local_files_only"] is True
+    encodes = [call for call in calls if call[0] == "encode"]
+    assert encodes[0][2]["prompt"] == "query: "
+    assert encodes[1][2]["prompt"] == "passage: "
+    assert encodes[1][2]["batch_size"] == 4
+    assert embedder.max_tokens == 4096
+    assert embedder._executor is not None
+    embedder._executor.shutdown(wait=True)

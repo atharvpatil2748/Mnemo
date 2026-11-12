@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from types import SimpleNamespace
 from uuid import uuid4
 
+import aiosqlite
 import pytest
 from mnemo.interfaces.advanced_retrieval import VisualQueryVector, VisualVectorMetric
 from mnemo.interfaces.errors import ContractValidationError, IntegrityError
@@ -227,6 +229,175 @@ async def test_derived_text_builds_ocr_and_vision_records(monkeypatch) -> None: 
     )
     assert vision.records[0].locator["evidence_kind"] == "derived_vision"
     assert vision.records[0].locator["region_ids"] == []
+
+
+@pytest.mark.anyio
+async def test_ocr_keeps_distinct_sources_for_one_document_in_one_notebook(
+    tmp_path, monkeypatch
+) -> None:  # type: ignore[no-untyped-def]
+    database = tmp_path / "multimodal.db"
+    notebook, document, version, occurrence, asset, derivation, generation = (
+        uuid4() for _ in range(7)
+    )
+    source_a, source_b = uuid4(), uuid4()
+    visual_generation, visual_derivation = uuid4(), uuid4()
+    with sqlite3.connect(database) as db:
+        db.executescript(
+            "CREATE VIRTUAL TABLE ocr_fts USING fts5("
+            "generation_id UNINDEXED,region_id UNINDEXED,text);"
+            "CREATE TABLE ocr_projection_rows(generation_id TEXT,region_id TEXT,derivation_id TEXT,"
+            "occurrence_id TEXT,document_id TEXT,version_id TEXT);"
+            "CREATE TABLE active_index_generations(generation_id TEXT);"
+            "CREATE TABLE index_generations("
+            "generation_id TEXT,capability TEXT,state TEXT,profile TEXT);"
+            "CREATE TABLE index_generation_coverage("
+            "generation_id TEXT,completeness TEXT,failed_count INTEGER,checksum TEXT);"
+            "CREATE TABLE asset_occurrences(occurrence_id TEXT,asset_id TEXT,"
+            "document_id TEXT,version_id TEXT,locator TEXT,authored_alt_text TEXT);"
+            "CREATE TABLE asset_catalog(asset_id TEXT,mime_type TEXT,metadata TEXT,"
+            "content_hash TEXT);"
+            "CREATE TABLE sources(source_id TEXT,notebook_id TEXT,document_id TEXT);"
+            "CREATE TABLE document_versions(version_id TEXT,metadata TEXT);"
+            "CREATE TABLE visual_vector_projection_rows("
+            "generation_id TEXT,derivation_id TEXT,occurrence_id TEXT,"
+            "document_id TEXT,version_id TEXT);"
+            "CREATE TABLE visual_embeddings(derivation_id TEXT,occurrence_id TEXT,"
+            "asset_id TEXT,document_id TEXT,version_id TEXT,payload TEXT);"
+        )
+        db.execute("INSERT INTO ocr_fts VALUES(?,?,?)", (str(generation), "region", "recognized"))
+        db.execute(
+            "INSERT INTO ocr_projection_rows VALUES(?,?,?,?,?,?)",
+            (
+                str(generation),
+                "region",
+                str(derivation),
+                str(occurrence),
+                str(document),
+                str(version),
+            ),
+        )
+        db.execute("INSERT INTO active_index_generations VALUES(?)", (str(generation),))
+        db.execute(
+            "INSERT INTO index_generations VALUES(?,?,?,?)",
+            (str(generation), "ocr_text", "ready", "ocr"),
+        )
+        db.execute(
+            "INSERT INTO index_generation_coverage VALUES(?,?,?,?)",
+            (str(generation), "complete", 0, "digest"),
+        )
+        db.execute(
+            "INSERT INTO asset_occurrences VALUES(?,?,?,?,?,?)",
+            (str(occurrence), str(asset), str(document), str(version), "{}", None),
+        )
+        db.execute(
+            "INSERT INTO asset_catalog VALUES(?,?,?,?)",
+            (str(asset), "image/png", "{}", "a" * 64),
+        )
+        db.execute("INSERT INTO document_versions VALUES(?,?)", (str(version), "{}"))
+        db.execute(
+            "INSERT INTO visual_vector_projection_rows VALUES(?,?,?,?,?)",
+            (
+                str(visual_generation),
+                str(visual_derivation),
+                str(occurrence),
+                str(document),
+                str(version),
+            ),
+        )
+        db.execute(
+            "INSERT INTO visual_embeddings VALUES(?,?,?,?,?,?)",
+            (
+                str(visual_derivation),
+                str(occurrence),
+                str(asset),
+                str(document),
+                str(version),
+                "{}",
+            ),
+        )
+        db.execute("INSERT INTO active_index_generations VALUES(?)", (str(visual_generation),))
+        db.execute(
+            "INSERT INTO index_generations VALUES(?,?,?,?)",
+            (str(visual_generation), "visual_vector", "ready", "clip"),
+        )
+        db.execute(
+            "INSERT INTO index_generation_coverage VALUES(?,?,?,?)",
+            (str(visual_generation), "complete", 0, "visual-digest"),
+        )
+        db.executemany(
+            "INSERT INTO sources VALUES(?,?,?)",
+            ((str(source), str(notebook), str(document)) for source in (source_a, source_b)),
+        )
+
+    class _RealStore(subject.SQLiteMultimodalSearchMixin):
+        def __init__(self, connection: aiosqlite.Connection) -> None:
+            self.connection = connection
+
+        def _require_open(self) -> aiosqlite.Connection:
+            return self.connection
+
+    async with aiosqlite.connect(f"file:{database.as_posix()}?mode=ro", uri=True) as connection:
+        store = _RealStore(connection)
+        monkeypatch.setattr(
+            subject,
+            "_embedding_from_payload",
+            lambda _payload: SimpleNamespace(
+                dimensions=2,
+                shared_space_id="space",
+                metric=VisualVectorMetric.COSINE,
+                vector=(1.0, 0.0),
+            ),
+        )
+        page = await store.retrieve_multimodal_evidence(
+            representation=EvidenceRepresentation.OCR_TEXT,
+            scope=RetrievalScopeV2(notebook_id=notebook),
+            position=PositionalScopeV2(),
+            query="recognized",
+            ranked=True,
+            offset=0,
+            limit=10,
+        )
+        assert {record.source_id for record in page.records} == {source_a, source_b}
+        assert {record.derivation_id for record in page.records} == {derivation}
+        asset_page = await store.retrieve_multimodal_evidence(
+            representation=EvidenceRepresentation.ASSET_METADATA,
+            scope=RetrievalScopeV2(notebook_id=notebook),
+            position=PositionalScopeV2(),
+            query="",
+            ranked=True,
+            offset=0,
+            limit=10,
+        )
+        assert {record.source_id for record in asset_page.records} == {source_a, source_b}
+        assert {record.occurrence_id for record in asset_page.records} == {occurrence}
+        restricted = await store.retrieve_multimodal_evidence(
+            representation=EvidenceRepresentation.OCR_TEXT,
+            scope=RetrievalScopeV2(notebook_id=notebook, source_ids=(source_b,)),
+            position=PositionalScopeV2(),
+            query="recognized",
+            ranked=True,
+            offset=0,
+            limit=10,
+        )
+        assert [record.source_id for record in restricted.records] == [source_b]
+        visual = await store.retrieve_multimodal_evidence(
+            representation=EvidenceRepresentation.VISUAL_VECTOR,
+            scope=RetrievalScopeV2(notebook_id=notebook),
+            position=PositionalScopeV2(),
+            query="image",
+            ranked=True,
+            offset=0,
+            limit=10,
+            query_vector=VisualQueryVector(
+                profile_id="clip",
+                shared_space_id="space",
+                dimensions=2,
+                metric=VisualVectorMetric.COSINE,
+                values=(1.0, 0.0),
+            ),
+        )
+        assert {record.source_id for record in visual.records} == {source_a, source_b}
+        assert {record.derivation_id for record in visual.records} == {visual_derivation}
 
 
 @pytest.mark.anyio

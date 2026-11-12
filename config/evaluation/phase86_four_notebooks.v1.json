@@ -1,0 +1,31 @@
+{
+  "schema": "mnemo.phase86-four-notebook-plan/1",
+  "scope": "isolated-disposable-evaluation-only",
+  "source_manifest": "config/rebuild/codex_downloaded_24.sources.json",
+  "source_manifest_sha256": "6236577213ea4a934086cb4f35e23939d3c0240dbb9a61695a1afeace12fb079",
+  "existing_notebook": {
+    "id": "81a3bea2-8b15-5c6f-944d-24634fbf835d",
+    "title": "Phase 8.6 Format-Diverse Multilingual Evaluation Notebook",
+    "snapshot": "scratch/phase8_9_decommission/2026-10-10/snapshots/registry_phase8_6.db",
+    "snapshot_sha256": "1902c3a46b2c4cba3bab7efae237af178b0830df7298fc26073c49047ad91c93",
+    "retained_files": "scratch/evaluation_notebooks/phase8_6/files",
+    "retired_store": "scratch/evaluation_notebooks/phase8_6/mnemo.db",
+    "retired_store_sha256": "d33e139507fa054c3089d388c8bdb71e766d87fa48005046d47d44c329d9a79f"
+  },
+  "disposable_actor_id": "7ee69849-d87e-57d1-b2ef-29128d668a5e",
+  "run_key": "phase86-three-languages-with-retained-original-v1",
+  "notebooks": {
+    "hi": {
+      "title": "Phase 8.6 Hindi Evaluation",
+      "files": ["CAND-FD-HI-HTML-01-godan.html", "godan_chapter_2_hindi.html", "godan_chapter_3_hindi.html", "rbi_annual_report_hindi_governance_2024.pdf", "rbi_annual_report_hindi_payment_systems_2024.pdf"]
+    },
+    "mr": {
+      "title": "Phase 8.6 Marathi Evaluation",
+      "files": ["CAND-FD-MR-HTML-01-shetkaryacha-asud.html", "shetkaryacha_asud_pan_2_marathi.html", "shetkaryacha_asud_pan_3_marathi.html", "mahades_economic_survey_highlights_marathi.pdf", "mahades_economic_survey_ch1_marathi.pdf", "mahades_economic_survey_ch2_marathi.pdf"]
+    },
+    "en": {
+      "title": "Phase 8.6 English Evaluation",
+      "files": ["country_codes_iso3166.csv", "engineering_lab_report_heat_transfer.docx", "ml_decision_tree.pptx", "ml_linear_regression.pptx", "ons_uk_consumer_price_inflation.xlsx", "ons_uk_gdp_quarterly_tables.xlsx", "pep8_python_style_guide.md", "world_countries_metadata.json", "world_gdp_historical.csv"]
+    }
+  }
+}

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import json
 import sqlite3
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, cast
+from unittest.mock import patch
 from uuid import UUID, uuid4
 
 import pytest
@@ -262,6 +264,94 @@ async def _exercise(tmp_path: Path) -> None:
             fusion_rank=2,
         )
         assert reranker_evidence.provenance.fusion_rank == 2
+        assert (
+            enumerator.prefetched_semantic_row(
+                decision=decision, source=handles[0].source_reference
+            )
+            is None
+        )
+
+        async def one_request(fingerprint: str) -> bool:
+            distinct = replace(decision, request_fingerprint=fingerprint)
+            with enumerator.request_semantic_rows(distinct):
+                await enumerator.enumerate_authorized_v2_evidence(
+                    decision=distinct, generations=generations, limit=1
+                )
+                await asyncio.sleep(0)
+                return (
+                    enumerator.prefetched_semantic_row(
+                        decision=distinct, source=handles[0].source_reference
+                    )
+                    is not None
+                )
+
+        concurrent_results = await asyncio.gather(one_request("a" * 64), one_request("b" * 64))
+        assert len(concurrent_results) == 2 and all(concurrent_results)
+        assert (
+            enumerator.prefetched_semantic_row(
+                decision=decision, source=handles[0].source_reference
+            )
+            is None
+        )
+        with enumerator.request_semantic_rows(decision):
+            await enumerator.enumerate_authorized_v2_evidence(
+                decision=decision, generations=generations, limit=1
+            )
+            cached_row = enumerator.prefetched_semantic_row(
+                decision=decision, source=handles[0].source_reference
+            )
+            assert cached_row is not None
+            other_source = replace(handles[0].source_reference, source_id=uuid4())
+            assert (
+                enumerator.prefetched_semantic_row(decision=decision, source=other_source) is None
+            )
+            invalid_rows = []
+            for attribute, value in (
+                ("generation_id", uuid4()),
+                ("source", other_source),
+                ("representation", None),
+            ):
+                invalid_row = copy.copy(cached_row)
+                object.__setattr__(invalid_row, attribute, value)
+                invalid_rows.append(invalid_row)
+            for invalid_row in invalid_rows:
+                with pytest.raises(LookupError, match="SEMANTIC_TEXT_MISSING"):
+                    await resolver.resolve_v2_evidence(
+                        decision=decision, handle=handles[0], prefetched_row=invalid_row
+                    )
+            cache = enumerator._request_rows.get()
+            assert cache is not None
+            corrupt_row = copy.copy(cached_row)
+            object.__setattr__(corrupt_row, "source", other_source)
+            cache[1][handles[0].source_reference.identity_digest] = corrupt_row
+            with pytest.raises(PermissionError, match="EVIDENCE_UNAUTHORIZED"):
+                enumerator.prefetched_semantic_row(
+                    decision=decision, source=handles[0].source_reference
+                )
+            cache[1][handles[0].source_reference.identity_digest] = cached_row
+            assert (
+                enumerator.prefetched_semantic_row(
+                    decision=replace(decision, request_fingerprint="b" * 64),
+                    source=handles[0].source_reference,
+                )
+                is None
+            )
+            with patch.object(
+                store, "get_authorized_v2_semantic_row", side_effect=AssertionError("reread")
+            ):
+                prefetched = await projector.resolve_reranker_evidence(
+                    source=handles[0].source_reference,
+                    decision=decision,
+                    retrieval_paths=("sparse",),
+                    fusion_rank=2,
+                )
+            assert prefetched == reranker_evidence
+        assert (
+            enumerator.prefetched_semantic_row(
+                decision=decision, source=handles[0].source_reference
+            )
+            is None
+        )
         with pytest.raises(PermissionError, match="AUTHORIZATION_RUNTIME_MISMATCH"):
             await enumerator.enumerate_authorized_multilingual_sources(
                 decision=replace(

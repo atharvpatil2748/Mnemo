@@ -75,8 +75,18 @@ class IsolatedV2DatabaseIdentityVerifier:
             f"file:{self._database.as_posix()}?mode=ro&immutable=1", uri=True
         )
         try:
-            notebooks = connection.execute("SELECT notebook_id FROM notebooks").fetchall()
-            if notebooks != [(str(self._notebook_id),)]:
+            notebooks = tuple(
+                sorted(
+                    str(row[0]) for row in connection.execute("SELECT notebook_id FROM notebooks")
+                )
+            )
+            expected_notebooks = tuple(
+                sorted(
+                    str(item)
+                    for item in getattr(self, "_allowed_notebook_ids", (self._notebook_id,))
+                )
+            )
+            if notebooks != expected_notebooks:
                 raise ValueError("isolated V2 notebook identity mismatch")
             rows = connection.execute(
                 "SELECT g.capability,g.generation_id,g.profile,g.model_identity,"

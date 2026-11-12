@@ -108,6 +108,7 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
             raise ValueError("cursor_secret must contain at least 16 bytes")
         self._storage = storage
         self._actor_identity: str | None = None
+        self._membership_binding: tuple[str, int] | None = None
         if execution_store is not None and not isinstance(execution_store, FinalQAExecutionStoreV2):
             raise TypeError("execution_store must implement FinalQAExecutionStoreV2")
         self._execution_store = execution_store
@@ -292,6 +293,30 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
         scoped = copy.copy(self)
         scoped._actor_identity = str(actor_id)
         return scoped
+
+    def for_membership(
+        self, actor_id: UUID, notebook_id: UUID, revision: int
+    ) -> BoundedDocumentExpansionService:
+        """Bind request-local delivery cursors to authoritative ACL state."""
+        if (
+            not isinstance(notebook_id, UUID)
+            or isinstance(revision, bool)
+            or not isinstance(revision, int)
+            or revision < 1
+        ):
+            raise ValueError("valid notebook identity and ACL revision are required")
+        scoped = self.for_actor(actor_id)
+        scoped._membership_binding = (str(notebook_id), revision)
+        return scoped
+
+    def _cursor_authority_binding(self) -> dict[str, object]:
+        binding: dict[str, object] = {}
+        if self._actor_identity is not None:
+            binding["actor"] = self._actor_identity
+        if self._membership_binding is not None:
+            binding["notebook_acl"] = self._membership_binding[0]
+            binding["acl_revision"] = self._membership_binding[1]
+        return binding
 
     def capabilities(self) -> tuple[DeliveryCapability, ...]:
         ocr = isinstance(self._storage, OCRStoreV1)
@@ -1009,7 +1034,7 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
             snapshot_identity=snapshot,
             binding={
                 **binding,
-                **({"actor": self._actor_identity} if self._actor_identity else {}),
+                **self._cursor_authority_binding(),
             },
             position={"offset": position},
             limits=limits,
@@ -1032,7 +1057,7 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
                 expected_domain=domain,
                 expected_binding={
                     **binding,
-                    **({"actor": self._actor_identity} if self._actor_identity else {}),
+                    **self._cursor_authority_binding(),
                 },
                 expected_snapshot_identity=snapshot,
                 expected_limits=limits,
@@ -1064,7 +1089,7 @@ class BoundedDocumentExpansionService(DocumentExpansionServiceV1):
                     expected_domain="mnemo-delivery-cursor/v2",
                     expected_binding={
                         "request_fingerprint": fingerprint,
-                        **({"actor": self._actor_identity} if self._actor_identity else {}),
+                        **self._cursor_authority_binding(),
                     },
                     expected_snapshot_identity=snapshot,
                     expected_limits={},

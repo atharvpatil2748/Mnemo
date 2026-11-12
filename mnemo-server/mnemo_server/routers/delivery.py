@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import StreamingResponse
+from mnemo.delivery import BoundedDocumentExpansionService
 from mnemo.engine import KnowledgeEngine
-from mnemo.interfaces import ContractValidationError
+from mnemo.interfaces import ContractValidationError, NotFoundError, PrincipalContextV1
 from mnemo.models import (
     AssetAnalysisModality,
     AssetAnalysisSelection,
@@ -18,6 +20,7 @@ from mnemo.models import (
     DeliveryResponse,
     DeliveryView,
 )
+from mnemo.retrieval.scope import StorageDocumentScopeResolverV1, StorageSourceAssociationReaderV1
 
 from mnemo_server.config import ServerConfig
 from mnemo_server.dependencies import get_engine, get_server_config
@@ -30,11 +33,17 @@ from mnemo_server.services.authorization import (
     CentralAuthorizationServiceV1,
     principal_from_claims,
 )
+from mnemo_server.services.authorized_scope import (
+    AuthorizedNotebookScope,
+    AuthorizedNotebookScopeResolver,
+)
 from mnemo_server.services.delivery import (
     authorized_delivery_response_body,
     build_delivery_service,
     delivery_response_body,
 )
+from mnemo_server.services.membership_http import membership_http_principal
+from mnemo_server.services.scope_authority import SQLiteNotebookScopeAuthority
 
 router = APIRouter(tags=["delivery-v2"])
 EngineDep = Annotated[KnowledgeEngine, Depends(get_engine)]
@@ -45,13 +54,65 @@ async def _response_body(
     request: Request, engine: KnowledgeEngine, config: ServerConfig, result: DeliveryResponse
 ) -> DeliveryResponseBody:
     if config.full_multilingual_v2_enabled and type(engine) is KnowledgeEngine:
-        return await authorized_delivery_response_body(
+        body = await authorized_delivery_response_body(
             result,
             engine,
-            principal_from_claims(getattr(request.state, "auth", None)),
+            _delivery_principal(request, engine),
             max_response_bytes=config.max_delivery_response_bytes,
         )
-    return delivery_response_body(result)
+    else:
+        body = delivery_response_body(result)
+    await _revalidate_delivery(request, engine, result)
+    return body
+
+
+def _delivery_principal(request: Request, engine: KnowledgeEngine) -> PrincipalContextV1:
+    if getattr(engine, "server_scope_authority", None) is not None:
+        return membership_http_principal(request, engine)
+    return principal_from_claims(getattr(request.state, "auth", None))
+
+
+def _delivery_service_for_request(
+    request: Request, engine: KnowledgeEngine, config: ServerConfig
+) -> BoundedDocumentExpansionService:
+    principal = _delivery_principal(request, engine)
+    service = build_delivery_service(engine, config, principal)
+    scope: AuthorizedNotebookScope | None = getattr(
+        request.state, "membership_delivery_scope", None
+    )
+    if scope is not None:
+        return service.for_membership(
+            principal.actor_id, scope.notebook_id, scope.membership_revision
+        )
+    return service
+
+
+async def _revalidate_delivery(
+    request: Request, engine: KnowledgeEngine, result: DeliveryResponse | BinaryDelivery
+) -> None:
+    scope: AuthorizedNotebookScope | None = getattr(
+        request.state, "membership_delivery_scope", None
+    )
+    if scope is None:
+        return
+    authority = getattr(engine, "server_scope_authority", None)
+    if not isinstance(authority, SQLiteNotebookScopeAuthority):
+        raise PermissionError("trusted membership authority is unavailable")
+    principal = _delivery_principal(request, engine)
+    resolver = StorageDocumentScopeResolverV1(
+        engine.storage, StorageSourceAssociationReaderV1(engine.storage)
+    )
+    items = result.items if isinstance(result, DeliveryResponse) else (result,)
+    for item in items:
+        attribution = item.attribution
+        if attribution.notebook_id != scope.notebook_id:
+            raise NotFoundError("authorized resource was not found")
+        resolved = await resolver.resolve_document_scope(
+            principal, attribution.document_id, attribution.version_id, scope.notebook_id
+        )
+        if resolved.source_id != attribution.source_id:
+            raise NotFoundError("authorized resource was not found")
+    await AuthorizedNotebookScopeResolver(engine.storage, authority).revalidate(principal, (scope,))
 
 
 @router.get(
@@ -71,9 +132,7 @@ async def get_document_delivery(
     mode: Annotated[str, Query(pattern="^(blocks|text)$")] = "blocks",
 ) -> DeliveryResponseBody:
     await _authorize_document(request, engine, notebook_id, document_id, version_id)
-    result = await build_delivery_service(
-        engine, config, principal_from_claims(getattr(request.state, "auth", None))
-    ).expand_document(
+    result = await _delivery_service_for_request(request, engine, config).expand_document(
         DeliveryRequest(
             notebook_id=notebook_id,
             document_id=document_id,
@@ -102,9 +161,7 @@ async def expand_document_delivery_v2(
 ) -> DeliveryResponseBody:
     """Resolve exactly one positional selector without semantic ranking."""
     await _authorize_document(request, engine, notebook_id, document_id, version_id)
-    result = await build_delivery_service(
-        engine, config, principal_from_claims(getattr(request.state, "auth", None))
-    ).expand_document_v2(
+    result = await _delivery_service_for_request(request, engine, config).expand_document_v2(
         body.to_core(notebook_id=notebook_id, document_id=document_id, version_id=version_id)
     )
     return await _response_body(request, engine, config, result)
@@ -122,9 +179,7 @@ async def get_original_document_delivery(
     max_bytes: Annotated[int | None, Query(ge=1)] = None,
 ) -> StreamingResponse:
     await _authorize_document(request, engine, notebook_id, document_id, version_id)
-    result = await build_delivery_service(
-        engine, config, principal_from_claims(getattr(request.state, "auth", None))
-    ).get_original_document(
+    result = await _delivery_service_for_request(request, engine, config).get_original_document(
         DeliveryRequest(
             notebook_id=notebook_id,
             document_id=document_id,
@@ -136,8 +191,14 @@ async def get_original_document_delivery(
     )
     headers = _binary_headers(result)
     headers["Content-Disposition"] = f'attachment; filename="document-{document_id}"'
+    await _revalidate_delivery(request, engine, result)
+
+    async def guarded_content() -> AsyncIterator[bytes]:
+        await _revalidate_delivery(request, engine, result)
+        yield result.content
+
     return StreamingResponse(
-        iter((result.content,)),
+        guarded_content(),
         media_type=result.media_type,
         headers=headers,
         status_code=206 if result.completeness.value == "truncated" else 200,
@@ -158,9 +219,7 @@ async def get_document_chunk_delivery(
     config: ConfigDep,
 ) -> DeliveryResponseBody:
     await _authorize_document(request, engine, notebook_id, document_id, version_id)
-    result = await build_delivery_service(
-        engine, config, principal_from_claims(getattr(request.state, "auth", None))
-    ).get_document_chunk(
+    result = await _delivery_service_for_request(request, engine, config).get_document_chunk(
         notebook_id=notebook_id,
         document_id=document_id,
         version_id=version_id,
@@ -184,9 +243,7 @@ async def list_document_assets_delivery(
     limit: Annotated[int | None, Query(ge=1)] = None,
 ) -> DeliveryResponseBody:
     await _authorize_document(request, engine, notebook_id, document_id, version_id)
-    result = await build_delivery_service(
-        engine, config, principal_from_claims(getattr(request.state, "auth", None))
-    ).list_assets(
+    result = await _delivery_service_for_request(request, engine, config).list_assets(
         notebook_id=notebook_id,
         document_id=document_id,
         version_id=version_id,
@@ -207,9 +264,7 @@ async def get_asset_delivery(
     max_bytes: Annotated[int | None, Query(ge=1)] = None,
 ) -> StreamingResponse:
     await _authorize_notebook(request, engine, notebook_id)
-    result = await build_delivery_service(
-        engine, config, principal_from_claims(getattr(request.state, "auth", None))
-    ).get_asset(
+    result = await _delivery_service_for_request(request, engine, config).get_asset(
         notebook_id=notebook_id,
         occurrence_id=occurrence_id,
         cursor=cursor,
@@ -217,8 +272,14 @@ async def get_asset_delivery(
     )
     headers = _binary_headers(result)
     headers["Content-Disposition"] = "inline"
+    await _revalidate_delivery(request, engine, result)
+
+    async def guarded_content() -> AsyncIterator[bytes]:
+        await _revalidate_delivery(request, engine, result)
+        yield result.content
+
     return StreamingResponse(
-        iter((result.content,)),
+        guarded_content(),
         media_type=result.media_type,
         headers=headers,
         status_code=206 if result.completeness.value == "truncated" else 200,
@@ -242,9 +303,7 @@ async def get_asset_analysis_delivery(
     profile: Annotated[str | None, Query(min_length=1)] = None,
 ) -> DeliveryResponseBody:
     await _authorize_notebook(request, engine, notebook_id)
-    service = build_delivery_service(
-        engine, config, principal_from_claims(getattr(request.state, "auth", None))
-    )
+    service = _delivery_service_for_request(request, engine, config)
     if selection is None and modalities is None and profile is None:
         result = await service.get_image_analysis(
             notebook_id=notebook_id,
@@ -285,18 +344,28 @@ async def get_final_qa_v2_evidence_delivery(
     cursor: Annotated[str | None, Query()] = None,
 ) -> DeliveryResponseBody:
     await _authorize_notebook(request, engine, notebook_id)
-    result = await build_delivery_service(
-        engine, config, principal_from_claims(getattr(request.state, "auth", None))
-    ).get_final_qa_evidence(
+    result = await _delivery_service_for_request(request, engine, config).get_final_qa_evidence(
         notebook_id=notebook_id,
         assistant_turn_id=assistant_turn_id,
         cursor=cursor,
-        actor_id=principal_from_claims(getattr(request.state, "auth", None)).actor_id,
+        actor_id=_delivery_principal(request, engine).actor_id,
     )
     return await _response_body(request, engine, config, result)
 
 
 async def _authorize_notebook(request: Request, engine: KnowledgeEngine, notebook_id: UUID) -> None:
+    authority = getattr(engine, "server_scope_authority", None)
+    if authority is not None:
+        if not isinstance(authority, SQLiteNotebookScopeAuthority):
+            raise PermissionError("trusted membership authority is unavailable")
+        principal = _delivery_principal(request, engine)
+        scope = (
+            await AuthorizedNotebookScopeResolver(engine.storage, authority).resolve(
+                principal, (notebook_id,)
+            )
+        )[0]
+        request.state.membership_delivery_scope = scope
+        return
     if type(engine) is not KnowledgeEngine:
         return
     principal = principal_from_claims(getattr(request.state, "auth", None))
@@ -312,6 +381,13 @@ async def _authorize_document(
     document_id: UUID,
     version_id: UUID,
 ) -> None:
+    if getattr(engine, "server_scope_authority", None) is not None:
+        await _authorize_notebook(request, engine, notebook_id)
+        principal = _delivery_principal(request, engine)
+        await StorageDocumentScopeResolverV1(
+            engine.storage, StorageSourceAssociationReaderV1(engine.storage)
+        ).resolve_document_scope(principal, document_id, version_id, notebook_id)
+        return
     if type(engine) is not KnowledgeEngine:
         return
     principal = principal_from_claims(getattr(request.state, "auth", None))

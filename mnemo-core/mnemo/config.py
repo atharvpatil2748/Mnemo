@@ -173,6 +173,13 @@ class EmbeddingConfig(_FrozenConfigModel):
     dimensions: PositiveInteger
     api_base: str | None = None
     device: Literal["cpu", "cuda"] = "cpu"
+    model_path: Path | None = None
+    revision: NonEmptyString | None = None
+    max_tokens: PositiveInteger = 8192
+    max_batch: PositiveInteger = 32
+    normalize_embeddings: StrictBool = True
+    query_prompt: str | None = None
+    document_prompt: str | None = None
 
 
 class RerankerConfig(_FrozenConfigModel):

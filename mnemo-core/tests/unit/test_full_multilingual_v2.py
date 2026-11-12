@@ -73,6 +73,7 @@ from mnemo.models.text_representations import (
     content_hash,
     text_representation_reference_id,
 )
+from mnemo.models.v2_evidence_resolution import TitleOnlyV2SemanticEvidenceError
 from mnemo.models.v2_retrieval_authorization import (
     V2ActiveRuntimeBindingV1,
     V2RetrievalAuthorizationDecisionV1,
@@ -973,6 +974,40 @@ def test_v2_generation_builders_validate_identity_and_empty_populations() -> Non
     asyncio.run(scenario())
 
 
+def test_v2_embedding_progress_reports_only_persisted_batches() -> None:
+    generation = uuid4()
+    source = SimpleNamespace(identity_digest="a" * 64)
+    inputs = tuple(SimpleNamespace(source=source) for _ in range(33))
+    events: list[tuple[int, int]] = []
+
+    class Provider:
+        async def embed_documents_v3(self, batch):  # type: ignore[no-untyped-def]
+            return tuple(
+                SimpleNamespace(
+                    source=item.source,
+                    profile=SimpleNamespace(generation_id=generation),
+                    embedding_id=uuid4(),
+                )
+                for item in batch
+            )
+
+    class Store:
+        async def put_multilingual_embedding_v3(self, value: object) -> bool:
+            del value
+            return True
+
+    builder = MultilingualEmbeddingGenerationBuilderV3(
+        provider=Provider(),  # type: ignore[arg-type]
+        store=Store(),  # type: ignore[arg-type]
+        generation_id=generation,
+        inputs=inputs,  # type: ignore[arg-type]
+        progress=lambda completed, total: events.append((completed, total)),
+    )
+    result = asyncio.run(builder.build(generation))
+    assert result.succeeded_count == 33
+    assert events == [(32, 33), (33, 33)]
+
+
 def test_representation_generation_input_binds_text_source_and_reference() -> None:
     source = _source("semantic text")
     representation = _representation(source, "semantic text")
@@ -1551,6 +1586,52 @@ def test_shared_v2_path_uses_candidate_builder_and_reports_degradation() -> None
                 projector=_DecisionProjector(),
                 exhaustive_fallback=wrong_fallback,  # type: ignore[arg-type]
             )
+
+    asyncio.run(scenario())
+
+
+def test_title_only_candidate_is_omitted_without_failing_other_retrieval_sources() -> None:
+    class TitleOnlyBuilder:
+        async def build(self, **_: object) -> object:
+            raise TitleOnlyV2SemanticEvidenceError("title-only V2 semantic evidence is forbidden")
+
+    async def scenario() -> None:
+        source = _source("title: display metadata")
+        app = FullMultilingualRetrievalApplicationV2(
+            dense=_UnavailableDense(),
+            sparse=_Sparse(source),
+            retrieval_authorizer=_RetrievalAuthorizer(),
+            candidate_builder=TitleOnlyBuilder(),  # type: ignore[arg-type]
+            reranker=_Reranker(),
+            admission=_Admission(),
+        )
+        plan = RetrievalPlanV2(
+            query="grounded retrieval query",
+            mode=AdvancedRetrievalMode.RANKED,
+            scope=RetrievalScopeV2(notebook_id=source.notebook_id),
+            representations=(EvidenceRepresentation.MULTILINGUAL_TEXT,),
+            budgets=RetrievalBudgetsV2(
+                recall_limit=10,
+                expansion_limit=0,
+                fusion_limit=10,
+                rerank_limit=10,
+                result_limit=5,
+                max_serialized_bytes=100_000,
+                max_content_characters=10_000,
+            ),
+            ranking_policy=RankingPolicyV2.SOURCE_RANK_FUSION,
+        )
+        result = await app.retrieve(
+            principal=PrincipalContextV1(actor_id=uuid4(), authenticated=True),
+            plan=plan,
+            query_language=LanguageCode("mr"),
+        )
+        assert result.candidates == ()
+        assert result.completeness == "partial"
+        assert result.omissions == (
+            "candidate_rejected:title_only_semantic_evidence",
+            "dense_unavailable:LookupError",
+        )
 
     asyncio.run(scenario())
 

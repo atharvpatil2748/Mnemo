@@ -35,6 +35,10 @@ class V2RepresentationResolutionState(StrEnum):
     DERIVED = "derived"
 
 
+class TitleOnlyV2SemanticEvidenceError(ValueError):
+    """A display-only title cannot be admitted as semantic retrieval evidence."""
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class V2GenerationSetBindingV1:
     """The four capabilities remain explicit and cannot be interchanged."""
@@ -202,7 +206,7 @@ class V2SemanticEvidenceRecordV1:
         if not self.semantic_text.strip():
             raise ValueError("V2 semantic evidence cannot be blank")
         if re.fullmatch(r"\s*title:\s*[^\r\n]+\s*", self.semantic_text, re.IGNORECASE):
-            raise ValueError("title-only V2 semantic evidence is forbidden")
+            raise TitleOnlyV2SemanticEvidenceError("title-only V2 semantic evidence is forbidden")
         require_sha256(self.semantic_text_content_hash, "semantic_text_content_hash")
         if hashlib.sha256(self.semantic_text.encode("utf-8")).hexdigest() != (
             self.semantic_text_content_hash
@@ -218,7 +222,9 @@ class V2SemanticEvidenceRecordV1:
         if self.title_metadata is not None:
             require_non_empty(self.title_metadata, "title_metadata")
             if self.semantic_text.strip() == self.title_metadata.strip():
-                raise ValueError("title-only V2 semantic evidence is forbidden")
+                raise TitleOnlyV2SemanticEvidenceError(
+                    "title-only V2 semantic evidence is forbidden"
+                )
         if self.representation_state is V2RepresentationResolutionState.DERIVED:
             if self.transformation_lineage is None:
                 raise ValueError("derived semantic evidence requires transformation lineage")

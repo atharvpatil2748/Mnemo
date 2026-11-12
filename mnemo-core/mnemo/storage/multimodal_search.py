@@ -115,13 +115,14 @@ class SQLiteMultimodalSearchMixin:
             params.append(match)
         sql = f"""SELECT f.derivation_id,f.notebook_id,f.document_id,f.version_id,
                           f.source_evidence_id,f.source_language,f.target_language,f.text,
-                          bm25(f),MIN(s.source_id)
+                          bm25(f),s.source_id
                    FROM language_text_fts f
                    JOIN sources s ON s.document_id=f.document_id
                    WHERE 1=1 {scope_sql} {match_sql}
                    GROUP BY f.derivation_id,f.notebook_id,f.document_id,f.version_id,
-                            f.source_evidence_id,f.source_language,f.target_language,f.text
-                   ORDER BY bm25(f),f.document_id,f.version_id,f.derivation_id
+                            f.source_evidence_id,f.source_language,f.target_language,f.text,
+                            s.source_id
+                   ORDER BY bm25(f),f.document_id,f.version_id,f.derivation_id,s.source_id
                    LIMIT 10001"""
         rows = tuple(await (await self._require_open().execute(sql, params)).fetchall())
         page = rows[offset : offset + limit + 1]
@@ -223,7 +224,7 @@ class SQLiteMultimodalSearchMixin:
             else "NULL"
         )
         sql = f"""SELECT p.derivation_id,p.occurrence_id,o.asset_id,p.document_id,p.version_id,
-                          MIN(s.source_id),MIN(dv.metadata),MIN(o.locator),{content},
+                          s.source_id,MIN(dv.metadata),MIN(o.locator),{content},
                           {region_ids},MIN({score}),MIN(g.profile),MIN(g.generation_id)
                    FROM {table} f JOIN {row_table} p
                      ON p.generation_id=f.generation_id AND p.{id_column}=f.{id_column}
@@ -235,8 +236,10 @@ class SQLiteMultimodalSearchMixin:
                    JOIN document_versions dv ON dv.version_id=p.version_id
                    WHERE g.capability=? AND g.state='ready' AND cov.completeness='complete'
                      AND cov.failed_count=0 {scope_sql} {match_sql}
-                   GROUP BY p.derivation_id,p.occurrence_id,o.asset_id,p.document_id,p.version_id
-                   ORDER BY MIN({score}),p.document_id,p.version_id,p.occurrence_id,p.derivation_id
+                   GROUP BY p.derivation_id,p.occurrence_id,o.asset_id,p.document_id,p.version_id,
+                            s.source_id
+                   ORDER BY MIN({score}),p.document_id,p.version_id,p.occurrence_id,p.derivation_id,
+                            s.source_id
                    LIMIT 10001"""
         rows = tuple(await (await self._require_open().execute(sql, params)).fetchall())
         filtered = tuple(
@@ -270,15 +273,15 @@ class SQLiteMultimodalSearchMixin:
             await (
                 await self._require_open().execute(
                     f"""SELECT o.occurrence_id,o.asset_id,o.document_id,o.version_id,
-                               MIN(s.source_id),MIN(dv.metadata),o.locator,o.authored_alt_text,
+                               s.source_id,MIN(dv.metadata),o.locator,o.authored_alt_text,
                                a.mime_type,a.metadata,a.content_hash
                         FROM asset_occurrences o JOIN asset_catalog a ON a.asset_id=o.asset_id
                         JOIN sources s ON s.document_id=o.document_id
                         JOIN document_versions dv ON dv.version_id=o.version_id
                         WHERE 1=1 {scope_sql}
-                        GROUP BY o.occurrence_id
+                        GROUP BY o.occurrence_id,s.source_id
                         ORDER BY o.document_id,o.version_id,
-                                 json_extract(o.locator,'$.ordinal'),o.occurrence_id""",
+                                 json_extract(o.locator,'$.ordinal'),o.occurrence_id,s.source_id""",
                     params,
                 )
             ).fetchall()
@@ -347,7 +350,7 @@ class SQLiteMultimodalSearchMixin:
                 await self._require_open().execute(
                     f"""SELECT e.derivation_id,e.occurrence_id,e.asset_id,e.document_id,
                                e.version_id,
-                               MIN(s.source_id),MIN(dv.metadata),MIN(o.locator),e.payload,g.generation_id
+                               s.source_id,MIN(dv.metadata),MIN(o.locator),e.payload,g.generation_id
                         FROM visual_vector_projection_rows p
                         JOIN visual_embeddings e ON e.derivation_id=p.derivation_id
                         JOIN active_index_generations a ON a.generation_id=p.generation_id
@@ -358,7 +361,8 @@ class SQLiteMultimodalSearchMixin:
                         JOIN document_versions dv ON dv.version_id=p.version_id
                         WHERE g.profile=? AND g.capability='visual_vector' AND g.state='ready'
                           AND cov.completeness='complete' AND cov.failed_count=0 {scope_sql}
-                        GROUP BY e.derivation_id ORDER BY e.derivation_id LIMIT 10001""",
+                        GROUP BY e.derivation_id,s.source_id
+                        ORDER BY e.derivation_id,s.source_id LIMIT 10001""",
                     params,
                 )
             ).fetchall()

@@ -149,6 +149,7 @@ class RetrievalPlanV2(BaseModel):
     deduplication_policy: DeduplicationPolicy = DeduplicationPolicy.AUTHORITATIVE_IDENTITY
     ranking_policy: RankingPolicyV2
     security_scope_identity: str | None = None
+    membership_revision: int | None = Field(default=None, strict=True, ge=1)
     requested_limits_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     automatic_policy_version: str | None = None
 
@@ -193,9 +194,13 @@ class RetrievalPlanV2(BaseModel):
 
     @property
     def fingerprint(self) -> str:
+        plan = self.model_dump(mode="json")
+        if self.membership_revision is None:
+            # Preserve persisted pre-ACL cursor fingerprints and V1 semantics.
+            plan.pop("membership_revision")
         material = {
             "version": ADVANCED_RETRIEVAL_VERSION,
-            "plan": self.model_dump(mode="json"),
+            "plan": plan,
         }
         return hashlib.sha256(_canonical_json(material)).hexdigest()
 
@@ -225,6 +230,7 @@ def advanced_candidate_id(
     occurrence_id: UUID | None,
     derivation_id: UUID | None,
     evidence_id: str | None = None,
+    membership_identity: tuple[UUID, UUID] | None = None,
 ) -> UUID:
     derived_identity = derivation_id or occurrence_id
     authoritative = chunk_id or (None if derived_identity is None else str(derived_identity))
@@ -233,7 +239,12 @@ def advanced_candidate_id(
     return uuid5(
         _CANDIDATE_NAMESPACE,
         f"{representation.value}:{document_id}:{version_id}:{authoritative}"
-        + ("" if evidence_id is None else f":{evidence_id}"),
+        + ("" if evidence_id is None else f":{evidence_id}")
+        + (
+            ""
+            if membership_identity is None
+            else f":membership:{membership_identity[0]}:{membership_identity[1]}"
+        ),
     )
 
 
@@ -256,6 +267,7 @@ class AdvancedRetrievalCandidate:
     final_rank: int | None = None
     expansion_reason: str | None = None
     evidence_id: str | None = None
+    membership_identity: tuple[UUID, UUID] | None = None
 
     def __post_init__(self) -> None:
         if self.chunk is None and self.occurrence_id is None and self.derivation_id is None:
@@ -272,9 +284,15 @@ class AdvancedRetrievalCandidate:
             occurrence_id=self.occurrence_id,
             derivation_id=self.derivation_id,
             evidence_id=self.evidence_id,
+            membership_identity=self.membership_identity,
         )
         if self.candidate_id != expected:
             raise ValueError("candidate_id does not match authoritative provenance")
+        if self.membership_identity is not None and self.membership_identity != (
+            self.notebook_id,
+            self.source_id,
+        ):
+            raise ValueError("candidate membership identity does not match provenance")
         if not isinstance(self.locator, FrozenMetadata):
             raise TypeError("locator must be FrozenMetadata")
         if self.document_title is not None:

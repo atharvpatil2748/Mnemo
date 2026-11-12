@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Path, Query, Response, status
+from fastapi import APIRouter, Depends, Path, Query, Request, Response, status
+from fastapi.exceptions import RequestValidationError
 from mnemo.engine import KnowledgeEngine
+from mnemo.interfaces import DependencyUnavailableError
 from mnemo.interfaces.errors import NotFoundError
 from mnemo.models import FrozenMetadata, InsightType, Notebook
+from mnemo.storage.sqlite import SQLiteStore
 
 from ..dependencies import get_engine, require_mutable_workspace
 from ..schemas.common import PageResponse
@@ -22,11 +26,48 @@ from ..schemas.notebooks import (
 )
 from ..schemas.summary import NotebookSummaryResponse, SummaryItemResponse
 from ..schemas.timeline import TimelineEventResponse, TimelineResponse
+from ..services.authorized_scope import (
+    AuthorizedNotebookInventoryCursor,
+    AuthorizedNotebookScope,
+    AuthorizedNotebookScopeResolver,
+)
+from ..services.membership_http import membership_http_principal
+from ..services.membership_lifecycle import MembershipNotebookLifecycle
+from ..services.scope_authority import SQLiteNotebookScopeAuthority
 
 router = APIRouter(prefix="/notebooks", tags=["notebooks"])
 
 EngineDep = Annotated[KnowledgeEngine, Depends(get_engine)]
 NotebookIdPath = Annotated[UUID, Path(description="The unique notebook ID")]
+
+
+async def _require_membership(
+    request: Request, engine: KnowledgeEngine, notebook_id: UUID, *, write: bool = False
+) -> AuthorizedNotebookScope | None:
+    authority = getattr(engine, "server_scope_authority", None)
+    if authority is None:
+        return None  # Frozen legacy/V1 fixture behavior; production remains UNINDEXED.
+    if not isinstance(authority, SQLiteNotebookScopeAuthority):
+        raise PermissionError("trusted membership authority is unavailable")
+    principal = membership_http_principal(request, engine)
+    scopes = await AuthorizedNotebookScopeResolver(engine.storage, authority).resolve(
+        principal, (notebook_id,)
+    )
+    if write and not authority.permits(principal.actor_id, notebook_id, operation="write"):
+        raise NotFoundError("authorized resource was not found")
+    return scopes[0]
+
+
+async def _revalidate_membership(
+    request: Request, engine: KnowledgeEngine, scope: AuthorizedNotebookScope | None
+) -> None:
+    if scope is None:
+        return
+    authority = getattr(engine, "server_scope_authority", None)
+    if not isinstance(authority, SQLiteNotebookScopeAuthority):
+        raise PermissionError("trusted membership authority is unavailable")
+    principal = membership_http_principal(request, engine)
+    await AuthorizedNotebookScopeResolver(engine.storage, authority).revalidate(principal, (scope,))
 
 
 def _unpack_metadata(meta: Any) -> dict[str, Any]:
@@ -67,8 +108,21 @@ def _notebook_to_dto(notebook: Notebook) -> NotebookResponse:
 async def create_notebook(
     body: CreateNotebookRequest,
     engine: EngineDep,
+    request: Request,
 ) -> NotebookResponse:
     """Create a new notebook collection with generated identity and UTC timestamps."""
+    authority = getattr(engine, "server_scope_authority", None)
+    if authority is not None:
+        principal = membership_http_principal(request, engine)
+        if not isinstance(engine.storage, SQLiteStore):
+            raise DependencyUnavailableError("membership notebook store is unavailable")
+        created = await MembershipNotebookLifecycle(engine.storage, authority).create(
+            title=body.title,
+            description=body.description,
+            metadata=body.metadata,
+            actor_id=principal.actor_id,
+        )
+        return _notebook_to_dto(created)
     notebook_id = uuid4()
     now = datetime.now(UTC)
     notebook = Notebook(
@@ -91,11 +145,49 @@ async def create_notebook(
 )
 async def list_notebooks(
     engine: EngineDep,
+    request: Request,
     limit: Annotated[int, Query(ge=1, le=100, description="Number of items to return")] = 50,
-    cursor: Annotated[UUID | None, Query(description="Keyset cursor from previous page")] = None,
+    cursor: Annotated[str | None, Query(description="Keyset cursor from previous page")] = None,
 ) -> PageResponse[NotebookResponse]:
     """List notebooks using keyset cursor pagination."""
-    cursor_str = str(cursor) if cursor is not None else None
+    authority = getattr(engine, "server_scope_authority", None)
+    if authority is not None:
+        if not isinstance(authority, SQLiteNotebookScopeAuthority):
+            raise PermissionError("trusted membership authority is unavailable")
+        principal = membership_http_principal(request, engine)
+        scopes = await AuthorizedNotebookScopeResolver(engine.storage, authority).resolve(
+            principal, None
+        )
+        page_cursor = AuthorizedNotebookInventoryCursor(
+            request.app.state.server_config.delivery_cursor_secret.encode()
+        )
+        identifiers = [scope.notebook_id for scope in scopes]
+        if cursor is not None:
+            position = page_cursor.decode(cursor, principal=principal, scopes=scopes, limit=limit)
+            identifiers = [item for item in identifiers if item > position]
+        selected = identifiers[:limit]
+        notebooks = [await engine.storage.get_notebook(item) for item in selected]
+        if any(item is None for item in notebooks):
+            raise NotFoundError("authorized resource was not found")
+        await AuthorizedNotebookScopeResolver(engine.storage, authority).revalidate(
+            principal, scopes
+        )
+        next_cursor = (
+            page_cursor.encode(str(selected[-1]), principal=principal, scopes=scopes, limit=limit)
+            if len(identifiers) > limit
+            else None
+        )
+        return PageResponse[NotebookResponse](
+            items=[_notebook_to_dto(item) for item in notebooks if item is not None],
+            next_cursor=next_cursor,
+            limit=limit,
+        )
+    try:
+        cursor_str = str(UUID(cursor)) if cursor is not None else None
+    except ValueError as error:
+        raise RequestValidationError(
+            [{"type": "uuid_parsing", "loc": ("query", "cursor"), "input": cursor}]
+        ) from error
     page = await engine.storage.list_notebooks(limit=limit, cursor=cursor_str)
     items = [_notebook_to_dto(item) for item in page.items]
     return PageResponse[NotebookResponse](
@@ -114,11 +206,14 @@ async def list_notebooks(
 async def get_notebook(
     notebook_id: NotebookIdPath,
     engine: EngineDep,
+    request: Request,
 ) -> NotebookResponse:
     """Retrieve details for a single notebook."""
+    scope = await _require_membership(request, engine, notebook_id)
     notebook = await engine.storage.get_notebook(notebook_id)
     if notebook is None:
         raise NotFoundError(f"Notebook {notebook_id} was not found")
+    await _revalidate_membership(request, engine, scope)
     return _notebook_to_dto(notebook)
 
 
@@ -133,29 +228,44 @@ async def update_notebook(
     body: UpdateNotebookRequest,
     notebook_id: NotebookIdPath,
     engine: EngineDep,
+    request: Request,
 ) -> NotebookResponse:
     """Partially update notebook title, description, or metadata (Last-Write-Wins)."""
-    existing = await engine.storage.get_notebook(notebook_id)
-    if existing is None:
-        raise NotFoundError(f"Notebook {notebook_id} was not found")
-
-    title = body.title if body.title is not None else existing.title
-    description = body.description if body.description is not None else existing.description
-
-    metadata_dict = _unpack_metadata(existing.metadata)
-    if body.metadata is not None:
-        metadata_dict.update(body.metadata)
-
-    updated = Notebook(
-        notebook_id=existing.notebook_id,
-        title=title,
-        description=description,
-        created_at=existing.created_at,
-        updated_at=datetime.now(UTC),
-        metadata=FrozenMetadata(metadata_dict),
+    scope = await _require_membership(request, engine, notebook_id, write=True)
+    authority = getattr(engine, "server_scope_authority", None)
+    if authority is not None and not isinstance(engine.storage, SQLiteStore):
+        raise DependencyUnavailableError("membership notebook store is unavailable")
+    lease = (
+        authority.owner_write_lease(
+            actor_id=membership_http_principal(request, engine).actor_id, notebook_id=notebook_id
+        )
+        if isinstance(authority, SQLiteNotebookScopeAuthority)
+        else nullcontext(None)
     )
-    await engine.storage.upsert_notebook(updated)
-    return _notebook_to_dto(updated)
+    with lease:
+        existing = await engine.storage.get_notebook(notebook_id)
+        if existing is None:
+            raise NotFoundError(f"Notebook {notebook_id} was not found")
+
+        title = body.title if body.title is not None else existing.title
+        description = body.description if body.description is not None else existing.description
+
+        metadata_dict = _unpack_metadata(existing.metadata)
+        if body.metadata is not None:
+            metadata_dict.update(body.metadata)
+
+        updated = Notebook(
+            notebook_id=existing.notebook_id,
+            title=title,
+            description=description,
+            created_at=existing.created_at,
+            updated_at=datetime.now(UTC),
+            metadata=FrozenMetadata(metadata_dict),
+        )
+        await _revalidate_membership(request, engine, scope)
+        await engine.storage.upsert_notebook(updated)
+        await _revalidate_membership(request, engine, scope)
+        return _notebook_to_dto(updated)
 
 
 @router.delete(
@@ -167,8 +277,19 @@ async def update_notebook(
 async def delete_notebook(
     notebook_id: NotebookIdPath,
     engine: EngineDep,
+    request: Request,
 ) -> Response:
     """Delete a notebook and cascade-clean all associated notes, sources, and sessions."""
+    await _require_membership(request, engine, notebook_id, write=True)
+    authority = getattr(engine, "server_scope_authority", None)
+    if authority is not None:
+        if not isinstance(engine.storage, SQLiteStore):
+            raise DependencyUnavailableError("membership notebook store is unavailable")
+        principal = membership_http_principal(request, engine)
+        await MembershipNotebookLifecycle(engine.storage, authority).delete(
+            notebook_id, actor_id=principal.actor_id
+        )
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     deleted = await engine.storage.delete_notebook(notebook_id)
     if not deleted:
         raise NotFoundError(f"Notebook {notebook_id} was not found")
@@ -184,8 +305,10 @@ async def delete_notebook(
 async def get_notebook_summary(
     notebook_id: NotebookIdPath,
     engine: EngineDep,
+    request: Request,
 ) -> NotebookSummaryResponse:
     """Retrieve already-persisted summary insights for a notebook (read-only)."""
+    scope = await _require_membership(request, engine, notebook_id)
     existing = await engine.storage.get_notebook(notebook_id)
     if existing is None:
         raise NotFoundError(f"Notebook {notebook_id} was not found")
@@ -203,6 +326,7 @@ async def get_notebook_summary(
         if item.type == InsightType.SUMMARY
     ]
     status_val: Literal["ready", "empty"] = "ready" if summaries else "empty"
+    await _revalidate_membership(request, engine, scope)
     return NotebookSummaryResponse(
         notebook_id=notebook_id,
         summaries=summaries,
@@ -219,9 +343,11 @@ async def get_notebook_summary(
 async def get_notebook_timeline(
     notebook_id: NotebookIdPath,
     engine: EngineDep,
+    request: Request,
     limit: Annotated[int, Query(ge=1, le=100, description="Max timeline events to return")] = 50,
 ) -> TimelineResponse:
     """Retrieve chronological activity events for a notebook."""
+    scope = await _require_membership(request, engine, notebook_id)
     existing = await engine.storage.get_notebook(notebook_id)
     if existing is None:
         raise NotFoundError(f"Notebook {notebook_id} was not found")
@@ -270,6 +396,8 @@ async def get_notebook_timeline(
     events.sort(key=lambda e: e.timestamp, reverse=True)
     sliced_events = events[:limit]
 
+    await _revalidate_membership(request, engine, scope)
+
     return TimelineResponse(
         notebook_id=notebook_id,
         events=sliced_events,
@@ -286,14 +414,17 @@ async def get_notebook_timeline(
 async def get_notebook_graph(
     notebook_id: NotebookIdPath,
     engine: EngineDep,
+    request: Request,
     limit: Annotated[int, Query(ge=1, le=500, description="Max entity nodes to return")] = 100,
 ) -> EntityGraphResponse:
     """Retrieve entity knowledge graph nodes for a notebook (nodes only)."""
+    scope = await _require_membership(request, engine, notebook_id)
     existing = await engine.storage.get_notebook(notebook_id)
     if existing is None:
         raise NotFoundError(f"Notebook {notebook_id} was not found")
 
     if not engine.storage.capabilities().supports_graph:
+        await _revalidate_membership(request, engine, scope)
         return EntityGraphResponse(
             notebook_id=notebook_id,
             nodes=[],
@@ -307,6 +438,7 @@ async def get_notebook_graph(
     doc_ids = tuple(s.document_id for s in sources_page.items)
 
     if not doc_ids:
+        await _revalidate_membership(request, engine, scope)
         return EntityGraphResponse(
             notebook_id=notebook_id,
             nodes=[],
@@ -334,6 +466,7 @@ async def get_notebook_graph(
     ]
 
     status_val: Literal["active", "disabled", "empty"] = "active" if nodes else "empty"
+    await _revalidate_membership(request, engine, scope)
     return EntityGraphResponse(
         notebook_id=notebook_id,
         nodes=nodes,

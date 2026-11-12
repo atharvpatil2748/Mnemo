@@ -12,6 +12,7 @@ from ..dependencies import get_engine, get_server_config
 from ..schemas.final_qa_v2 import FinalQAV2RequestBody, FinalQAV2Response
 from ..services.authorization import principal_from_claims
 from ..services.final_qa_v2 import FinalQAV2ApplicationService
+from ..services.membership_http import membership_http_principal
 
 router = APIRouter(prefix="/notebooks", tags=["final-qa-v2"])
 EngineDep = Annotated[KnowledgeEngine, Depends(get_engine)]
@@ -25,7 +26,11 @@ async def final_qa_v2_endpoint(
     engine: EngineDep,
 ) -> FinalQAV2Response:
     config = get_server_config(request)
-    principal = principal_from_claims(getattr(request.state, "auth", None))
+    principal = (
+        membership_http_principal(request, engine)
+        if getattr(engine, "server_scope_authority", None) is not None
+        else principal_from_claims(getattr(request.state, "auth", None))
+    )
     if not principal.authenticated:
         raise HTTPException(status_code=401, detail="Authentication required")
     return await FinalQAV2ApplicationService(engine, config).execute(

@@ -143,6 +143,25 @@ def test_catalog_round_trip_idempotency_isolation_and_gc(tmp_path: Path) -> None
     )
     _run(
         store.register_asset_ingestion(
+            assets=(asset,), binary_reference=reference, occurrences=(occurrence,)
+        )
+    )
+    altered_provenance = replace(
+        occurrence,
+        extraction_provenance=replace(
+            occurrence.extraction_provenance, parser_version="different-parser-version"
+        ),
+    )
+    with pytest.raises(ConflictError, match="asset occurrence identity is immutable"):
+        _run(
+            store.register_asset_ingestion(
+                assets=(asset,),
+                binary_reference=reference,
+                occurrences=(altered_provenance,),
+            )
+        )
+    _run(
+        store.register_asset_ingestion(
             assets=(asset,),
             binary_reference=replace(reference, created_at=datetime.now(UTC)),
             occurrences=(replace(occurrence, created_at=datetime.now(UTC)),),
